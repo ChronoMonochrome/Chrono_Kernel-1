@@ -422,7 +422,11 @@ static int k2_sata_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	int n_ports, i, rc, bar_pos;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* allocate host */
 	n_ports = 4;

@@ -197,7 +197,11 @@ int i2o_dma_alloc(struct device *dev, struct i2o_dma *addr, size_t len)
 
 	if ((sizeof(dma_addr_t) > 4) && dma_64)
 		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "i2o: unable to set 64-bit DMA");
+#else
+			;
+#endif
 	mutex_unlock(&mem_lock);
 
 	if (!addr->virt)

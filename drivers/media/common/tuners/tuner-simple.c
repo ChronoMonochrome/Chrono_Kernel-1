@@ -1030,8 +1030,12 @@ struct dvb_frontend *simple_tuner_attach(struct dvb_frontend *fe,
 	int instance;
 
 	if (type >= tuner_count) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: invalid tuner type: %d (max: %d)\n",
 		       __func__, type, tuner_count-1);
+#else
+		;
+#endif
 		return NULL;
 	}
 
@@ -1050,10 +1054,14 @@ struct dvb_frontend *simple_tuner_attach(struct dvb_frontend *fe,
 			fe->ops.i2c_gate_ctrl(fe, 1);
 
 		if (1 != i2c_transfer(i2c_adap, &msg, 1))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "tuner-simple %d-%04x: "
 			       "unable to probe %s, proceeding anyway.",
 			       i2c_adapter_id(i2c_adap), i2c_addr,
 			       tuners[type].name);
+#else
+			;
+#endif
 
 		if (fe->ops.i2c_gate_ctrl)
 			fe->ops.i2c_gate_ctrl(fe, 0);

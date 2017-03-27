@@ -214,8 +214,8 @@ static void net_free(struct net *net)
 {
 #ifdef NETNS_REFCNT_DEBUG
 	if (unlikely(atomic_read(&net->use_count) != 0)) {
-		printk(KERN_EMERG "network namespace not free! Usage: %d\n",
-			atomic_read(&net->use_count));
+//		printk(KERN_EMERG "network namespace not free! Usage: %d\n",
+;
 		return;
 	}
 #endif

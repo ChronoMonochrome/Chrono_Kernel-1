@@ -430,7 +430,11 @@ int snd_seq_pool_done(struct snd_seq_pool *pool)
 
 	while (atomic_read(&pool->counter) > 0) {
 		if (max_count == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "snd_seq_pool_done timeout: %d cells remain\n", atomic_read(&pool->counter));
+#else
+			;
+#endif
 			break;
 		}
 		schedule_timeout_uninterruptible(1);

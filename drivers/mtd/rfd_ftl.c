@@ -119,17 +119,25 @@ static int build_block_map(struct partition *part, int block_no)
 			entry = 0;
 
 		if (entry >= part->sector_count) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 				"'%s': unit #%d: entry %d corrupt, "
 				"sector %d out of range\n",
 				part->mbd.mtd->name, block_no, i, entry);
+#else
+			;
+#endif
 			continue;
 		}
 
 		if (part->sector_map[entry] != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 				"'%s': more than one entry for sector %d\n",
 				part->mbd.mtd->name, entry);
+#else
+			;
+#endif
 			part->errors = 1;
 			continue;
 		}
@@ -214,15 +222,23 @@ static int scan_header(struct partition *part)
 	}
 
 	if (blocks_found == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE PREFIX "no RFD magic found in '%s'\n",
 				part->mbd.mtd->name);
+#else
+		;
+#endif
 		rc = -ENOENT;
 		goto err;
 	}
 
 	if (part->reserved_block == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "'%s': no empty erase unit found\n",
 				part->mbd.mtd->name);
+#else
+		;
+#endif
 
 		part->errors = 1;
 	}
@@ -255,8 +271,12 @@ static int rfd_ftl_readsect(struct mtd_blktrans_dev *dev, u_long sector, char *b
 			rc = -EIO;
 
 		if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "error reading '%s' at "
 				"0x%lx\n", part->mbd.mtd->name, addr);
+#else
+			;
+#endif
 			return rc;
 		}
 	} else
@@ -283,9 +303,13 @@ static void erase_callback(struct erase_info *erase)
 	}
 
 	if (erase->state != MTD_ERASE_DONE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "erase failed at 0x%llx on '%s', "
 				"state %d\n", (unsigned long long)erase->addr,
 				part->mbd.mtd->name, erase->state);
+#else
+		;
+#endif
 
 		part->blocks[i].state = BLOCK_FAILED;
 		part->blocks[i].free_sectors = 0;
@@ -775,7 +799,11 @@ static void rfd_ftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		part->block_size = block_size;
 	else {
 		if (!mtd->erasesize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "please provide block_size");
+#else
+			;
+#endif
 			goto out;
 		} else
 			part->block_size = mtd->erasesize;
@@ -788,13 +816,21 @@ static void rfd_ftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		if (!(mtd->flags & MTD_WRITEABLE))
 			part->mbd.readonly = 1;
 		else if (part->errors) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "'%s': errors found, "
 					"setting read-only\n", mtd->name);
+#else
+			;
+#endif
 			part->mbd.readonly = 1;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "name: '%s' type: %d flags %x\n",
 				mtd->name, mtd->type, mtd->flags);
+#else
+		;
+#endif
 
 		if (!add_mtd_blktrans_dev((void*)part))
 			return;

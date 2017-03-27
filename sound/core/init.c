@@ -438,7 +438,11 @@ static int snd_card_do_free(struct snd_card *card)
 		card->private_free(card);
 	snd_info_free_entry(card->proc_id);
 	if (snd_info_card_free(card) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "unable to free card info\n");
+#else
+		;
+#endif
 		/* Not fatal error */
 	}
 	kfree(card);

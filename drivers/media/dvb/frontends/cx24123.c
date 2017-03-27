@@ -41,14 +41,26 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Activates frontend debugging (default:0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define info(args...) do { printk(KERN_INFO "CX24123: " args); } while (0)
+#else
+#define info(args...) do { ;
+#endif
 #define err(args...)  do { printk(KERN_ERR  "CX24123: " args); } while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) { \
 			printk(KERN_DEBUG "CX24123: %s: ", __func__); \
+#else
+#define d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(args); \
+#else
+			;
+#endif
 		} \
 	} while (0)
 
@@ -250,12 +262,20 @@ static int cx24123_i2c_writereg(struct cx24123_state *state,
 	};
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "wr(%02x): %02x %02x\n", i2c_addr, reg, data); */
+#else
+	/* ;
+#endif
 
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: writereg error(err == %i, reg == 0x%02x,"
 			 " data == 0x%02x)\n", __func__, err, reg, data);
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -278,7 +298,11 @@ static int cx24123_i2c_readreg(struct cx24123_state *state, u8 i2c_addr, u8 reg)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "rd(%02x): %02x %02x\n", i2c_addr, reg, b); */
+#else
+	/* ;
+#endif
 
 	return b;
 }
@@ -296,17 +320,29 @@ static int cx24123_set_inversion(struct cx24123_state *state,
 
 	switch (inversion) {
 	case INVERSION_OFF:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("inversion off\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg & ~0x80);
 		cx24123_writereg(state, 0x10, auto_reg | 0x80);
 		break;
 	case INVERSION_ON:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("inversion on\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x80);
 		cx24123_writereg(state, 0x10, auto_reg | 0x80);
 		break;
 	case INVERSION_AUTO:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("inversion auto\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x10, auto_reg & ~0x80);
 		break;
 	default:
@@ -324,10 +360,18 @@ static int cx24123_get_inversion(struct cx24123_state *state,
 	val = cx24123_readreg(state, 0x1b) >> 7;
 
 	if (val == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("read inversion off\n");
+#else
+		d;
+#endif
 		*inversion = INVERSION_OFF;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("read inversion on\n");
+#else
+		d;
+#endif
 		*inversion = INVERSION_ON;
 	}
 
@@ -351,42 +395,74 @@ static int cx24123_set_fec(struct cx24123_state *state, fe_code_rate_t fec)
 
 	switch (fec) {
 	case FEC_1_2:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 1/2\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x01);
 		cx24123_writereg(state, 0x0f, 0x02);
 		break;
 	case FEC_2_3:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 2/3\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x02);
 		cx24123_writereg(state, 0x0f, 0x04);
 		break;
 	case FEC_3_4:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 3/4\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x03);
 		cx24123_writereg(state, 0x0f, 0x08);
 		break;
 	case FEC_4_5:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 4/5\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x04);
 		cx24123_writereg(state, 0x0f, 0x10);
 		break;
 	case FEC_5_6:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 5/6\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x05);
 		cx24123_writereg(state, 0x0f, 0x20);
 		break;
 	case FEC_6_7:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 6/7\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x06);
 		cx24123_writereg(state, 0x0f, 0x40);
 		break;
 	case FEC_7_8:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to 7/8\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0e, nom_reg | 0x07);
 		cx24123_writereg(state, 0x0f, 0x80);
 		break;
 	case FEC_AUTO:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set FEC to auto\n");
+#else
+		d;
+#endif
 		cx24123_writereg(state, 0x0f, 0xfe);
 		break;
 	default:
@@ -515,8 +591,12 @@ static int cx24123_set_symbolrate(struct cx24123_state *state, u32 srate)
 	tmp = cx24123_readreg(state, 0x0c) & ~0xe0;
 	cx24123_writereg(state, 0x0c, tmp | sample_gain << 5);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("srate=%d, ratio=0x%08x, sample_rate=%i sample_gain=%d\n",
 		srate, ratio, sample_rate, sample_gain);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -607,7 +687,11 @@ static int cx24123_pll_writereg(struct dvb_frontend *fe,
 	struct cx24123_state *state = fe->demodulator_priv;
 	unsigned long timeout;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("pll writereg called, data=0x%08x\n", data);
+#else
+	d;
+#endif
 
 	/* align the 21 bytes into to bit23 boundary */
 	data = data << 3;
@@ -665,7 +749,11 @@ static int cx24123_pll_tune(struct dvb_frontend *fe,
 	struct cx24123_state *state = fe->demodulator_priv;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("frequency=%i\n", p->frequency);
+#else
+	d;
+#endif
 
 	if (cx24123_pll_calculate(fe, p) != 0) {
 		err("%s: cx24123_pll_calcutate failed\n", __func__);
@@ -685,8 +773,12 @@ static int cx24123_pll_tune(struct dvb_frontend *fe,
 	cx24123_writereg(state, 0x27, state->FILTune >> 2);
 	cx24123_writereg(state, 0x28, val | (state->FILTune & 0x3));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("pll tune VCA=%d, band=%d, pll=%d\n", state->VCAarg,
 			state->bandselectarg, state->pllarg);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -716,7 +808,11 @@ static int cx24123_initfe(struct dvb_frontend *fe)
 	struct cx24123_state *state = fe->demodulator_priv;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("init frontend\n");
+#else
+	d;
+#endif
 
 	/* Configure the demod to a good set of defaults */
 	for (i = 0; i < ARRAY_SIZE(cx24123_regdata); i++)
@@ -744,10 +840,18 @@ static int cx24123_set_voltage(struct dvb_frontend *fe,
 
 	switch (voltage) {
 	case SEC_VOLTAGE_13:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting voltage 13V\n");
+#else
+		d;
+#endif
 		return cx24123_writereg(state, 0x29, val & 0x7f);
 	case SEC_VOLTAGE_18:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting voltage 18V\n");
+#else
+		d;
+#endif
 		return cx24123_writereg(state, 0x29, val | 0x80);
 	case SEC_VOLTAGE_OFF:
 		/* already handled in cx88-dvb */
@@ -779,7 +883,11 @@ static int cx24123_send_diseqc_msg(struct dvb_frontend *fe,
 	struct cx24123_state *state = fe->demodulator_priv;
 	int i, val, tone;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	/* stop continuous tone if enabled */
 	tone = cx24123_readreg(state, 0x29);
@@ -815,7 +923,11 @@ static int cx24123_diseqc_send_burst(struct dvb_frontend *fe,
 	struct cx24123_state *state = fe->demodulator_priv;
 	int val, tone;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	/* stop continuous tone if enabled */
 	tone = cx24123_readreg(state, 0x29);
@@ -893,7 +1005,11 @@ static int cx24123_read_ber(struct dvb_frontend *fe, u32 *ber)
 		(cx24123_readreg(state, 0x1d) << 8 |
 		 cx24123_readreg(state, 0x1e));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("BER = %d\n", *ber);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -906,7 +1022,11 @@ static int cx24123_read_signal_strength(struct dvb_frontend *fe,
 	/* larger = better */
 	*signal_strength = cx24123_readreg(state, 0x3b) << 8;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Signal strength = %d\n", *signal_strength);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -920,7 +1040,11 @@ static int cx24123_read_snr(struct dvb_frontend *fe, u16 *snr)
 	*snr = 65535 - (((u16)cx24123_readreg(state, 0x18) << 8) |
 			 (u16)cx24123_readreg(state, 0x19));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("read S/N index = %d\n", *snr);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -930,7 +1054,11 @@ static int cx24123_set_frontend(struct dvb_frontend *fe,
 {
 	struct cx24123_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	if (state->config->set_ts_params)
 		state->config->set_ts_params(fe, 0);
@@ -965,7 +1093,11 @@ static int cx24123_get_frontend(struct dvb_frontend *fe,
 {
 	struct cx24123_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	if (cx24123_get_inversion(state, &p->inversion) != 0) {
 		err("%s: Failed to get inversion status\n", __func__);
@@ -993,10 +1125,18 @@ static int cx24123_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t tone)
 
 	switch (tone) {
 	case SEC_TONE_ON:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting tone on\n");
+#else
+		d;
+#endif
 		return cx24123_writereg(state, 0x29, val | 0x10);
 	case SEC_TONE_OFF:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting tone off\n");
+#else
+		d;
+#endif
 		return cx24123_writereg(state, 0x29, val & 0xef);
 	default:
 		err("CASE reached default with tone=%d\n", tone);
@@ -1032,7 +1172,11 @@ static int cx24123_get_algo(struct dvb_frontend *fe)
 static void cx24123_release(struct dvb_frontend *fe)
 {
 	struct cx24123_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 	i2c_del_adapter(&state->tuner_i2c_adapter);
 	kfree(state);
 }
@@ -1073,7 +1217,11 @@ struct dvb_frontend *cx24123_attach(const struct cx24123_config *config,
 	struct cx24123_state *state =
 		kzalloc(sizeof(struct cx24123_state), GFP_KERNEL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 	if (state == NULL) {
 		err("Unable to kzalloc\n");
 		goto error;

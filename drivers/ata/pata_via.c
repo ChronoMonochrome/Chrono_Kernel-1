@@ -361,15 +361,23 @@ static unsigned long via_mode_filter(struct ata_device *dev, unsigned long mask)
 	if (config->id == PCI_DEVICE_ID_VIA_82C586_0) {
 		ata_id_c_string(dev->id, model_num, ATA_ID_PROD, sizeof(model_num));
 		if (strcmp(model_num, "TS64GSSD25-M") == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 	"disabling UDMA mode due to reported lockups with this device.\n");
+#else
+			ata_dev_;
+#endif
 			mask &= ~ ATA_MASK_UDMA;
 		}
 	}
 
 	if (dev->class == ATA_DEV_ATAPI &&
 	    dmi_check_system(no_atapi_dma_dmi_table)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "controller locks up on ATAPI DMA, forcing PIO\n");
+#else
+		ata_dev_;
+#endif
 		mask &= ATA_MASK_PIO;
 	}
 
@@ -576,7 +584,11 @@ static int via_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	int rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)

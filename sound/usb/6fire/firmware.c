@@ -374,8 +374,16 @@ int usb6fire_fw_init(struct usb_interface *intf)
 		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
 				"received from device: ");
 		for (i = 0; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk("%02x ", buffer[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk("\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	/* do we need fpga loader ezusb firmware? */
@@ -410,8 +418,16 @@ int usb6fire_fw_init(struct usb_interface *intf)
 		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
 				"received from device: ");
 		for (i = 0; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk("%02x ", buffer[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk("\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	return 0;

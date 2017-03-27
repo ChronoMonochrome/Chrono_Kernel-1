@@ -85,8 +85,12 @@ static int test_cipher_jiffies(struct blkcipher_desc *desc, int enc,
 			return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d operations in %d seconds (%ld bytes)\n",
 	       bcount, sec, (long)bcount * blen);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -133,8 +137,12 @@ out:
 	local_bh_enable();
 
 	if (ret == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("1 operation in %lu cycles (%d bytes)\n",
 		       (cycles + 4) / 8, blen);
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -158,13 +166,21 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 	else
 		e = "decryption";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\ntesting speed of %s %s\n", algo, e);
+#else
+	;
+#endif
 
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("failed to load transform for %s: %ld\n", algo,
 		       PTR_ERR(tfm));
+#else
+		;
+#endif
 		return;
 	}
 	desc.tfm = tfm;
@@ -178,14 +194,22 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 			struct scatterlist sg[TVMEMSIZE];
 
 			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("template (%u) too big for "
 				       "tvmem (%lu)\n", *keysize + *b_size,
 				       TVMEMSIZE * PAGE_SIZE);
+#else
+				;
+#endif
 				goto out;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("test %u (%d bit key, %d byte blocks): ", i,
 					*keysize * 8, *b_size);
+#else
+			;
+#endif
 
 			memset(tvmem[0], 0xff, PAGE_SIZE);
 
@@ -200,8 +224,12 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 
 			ret = crypto_blkcipher_setkey(tfm, key, *keysize);
 			if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("setkey() failed flags=%x\n",
 						crypto_blkcipher_get_flags(tfm));
+#else
+				;
+#endif
 				goto out;
 			}
 
@@ -227,7 +255,11 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 							 *b_size);
 
 			if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s() failed flags=%x\n", e, desc.flags);
+#else
+				;
+#endif
 				break;
 			}
 			b_size++;
@@ -255,8 +287,12 @@ static int test_hash_jiffies_digest(struct hash_desc *desc,
 			return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%6u opers/sec, %9lu bytes/sec\n",
 	       bcount / sec, ((long)bcount * blen) / sec);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -287,8 +323,12 @@ static int test_hash_jiffies(struct hash_desc *desc, struct scatterlist *sg,
 			return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%6u opers/sec, %9lu bytes/sec\n",
 	       bcount / sec, ((long)bcount * blen) / sec);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -332,8 +372,12 @@ out:
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%6lu cycles/operation, %4lu cycles/byte\n",
 	       cycles / 8, cycles / (8 * blen));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -396,8 +440,12 @@ out:
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%6lu cycles/operation, %4lu cycles/byte\n",
 	       cycles / 8, cycles / (8 * blen));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -423,7 +471,11 @@ static void test_hash_speed(const char *algo, unsigned int sec,
 	int i;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\ntesting speed of %s\n", algo);
+#else
+	;
+#endif
 
 	tfm = crypto_alloc_hash(algo, 0, CRYPTO_ALG_ASYNC);
 
@@ -454,9 +506,13 @@ static void test_hash_speed(const char *algo, unsigned int sec,
 		if (speed[i].klen)
 			crypto_hash_setkey(tfm, tvmem[0], speed[i].klen);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "test%3u "
 		       "(%5u byte blocks,%5u bytes per update,%4u updates): ",
 		       i, speed[i].blen, speed[i].plen, speed[i].blen / speed[i].plen);
+#else
+		;
+#endif
 
 		if (sec)
 			ret = test_hash_jiffies(&desc, sg, speed[i].blen,
@@ -518,8 +574,12 @@ static int test_ahash_jiffies_digest(struct ahash_request *req, int blen,
 			return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%6u opers/sec, %9lu bytes/sec\n",
 	       bcount / sec, ((long)bcount * blen) / sec);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -661,7 +721,11 @@ static void test_ahash_speed(const char *algo, unsigned int sec,
 	static char output[1024];
 	int i, ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\ntesting speed of async %s\n", algo);
+#else
+	;
+#endif
 
 	tfm = crypto_alloc_ahash(algo, 0, 0);
 	if (IS_ERR(tfm)) {
@@ -925,9 +989,17 @@ static void test_available(void)
 	char **name = check;
 
 	while (*name) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("alg %s ", *name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(crypto_has_alg(*name, 0, 0) ?
 		       "found\n" : "not found\n");
+#else
+		;
+#endif
 		name++;
 	}
 }

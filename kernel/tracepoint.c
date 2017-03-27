@@ -102,7 +102,11 @@ static void debug_print_probes(struct tracepoint_entry *entry)
 		return;
 
 	for (i = 0; entry->funcs[i].func; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Probe %d : %p\n", i, entry->funcs[i].func);
+#else
+		;
+#endif
 }
 
 static struct tracepoint_func *
@@ -219,8 +223,12 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
 	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
 	hlist_for_each_entry(e, node, head, hlist) {
 		if (!strcmp(name, e->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE
 				"tracepoint %s busy\n", name);
+#else
+			;
+#endif
 			return ERR_PTR(-EEXIST);	/* Already there */
 		}
 	}

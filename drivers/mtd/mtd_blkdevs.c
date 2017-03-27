@@ -114,7 +114,11 @@ static int do_blktrans_request(struct mtd_blktrans_ops *tr,
 				return -EIO;
 		return 0;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unknown request %u\n", rq_data_dir(req));
+#else
+		;
+#endif
 		return -EIO;
 	}
 }
@@ -550,8 +554,12 @@ int register_mtd_blktrans(struct mtd_blktrans_ops *tr)
 
 	ret = register_blkdev(tr->major, tr->name);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to register %s block device on major %d: %d\n",
 		       tr->name, tr->major, ret);
+#else
+		;
+#endif
 		mutex_unlock(&mtd_table_mutex);
 		return ret;
 	}

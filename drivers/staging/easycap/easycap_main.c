@@ -4411,7 +4411,7 @@ static int __init easycap_module_init(void)
 {
 	int k, rc;
 
-	printk(KERN_INFO "Easycap version: "EASYCAP_DRIVER_VERSION "\n");
+;
 
 	JOT(4, "begins.  %i=debug %i=bars %i=gain\n",
 		easycap_debug, easycap_bars, easycap_gain);
@@ -4424,7 +4424,7 @@ static int __init easycap_module_init(void)
 	}
 	rc = usb_register(&easycap_usb_driver);
 	if (rc)
-		printk(KERN_ERR "Easycap: usb_register failed rc=%d\n", rc);
+;
 
 	return rc;
 }

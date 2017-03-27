@@ -678,9 +678,13 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
 			return;
 		}
 		if (nr_unshown) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT
 				"BUG: Bad page map: %lu messages suppressed\n",
 				nr_unshown);
+#else
+			;
+#endif
 			nr_unshown = 0;
 		}
 		nr_shown = 0;
@@ -691,15 +695,23 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
 	mapping = vma->vm_file ? vma->vm_file->f_mapping : NULL;
 	index = linear_page_index(vma, addr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 		"BUG: Bad page map in process %s  pte:%08llx pmd:%08llx\n",
 		current->comm,
 		(long long)pte_val(pte), (long long)pmd_val(*pmd));
+#else
+	;
+#endif
 	if (page)
 		dump_page(page);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 		"addr:%p vm_flags:%08lx anon_vma:%p mapping:%p index:%lx\n",
 		(void *)addr, vma->vm_flags, vma->anon_vma, mapping, index);
+#else
+	;
+#endif
 	/*
 	 * Choose text because data symbols depend on CONFIG_KALLSYMS_ALL=y
 	 */
@@ -3970,9 +3982,13 @@ void print_vma_addr(char *prefix, unsigned long ip)
 			s = strrchr(p, '/');
 			if (s)
 				p = s+1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s[%lx+%lx]", prefix, p,
 					vma->vm_start,
 					vma->vm_end - vma->vm_start);
+#else
+			;
+#endif
 			free_page((unsigned long)buf);
 		}
 	}

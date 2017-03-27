@@ -30,10 +30,18 @@
 #define stampit() stamp("here i am")
 #define pr_devinit(fmt, args...) \
 	({ static const __devinitconst char __fmt[] = fmt; \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(__fmt, ## args); })
+#else
+	;
+#endif
 #define pr_init(fmt, args...) \
 	({ static const __initconst char __fmt[] = fmt; \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(__fmt, ## args); })
+#else
+	;
+#endif
 
 #define WATCHDOG_NAME "bfin-wdt"
 #define PFX WATCHDOG_NAME ": "
@@ -126,7 +134,11 @@ static int bfin_wdt_set_timeout(unsigned long t)
 	stamp("maxtimeout=%us newtimeout=%lus (cnt=%#x)", max_t, t, cnt);
 
 	if (t > max_t) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "timeout value is too large\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -182,8 +194,12 @@ static int bfin_wdt_release(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		bfin_wdt_stop();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		bfin_wdt_keepalive();
 	}
 	expect_close = 0;

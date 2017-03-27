@@ -181,7 +181,11 @@ static int __init dmi_enable_osi_linux(const struct dmi_system_id *d)
 }
 static int __init dmi_disable_osi_vista(const struct dmi_system_id *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+#else
+	;
+#endif
 	acpi_osi_setup("!Windows 2006");
 	acpi_osi_setup("!Windows 2006 SP1");
 	acpi_osi_setup("!Windows 2006 SP2");
@@ -189,7 +193,11 @@ static int __init dmi_disable_osi_vista(const struct dmi_system_id *d)
 }
 static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+#else
+	;
+#endif
 	acpi_osi_setup("!Windows 2009");
 	return 0;
 }

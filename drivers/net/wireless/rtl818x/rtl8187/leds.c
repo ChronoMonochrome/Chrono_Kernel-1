@@ -154,7 +154,7 @@ static int rtl8187_register_led(struct ieee80211_hw *dev,
 
 	err = led_classdev_register(&priv->udev->dev, &led->led_dev);
 	if (err) {
-		printk(KERN_INFO "LEDs: Failed to register %s\n", name);
+;
 		led->dev = NULL;
 		return err;
 	}
@@ -181,7 +181,7 @@ void rtl8187_leds_init(struct ieee80211_hw *dev, u16 custid)
 	/* According to the vendor driver, the LED operation depends on the
 	 * customer ID encoded in the EEPROM
 	 */
-	printk(KERN_INFO "rtl8187: Customer ID is 0x%02X\n", custid);
+;
 	switch (custid) {
 	case EEPROM_CID_RSVD0:
 	case EEPROM_CID_RSVD1:

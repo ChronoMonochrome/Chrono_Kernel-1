@@ -441,7 +441,7 @@ ewrk3_hw_init(struct net_device *dev, u_long iobase)
 	}
 
 	if (chksum != 0) {	/* Bad EEPROM Data! */
-		printk("%s: Device has a bad on-board EEPROM.\n", dev->name);
+;
 		return -ENXIO;
 	}
 
@@ -459,24 +459,24 @@ ewrk3_hw_init(struct net_device *dev, u_long iobase)
 
 	if (((lemac == LeMAC) && ((cmr & CMR_NO_EEPROM) != CMR_NO_EEPROM)) ||
 	    ((lemac == LeMAC2) && !(cmr & CMR_HS))) {
-		printk("%s: %s at %#4lx", dev->name, name, iobase);
+;
 		hard_strapped = 1;
 	} else if ((iobase & 0x0fff) == EWRK3_EISA_IO_PORTS) {
 		/* EISA slot address */
-		printk("%s: %s at %#4lx (EISA slot %ld)",
-		       dev->name, name, iobase, ((iobase >> 12) & 0x0f));
+//		printk("%s: %s at %#4lx (EISA slot %ld)",
+;
 	} else {	/* ISA port address */
-		printk("%s: %s at %#4lx", dev->name, name, iobase);
+;
 	}
 
-	printk(", h/w address ");
+;
 	if (lemac != LeMAC2)
 		DevicePresent(iobase);	/* need after EWRK3_INIT */
 	status = get_hw_addr(dev, eeprom_image, lemac);
-	printk("%pM\n", dev->dev_addr);
+;
 
 	if (status) {
-		printk("      which has an EEPROM CRC error.\n");
+;
 		return -ENXIO;
 	}
 
@@ -532,12 +532,12 @@ ewrk3_hw_init(struct net_device *dev, u_long iobase)
 /*          FORCE_2K_MODE; */
 
 	if (hard_strapped) {
-		printk("      is hard strapped.\n");
+;
 	} else if (mem_start) {
-		printk("      has a %dk RAM window", (int) (shmem_length >> 10));
-		printk(" at 0x%.5lx", mem_start);
+;
+;
 	} else {
-		printk("      is in I/O only mode");
+;
 	}
 
 	lp = netdev_priv(dev);
@@ -591,14 +591,14 @@ ewrk3_hw_init(struct net_device *dev, u_long iobase)
 			mdelay(20);
 			dev->irq = probe_irq_off(irq_mask);
 			if ((dev->irq) && (irqnum == dev->irq)) {
-				printk(" and uses IRQ%d.\n", dev->irq);
+;
 			} else {
 				if (!dev->irq) {
-					printk(" and failed to detect IRQ line.\n");
+;
 				} else if ((irqnum == 1) && (lemac == LeMAC2)) {
-					printk(" and an illegal IRQ line detected.\n");
+;
 				} else {
-					printk(", but incorrect IRQ line detected.\n");
+;
 				}
 				iounmap(lp->shmem);
 				return -ENXIO;
@@ -608,12 +608,12 @@ ewrk3_hw_init(struct net_device *dev, u_long iobase)
 
 #endif				/* MODULE */
 		} else {
-			printk(" and requires IRQ%d.\n", dev->irq);
+;
 		}
 	}
 
 	if (ewrk3_debug > 1) {
-		printk(version);
+;
 	}
 	/* The EWRK3-specific entries in the device structure. */
 	dev->netdev_ops = &ewrk3_netdev_ops;
@@ -643,7 +643,7 @@ static int ewrk3_open(struct net_device *dev)
 
 	if (!lp->hard_strapped) {
 		if (request_irq(dev->irq, (void *) ewrk3_interrupt, 0, "ewrk3", dev)) {
-			printk("ewrk3_open(): Requested IRQ%d is busy\n", dev->irq);
+;
 			status = -EAGAIN;
 		} else {
 
@@ -653,20 +653,20 @@ static int ewrk3_open(struct net_device *dev)
 			ewrk3_init(dev);
 
 			if (ewrk3_debug > 1) {
-				printk("%s: ewrk3 open with irq %d\n", dev->name, dev->irq);
-				printk("  physical address: %pM\n", dev->dev_addr);
+;
+;
 				if (lp->shmem_length == 0) {
-					printk("  no shared memory, I/O only mode\n");
+;
 				} else {
-					printk("  start of shared memory: 0x%08lx\n", lp->shmem_base);
-					printk("  window length: 0x%04lx\n", lp->shmem_length);
+;
+;
 				}
-				printk("  # of DRAMS: %d\n", ((inb(EWRK3_CMR) & 0x02) ? 2 : 1));
-				printk("  csr:  0x%02x\n", inb(EWRK3_CSR));
-				printk("  cr:   0x%02x\n", inb(EWRK3_CR));
-				printk("  icr:  0x%02x\n", inb(EWRK3_ICR));
-				printk("  cmr:  0x%02x\n", inb(EWRK3_CMR));
-				printk("  fmqc: 0x%02x\n", inb(EWRK3_FMQC));
+;
+;
+;
+;
+;
+;
 			}
 			netif_start_queue(dev);
 			/*
@@ -677,8 +677,8 @@ static int ewrk3_open(struct net_device *dev)
 
 		}
 	} else {
-		printk(KERN_ERR "%s: ewrk3 available for hard strapped set up only.\n", dev->name);
-		printk(KERN_ERR "      Run the 'ewrk3setup' utility or remove the hard straps.\n");
+;
+;
 		return -EINVAL;
 	}
 
@@ -737,8 +737,8 @@ static void ewrk3_timeout(struct net_device *dev)
 
 	if (!lp->hard_strapped)
 	{
-		printk(KERN_WARNING"%s: transmit timed/locked out, status %04x, resetting.\n",
-		       dev->name, inb(EWRK3_CSR));
+//		printk(KERN_WARNING"%s: transmit timed/locked out, status %04x, resetting.\n",
+;
 
 		/*
 		   ** Mask all board interrupts
@@ -958,7 +958,7 @@ static int ewrk3_rx(struct net_device *dev)
 				outb((page >> 5), EWRK3_MPR);
 			} else {
 				status = -1;
-				printk("%s: Oops - your private data area is hosed!\n", dev->name);
+;
 			}
 
 			if (!status) {
@@ -1036,7 +1036,7 @@ static int ewrk3_rx(struct net_device *dev)
 						dev->stats.rx_packets++;
 						dev->stats.rx_bytes += pkt_len;
 					} else {
-						printk("%s: Insufficient memory; nuking packet.\n", dev->name);
+;
 						dev->stats.rx_dropped++;		/* Really, deferred. */
 						break;
 					}
@@ -1047,8 +1047,8 @@ static int ewrk3_rx(struct net_device *dev)
 			 */
 			outb(page, EWRK3_FMQ);
 		} else {
-			printk("ewrk3_rx(): Illegal page number, page %d\n", page);
-			printk("ewrk3_rx(): CSR: %02x ICR: %02x FMQC: %02x\n", inb(EWRK3_CSR), inb(EWRK3_ICR), inb(EWRK3_FMQC));
+;
+;
 		}
 	}
 	return status;
@@ -1103,8 +1103,8 @@ static int ewrk3_close(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (ewrk3_debug > 1) {
-		printk("%s: Shutting down ethercard, status was %2.2x.\n",
-		       dev->name, inb(EWRK3_CSR));
+//		printk("%s: Shutting down ethercard, status was %2.2x.\n",
+;
 	}
 	/*
 	   ** We stop the EWRK3 here... mask interrupts and stop TX & RX

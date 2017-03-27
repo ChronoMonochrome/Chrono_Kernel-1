@@ -46,6 +46,7 @@ MODULE_PARM_DESC(no_poweroff, "0 (default) powers device off when not used.\n"
 static DEFINE_MUTEX(xc5000_list_mutex);
 static LIST_HEAD(hybrid_tuner_instance_list);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, fmt, arg...) if (debug >= level) \
 	printk(KERN_INFO "%s: " fmt, "xc5000", ## arg)
 
@@ -54,6 +55,9 @@ static LIST_HEAD(hybrid_tuner_instance_list);
 
 struct xc5000_priv {
 	struct tuner_i2c_props i2c_props;
+#else
+#define d;
+#endif
 	struct list_head hybrid_tuner_instance_list;
 
 	u32 if_khz;
@@ -250,7 +254,11 @@ static int xc5000_readreg(struct xc5000_priv *priv, u16 reg, u16 *val)
 	};
 
 	if (i2c_transfer(priv->i2c_props.adap, msg, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "xc5000: I2C read failed\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -268,7 +276,11 @@ static int xc5000_TunerReset(struct dvb_frontend *fe)
 	struct xc5000_priv *priv = fe->tuner_priv;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (fe->callback) {
 		ret = fe->callback(((fe->dvb) && (fe->dvb->priv)) ?
@@ -375,7 +387,11 @@ static int xc_load_i2c_sequence(struct dvb_frontend *fe, const u8 *i2c_sequence)
 
 static int xc_initialize(struct xc5000_priv *priv)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	return xc_write_reg(priv, XREG_INIT, 0);
 }
 
@@ -383,10 +399,18 @@ static int xc_SetTVStandard(struct xc5000_priv *priv,
 	u16 VideoMode, u16 AudioMode)
 {
 	int ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(0x%04x,0x%04x)\n", __func__, VideoMode, AudioMode);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() Standard = %s\n",
 		__func__,
 		XC5000_Standard[priv->video_standard].Name);
+#else
+	d;
+#endif
 
 	ret = xc_write_reg(priv, XREG_VIDEO_MODE, VideoMode);
 	if (ret == XC_RESULT_SUCCESS)
@@ -397,8 +421,12 @@ static int xc_SetTVStandard(struct xc5000_priv *priv,
 
 static int xc_SetSignalSource(struct xc5000_priv *priv, u16 rf_mode)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%d) Source = %s\n", __func__, rf_mode,
 		rf_mode == XC_RF_MODE_AIR ? "ANTENNA" : "CABLE");
+#else
+	d;
+#endif
 
 	if ((rf_mode != XC_RF_MODE_AIR) && (rf_mode != XC_RF_MODE_CABLE)) {
 		rf_mode = XC_RF_MODE_CABLE;
@@ -415,7 +443,11 @@ static int xc_set_RF_frequency(struct xc5000_priv *priv, u32 freq_hz)
 {
 	u16 freq_code;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%u)\n", __func__, freq_hz);
+#else
+	d;
+#endif
 
 	if ((freq_hz > xc5000_tuner_ops.info.frequency_max) ||
 		(freq_hz < xc5000_tuner_ops.info.frequency_min))
@@ -433,8 +465,12 @@ static int xc_set_RF_frequency(struct xc5000_priv *priv, u32 freq_hz)
 static int xc_set_IF_frequency(struct xc5000_priv *priv, u32 freq_khz)
 {
 	u32 freq_code = (freq_khz * 1024)/1000;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(freq_khz = %d) freq_code = 0x%x\n",
 		__func__, freq_khz, freq_code);
+#else
+	d;
+#endif
 
 	return xc_write_reg(priv, XREG_IF_OUT, freq_code);
 }
@@ -533,7 +569,11 @@ static int xc_tune_channel(struct xc5000_priv *priv, u32 freq_hz, int mode)
 {
 	int found = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%u)\n", __func__, freq_hz);
+#else
+	d;
+#endif
 
 	if (xc_set_RF_frequency(priv, freq_hz) != XC_RESULT_SUCCESS)
 		return 0;
@@ -554,8 +594,12 @@ static int xc5000_fwupload(struct dvb_frontend *fe)
 	int ret;
 
 	/* request the firmware, this will block and timeout */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "xc5000: waiting for firmware upload (%s)...\n",
 		XC5000_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 
 	ret = request_firmware(&fw, XC5000_DEFAULT_FIRMWARE,
 		priv->i2c_props.adap->dev.parent);
@@ -564,8 +608,12 @@ static int xc5000_fwupload(struct dvb_frontend *fe)
 		ret = XC_RESULT_RESET_FAILURE;
 		goto out;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "xc5000: firmware read %Zu bytes.\n",
 		       fw->size);
+#else
+		;
+#endif
 		ret = XC_RESULT_SUCCESS;
 	}
 
@@ -573,9 +621,17 @@ static int xc5000_fwupload(struct dvb_frontend *fe)
 		printk(KERN_ERR "xc5000: firmware incorrect size\n");
 		ret = XC_RESULT_RESET_FAILURE;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "xc5000: firmware uploading...\n");
+#else
+		;
+#endif
 		ret = xc_load_i2c_sequence(fe,  fw->data);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "xc5000: firmware upload complete...\n");
+#else
+		;
+#endif
 	}
 
 out:
@@ -602,30 +658,58 @@ static void xc_debug_dump(struct xc5000_priv *priv)
 	xc_wait(100);
 
 	xc_get_ADC_Envelope(priv,  &adc_envelope);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** ADC envelope (0-1023) = %d\n", adc_envelope);
+#else
+	d;
+#endif
 
 	xc_get_frequency_error(priv, &freq_error_hz);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** Frequency error = %d Hz\n", freq_error_hz);
+#else
+	d;
+#endif
 
 	xc_get_lock_status(priv,  &lock_status);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** Lock status (0-Wait, 1-Locked, 2-No-signal) = %d\n",
 		lock_status);
+#else
+	d;
+#endif
 
 	xc_get_version(priv,  &hw_majorversion, &hw_minorversion,
 		&fw_majorversion, &fw_minorversion);
 	xc_get_buildversion(priv,  &fw_buildversion);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** HW: V%02x.%02x, FW: V%02x.%02x.%04x\n",
 		hw_majorversion, hw_minorversion,
 		fw_majorversion, fw_minorversion, fw_buildversion);
+#else
+	d;
+#endif
 
 	xc_get_hsync_freq(priv,  &hsync_freq_hz);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** Horizontal sync frequency = %d Hz\n", hsync_freq_hz);
+#else
+	d;
+#endif
 
 	xc_get_frame_lines(priv,  &frame_lines);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** Frame lines = %d\n", frame_lines);
+#else
+	d;
+#endif
 
 	xc_get_quality(priv,  &quality);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "*** Quality (0:<8dB, 7:>56dB) = %d\n", quality);
+#else
+	d;
+#endif
 }
 
 /*
@@ -645,19 +729,35 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 
 	if (xc5000_is_firmware_loaded(fe) != XC_RESULT_SUCCESS) {
 		if (xc_load_fw_and_init_tuner(fe) != XC_RESULT_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "Unable to load firmware and init tuner\n");
+#else
+			d;
+#endif
 			return -EINVAL;
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() frequency=%d (Hz)\n", __func__, params->frequency);
+#else
+	d;
+#endif
 
 	if (fe->ops.info.type == FE_ATSC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "%s() ATSC\n", __func__);
+#else
+		d;
+#endif
 		switch (params->u.vsb.modulation) {
 		case VSB_8:
 		case VSB_16:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "%s() VSB modulation\n", __func__);
+#else
+			d;
+#endif
 			priv->rf_mode = XC_RF_MODE_AIR;
 			priv->freq_hz = params->frequency - 1750000;
 			priv->bandwidth = BANDWIDTH_6_MHZ;
@@ -666,7 +766,11 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 		case QAM_64:
 		case QAM_256:
 		case QAM_AUTO:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "%s() QAM modulation\n", __func__);
+#else
+			d;
+#endif
 			priv->rf_mode = XC_RF_MODE_CABLE;
 			priv->freq_hz = params->frequency - 1750000;
 			priv->bandwidth = BANDWIDTH_6_MHZ;
@@ -676,7 +780,11 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 			return -EINVAL;
 		}
 	} else if (fe->ops.info.type == FE_OFDM) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "%s() OFDM\n", __func__);
+#else
+		d;
+#endif
 		switch (params->u.ofdm.bandwidth) {
 		case BANDWIDTH_6_MHZ:
 			priv->bandwidth = BANDWIDTH_6_MHZ;
@@ -704,7 +812,11 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 		case QAM_32:
 		case QAM_64:
 		case QAM_128:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "%s() QAM modulation\n", __func__);
+#else
+			d;
+#endif
 			priv->rf_mode = XC_RF_MODE_CABLE;
 			/*
 			 * Using a 8MHz bandwidth sometimes fail
@@ -722,7 +834,11 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 			}
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "%s() Unsupported QAM type\n", __func__);
+#else
+			d;
+#endif
 			return -EINVAL;
 		}
 	} else {
@@ -730,8 +846,12 @@ static int xc5000_set_params(struct dvb_frontend *fe,
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() frequency=%d (compensated)\n",
 		__func__, priv->freq_hz);
+#else
+	d;
+#endif
 
 	ret = xc_SetSignalSource(priv, priv->rf_mode);
 	if (ret != XC_RESULT_SUCCESS) {
@@ -780,8 +900,12 @@ static int xc5000_is_firmware_loaded(struct dvb_frontend *fe)
 			ret = XC_RESULT_SUCCESS;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() returns %s id = 0x%x\n", __func__,
 		ret == XC_RESULT_SUCCESS ? "True" : "False", id);
+#else
+	d;
+#endif
 	return ret;
 }
 
@@ -791,8 +915,12 @@ static int xc5000_set_tv_freq(struct dvb_frontend *fe,
 	struct xc5000_priv *priv = fe->tuner_priv;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() frequency=%d (in units of 62.5khz)\n",
 		__func__, params->frequency);
+#else
+	d;
+#endif
 
 	/* Fix me: it could be air. */
 	priv->rf_mode = params->mode;
@@ -879,11 +1007,19 @@ static int xc5000_set_radio_freq(struct dvb_frontend *fe,
 	int ret = -EINVAL;
 	u8 radio_input;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() frequency=%d (in units of khz)\n",
 		__func__, params->frequency);
+#else
+	d;
+#endif
 
 	if (priv->radio_input == XC5000_RADIO_NOT_CONFIGURED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "%s() radio input not configured\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -894,8 +1030,12 @@ static int xc5000_set_radio_freq(struct dvb_frontend *fe,
 	else if  (priv->radio_input == XC5000_RADIO_FM1_MONO)
 		radio_input = FM_Radio_INPUT1_MONO;
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "%s() unknown radio input %d\n", __func__,
 			priv->radio_input);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -941,7 +1081,11 @@ static int xc5000_set_analog_params(struct dvb_frontend *fe,
 
 	if (xc5000_is_firmware_loaded(fe) != XC_RESULT_SUCCESS) {
 		if (xc_load_fw_and_init_tuner(fe) != XC_RESULT_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(1, "Unable to load firmware and init tuner\n");
+#else
+			d;
+#endif
 			return -EINVAL;
 		}
 	}
@@ -963,7 +1107,11 @@ static int xc5000_set_analog_params(struct dvb_frontend *fe,
 static int xc5000_get_frequency(struct dvb_frontend *fe, u32 *freq)
 {
 	struct xc5000_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	*freq = priv->freq_hz;
 	return 0;
 }
@@ -971,7 +1119,11 @@ static int xc5000_get_frequency(struct dvb_frontend *fe, u32 *freq)
 static int xc5000_get_bandwidth(struct dvb_frontend *fe, u32 *bw)
 {
 	struct xc5000_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*bw = priv->bandwidth;
 	return 0;
@@ -984,7 +1136,11 @@ static int xc5000_get_status(struct dvb_frontend *fe, u32 *status)
 
 	xc_get_lock_status(priv, &lock_status);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() lock_status = 0x%08x\n", __func__, lock_status);
+#else
+	d;
+#endif
 
 	*status = lock_status;
 
@@ -1022,7 +1178,11 @@ static int xc5000_sleep(struct dvb_frontend *fe)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Avoid firmware reload on slow devices */
 	if (no_poweroff)
@@ -1044,7 +1204,11 @@ static int xc5000_sleep(struct dvb_frontend *fe)
 static int xc5000_init(struct dvb_frontend *fe)
 {
 	struct xc5000_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (xc_load_fw_and_init_tuner(fe) != XC_RESULT_SUCCESS) {
 		printk(KERN_ERR "xc5000: Unable to initialise tuner\n");
@@ -1061,7 +1225,11 @@ static int xc5000_release(struct dvb_frontend *fe)
 {
 	struct xc5000_priv *priv = fe->tuner_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	mutex_lock(&xc5000_list_mutex);
 
@@ -1080,7 +1248,11 @@ static int xc5000_set_config(struct dvb_frontend *fe, void *priv_cfg)
 	struct xc5000_priv *priv = fe->tuner_priv;
 	struct xc5000_config *p = priv_cfg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (p->if_khz)
 		priv->if_khz = p->if_khz;
@@ -1120,9 +1292,13 @@ struct dvb_frontend *xc5000_attach(struct dvb_frontend *fe,
 	int instance;
 	u16 id = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%d-%04x)\n", __func__,
 		i2c ? i2c_adapter_id(i2c) : -1,
 		cfg ? cfg->i2c_address : -1);
+#else
+	d;
+#endif
 
 	mutex_lock(&xc5000_list_mutex);
 
@@ -1162,18 +1338,34 @@ struct dvb_frontend *xc5000_attach(struct dvb_frontend *fe,
 
 	switch (id) {
 	case XC_PRODUCT_ID_FW_LOADED:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"xc5000: Successfully identified at address 0x%02x\n",
 			cfg->i2c_address);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"xc5000: Firmware has been loaded previously\n");
+#else
+		;
+#endif
 		break;
 	case XC_PRODUCT_ID_FW_NOT_LOADED:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"xc5000: Successfully identified at address 0x%02x\n",
 			cfg->i2c_address);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"xc5000: Firmware has not been loaded previously\n");
+#else
+		;
+#endif
 		break;
 	default:
 		printk(KERN_ERR

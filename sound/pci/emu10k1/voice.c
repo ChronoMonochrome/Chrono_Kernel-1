@@ -54,8 +54,12 @@ static int voice_alloc(struct snd_emu10k1 *emu, int type, int number,
 	first_voice = last_voice = 0;
 	for (i = emu->next_free_voice, j = 0; j < NUM_G ; i += number, j += number) {
 		/*
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "i %d j %d next free %d!\n",
 		       i, j, emu->next_free_voice);
+#else
+		;
+#endif
 		*/
 		i %= NUM_G;
 
@@ -74,7 +78,11 @@ static int voice_alloc(struct snd_emu10k1 *emu, int type, int number,
 			}
 		}
 		if (!skip) {
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk(KERN_DEBUG "allocated voice %d\n", i); */
+#else
+			/* ;
+#endif
 			first_voice = i;
 			last_voice = (i + number) % NUM_G;
 			emu->next_free_voice = last_voice;
@@ -88,8 +96,12 @@ static int voice_alloc(struct snd_emu10k1 *emu, int type, int number,
 	for (i = 0; i < number; i++) {
 		voice = &emu->voices[(first_voice + i) % NUM_G];
 		/*
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(kERN_DEBUG "voice alloc - %i, %i of %i\n",
 		       voice->number, idx-first_voice+1, number);
+#else
+		;
+#endif
 		*/
 		voice->use = 1;
 		switch (type) {

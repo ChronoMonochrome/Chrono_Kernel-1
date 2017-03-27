@@ -120,9 +120,9 @@ static void prepare_reply_buffer(struct rpc_rqst *req, struct page **pages,
  */
 static void print_overflow_msg(const char *func, const struct xdr_stream *xdr)
 {
-	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
-		"Remaining buffer length is %tu words.\n",
-		func, xdr->end - xdr->p);
+//	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
+//		"Remaining buffer length is %tu words.\n",
+;
 }
 
 
@@ -221,7 +221,7 @@ static int decode_inline_filename3(struct xdr_stream *xdr,
 	return 0;
 
 out_nametoolong:
-	dprintk("NFS: returned filename too long: %u\n", count);
+;
 	return -ENAMETOOLONG;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -263,11 +263,11 @@ static int decode_nfspath3(struct xdr_stream *xdr)
 	return 0;
 
 out_nametoolong:
-	dprintk("NFS: returned pathname too long: %u\n", count);
+;
 	return -ENAMETOOLONG;
 out_cheating:
-	dprintk("NFS: server cheating in pathname result: "
-		"count %u > recvd %u\n", count, recvd);
+//	dprintk("NFS: server cheating in pathname result: "
+;
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -468,7 +468,7 @@ static int decode_nfs_fh3(struct xdr_stream *xdr, struct nfs_fh *fh)
 	memcpy(fh->data, p, length);
 	return 0;
 out_toobig:
-	dprintk("NFS: file handle size (%u) too big\n", length);
+;
 	return -E2BIG;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -1604,12 +1604,12 @@ out:
 	result->count = count;
 	return count;
 out_mismatch:
-	dprintk("NFS: READ count doesn't match length of opaque: "
-		"count %u != ocount %u\n", count, ocount);
+//	dprintk("NFS: READ count doesn't match length of opaque: "
+;
 	return -EIO;
 out_cheating:
-	dprintk("NFS: server cheating in read result: "
-		"count %u > recvd %u\n", count, recvd);
+//	dprintk("NFS: server cheating in read result: "
+;
 	count = recvd;
 	eof = 0;
 	goto out;
@@ -1681,7 +1681,7 @@ static int decode_write3resok(struct xdr_stream *xdr,
 	memcpy(result->verf->verifier, p, NFS3_WRITEVERFSIZE);
 	return result->count;
 out_badvalue:
-	dprintk("NFS: bad stable_how value: %u\n", result->verf->committed);
+;
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -1998,7 +1998,7 @@ out_overflow:
 	print_overflow_msg(__func__, xdr);
 	return -EAGAIN;
 out_truncated:
-	dprintk("NFS: directory entry contains invalid file handle\n");
+;
 	*entry = old;
 	return -EAGAIN;
 }
@@ -2046,8 +2046,8 @@ out:
 	xdr_read_pages(xdr, pglen);
 	return pglen;
 out_cheating:
-	dprintk("NFS: server cheating in readdir result: "
-		"pglen %u > recvd %u\n", pglen, recvd);
+//	dprintk("NFS: server cheating in readdir result: "
+;
 	pglen = recvd;
 	goto out;
 }

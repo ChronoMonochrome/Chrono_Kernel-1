@@ -191,9 +191,9 @@ static int __init ultra32_probe1(struct net_device *dev, int ioaddr)
 
 	media = inb(ioaddr + ULTRA32_CFG7) & 0x03;
 	edge = inb(ioaddr + ULTRA32_CFG5) & 0x08;
-	printk("SMC Ultra32 in EISA Slot %d, Media: %s, %s IRQs.\n",
-		ioaddr >> 12, ifmap[media],
-		(edge ? "Edge Triggered" : "Level Sensitive"));
+//	printk("SMC Ultra32 in EISA Slot %d, Media: %s, %s IRQs.\n",
+//		ioaddr >> 12, ifmap[media],
+;
 
 	idreg = inb(ioaddr + 7);
 	reg4 = inb(ioaddr + 4) & 0x7f;
@@ -215,15 +215,15 @@ static int __init ultra32_probe1(struct net_device *dev, int ioaddr)
 	}
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
 	model_name = "SMC Ultra32";
 
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = inb(ioaddr + 8 + i);
 
-	printk("%s: %s at 0x%X, %pM",
-	       dev->name, model_name, ioaddr, dev->dev_addr);
+//	printk("%s: %s at 0x%X, %pM",
+;
 
 	/* Switch from the station address to the alternate register set and
 	   read the useful registers there. */
@@ -240,20 +240,20 @@ static int __init ultra32_probe1(struct net_device *dev, int ioaddr)
 	outb(reg4, ioaddr + 4);
 
 	if ((inb(ioaddr + ULTRA32_CFG5) & 0x40) == 0) {
-		printk("\nsmc-ultra32: Card RAM is disabled!  "
-		       "Run EISA config utility.\n");
+//		printk("\nsmc-ultra32: Card RAM is disabled!  "
+;
 		retval = -ENODEV;
 		goto out;
 	}
 	if ((inb(ioaddr + ULTRA32_CFG2) & 0x04) == 0)
-		printk("\nsmc-ultra32: Ignoring Bus-Master enable bit.  "
-		       "Run EISA config utility.\n");
+//		printk("\nsmc-ultra32: Ignoring Bus-Master enable bit.  "
+;
 
 	if (dev->irq < 2) {
 		unsigned char irqmap[] = {0, 9, 3, 5, 7, 10, 11, 15};
 		int irq = irqmap[inb(ioaddr + ULTRA32_CFG5) & 0x07];
 		if (irq == 0) {
-			printk(", failed to detect IRQ line.\n");
+;
 			retval = -EAGAIN;
 			goto out;
 		}
@@ -277,14 +277,14 @@ static int __init ultra32_probe1(struct net_device *dev, int ioaddr)
 
 	ei_status.mem = ioremap(dev->mem_start, 0x2000);
 	if (!ei_status.mem) {
-		printk(", failed to ioremap.\n");
+;
 		retval = -ENOMEM;
 		goto out;
 	}
 	dev->mem_end = dev->mem_start + 0x1fff;
 
-	printk(", IRQ %d, 32KB memory, 8KB window at 0x%lx-0x%lx.\n",
-	       dev->irq, dev->mem_start, dev->mem_end);
+//	printk(", IRQ %d, 32KB memory, 8KB window at 0x%lx-0x%lx.\n",
+;
 	ei_status.block_input = &ultra32_block_input;
 	ei_status.block_output = &ultra32_block_output;
 	ei_status.get_8390_hdr = &ultra32_get_8390_hdr;
@@ -328,7 +328,7 @@ static int ultra32_close(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (ei_debug > 1)
-		printk("%s: Shutting down ethercard.\n", dev->name);
+;
 
 	outb(0x00, ioaddr + ULTRA32_CFG6); /* Disable Interrupts. */
 	outb(0x00, ioaddr + 6);		/* Disable interrupts. */
@@ -344,14 +344,14 @@ static void ultra32_reset_8390(struct net_device *dev)
 	int ioaddr = dev->base_addr - ULTRA32_NIC_OFFSET; /* ASIC base addr */
 
 	outb(ULTRA32_RESET, ioaddr);
-	if (ei_debug > 1) printk("resetting Ultra32, t=%ld...", jiffies);
+;
 	ei_status.txing = 0;
 
 	outb(ULTRA32_MEMENB, ioaddr); /* Enable Shared Memory. */
 	outb(0x80, ioaddr + ULTRA32_CFG6); /* Enable Interrupts. */
 	outb(0x84, ioaddr + 5);	/* Enable MEM16 & Disable Bus Master. */
 	outb(0x01, ioaddr + 6);	/* Enable Interrupts. */
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /* Grab the 8390 specific header. Similar to the block_input routine, but
@@ -443,7 +443,7 @@ int __init init_module(void)
 	}
 	if (found)
 		return 0;
-	printk(KERN_WARNING "smc-ultra32.c: No SMC Ultra32 found.\n");
+;
 	return -ENXIO;
 }
 

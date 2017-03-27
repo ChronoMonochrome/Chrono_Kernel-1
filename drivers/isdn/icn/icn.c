@@ -116,7 +116,11 @@ static inline void
 icn_map_channel(icn_card * card, int channel)
 {
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_map_channel %d %d\n", dev.channel, channel);
+#else
+	;
+#endif
 #endif
 	if ((channel == dev.channel) && (card == dev.mcard))
 		return;
@@ -127,7 +131,11 @@ icn_map_channel(icn_card * card, int channel)
 	dev.mcard = card;
 	dev.channel = channel;
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_map_channel done\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -144,18 +152,30 @@ icn_lock_channel(icn_card * card, int channel)
 	register int retval;
 
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_lock_channel %d\n", channel);
+#else
+	;
+#endif
 #endif
 	if ((dev.channel == channel) && (card == dev.mcard)) {
 		dev.chanlock++;
 		retval = 1;
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "icn_lock_channel %d OK\n", channel);
+#else
+		;
+#endif
 #endif
 	} else {
 		retval = 0;
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "icn_lock_channel %d FAILED, dc=%d\n", channel, dev.channel);
+#else
+		;
+#endif
 #endif
 	}
 	return retval;
@@ -170,7 +190,11 @@ static inline void
 __icn_release_channel(void)
 {
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_release_channel l=%d\n", dev.chanlock);
+#else
+	;
+#endif
 #endif
 	if (dev.chanlock > 0)
 		dev.chanlock--;
@@ -199,8 +223,12 @@ icn_trymaplock_channel(icn_card * card, int channel)
 	ulong flags;
 
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "trymaplock c=%d dc=%d l=%d\n", channel, dev.channel,
 	       dev.chanlock);
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&dev.devlock, flags);
 	if ((!dev.chanlock) ||
@@ -209,13 +237,21 @@ icn_trymaplock_channel(icn_card * card, int channel)
 		icn_map_channel(card, channel);
 		spin_unlock_irqrestore(&dev.devlock, flags);
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "trymaplock %d OK\n", channel);
+#else
+		;
+#endif
 #endif
 		return 1;
 	}
 	spin_unlock_irqrestore(&dev.devlock, flags);
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "trymaplock %d FAILED\n", channel);
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -230,7 +266,11 @@ icn_maprelease_channel(icn_card * card, int channel)
 	ulong flags;
 
 #ifdef MAP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "map_release c=%d l=%d\n", channel, dev.chanlock);
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&dev.devlock, flags);
 	if (dev.chanlock > 0)
@@ -257,10 +297,14 @@ icn_pollbchan_receive(int channel, icn_card * card)
 		while (rbavl) {
 			cnt = readb(&rbuf_l);
 			if ((card->rcvidx[channel] + cnt) > 4000) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "icn: (%s) bogus packet on ch%d, dropping.\n",
 				       CID,
 				       channel + 1);
+#else
+				;
+#endif
 				card->rcvidx[channel] = 0;
 				eflag = 0;
 			} else {
@@ -274,7 +318,11 @@ icn_pollbchan_receive(int channel, icn_card * card)
 			if (!eflag) {
 				if ((cnt = card->rcvidx[channel])) {
 					if (!(skb = dev_alloc_skb(cnt))) {
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "icn: receive out of memory\n");
+#else
+						;
+#endif
 						break;
 					}
 					memcpy(skb_put(skb, cnt), card->rcvbuf[channel], cnt);
@@ -634,18 +682,30 @@ icn_polldchan(unsigned long data)
 						u_char vstr[10];
 						u_char *q = vstr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "icn: (%s) %s\n", CID, p);
+#else
+						;
+#endif
 						if (!strncmp(p + 7, "TC", 2)) {
 							card->ptype = ISDN_PTYPE_1TR6;
 							card->interface.features |= ISDN_FEATURE_P_1TR6;
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO
 							       "icn: (%s) 1TR6-Protocol loaded and running\n", CID);
+#else
+							;
+#endif
 						}
 						if (!strncmp(p + 7, "EC", 2)) {
 							card->ptype = ISDN_PTYPE_EURO;
 							card->interface.features |= ISDN_FEATURE_P_EURO;
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO
 							       "icn: (%s) Euro-Protocol loaded and running\n", CID);
+#else
+							;
+#endif
 						}
 						p = strstr(card->imsg, "BRV") + 3;
 						while (*p) {
@@ -709,8 +769,12 @@ icn_sendbuf(int channel, int ack, struct sk_buff *skb, icn_card * card)
 	struct sk_buff *nskb;
 
 	if (len > 4000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "icn: Send packet too large\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (len) {
@@ -750,24 +814,40 @@ icn_check_loader(int cardnumber)
 
 	while (1) {
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Loader %d ?\n", cardnumber);
+#else
+		;
+#endif
 #endif
 		if (readb(&dev.shmem->data_control.scns) ||
 		    readb(&dev.shmem->data_control.scnr)) {
 			if (timer++ > 5) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "icn: Boot-Loader %d timed out.\n",
 				       cardnumber);
+#else
+				;
+#endif
 				icn_release_channel();
 				return -EIO;
 			}
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Loader %d TO?\n", cardnumber);
+#else
+			;
+#endif
 #endif
 			msleep_interruptible(ICN_BOOT_TIMEOUT1);
 		} else {
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Loader %d OK\n", cardnumber);
+#else
+			;
+#endif
 #endif
 			icn_release_channel();
 			return 0;
@@ -787,7 +867,11 @@ icn_check_loader(int cardnumber)
 #ifdef BOOT_DEBUG
 #define SLEEP(sec) { \
 int slsec = sec; \
+#ifdef CONFIG_DEBUG_PRINTK
   printk(KERN_DEBUG "SLEEP(%d)\n",slsec); \
+#else
+  ;
+#endif
   while (slsec) { \
     msleep_interruptible(1000); \
     slsec--; \
@@ -805,10 +889,18 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	unsigned long flags;
 
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_loadboot called, buffaddr=%08lx\n", (ulong) buffer);
+#else
+	;
+#endif
 #endif
 	if (!(codebuf = kmalloc(ICN_CODE_STAGE1, GFP_KERNEL))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "icn: Could not allocate code buffer\n");
+#else
+		;
+#endif
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -818,11 +910,15 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	}
 	if (!card->rvalid) {
 		if (!request_region(card->port, ICN_PORTLEN, card->regname)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "icn: (%s) ports 0x%03x-0x%03x in use.\n",
 			       CID,
 			       card->port,
 			       card->port + ICN_PORTLEN);
+#else
+			;
+#endif
 			ret = -EBUSY;
 			goto out_kfree;
 		}
@@ -832,8 +928,12 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	}
 	if (!dev.mvalid) {
 		if (!request_mem_region(dev.memaddr, 0x4000, "icn-isdn (all cards)")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "icn: memory at 0x%08lx in use.\n", dev.memaddr);
+#else
+			;
+#endif
 			ret = -EBUSY;
 			goto out_kfree;
 		}
@@ -845,11 +945,19 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	icn_shiftout(ICN_CFG, 0x0f, 3, 4);	/* Windowsize= 16k  */
 	icn_shiftout(ICN_CFG, dev.memaddr, 23, 10);	/* Set RAM-Addr.    */
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "shmem=%08lx\n", dev.memaddr);
+#else
+	;
+#endif
 #endif
 	SLEEP(1);
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Map Bank 0\n");
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&dev.devlock, flags);
 	icn_map_channel(card, 0);	/* Select Bank 0    */
@@ -858,12 +966,20 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	SLEEP(1);
 	memcpy_toio(dev.shmem, codebuf, ICN_CODE_STAGE1);	/* Copy code        */
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Bootloader transferred\n");
+#else
+	;
+#endif
 #endif
 	if (card->doubleS0) {
 		SLEEP(1);
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Map Bank 8\n");
+#else
+		;
+#endif
 #endif
 		spin_lock_irqsave(&dev.devlock, flags);
 		__icn_release_channel();
@@ -873,7 +989,11 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 		SLEEP(1);
 		memcpy_toio(dev.shmem, codebuf, ICN_CODE_STAGE1);	/* Copy code        */
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Bootloader transferred\n");
+#else
+		;
+#endif
 #endif
 	}
 	SLEEP(1);
@@ -887,7 +1007,11 @@ icn_loadboot(u_char __user * buffer, icn_card * card)
 	}
 	/* reached only, if we have a Double-S0-Card */
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Map Bank 0\n");
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&dev.devlock, flags);
 	icn_map_channel(card, 0);	/* Select Bank 0   */
@@ -913,7 +1037,11 @@ icn_loadproto(u_char __user * buffer, icn_card * card)
 	unsigned long flags;
 
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "icn_loadproto called\n");
+#else
+	;
+#endif
 #endif
 	if (!access_ok(VERIFY_READ, buffer, ICN_CODE_STAGE2))
 		return -EFAULT;
@@ -943,7 +1071,11 @@ icn_loadproto(u_char __user * buffer, icn_card * card)
 			timer = 0;
 		} else {
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "boot 2 !sbfree\n");
+#else
+			;
+#endif
 #endif
 			if (timer++ > 5) {
 				icn_maprelease_channel(card, 0);
@@ -957,27 +1089,47 @@ icn_loadproto(u_char __user * buffer, icn_card * card)
 	while (1) {
 		if (readb(&cmd_o) || readb(&cmd_i)) {
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Proto?\n");
+#else
+			;
+#endif
 #endif
 			if (timer++ > 5) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "icn: (%s) Protocol timed out.\n",
 				       CID);
+#else
+				;
+#endif
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Proto TO!\n");
+#else
+				;
+#endif
 #endif
 				icn_maprelease_channel(card, 0);
 				return -EIO;
 			}
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Proto TO?\n");
+#else
+			;
+#endif
 #endif
 			msleep_interruptible(ICN_BOOT_TIMEOUT1);
 		} else {
 			if ((card->secondhalf) || (!card->doubleS0)) {
 #ifdef BOOT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Proto loaded, install poll-timer %d\n",
 				       card->secondhalf);
+#else
+				;
+#endif
 #endif
 				spin_lock_irqsave(&card->lock, flags);
 				init_timer(&card->st_timer);
@@ -1081,7 +1233,11 @@ icn_writecmd(const u_char * buf, int len, int user, icn_card * card)
 			break;
 	}
 	if (len && (!user))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "icn: writemsg incomplete!\n");
+#else
+		;
+#endif
 	cmd.command = ISDN_STAT_STAVAIL;
 	cmd.driver = card->myid;
 	cmd.arg = ocount;
@@ -1135,11 +1291,15 @@ icn_disable_cards(void)
 
 	while (card) {
 		if (!request_region(card->port, ICN_PORTLEN, "icn-isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "icn: (%s) ports 0x%03x-0x%03x in use.\n",
 			       CID,
 			       card->port,
 			       card->port + ICN_PORTLEN);
+#else
+			;
+#endif
 		} else {
 			OUTB_P(0, ICN_RUN);	/* Reset Controller     */
 			OUTB_P(0, ICN_MAPRAM);	/* Disable RAM          */
@@ -1168,9 +1328,13 @@ icn_command(isdn_ctrl * c, icn_card * card)
 				case ICN_IOCTL_SETMMIO:
 					if (dev.memaddr != (a & 0x0ffc000)) {
 						if (!request_mem_region(a & 0x0ffc000, 0x4000, "icn-isdn (all cards)")) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_WARNING
 							       "icn: memory at 0x%08lx in use.\n",
 							       a & 0x0ffc000);
+#else
+							;
+#endif
 							return -EINVAL;
 						}
 						release_mem_region(a & 0x0ffc000, 0x4000);
@@ -1183,10 +1347,14 @@ icn_command(isdn_ctrl * c, icn_card * card)
 						dev.mvalid = 0;
 						dev.memaddr = a & 0x0ffc000;
 						spin_unlock_irqrestore(&card->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO
 						       "icn: (%s) mmio set to 0x%08lx\n",
 						       CID,
 						       dev.memaddr);
+#else
+						;
+#endif
 					}
 					break;
 				case ICN_IOCTL_GETMMIO:
@@ -1198,9 +1366,13 @@ icn_command(isdn_ctrl * c, icn_card * card)
 					    || a == 0x348 || a == 0x358 || a == 0x368) {
 						if (card->port != (unsigned short) a) {
 							if (!request_region((unsigned short) a, ICN_PORTLEN, "icn-isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_WARNING
 								       "icn: (%s) ports 0x%03x-0x%03x in use.\n",
 								       CID, (int) a, (int) a + ICN_PORTLEN);
+#else
+								;
+#endif
 								return -EINVAL;
 							}
 							release_region((unsigned short) a, ICN_PORTLEN);
@@ -1215,9 +1387,13 @@ icn_command(isdn_ctrl * c, icn_card * card)
 								card->other->rvalid = 0;
 							}
 							spin_unlock_irqrestore(&card->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO
 							       "icn: (%s) port set to 0x%03x\n",
 							CID, card->port);
+#else
+							;
+#endif
 						}
 					} else
 						return -EINVAL;
@@ -1275,9 +1451,13 @@ icn_command(isdn_ctrl * c, icn_card * card)
 							sprintf(cbuf, "00;FV2ON\n01;EAZ%c\n02;EAZ%c\n",
 								(a & 1)?'1':'C', (a & 2)?'2':'C');
 							i = icn_writecmd(cbuf, strlen(cbuf), 0, card);
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO
 							       "icn: (%s) Leased-line mode enabled\n",
 							       CID);
+#else
+							;
+#endif
 							cmd.command = ISDN_STAT_RUN;
 							cmd.driver = card->myid;
 							cmd.arg = 0;
@@ -1288,9 +1468,13 @@ icn_command(isdn_ctrl * c, icn_card * card)
 							card->leased = 0;
 							sprintf(cbuf, "00;FV2OFF\n");
 							i = icn_writecmd(cbuf, strlen(cbuf), 0, card);
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO
 							       "icn: (%s) Leased-line mode disabled\n",
 							       CID);
+#else
+							;
+#endif
 							cmd.command = ISDN_STAT_RUN;
 							cmd.driver = card->myid;
 							cmd.arg = 0;
@@ -1522,8 +1706,12 @@ icn_initcard(int port, char *id)
 	int i;
 
 	if (!(card = kzalloc(sizeof(icn_card), GFP_KERNEL))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "icn: (%s) Could not allocate card-struct.\n", id);
+#else
+		;
+#endif
 		return (icn_card *) 0;
 	}
 	spin_lock_init(&card->lock);
@@ -1553,8 +1741,12 @@ icn_initcard(int port, char *id)
 	cards = card;
 	if (!register_isdn(&card->interface)) {
 		cards = cards->next;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "icn: Unable to register %s\n", id);
+#else
+		;
+#endif
 		kfree(card);
 		return (icn_card *) 0;
 	}
@@ -1573,15 +1765,23 @@ icn_addcard(int port, char *id1, char *id2)
 		return -EIO;
 	}
 	if (!strlen(id2)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "icn: (%s) ICN-2B, port 0x%x added\n",
 		       card->interface.id, port);
+#else
+		;
+#endif
 		return 0;
 	}
 	if (!(card2 = icn_initcard(port, id2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "icn: (%s) half ICN-4B, port 0x%x added\n",
 		       card2->interface.id, port);
+#else
+		;
+#endif
 		return 0;
 	}
 	card->doubleS0 = 1;
@@ -1590,9 +1790,13 @@ icn_addcard(int port, char *id1, char *id2)
 	card2->doubleS0 = 1;
 	card2->secondhalf = 1;
 	card2->other = card;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "icn: (%s and %s) ICN-4B, port 0x%x added\n",
 	       card->interface.id, card2->interface.id, port);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1644,8 +1848,12 @@ static int __init icn_init(void)
 			*p = 0;
 	} else
 		strcpy(rev, " ??? ");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "ICN-ISDN-driver Rev%smem=0x%08lx\n", rev,
 	       dev.memaddr);
+#else
+	;
+#endif
 	return (icn_addcard(portbase, icn_id, icn_id2));
 }
 
@@ -1688,7 +1896,11 @@ static void __exit icn_exit(void)
 		iounmap(dev.shmem);
 		release_mem_region(dev.memaddr, 0x4000);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "ICN-ISDN-driver unloaded\n");
+#else
+	;
+#endif
 }
 
 module_init(icn_init);

@@ -765,10 +765,10 @@ static int ks959_probe(struct usb_interface *intf,
 	kingsun->speed_setuprequest->wLength =
 	    cpu_to_le16(sizeof(struct ks959_speedparams));
 
-	printk(KERN_INFO "KingSun KS-959 IRDA/USB found at address %d, "
-	       "Vendor: %x, Product: %x\n",
-	       dev->devnum, le16_to_cpu(dev->descriptor.idVendor),
-	       le16_to_cpu(dev->descriptor.idProduct));
+//	printk(KERN_INFO "KingSun KS-959 IRDA/USB found at address %d, "
+//	       "Vendor: %x, Product: %x\n",
+//	       dev->devnum, le16_to_cpu(dev->descriptor.idVendor),
+;
 
 	/* Initialize QoS for this device */
 	irda_init_max_qos_capabilies(&kingsun->qos);

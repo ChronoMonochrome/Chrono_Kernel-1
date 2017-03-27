@@ -825,7 +825,11 @@ static int __init pnx8xxx_serial_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: PNX8XXX driver\n");
+#else
+	;
+#endif
 
 	pnx8xxx_init_ports();
 

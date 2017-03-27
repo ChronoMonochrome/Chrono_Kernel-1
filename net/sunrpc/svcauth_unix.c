@@ -751,12 +751,12 @@ svcauth_null_accept(struct svc_rqst *rqstp, __be32 *authp)
 		return SVC_GARBAGE;
 
 	if (svc_getu32(argv) != 0) {
-		dprintk("svc: bad null cred\n");
+;
 		*authp = rpc_autherr_badcred;
 		return SVC_DENIED;
 	}
 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
-		dprintk("svc: bad null verf\n");
+;
 		*authp = rpc_autherr_badverf;
 		return SVC_DENIED;
 	}

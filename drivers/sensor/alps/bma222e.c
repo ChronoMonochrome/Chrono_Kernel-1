@@ -156,7 +156,11 @@ static int bma222e_power_on(void)
 {
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", __func__);
+#else
+	;
+#endif
 
 	if (bma222e_power.regulator_vdd) {
 		err = regulator_enable(bma222e_power.regulator_vdd);
@@ -182,7 +186,11 @@ static int bma222e_power_off(void)
 {
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", __func__);
+#else
+	;
+#endif
 
 	if (bma222e_power.regulator_vdd) {
 		err = regulator_disable(bma222e_power.regulator_vdd);

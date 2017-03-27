@@ -24,8 +24,12 @@ int setup_fault_attr(struct fault_attr *attr, char *str)
 	/* "<interval>,<probability>,<space>,<times>" */
 	if (sscanf(str, "%lu,%lu,%d,%d",
 			&interval, &probability, &space, &times) < 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"FAULT_INJECTION: failed to parse arguments\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -41,7 +45,11 @@ EXPORT_SYMBOL_GPL(setup_fault_attr);
 static void fail_dump(struct fault_attr *attr)
 {
 	if (attr->verbose > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure\n");
+#else
+		;
+#endif
 	if (attr->verbose > 1)
 		dump_stack();
 }

@@ -612,7 +612,7 @@ static void netdev_vlan_rx_register(struct net_device *dev, struct vlan_group *g
 
         spin_lock(&np->lock);
 	if (debug > 2)
-		printk("%s: Setting vlgrp to %p\n", dev->name, grp);
+;
         np->vlgrp = grp;
 	set_rx_mode(dev);
         spin_unlock(&np->lock);
@@ -624,7 +624,7 @@ static void netdev_vlan_rx_add_vid(struct net_device *dev, unsigned short vid)
 
 	spin_lock(&np->lock);
 	if (debug > 1)
-		printk("%s: Adding vlanid %d to vlan filter\n", dev->name, vid);
+;
 	set_rx_mode(dev);
 	spin_unlock(&np->lock);
 }
@@ -635,7 +635,7 @@ static void netdev_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid)
 
 	spin_lock(&np->lock);
 	if (debug > 1)
-		printk("%s: removing vlanid %d from vlan filter\n", dev->name, vid);
+;
 	vlan_group_set_device(np->vlgrp, vid, NULL);
 	set_rx_mode(dev);
 	spin_unlock(&np->lock);
@@ -677,7 +677,7 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	card_idx++;
@@ -688,13 +688,13 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 	ioaddr = pci_resource_start(pdev, 0);
 	io_size = pci_resource_len(pdev, 0);
 	if (!ioaddr || ((pci_resource_flags(pdev, 0) & IORESOURCE_MEM) == 0)) {
-		printk(KERN_ERR DRV_NAME " %d: no PCI MEM resources, aborting\n", card_idx);
+;
 		return -ENODEV;
 	}
 
 	dev = alloc_etherdev(sizeof(*np));
 	if (!dev) {
-		printk(KERN_ERR DRV_NAME " %d: cannot alloc etherdev, aborting\n", card_idx);
+;
 		return -ENOMEM;
 	}
 	SET_NETDEV_DEV(dev, &pdev->dev);
@@ -702,14 +702,14 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 	irq = pdev->irq;
 
 	if (pci_request_regions (pdev, DRV_NAME)) {
-		printk(KERN_ERR DRV_NAME " %d: cannot reserve PCI resources, aborting\n", card_idx);
+;
 		goto err_out_free_netdev;
 	}
 
 	base = ioremap(ioaddr, io_size);
 	if (!base) {
-		printk(KERN_ERR DRV_NAME " %d: cannot remap %#x @ %#lx, aborting\n",
-			card_idx, io_size, ioaddr);
+//		printk(KERN_ERR DRV_NAME " %d: cannot remap %#x @ %#lx, aborting\n",
+;
 		goto err_out_free_res;
 	}
 
@@ -738,9 +738,9 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 #if ! defined(final_version) /* Dump the EEPROM contents during development. */
 	if (debug > 4)
 		for (i = 0; i < 0x20; i++)
-			printk("%2.2x%s",
-			       (unsigned int)readb(base + EEPROMCtrl + i),
-			       i % 16 != 15 ? " " : "\n");
+//			printk("%2.2x%s",
+//			       (unsigned int)readb(base + EEPROMCtrl + i),
+;
 #endif
 
 	/* Issue soft reset */
@@ -757,7 +757,7 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 			break;
 	}
 	if (boguscnt == 0)
-		printk("%s: chipset reset never completed!\n", dev->name);
+;
 	/* wait a little longer */
 	udelay(1000);
 
@@ -816,7 +816,7 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 		default:
 			np->intr_timer_ctrl |= SmallFrame512;
 			if (small_frames > 512)
-				printk("Adjusting small_frames down to 512\n");
+;
 			break;
 		}
 	}
@@ -833,9 +833,9 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 	if (register_netdev(dev))
 		goto err_out_cleardev;
 
-	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
-	       dev->name, netdrv_tbl[chip_idx].name, base,
-	       dev->dev_addr, irq);
+//	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
+//	       dev->name, netdrv_tbl[chip_idx].name, base,
+;
 
 	if (drv_flags & CanHaveMII) {
 		int phy, phy_idx = 0;
@@ -848,16 +848,16 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 				if ((mdio_read(dev, phy, MII_BMCR) & BMCR_RESET) == 0)
 					break;
 			if (boguscnt == 0) {
-				printk("%s: PHY#%d reset never completed!\n", dev->name, phy);
+;
 				continue;
 			}
 			mii_status = mdio_read(dev, phy, MII_BMSR);
 			if (mii_status != 0) {
 				np->phys[phy_idx++] = phy;
 				np->mii_if.advertising = mdio_read(dev, phy, MII_ADVERTISE);
-				printk(KERN_INFO "%s: MII PHY found at address %d, status "
-					   "%#4.4x advertising %#4.4x.\n",
-					   dev->name, phy, mii_status, np->mii_if.advertising);
+//				printk(KERN_INFO "%s: MII PHY found at address %d, status "
+//					   "%#4.4x advertising %#4.4x.\n",
+;
 				/* there can be only one PHY on-board */
 				break;
 			}
@@ -869,8 +869,8 @@ static int __devinit starfire_init_one(struct pci_dev *pdev,
 			memset(&np->mii_if, 0, sizeof(np->mii_if));
 	}
 
-	printk(KERN_INFO "%s: scatter-gather and hardware TCP cksumming %s.\n",
-	       dev->name, enable_hw_cksum ? "enabled" : "disabled");
+//	printk(KERN_INFO "%s: scatter-gather and hardware TCP cksumming %s.\n",
+;
 	return 0;
 
 err_out_cleardev:
@@ -931,8 +931,8 @@ static int netdev_open(struct net_device *dev)
 	writel(0, ioaddr + GenCtrl);
 	writel(1, ioaddr + PCIDeviceConfig);
 	if (debug > 1)
-		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
-		       dev->name, dev->irq);
+//		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
+;
 
 	/* Allocate the various queues. */
 	if (!np->queue_mem) {
@@ -997,7 +997,7 @@ static int netdev_open(struct net_device *dev)
 	       ioaddr + RxCompletionAddr);
 
 	if (debug > 1)
-		printk(KERN_DEBUG "%s: Filling in the station address.\n", dev->name);
+;
 
 	/* Fill both the Tx SA register and the Rx perfect filter. */
 	for (i = 0; i < 6; i++)
@@ -1031,7 +1031,7 @@ static int netdev_open(struct net_device *dev)
 	netif_start_queue(dev);
 
 	if (debug > 1)
-		printk(KERN_DEBUG "%s: Setting the Rx and Tx modes.\n", dev->name);
+;
 	set_rx_mode(dev);
 
 	np->mii_if.advertising = mdio_read(dev, np->phys[0], MII_ADVERTISE);
@@ -1056,25 +1056,25 @@ static int netdev_open(struct net_device *dev)
 
 	retval = request_firmware(&fw_rx, FIRMWARE_RX, &np->pci_dev->dev);
 	if (retval) {
-		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
-		       FIRMWARE_RX);
+//		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
+;
 		goto out_init;
 	}
 	if (fw_rx->size % 4) {
-		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
-		       fw_rx->size, FIRMWARE_RX);
+//		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
+;
 		retval = -EINVAL;
 		goto out_rx;
 	}
 	retval = request_firmware(&fw_tx, FIRMWARE_TX, &np->pci_dev->dev);
 	if (retval) {
-		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
-		       FIRMWARE_TX);
+//		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
+;
 		goto out_rx;
 	}
 	if (fw_tx->size % 4) {
-		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
-		       fw_tx->size, FIRMWARE_TX);
+//		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
+;
 		retval = -EINVAL;
 		goto out_tx;
 	}
@@ -1096,8 +1096,8 @@ static int netdev_open(struct net_device *dev)
 		writel(TxEnable|RxEnable, ioaddr + GenCtrl);
 
 	if (debug > 1)
-		printk(KERN_DEBUG "%s: Done netdev_open().\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: Done netdev_open().\n",
+;
 
 out_tx:
 	release_firmware(fw_tx);
@@ -1122,7 +1122,7 @@ static void check_duplex(struct net_device *dev)
 	while (--silly_count && mdio_read(dev, np->phys[0], MII_BMCR) & BMCR_RESET)
 		/* do nothing */;
 	if (!silly_count) {
-		printk("%s: MII reset failed!\n", dev->name);
+;
 		return;
 	}
 
@@ -1136,10 +1136,10 @@ static void check_duplex(struct net_device *dev)
 			reg0 |= BMCR_SPEED100;
 		if (np->mii_if.full_duplex)
 			reg0 |= BMCR_FULLDPLX;
-		printk(KERN_DEBUG "%s: Link forced to %sMbit %s-duplex\n",
-		       dev->name,
-		       np->speed100 ? "100" : "10",
-		       np->mii_if.full_duplex ? "full" : "half");
+//		printk(KERN_DEBUG "%s: Link forced to %sMbit %s-duplex\n",
+//		       dev->name,
+//		       np->speed100 ? "100" : "10",
+;
 	}
 	mdio_write(dev, np->phys[0], MII_BMCR, reg0);
 }
@@ -1151,8 +1151,8 @@ static void tx_timeout(struct net_device *dev)
 	void __iomem *ioaddr = np->base;
 	int old_debug;
 
-	printk(KERN_WARNING "%s: Transmit timed out, status %#8.8x, "
-	       "resetting...\n", dev->name, (int) readl(ioaddr + IntrStatus));
+//	printk(KERN_WARNING "%s: Transmit timed out, status %#8.8x, "
+;
 
 	/* Perhaps we should reinitialize the hardware here. */
 
@@ -1276,9 +1276,9 @@ static netdev_tx_t start_tx(struct sk_buff *skb, struct net_device *dev)
 		np->tx_ring[entry].addr = cpu_to_dma(np->tx_info[entry].mapping);
 		np->tx_ring[entry].status = cpu_to_le32(status);
 		if (debug > 3)
-			printk(KERN_DEBUG "%s: Tx #%d/#%d slot %d status %#8.8x.\n",
-			       dev->name, np->cur_tx, np->dirty_tx,
-			       entry, status);
+//			printk(KERN_DEBUG "%s: Tx #%d/#%d slot %d status %#8.8x.\n",
+//			       dev->name, np->cur_tx, np->dirty_tx,
+;
 		if (wrap_ring) {
 			np->tx_info[entry].used_slots = TX_RING_SIZE - entry;
 			np->cur_tx += np->tx_info[entry].used_slots;
@@ -1325,8 +1325,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		u32 intr_status = readl(ioaddr + IntrClear);
 
 		if (debug > 4)
-			printk(KERN_DEBUG "%s: Interrupt status %#8.8x.\n",
-			       dev->name, intr_status);
+//			printk(KERN_DEBUG "%s: Interrupt status %#8.8x.\n",
+;
 
 		if (intr_status == 0 || intr_status == (u32) -1)
 			break;
@@ -1347,9 +1347,9 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 				/* Paranoia check */
 				enable = readl(ioaddr + IntrEnable);
 				if (enable & (IntrRxDone | IntrRxEmpty)) {
-					printk(KERN_INFO
-					       "%s: interrupt while in poll!\n",
-					       dev->name);
+//					printk(KERN_INFO
+//					       "%s: interrupt while in poll!\n",
+;
 					enable &= ~(IntrRxDone | IntrRxEmpty);
 					writel(enable, ioaddr + IntrEnable);
 				}
@@ -1361,13 +1361,13 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		   after the driver has proven to be reliable. */
 		consumer = readl(ioaddr + TxConsumerIdx);
 		if (debug > 3)
-			printk(KERN_DEBUG "%s: Tx Consumer index is %d.\n",
-			       dev->name, consumer);
+//			printk(KERN_DEBUG "%s: Tx Consumer index is %d.\n",
+;
 
 		while ((tx_status = le32_to_cpu(np->tx_done_q[np->tx_done].status)) != 0) {
 			if (debug > 3)
-				printk(KERN_DEBUG "%s: Tx completion #%d entry %d is %#8.8x.\n",
-				       dev->name, np->dirty_tx, np->tx_done, tx_status);
+//				printk(KERN_DEBUG "%s: Tx completion #%d entry %d is %#8.8x.\n",
+;
 			if ((tx_status & 0xe0000000) == 0xa0000000) {
 				dev->stats.tx_packets++;
 			} else if ((tx_status & 0xe0000000) == 0x80000000) {
@@ -1420,16 +1420,16 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 
 		if (--boguscnt < 0) {
 			if (debug > 1)
-				printk(KERN_WARNING "%s: Too much work at interrupt, "
-				       "status=%#8.8x.\n",
-				       dev->name, intr_status);
+//				printk(KERN_WARNING "%s: Too much work at interrupt, "
+//				       "status=%#8.8x.\n",
+;
 			break;
 		}
 	} while (1);
 
 	if (debug > 4)
-		printk(KERN_DEBUG "%s: exiting interrupt, status=%#8.8x.\n",
-		       dev->name, (int) readl(ioaddr + IntrStatus));
+//		printk(KERN_DEBUG "%s: exiting interrupt, status=%#8.8x.\n",
+;
 	return IRQ_RETVAL(handled);
 }
 
@@ -1452,11 +1452,11 @@ static int __netdev_rx(struct net_device *dev, int *quota)
 		rx_done_desc *desc = &np->rx_done_q[np->rx_done];
 
 		if (debug > 4)
-			printk(KERN_DEBUG "  netdev_rx() status of %d was %#8.8x.\n", np->rx_done, desc_status);
+;
 		if (!(desc_status & RxOK)) {
 			/* There was an error. */
 			if (debug > 2)
-				printk(KERN_DEBUG "  netdev_rx() Rx error was %#8.8x.\n", desc_status);
+;
 			dev->stats.rx_errors++;
 			if (desc_status & RxFIFOErr)
 				dev->stats.rx_fifo_errors++;
@@ -1497,16 +1497,16 @@ static int __netdev_rx(struct net_device *dev, int *quota)
 #ifndef final_version			/* Remove after testing. */
 		/* You will want this info for the initial debug. */
 		if (debug > 5) {
-			printk(KERN_DEBUG "  Rx data %pM %pM %2.2x%2.2x.\n",
-			       skb->data, skb->data + 6,
-			       skb->data[12], skb->data[13]);
+//			printk(KERN_DEBUG "  Rx data %pM %pM %2.2x%2.2x.\n",
+//			       skb->data, skb->data + 6,
+;
 		}
 #endif
 
 		skb->protocol = eth_type_trans(skb, dev);
 #ifdef VLAN_SUPPORT
 		if (debug > 4)
-			printk(KERN_DEBUG "  netdev_rx() status2 of %d was %#4.4x.\n", np->rx_done, le16_to_cpu(desc->status2));
+;
 #endif
 		if (le16_to_cpu(desc->status2) & 0x0100) {
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
@@ -1524,15 +1524,15 @@ static int __netdev_rx(struct net_device *dev, int *quota)
 		else if (le16_to_cpu(desc->status2) & 0x0040) {
 			skb->ip_summed = CHECKSUM_COMPLETE;
 			skb->csum = le16_to_cpu(desc->csum);
-			printk(KERN_DEBUG "%s: checksum_hw, status2 = %#x\n", dev->name, le16_to_cpu(desc->status2));
+;
 		}
 #ifdef VLAN_SUPPORT
 		if (np->vlgrp && le16_to_cpu(desc->status2) & 0x0200) {
 			u16 vlid = le16_to_cpu(desc->vlanid);
 
 			if (debug > 4) {
-				printk(KERN_DEBUG "  netdev_rx() vlanid = %d\n",
-				       vlid);
+//				printk(KERN_DEBUG "  netdev_rx() vlanid = %d\n",
+;
 			}
 			/*
 			 * vlan_hwaccel_rx expects a packet with the VLAN tag
@@ -1559,8 +1559,8 @@ static int __netdev_rx(struct net_device *dev, int *quota)
  out:
 	refill_rx_ring(dev);
 	if (debug > 5)
-		printk(KERN_DEBUG "  exiting netdev_rx(): %d, status of %d was %#8.8x.\n",
-		       retcode, np->rx_done, desc_status);
+//		printk(KERN_DEBUG "  exiting netdev_rx(): %d, status of %d was %#8.8x.\n",
+;
 	return retcode;
 }
 
@@ -1588,8 +1588,8 @@ static int netdev_poll(struct napi_struct *napi, int budget)
 
  out:
 	if (debug > 5)
-		printk(KERN_DEBUG "  exiting netdev_poll(): %d.\n",
-		       budget - quota);
+//		printk(KERN_DEBUG "  exiting netdev_poll(): %d.\n",
+;
 
 	/* Restart Rx engine if stopped. */
 	return budget - quota;
@@ -1669,10 +1669,10 @@ static void netdev_media_change(struct net_device *dev)
 				np->mii_if.full_duplex = 0;
 		}
 		netif_carrier_on(dev);
-		printk(KERN_DEBUG "%s: Link is up, running at %sMbit %s-duplex\n",
-		       dev->name,
-		       np->speed100 ? "100" : "10",
-		       np->mii_if.full_duplex ? "full" : "half");
+//		printk(KERN_DEBUG "%s: Link is up, running at %sMbit %s-duplex\n",
+//		       dev->name,
+//		       np->speed100 ? "100" : "10",
+;
 
 		new_tx_mode = np->tx_mode & ~FullDuplex;	/* duplex setting */
 		if (np->mii_if.full_duplex)
@@ -1693,7 +1693,7 @@ static void netdev_media_change(struct net_device *dev)
 		}
 	} else {
 		netif_carrier_off(dev);
-		printk(KERN_DEBUG "%s: Link is down\n", dev->name);
+;
 	}
 }
 
@@ -1706,10 +1706,10 @@ static void netdev_error(struct net_device *dev, int intr_status)
 	if (intr_status & IntrTxDataLow) {
 		if (np->tx_threshold <= PKT_BUF_SZ / 16) {
 			writel(++np->tx_threshold, np->base + TxThreshold);
-			printk(KERN_NOTICE "%s: PCI bus congestion, increasing Tx FIFO threshold to %d bytes\n",
-			       dev->name, np->tx_threshold * 16);
+//			printk(KERN_NOTICE "%s: PCI bus congestion, increasing Tx FIFO threshold to %d bytes\n",
+;
 		} else
-			printk(KERN_WARNING "%s: PCI Tx underflow -- adapter is probably malfunctioning\n", dev->name);
+;
 	}
 	if (intr_status & IntrRxGFPDead) {
 		dev->stats.rx_fifo_errors++;
@@ -1720,8 +1720,8 @@ static void netdev_error(struct net_device *dev, int intr_status)
 		dev->stats.tx_errors++;
 	}
 	if ((intr_status & ~(IntrNormalMask | IntrAbnormalSummary | IntrLinkChange | IntrStatsMax | IntrTxDataLow | IntrRxGFPDead | IntrNoTxCsum | IntrPCIPad)) && debug)
-		printk(KERN_ERR "%s: Something Wicked happened! %#8.8x.\n",
-		       dev->name, intr_status);
+//		printk(KERN_ERR "%s: Something Wicked happened! %#8.8x.\n",
+;
 }
 
 
@@ -1937,11 +1937,11 @@ static int netdev_close(struct net_device *dev)
 	napi_disable(&np->napi);
 
 	if (debug > 1) {
-		printk(KERN_DEBUG "%s: Shutting down ethercard, Intr status %#8.8x.\n",
-			   dev->name, (int) readl(ioaddr + IntrStatus));
-		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d, Rx %d / %d.\n",
-		       dev->name, np->cur_tx, np->dirty_tx,
-		       np->cur_rx, np->dirty_rx);
+//		printk(KERN_DEBUG "%s: Shutting down ethercard, Intr status %#8.8x.\n",
+;
+//		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d, Rx %d / %d.\n",
+//		       dev->name, np->cur_tx, np->dirty_tx,
+;
 	}
 
 	/* Disable interrupts by clearing the interrupt mask. */
@@ -1952,19 +1952,19 @@ static int netdev_close(struct net_device *dev)
 	readl(ioaddr + GenCtrl);
 
 	if (debug > 5) {
-		printk(KERN_DEBUG"  Tx ring at %#llx:\n",
-		       (long long) np->tx_ring_dma);
+//		printk(KERN_DEBUG"  Tx ring at %#llx:\n",
+;
 		for (i = 0; i < 8 /* TX_RING_SIZE is huge! */; i++)
-			printk(KERN_DEBUG " #%d desc. %#8.8x %#llx -> %#8.8x.\n",
-			       i, le32_to_cpu(np->tx_ring[i].status),
-			       (long long) dma_to_cpu(np->tx_ring[i].addr),
-			       le32_to_cpu(np->tx_done_q[i].status));
-		printk(KERN_DEBUG "  Rx ring at %#llx -> %p:\n",
-		       (long long) np->rx_ring_dma, np->rx_done_q);
+//			printk(KERN_DEBUG " #%d desc. %#8.8x %#llx -> %#8.8x.\n",
+//			       i, le32_to_cpu(np->tx_ring[i].status),
+//			       (long long) dma_to_cpu(np->tx_ring[i].addr),
+;
+//		printk(KERN_DEBUG "  Rx ring at %#llx -> %p:\n",
+;
 		if (np->rx_done_q)
 			for (i = 0; i < 8 /* RX_RING_SIZE */; i++) {
-				printk(KERN_DEBUG " #%d desc. %#llx -> %#8.8x\n",
-				       i, (long long) dma_to_cpu(np->rx_ring[i].rxaddr), le32_to_cpu(np->rx_done_q[i].status));
+//				printk(KERN_DEBUG " #%d desc. %#llx -> %#8.8x\n",
+;
 		}
 	}
 
@@ -2069,9 +2069,9 @@ static int __init starfire_init (void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 
-	printk(KERN_INFO DRV_NAME ": polling (NAPI) enabled\n");
+;
 #endif
 
 	BUILD_BUG_ON(sizeof(dma_addr_t) != sizeof(netdrv_addr_t));

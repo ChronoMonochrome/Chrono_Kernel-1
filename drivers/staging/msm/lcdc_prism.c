@@ -56,7 +56,7 @@ static int __init lcdc_prism_init(void)
 
 	ret = lcdc_device_register(&pinfo);
 	if (ret)
-		printk(KERN_ERR "%s: failed to register device!\n", __func__);
+;
 
 	return ret;
 }

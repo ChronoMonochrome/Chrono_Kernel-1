@@ -2057,9 +2057,13 @@ static int __init pl08x_init(void)
 	int retval;
 	retval = amba_driver_register(&pl08x_amba_driver);
 	if (retval)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRIVER_NAME
 		       "failed to register as an AMBA device (%d)\n",
 		       retval);
+#else
+		;
+#endif
 	return retval;
 }
 subsys_initcall(pl08x_init);

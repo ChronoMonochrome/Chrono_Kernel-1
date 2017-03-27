@@ -235,8 +235,12 @@ u8 eighty_ninty_three(ide_drive_t *drive)
 		return 1;
 
 	if (ivb)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: skipping word 93 validity check\n",
 				  drive->name);
+#else
+		;
+#endif
 
 	if (ata_id_is_sata(id) && !ivb)
 		return 1;
@@ -273,10 +277,14 @@ no_80w:
 	if (drive->dev_flags & IDE_DFLAG_UDMA33_WARNED)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: %s side 80-wire cable detection failed, "
 			    "limiting max speed to UDMA33\n",
 			    drive->name,
 			    hwif->cbl == ATA_CBL_PATA80 ? "drive" : "host");
+#else
+	;
+#endif
 
 	drive->dev_flags |= IDE_DFLAG_UDMA33_WARNED;
 

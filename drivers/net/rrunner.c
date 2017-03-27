@@ -135,7 +135,7 @@ static int __devinit rr_init_one(struct pci_dev *pdev,
 		/* set display flag to TRUE so that */
 		/* we only display this string ONCE */
 		version_disp = 1;
-		printk(version);
+;
 	}
 
 	pci_read_config_byte(pdev, PCI_LATENCY_TIMER, &pci_latency);
@@ -146,9 +146,9 @@ static int __devinit rr_init_one(struct pci_dev *pdev,
 
 	pci_set_master(pdev);
 
-	printk(KERN_INFO "%s: Essential RoadRunner serial HIPPI "
-	       "at 0x%08lx, irq %i, PCI latency %i\n", dev->name,
-	       dev->base_addr, dev->irq, pci_latency);
+//	printk(KERN_INFO "%s: Essential RoadRunner serial HIPPI "
+//	       "at 0x%08lx, irq %i, PCI latency %i\n", dev->name,
+;
 
 	/*
 	 * Remap the regs into kernel space.
@@ -157,8 +157,8 @@ static int __devinit rr_init_one(struct pci_dev *pdev,
 	rrpriv->regs = ioremap(dev->base_addr, 0x1000);
 
 	if (!rrpriv->regs){
-		printk(KERN_ERR "%s:  Unable to map I/O register, "
-			"RoadRunner will be disabled.\n", dev->name);
+//		printk(KERN_ERR "%s:  Unable to map I/O register, "
+;
 		ret = -EIO;
 		goto out;
 	}
@@ -237,8 +237,8 @@ static void __devexit rr_remove_one (struct pci_dev *pdev)
 		struct rr_private *rr = netdev_priv(dev);
 
 		if (!(readl(&rr->regs->HostCtrl) & NIC_HALTED)){
-			printk(KERN_ERR "%s: trying to unload running NIC\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: trying to unload running NIC\n",
+;
 			writel(HALT_NIC, &rr->regs->HostCtrl);
 		}
 
@@ -273,11 +273,11 @@ static void rr_issue_cmd(struct rr_private *rrpriv, struct cmd *cmd)
 	 * We probably also want to make this function inline.
 	 */
 	if (readl(&regs->HostCtrl) & NIC_HALTED){
-		printk("issuing command for halted NIC, code 0x%x, "
-		       "HostCtrl %08x\n", cmd->code, readl(&regs->HostCtrl));
+//		printk("issuing command for halted NIC, code 0x%x, "
+;
 		if (readl(&regs->Mode) & FATAL_ERR)
-			printk("error codes Fail1 %02x, Fail2 %02x\n",
-			       readl(&regs->Fail1), readl(&regs->Fail2));
+//			printk("error codes Fail1 %02x, Fail2 %02x\n",
+;
 	}
 
 	idx = rrpriv->info->cmd_ctrl.pi;
@@ -290,7 +290,7 @@ static void rr_issue_cmd(struct rr_private *rrpriv, struct cmd *cmd)
 	wmb();
 
 	if (readl(&regs->Mode) & FATAL_ERR)
-		printk("error code %02x\n", readl(&regs->Fail1));
+;
 }
 
 
@@ -392,8 +392,8 @@ static int rr_reset(struct net_device *dev)
 			offsetof(struct eeprom, rncd_info.FwStart));
 
 #if (DEBUG > 1)
-	printk("%s: Executing firmware at address 0x%06x\n",
-	       dev->name, start_pc);
+//	printk("%s: Executing firmware at address 0x%06x\n",
+;
 #endif
 
 	writel(start_pc + 0x800, &regs->Pc);
@@ -496,9 +496,9 @@ static unsigned int write_eeprom(struct rr_private *rrpriv,
 					ready = 1;
 				mb();
 				if (j++ > 5000){
-					printk("data mismatch: %08x, "
-					       "WinData %08x\n", data,
-					       readl(&regs->WinData));
+//					printk("data mismatch: %08x, "
+//					       "WinData %08x\n", data,
+;
 					ready = 1;
 					error = 1;
 				}
@@ -526,20 +526,20 @@ static int __devinit rr_init(struct net_device *dev)
 	rev = readl(&regs->FwRev);
 	rrpriv->fw_rev = rev;
 	if (rev > 0x00020024)
-		printk("  Firmware revision: %i.%i.%i\n", (rev >> 16),
-		       ((rev >> 8) & 0xff), (rev & 0xff));
+//		printk("  Firmware revision: %i.%i.%i\n", (rev >> 16),
+;
 	else if (rev >= 0x00020000) {
-		printk("  Firmware revision: %i.%i.%i (2.0.37 or "
-		       "later is recommended)\n", (rev >> 16),
-		       ((rev >> 8) & 0xff), (rev & 0xff));
+//		printk("  Firmware revision: %i.%i.%i (2.0.37 or "
+//		       "later is recommended)\n", (rev >> 16),
+;
 	}else{
-		printk("  Firmware revision too old: %i.%i.%i, please "
-		       "upgrade to 2.0.37 or later.\n",
-		       (rev >> 16), ((rev >> 8) & 0xff), (rev & 0xff));
+//		printk("  Firmware revision too old: %i.%i.%i, please "
+//		       "upgrade to 2.0.37 or later.\n",
+;
 	}
 
 #if (DEBUG > 2)
-	printk("  Maximum receive rings %i\n", readl(&regs->MaxRxRng));
+;
 #endif
 
 	/*
@@ -556,10 +556,10 @@ static int __devinit rr_init(struct net_device *dev)
 	*(__be32 *)(dev->dev_addr+2) =
 	  htonl(rr_read_eeprom_word(rrpriv, offsetof(struct eeprom, manf.BoardULA[4])));
 
-	printk("  MAC: %pM\n", dev->dev_addr);
+;
 
 	sram_size = rr_read_eeprom_word(rrpriv, 8);
-	printk("  SRAM size 0x%06x\n", sram_size);
+;
 
 	return 0;
 }
@@ -585,8 +585,8 @@ static int rr_init1(struct net_device *dev)
 	wmb();
 
 	if (hostctrl & PARITY_ERR){
-		printk("%s: Parity error halting NIC - this is serious!\n",
-		       dev->name);
+//		printk("%s: Parity error halting NIC - this is serious!\n",
+;
 		spin_unlock_irqrestore(&rrpriv->lock, flags);
 		ecode = -EFAULT;
 		goto error;
@@ -659,8 +659,8 @@ static int rr_init1(struct net_device *dev)
 		rrpriv->rx_ring[i].mode = 0;
 		skb = alloc_skb(dev->mtu + HIPPI_HLEN, GFP_ATOMIC);
 		if (!skb) {
-			printk(KERN_WARNING "%s: Unable to allocate memory "
-			       "for receive ring - halting NIC\n", dev->name);
+//			printk(KERN_WARNING "%s: Unable to allocate memory "
+;
 			ecode = -ENOMEM;
 			goto error;
 		}
@@ -672,7 +672,7 @@ static int rr_init1(struct net_device *dev)
 		 * limitations of the Roadrunner.
 		 */
 		if ((((unsigned long)skb->data) & 0xfff) > ~65320)
-			printk("skb alloc error\n");
+;
 
 		set_rraddr(&rrpriv->rx_ring[i].addr, addr);
 		rrpriv->rx_ring[i].size = dev->mtu + HIPPI_HLEN;
@@ -748,37 +748,37 @@ static u32 rr_handle_event(struct net_device *dev, u32 prodidx, u32 eidx)
 		switch (rrpriv->evt_ring[eidx].code){
 		case E_NIC_UP:
 			tmp = readl(&regs->FwRev);
-			printk(KERN_INFO "%s: Firmware revision %i.%i.%i "
-			       "up and running\n", dev->name,
-			       (tmp >> 16), ((tmp >> 8) & 0xff), (tmp & 0xff));
+//			printk(KERN_INFO "%s: Firmware revision %i.%i.%i "
+//			       "up and running\n", dev->name,
+;
 			rrpriv->fw_running = 1;
 			writel(RX_RING_ENTRIES - 1, &regs->IpRxPi);
 			wmb();
 			break;
 		case E_LINK_ON:
-			printk(KERN_INFO "%s: Optical link ON\n", dev->name);
+;
 			break;
 		case E_LINK_OFF:
-			printk(KERN_INFO "%s: Optical link OFF\n", dev->name);
+;
 			break;
 		case E_RX_IDLE:
-			printk(KERN_WARNING "%s: RX data not moving\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: RX data not moving\n",
+;
 			goto drop;
 		case E_WATCHDOG:
-			printk(KERN_INFO "%s: The watchdog is here to see "
-			       "us\n", dev->name);
+//			printk(KERN_INFO "%s: The watchdog is here to see "
+;
 			break;
 		case E_INTERN_ERR:
-			printk(KERN_ERR "%s: HIPPI Internal NIC error\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: HIPPI Internal NIC error\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_HOST_ERR:
-			printk(KERN_ERR "%s: Host software error\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Host software error\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
@@ -787,55 +787,55 @@ static u32 rr_handle_event(struct net_device *dev, u32 prodidx, u32 eidx)
 		 * TX events.
 		 */
 		case E_CON_REJ:
-			printk(KERN_WARNING "%s: Connection rejected\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Connection rejected\n",
+;
 			dev->stats.tx_aborted_errors++;
 			break;
 		case E_CON_TMOUT:
-			printk(KERN_WARNING "%s: Connection timeout\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Connection timeout\n",
+;
 			break;
 		case E_DISC_ERR:
-			printk(KERN_WARNING "%s: HIPPI disconnect error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: HIPPI disconnect error\n",
+;
 			dev->stats.tx_aborted_errors++;
 			break;
 		case E_INT_PRTY:
-			printk(KERN_ERR "%s: HIPPI Internal Parity error\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: HIPPI Internal Parity error\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_TX_IDLE:
-			printk(KERN_WARNING "%s: Transmitter idle\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Transmitter idle\n",
+;
 			break;
 		case E_TX_LINK_DROP:
-			printk(KERN_WARNING "%s: Link lost during transmit\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Link lost during transmit\n",
+;
 			dev->stats.tx_aborted_errors++;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_TX_INV_RNG:
-			printk(KERN_ERR "%s: Invalid send ring block\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Invalid send ring block\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_TX_INV_BUF:
-			printk(KERN_ERR "%s: Invalid send buffer address\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Invalid send buffer address\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_TX_INV_DSC:
-			printk(KERN_ERR "%s: Invalid descriptor address\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Invalid descriptor address\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
@@ -844,66 +844,66 @@ static u32 rr_handle_event(struct net_device *dev, u32 prodidx, u32 eidx)
 		 * RX events.
 		 */
 		case E_RX_RNG_OUT:
-			printk(KERN_INFO "%s: Receive ring full\n", dev->name);
+;
 			break;
 
 		case E_RX_PAR_ERR:
-			printk(KERN_WARNING "%s: Receive parity error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Receive parity error\n",
+;
 			goto drop;
 		case E_RX_LLRC_ERR:
-			printk(KERN_WARNING "%s: Receive LLRC error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Receive LLRC error\n",
+;
 			goto drop;
 		case E_PKT_LN_ERR:
-			printk(KERN_WARNING "%s: Receive packet length "
-			       "error\n", dev->name);
+//			printk(KERN_WARNING "%s: Receive packet length "
+;
 			goto drop;
 		case E_DTA_CKSM_ERR:
-			printk(KERN_WARNING "%s: Data checksum error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Data checksum error\n",
+;
 			goto drop;
 		case E_SHT_BST:
-			printk(KERN_WARNING "%s: Unexpected short burst "
-			       "error\n", dev->name);
+//			printk(KERN_WARNING "%s: Unexpected short burst "
+;
 			goto drop;
 		case E_STATE_ERR:
-			printk(KERN_WARNING "%s: Recv. state transition"
-			       " error\n", dev->name);
+//			printk(KERN_WARNING "%s: Recv. state transition"
+;
 			goto drop;
 		case E_UNEXP_DATA:
-			printk(KERN_WARNING "%s: Unexpected data error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Unexpected data error\n",
+;
 			goto drop;
 		case E_LST_LNK_ERR:
-			printk(KERN_WARNING "%s: Link lost error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Link lost error\n",
+;
 			goto drop;
 		case E_FRM_ERR:
-			printk(KERN_WARNING "%s: Framming Error\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Framming Error\n",
+;
 			goto drop;
 		case E_FLG_SYN_ERR:
-			printk(KERN_WARNING "%s: Flag sync. lost during "
-			       "packet\n", dev->name);
+//			printk(KERN_WARNING "%s: Flag sync. lost during "
+;
 			goto drop;
 		case E_RX_INV_BUF:
-			printk(KERN_ERR "%s: Invalid receive buffer "
-			       "address\n", dev->name);
+//			printk(KERN_ERR "%s: Invalid receive buffer "
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_RX_INV_DSC:
-			printk(KERN_ERR "%s: Invalid receive descriptor "
-			       "address\n", dev->name);
+//			printk(KERN_ERR "%s: Invalid receive descriptor "
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
 			break;
 		case E_RNG_BLK:
-			printk(KERN_ERR "%s: Invalid ring block\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Invalid ring block\n",
+;
 			writel(readl(&regs->HostCtrl)|HALT_NIC|RR_CLEAR_INT,
 			       &regs->HostCtrl);
 			wmb();
@@ -926,8 +926,8 @@ static u32 rr_handle_event(struct net_device *dev, u32 prodidx, u32 eidx)
 			}
 			break;
 		default:
-			printk(KERN_WARNING "%s: Unhandled event 0x%02x\n",
-			       dev->name, rrpriv->evt_ring[eidx].code);
+//			printk(KERN_WARNING "%s: Unhandled event 0x%02x\n",
+;
 		}
 		eidx = (eidx + 1) % EVT_RING_ENTRIES;
 	}
@@ -950,8 +950,8 @@ static void rx_int(struct net_device *dev, u32 rxlimit, u32 index)
 		desc = &(rrpriv->rx_ring[index]);
 		pkt_len = desc->size;
 #if (DEBUG > 2)
-		printk("index %i, rxlimit %i\n", index, rxlimit);
-		printk("len %x, mode %x\n", pkt_len, desc->mode);
+;
+;
 #endif
 		if ( (rrpriv->rx_ring[index].mode & PACKET_BAD) == PACKET_BAD){
 			dev->stats.rx_dropped++;
@@ -966,7 +966,7 @@ static void rx_int(struct net_device *dev, u32 rxlimit, u32 index)
 			if (pkt_len < PKT_COPY_THRESHOLD) {
 				skb = alloc_skb(pkt_len, GFP_ATOMIC);
 				if (skb == NULL){
-					printk(KERN_WARNING "%s: Unable to allocate skb (%i bytes), deferring packet\n", dev->name, pkt_len);
+;
 					dev->stats.rx_dropped++;
 					goto defer;
 				} else {
@@ -1003,8 +1003,8 @@ static void rx_int(struct net_device *dev, u32 rxlimit, u32 index)
 						PCI_DMA_FROMDEVICE);
 					set_rraddr(&desc->addr, addr);
 				} else {
-					printk("%s: Out of memory, deferring "
-					       "packet\n", dev->name);
+//					printk("%s: Out of memory, deferring "
+;
 					dev->stats.rx_dropped++;
 					goto defer;
 				}
@@ -1052,8 +1052,8 @@ static irqreturn_t rr_interrupt(int irq, void *dev_id)
 	prodidx &= 0xff;
 
 #if (DEBUG > 2)
-	printk("%s: interrupt, prodidx = %i, eidx = %i\n", dev->name,
-	       prodidx, rrpriv->info->evt_ctrl.pi);
+//	printk("%s: interrupt, prodidx = %i, eidx = %i\n", dev->name,
+;
 #endif
 	/*
 	 * Order here is important.  We must handle events
@@ -1167,7 +1167,7 @@ static void rr_timer(unsigned long data)
 	unsigned long flags;
 
 	if (readl(&regs->HostCtrl) & NIC_HALTED){
-		printk("%s: Restarting nic\n", dev->name);
+;
 		memset(rrpriv->rx_ctrl, 0, 256 * sizeof(struct ring_ctrl));
 		memset(rrpriv->info, 0, sizeof(struct rr_info));
 		wmb();
@@ -1199,8 +1199,8 @@ static int rr_open(struct net_device *dev)
 	regs = rrpriv->regs;
 
 	if (rrpriv->fw_rev < 0x00020000) {
-		printk(KERN_WARNING "%s: trying to configure device with "
-		       "obsolete firmware\n", dev->name);
+//		printk(KERN_WARNING "%s: trying to configure device with "
+;
 		ecode = -EBUSY;
 		goto error;
 	}
@@ -1231,8 +1231,8 @@ static int rr_open(struct net_device *dev)
 	spin_unlock_irqrestore(&rrpriv->lock, flags);
 
 	if (request_irq(dev->irq, rr_interrupt, IRQF_SHARED, dev->name, dev)) {
-		printk(KERN_WARNING "%s: Requested IRQ %d is busy\n",
-		       dev->name, dev->irq);
+//		printk(KERN_WARNING "%s: Requested IRQ %d is busy\n",
+;
 		ecode = -EAGAIN;
 		goto error;
 	}
@@ -1285,54 +1285,54 @@ static void rr_dump(struct net_device *dev)
 	rrpriv = netdev_priv(dev);
 	regs = rrpriv->regs;
 
-	printk("%s: dumping NIC TX rings\n", dev->name);
+;
 
-	printk("RxPrd %08x, TxPrd %02x, EvtPrd %08x, TxPi %02x, TxCtrlPi %02x\n",
-	       readl(&regs->RxPrd), readl(&regs->TxPrd),
-	       readl(&regs->EvtPrd), readl(&regs->TxPi),
-	       rrpriv->info->tx_ctrl.pi);
+//	printk("RxPrd %08x, TxPrd %02x, EvtPrd %08x, TxPi %02x, TxCtrlPi %02x\n",
+//	       readl(&regs->RxPrd), readl(&regs->TxPrd),
+//	       readl(&regs->EvtPrd), readl(&regs->TxPi),
+;
 
-	printk("Error code 0x%x\n", readl(&regs->Fail1));
+;
 
 	index = (((readl(&regs->EvtPrd) >> 8) & 0xff) - 1) % TX_RING_ENTRIES;
 	cons = rrpriv->dirty_tx;
-	printk("TX ring index %i, TX consumer %i\n",
-	       index, cons);
+//	printk("TX ring index %i, TX consumer %i\n",
+;
 
 	if (rrpriv->tx_skbuff[index]){
 		len = min_t(int, 0x80, rrpriv->tx_skbuff[index]->len);
-		printk("skbuff for index %i is valid - dumping data (0x%x bytes - DMA len 0x%x)\n", index, len, rrpriv->tx_ring[index].size);
+;
 		for (i = 0; i < len; i++){
 			if (!(i & 7))
-				printk("\n");
-			printk("%02x ", (unsigned char) rrpriv->tx_skbuff[index]->data[i]);
+;
+;
 		}
-		printk("\n");
+;
 	}
 
 	if (rrpriv->tx_skbuff[cons]){
 		len = min_t(int, 0x80, rrpriv->tx_skbuff[cons]->len);
-		printk("skbuff for cons %i is valid - dumping data (0x%x bytes - skbuff len 0x%x)\n", cons, len, rrpriv->tx_skbuff[cons]->len);
-		printk("mode 0x%x, size 0x%x,\n phys %08Lx, skbuff-addr %08lx, truesize 0x%x\n",
-		       rrpriv->tx_ring[cons].mode,
-		       rrpriv->tx_ring[cons].size,
-		       (unsigned long long) rrpriv->tx_ring[cons].addr.addrlo,
-		       (unsigned long)rrpriv->tx_skbuff[cons]->data,
-		       (unsigned int)rrpriv->tx_skbuff[cons]->truesize);
+;
+//		printk("mode 0x%x, size 0x%x,\n phys %08Lx, skbuff-addr %08lx, truesize 0x%x\n",
+//		       rrpriv->tx_ring[cons].mode,
+//		       rrpriv->tx_ring[cons].size,
+//		       (unsigned long long) rrpriv->tx_ring[cons].addr.addrlo,
+//		       (unsigned long)rrpriv->tx_skbuff[cons]->data,
+;
 		for (i = 0; i < len; i++){
 			if (!(i & 7))
-				printk("\n");
-			printk("%02x ", (unsigned char)rrpriv->tx_ring[cons].size);
+;
+;
 		}
-		printk("\n");
+;
 	}
 
-	printk("dumping TX ring info:\n");
+;
 	for (i = 0; i < TX_RING_ENTRIES; i++)
-		printk("mode 0x%x, size 0x%x, phys-addr %08Lx\n",
-		       rrpriv->tx_ring[i].mode,
-		       rrpriv->tx_ring[i].size,
-		       (unsigned long long) rrpriv->tx_ring[i].addr.addrlo);
+//		printk("mode 0x%x, size 0x%x, phys-addr %08Lx\n",
+//		       rrpriv->tx_ring[i].mode,
+//		       rrpriv->tx_ring[i].size,
+;
 
 }
 
@@ -1358,7 +1358,7 @@ static int rr_close(struct net_device *dev)
 
 	tmp = readl(&regs->HostCtrl);
 	if (tmp & NIC_HALTED){
-		printk("%s: NIC already halted\n", dev->name);
+;
 		rr_dump(dev);
 	}else{
 		tmp |= HALT_NIC | RR_CLEAR_INT;
@@ -1415,15 +1415,15 @@ static netdev_tx_t rr_start_xmit(struct sk_buff *skb,
 	struct sk_buff *new_skb;
 
 	if (readl(&regs->Mode) & FATAL_ERR)
-		printk("error codes Fail1 %02x, Fail2 %02x\n",
-		       readl(&regs->Fail1), readl(&regs->Fail2));
+//		printk("error codes Fail1 %02x, Fail2 %02x\n",
+;
 
 	/*
 	 * We probably need to deal with tbusy here to prevent overruns.
 	 */
 
 	if (skb_headroom(skb) < 8){
-		printk("incoming skb too small - reallocating\n");
+;
 		if (!(new_skb = dev_alloc_skb(len + 8))) {
 			dev_kfree_skb(skb);
 			netif_wake_queue(dev);
@@ -1494,8 +1494,8 @@ static int rr_load_firmware(struct net_device *dev)
 		return -EBUSY;
 
 	if (!(readl(&regs->HostCtrl) & NIC_HALTED)){
-		printk("%s: Trying to load firmware to a running NIC.\n",
-		       dev->name);
+//		printk("%s: Trying to load firmware to a running NIC.\n",
+;
 		return -EBUSY;
 	}
 
@@ -1534,7 +1534,7 @@ static int rr_load_firmware(struct net_device *dev)
 	p2size = ((p2size & 0x1fffff) >> 3);
 
 	if ((eptr < p2size) || (eptr > (p2size + p2len))){
-		printk("%s: eptr is invalid\n", dev->name);
+;
 		goto out;
 	}
 
@@ -1542,15 +1542,15 @@ static int rr_load_firmware(struct net_device *dev)
 			offsetof(struct eeprom, manf.HeaderFmt));
 
 	if (revision != 1){
-		printk("%s: invalid firmware format (%i)\n",
-		       dev->name, revision);
+//		printk("%s: invalid firmware format (%i)\n",
+;
 		goto out;
 	}
 
 	nr_seg = rr_read_eeprom_word(rrpriv, eptr);
 	eptr +=4;
 #if (DEBUG > 1)
-	printk("%s: nr_seg %i\n", dev->name, nr_seg);
+;
 #endif
 
 	for (i = 0; i < nr_seg; i++){
@@ -1562,8 +1562,8 @@ static int rr_load_firmware(struct net_device *dev)
 		segptr = ((segptr & 0x1fffff) >> 3);
 		eptr += 4;
 #if (DEBUG > 1)
-		printk("%s: segment %i, sram address %06x, length %04x, segptr %06x\n",
-		       dev->name, i, sptr, len, segptr);
+//		printk("%s: segment %i, sram address %06x, length %04x, segptr %06x\n",
+;
 #endif
 		for (j = 0; j < len; j++){
 			tmp = rr_read_eeprom_word(rrpriv, segptr);
@@ -1601,14 +1601,14 @@ static int rr_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 
 		image = kmalloc(EEPROM_WORDS * sizeof(u32), GFP_KERNEL);
 		if (!image){
-			printk(KERN_ERR "%s: Unable to allocate memory "
-			       "for EEPROM image\n", dev->name);
+//			printk(KERN_ERR "%s: Unable to allocate memory "
+;
 			return -ENOMEM;
 		}
 
 
 		if (rrpriv->fw_running){
-			printk("%s: Firmware already running\n", dev->name);
+;
 			error = -EPERM;
 			goto gf_out;
 		}
@@ -1617,8 +1617,8 @@ static int rr_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		i = rr_read_eeprom(rrpriv, 0, image, EEPROM_BYTES);
 		spin_unlock_irqrestore(&rrpriv->lock, flags);
 		if (i != EEPROM_BYTES){
-			printk(KERN_ERR "%s: Error reading EEPROM\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Error reading EEPROM\n",
+;
 			error = -EFAULT;
 			goto gf_out;
 		}
@@ -1637,8 +1637,8 @@ static int rr_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		image = kmalloc(EEPROM_WORDS * sizeof(u32), GFP_KERNEL);
 		oldimage = kmalloc(EEPROM_WORDS * sizeof(u32), GFP_KERNEL);
 		if (!image || !oldimage) {
-			printk(KERN_ERR "%s: Unable to allocate memory "
-			       "for EEPROM image\n", dev->name);
+//			printk(KERN_ERR "%s: Unable to allocate memory "
+;
 			error = -ENOMEM;
 			goto wf_out;
 		}
@@ -1650,30 +1650,30 @@ static int rr_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		}
 
 		if (rrpriv->fw_running){
-			printk("%s: Firmware already running\n", dev->name);
+;
 			error = -EPERM;
 			goto wf_out;
 		}
 
-		printk("%s: Updating EEPROM firmware\n", dev->name);
+;
 
 		spin_lock_irqsave(&rrpriv->lock, flags);
 		error = write_eeprom(rrpriv, 0, image, EEPROM_BYTES);
 		if (error)
-			printk(KERN_ERR "%s: Error writing EEPROM\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Error writing EEPROM\n",
+;
 
 		i = rr_read_eeprom(rrpriv, 0, oldimage, EEPROM_BYTES);
 		spin_unlock_irqrestore(&rrpriv->lock, flags);
 
 		if (i != EEPROM_BYTES)
-			printk(KERN_ERR "%s: Error reading back EEPROM "
-			       "image\n", dev->name);
+//			printk(KERN_ERR "%s: Error reading back EEPROM "
+;
 
 		error = memcmp(image, oldimage, EEPROM_BYTES);
 		if (error){
-			printk(KERN_ERR "%s: Error verifying EEPROM image\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Error verifying EEPROM image\n",
+;
 			error = -EFAULT;
 		}
 	wf_out:

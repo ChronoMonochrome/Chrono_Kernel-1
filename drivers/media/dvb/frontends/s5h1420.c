@@ -71,9 +71,13 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "enable debugging");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...) do { \
 	if (debug) \
 		printk(KERN_DEBUG "S5H1420: " x); \
+#else
+#define d;
+#endif
 } while (0)
 
 static u8 s5h1420_readreg(struct s5h1420_state *state, u8 reg)
@@ -102,7 +106,11 @@ static u8 s5h1420_readreg(struct s5h1420_state *state, u8 reg)
 			return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* dprintk("rd(%02x): %02x %02x\n", state->config->demod_address, reg, b[0]); */
+#else
+	/* d;
+#endif
 
 	return b[0];
 }
@@ -113,10 +121,18 @@ static int s5h1420_writereg (struct s5h1420_state* state, u8 reg, u8 data)
 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = buf, .len = 2 };
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* dprintk("wr(%02x): %02x %02x\n", state->config->demod_address, reg, data); */
+#else
+	/* d;
+#endif
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: writereg error (err == %i, reg == 0x%02x, data == 0x%02x)\n", __func__, err, reg, data);
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 	state->shadow[reg] = data;
@@ -128,7 +144,11 @@ static int s5h1420_set_voltage (struct dvb_frontend* fe, fe_sec_voltage_t voltag
 {
 	struct s5h1420_state* state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	switch(voltage) {
 	case SEC_VOLTAGE_13:
@@ -145,7 +165,11 @@ static int s5h1420_set_voltage (struct dvb_frontend* fe, fe_sec_voltage_t voltag
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -153,7 +177,11 @@ static int s5h1420_set_tone (struct dvb_frontend* fe, fe_sec_tone_mode_t tone)
 {
 	struct s5h1420_state* state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 	switch(tone) {
 	case SEC_TONE_ON:
 		s5h1420_writereg(state, 0x3b,
@@ -165,7 +193,11 @@ static int s5h1420_set_tone (struct dvb_frontend* fe, fe_sec_tone_mode_t tone)
 				 (s5h1420_readreg(state, 0x3b) & 0x74) | 0x01);
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -179,7 +211,11 @@ static int s5h1420_send_master_cmd (struct dvb_frontend* fe,
 	unsigned long timeout;
 	int result = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 	if (cmd->msg_len > 8)
 		return -EINVAL;
 
@@ -211,7 +247,11 @@ static int s5h1420_send_master_cmd (struct dvb_frontend* fe,
 	/* restore original settings */
 	s5h1420_writereg(state, 0x3b, val);
 	msleep(15);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 	return result;
 }
 
@@ -333,7 +373,11 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 	struct s5h1420_state* state = fe->demodulator_priv;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	if (status == NULL)
 		return -EINVAL;
@@ -395,7 +439,11 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 			val = 0x06;
 		else
 			val = 0x07;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("for MPEG_CLK_INTL %d %x\n", tmp, val);
+#else
+		d;
+#endif
 
 		s5h1420_writereg(state, FEC01, 0x18);
 		s5h1420_writereg(state, FEC01, 0x10);
@@ -423,7 +471,11 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 		state->postlocked = 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -465,7 +517,11 @@ static int s5h1420_read_ucblocks(struct dvb_frontend* fe, u32* ucblocks)
 
 static void s5h1420_reset(struct s5h1420_state* state)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 	s5h1420_writereg (state, 0x01, 0x08);
 	s5h1420_writereg (state, 0x01, 0x00);
 	udelay(10);
@@ -477,14 +533,22 @@ static void s5h1420_setsymbolrate(struct s5h1420_state* state,
 	u8 v;
 	u64 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	val = ((u64) p->u.qpsk.symbol_rate / 1000ULL) * (1ULL<<24);
 	if (p->u.qpsk.symbol_rate < 29000000)
 		val *= 2;
 	do_div(val, (state->fclk / 1000));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("symbol rate register: %06llx\n", (unsigned long long)val);
+#else
+	d;
+#endif
 
 	v = s5h1420_readreg(state, Loop01);
 	s5h1420_writereg(state, Loop01, v & 0x7f);
@@ -492,7 +556,11 @@ static void s5h1420_setsymbolrate(struct s5h1420_state* state,
 	s5h1420_writereg(state, Tnco02, val >> 8);
 	s5h1420_writereg(state, Tnco03, val & 0xff);
 	s5h1420_writereg(state, Loop01,  v | 0x80);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 }
 
 static u32 s5h1420_getsymbolrate(struct s5h1420_state* state)
@@ -505,13 +573,21 @@ static void s5h1420_setfreqoffset(struct s5h1420_state* state, int freqoffset)
 	int val;
 	u8 v;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	/* remember freqoffset is in kHz, but the chip wants the offset in Hz, so
 	 * divide fclk by 1000000 to get the correct value. */
 	val = -(int) ((freqoffset * (1<<24)) / (state->fclk / 1000000));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("phase rotator/freqoffset: %d %06x\n", freqoffset, val);
+#else
+	d;
+#endif
 
 	v = s5h1420_readreg(state, Loop01);
 	s5h1420_writereg(state, Loop01, v & 0xbf);
@@ -519,7 +595,11 @@ static void s5h1420_setfreqoffset(struct s5h1420_state* state, int freqoffset)
 	s5h1420_writereg(state, Pnco02, val >> 8);
 	s5h1420_writereg(state, Pnco03, val & 0xff);
 	s5h1420_writereg(state, Loop01, v | 0x40);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 }
 
 static int s5h1420_getfreqoffset(struct s5h1420_state* state)
@@ -548,7 +628,11 @@ static void s5h1420_setfec_inversion(struct s5h1420_state* state,
 	u8 inversion = 0;
 	u8 vit08, vit09;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	if (p->inversion == INVERSION_OFF)
 		inversion = state->config->invert ? 0x08 : 0;
@@ -589,10 +673,18 @@ static void s5h1420_setfec_inversion(struct s5h1420_state* state,
 		}
 	}
 	vit09 |= inversion;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("fec: %02x %02x\n", vit08, vit09);
+#else
+	d;
+#endif
 	s5h1420_writereg(state, Vit08, vit08);
 	s5h1420_writereg(state, Vit09, vit09);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 }
 
 static fe_code_rate_t s5h1420_getfec(struct s5h1420_state* state)
@@ -636,7 +728,11 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 	struct dvb_frontend_tune_settings fesettings;
 	uint8_t clock_settting;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("enter %s\n", __func__);
+#else
+	d;
+#endif
 
 	/* check if we should do a fast-tune */
 	memcpy(&fesettings.parameters, p, sizeof(struct dvb_frontend_parameters));
@@ -660,10 +756,18 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 		} else {
 			s5h1420_setfreqoffset(state, 0);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("simple tune\n");
+#else
+		d;
+#endif
 		return 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("tuning demod\n");
+#else
+	d;
+#endif
 
 	/* first of all, software reset */
 	s5h1420_reset(state);
@@ -699,7 +803,11 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 		clock_settting = 36;
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("pll01: %d, ToneFreq: %d\n", state->fclk/1000000 - 8, (state->fclk + (TONE_FREQ * 32) - 1) / (TONE_FREQ * 32));
+#else
+	d;
+#endif
 	s5h1420_writereg(state, PLL01, state->fclk/1000000 - 8);
 	s5h1420_writereg(state, PLL02, 0x40);
 	s5h1420_writereg(state, DiS01, (state->fclk + (TONE_FREQ * 32) - 1) / (TONE_FREQ * 32));
@@ -762,7 +870,11 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 	state->postlocked = 0;
 	state->tunedfreq = p->frequency;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("leave %s\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 

@@ -110,8 +110,12 @@ static void ssb_pmu0_pllinit_r0(struct ssb_chipcommon *cc,
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
 		   (crystalfreq / 1000), (crystalfreq % 1000));
+#else
+	ssb_;
+#endif
 
 	/* First turn the PLL off. */
 	switch (bus->chip_id) {
@@ -138,7 +142,11 @@ static void ssb_pmu0_pllinit_r0(struct ssb_chipcommon *cc,
 	}
 	tmp = chipco_read32(cc, SSB_CHIPCO_CLKCTLST);
 	if (tmp & SSB_CHIPCO_CLKCTLST_HAVEHT)
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_EMERG PFX "Failed to turn the PLL off!\n");
+#else
+		ssb_;
+#endif
 
 	/* Set PDIV in PLL control 0. */
 	pllctl = ssb_chipco_pll_read(cc, SSB_PMU0_PLLCTL0);
@@ -249,8 +257,12 @@ static void ssb_pmu1_pllinit_r0(struct ssb_chipcommon *cc,
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
 		   (crystalfreq / 1000), (crystalfreq % 1000));
+#else
+	ssb_;
+#endif
 
 	/* First turn the PLL off. */
 	switch (bus->chip_id) {
@@ -275,7 +287,11 @@ static void ssb_pmu1_pllinit_r0(struct ssb_chipcommon *cc,
 	}
 	tmp = chipco_read32(cc, SSB_CHIPCO_CLKCTLST);
 	if (tmp & SSB_CHIPCO_CLKCTLST_HAVEHT)
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_EMERG PFX "Failed to turn the PLL off!\n");
+#else
+		ssb_;
+#endif
 
 	/* Set p1div and p2div. */
 	pllctl = ssb_chipco_pll_read(cc, SSB_PMU1_PLLCTL0);
@@ -515,8 +531,12 @@ void ssb_pmu_init(struct ssb_chipcommon *cc)
 	pmucap = chipco_read32(cc, SSB_CHIPCO_PMU_CAP);
 	cc->pmu.rev = (pmucap & SSB_CHIPCO_PMU_CAP_REVISION);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
 		    cc->pmu.rev, pmucap);
+#else
+	ssb_d;
+#endif
 
 	if (cc->pmu.rev == 1)
 		chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,

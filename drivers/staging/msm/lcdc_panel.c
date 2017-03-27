@@ -61,15 +61,15 @@ int lcdc_device_register(struct msm_panel_info *pinfo)
 	ret = platform_device_add_data(pdev, &lcdc_panel_data,
 		sizeof(lcdc_panel_data));
 	if (ret) {
-		printk(KERN_ERR
-		  "%s: platform_device_add_data failed!\n", __func__);
+//		printk(KERN_ERR
+;
 		goto err_device_put;
 	}
 
 	ret = platform_device_add(pdev);
 	if (ret) {
-		printk(KERN_ERR
-		  "%s: platform_device_register failed!\n", __func__);
+//		printk(KERN_ERR
+;
 		goto err_device_put;
 	}
 

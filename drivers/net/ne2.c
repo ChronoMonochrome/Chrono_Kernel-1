@@ -323,14 +323,14 @@ static int __init ne2_probe1(struct net_device *dev, int slot)
 	static unsigned version_printed;
 
 	if (ei_debug && version_printed++ == 0)
-		printk(version);
+;
 
-	printk("NE/2 ethercard found in slot %d:", slot);
+;
 
 	/* Read base IO and IRQ from the POS-registers */
 	POS = mca_read_stored_pos(slot, 2);
 	if(!(POS % 2)) {
-		printk(" disabled.\n");
+;
 		return -ENODEV;
 	}
 
@@ -353,7 +353,7 @@ static int __init ne2_probe1(struct net_device *dev, int slot)
 		return -EBUSY;
 
 #ifdef DEBUG
-	printk("POS info : pos 2 = %#x ; base = %#x ; irq = %ld\n", POS,
+;
 			base_addr, irq);
 #endif
 
@@ -364,7 +364,7 @@ static int __init ne2_probe1(struct net_device *dev, int slot)
 	inb(base_addr + NE_RESET);
 	outb(0x21, base_addr + NE_CMD);
 	if (inb(base_addr + NE_CMD) != 0x21) {
-		printk("NE/2 adapter not responding\n");
+;
 		retval = -ENODEV;
 		goto out;
 	}
@@ -386,7 +386,7 @@ static int __init ne2_probe1(struct net_device *dev, int slot)
 
 		while ((inb_p(base_addr + EN0_ISR) & ENISR_RESET) == 0)
 			if (time_after(jiffies, reset_start_time + 2*HZ/100)) {
-				printk(" not found (no reset ack).\n");
+;
 				retval = -ENODEV;
 				goto out;
 			}
@@ -463,10 +463,10 @@ static int __init ne2_probe1(struct net_device *dev, int slot)
 	for(i = 0; i < ETHER_ADDR_LEN; i++)
 		dev->dev_addr[i] = SA_prom[i];
 
-	printk(" %pM\n", dev->dev_addr);
+;
 
-	printk("%s: %s found at %#x, using IRQ %d.\n",
-			dev->name, name, base_addr, dev->irq);
+//	printk("%s: %s found at %#x, using IRQ %d.\n",
+;
 
 	mca_set_adapter_procfn(slot, (MCA_ProcFn) ne2_procinfo, dev);
 
@@ -510,7 +510,7 @@ static void ne_reset_8390(struct net_device *dev)
 	unsigned long reset_start_time = jiffies;
 
 	if (ei_debug > 1)
-		printk("resetting the 8390 t=%ld...", jiffies);
+;
 
 	/* DON'T change these to inb_p/outb_p or reset will fail on clones. */
 	outb(inb(NE_BASE + NE_RESET), NE_BASE + NE_RESET);
@@ -521,8 +521,8 @@ static void ne_reset_8390(struct net_device *dev)
 	/* This check _should_not_ be necessary, omit eventually. */
 	while ((inb_p(NE_BASE+EN0_ISR) & ENISR_RESET) == 0)
 		if (time_after(jiffies, reset_start_time + 2*HZ/100)) {
-			printk("%s: ne_reset_8390() did not complete.\n",
-					dev->name);
+//			printk("%s: ne_reset_8390() did not complete.\n",
+;
 			break;
 		}
 	outb_p(ENISR_RESET, NE_BASE + EN0_ISR);	/* Ack intr. */
@@ -541,9 +541,9 @@ static void ne_get_8390_hdr(struct net_device *dev, struct e8390_pkt_hdr *hdr,
 	/* This *shouldn't* happen.
 	   If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne_get_8390_hdr "
-				"[DMAstat:%d][irqlock:%d].\n",
-				dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne_get_8390_hdr "
+//				"[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 
@@ -583,9 +583,9 @@ static void ne_block_input(struct net_device *dev, int count, struct sk_buff *sk
 	/* This *shouldn't* happen.
 	   If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne_block_input "
-				"[DMAstat:%d][irqlock:%d].\n",
-				dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne_block_input "
+//				"[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -624,9 +624,9 @@ static void ne_block_input(struct net_device *dev, int count, struct sk_buff *sk
 				break;
 		} while (--tries > 0);
 		if (tries <= 0)
-			printk("%s: RX transfer address mismatch,"
-				"%#4.4x (expected) vs. %#4.4x (actual).\n",
-				dev->name, ring_offset + xfer_count, addr);
+//			printk("%s: RX transfer address mismatch,"
+//				"%#4.4x (expected) vs. %#4.4x (actual).\n",
+;
 	}
 #endif
 	outb_p(ENISR_RDC, nic_base + EN0_ISR);	/* Ack intr. */
@@ -651,9 +651,9 @@ static void ne_block_output(struct net_device *dev, int count,
 	/* This *shouldn't* happen.
 	   If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne_block_output."
-				"[DMAstat:%d][irqlock:%d]\n",
-				dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne_block_output."
+//				"[DMAstat:%d][irqlock:%d]\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -711,9 +711,9 @@ retry:
 				break;
 		} while (--tries > 0);
 		if (tries <= 0) {
-			printk("%s: Tx packet transfer address mismatch,"
-					"%#4.4x (expected) vs. %#4.4x (actual).\n",
-					dev->name, (start_page << 8) + count, addr);
+//			printk("%s: Tx packet transfer address mismatch,"
+//					"%#4.4x (expected) vs. %#4.4x (actual).\n",
+;
 			if (retries++ == 0)
 				goto retry;
 		}
@@ -722,7 +722,7 @@ retry:
 
 	while ((inb_p(nic_base + EN0_ISR) & ENISR_RDC) == 0)
 		if (time_after(jiffies, dma_start + 2*HZ/100)) {		/* 20ms */
-			printk("%s: timeout waiting for Tx RDC.\n", dev->name);
+;
 			ne_reset_8390(dev);
 			NS8390p_init(dev, 1);
 			break;
@@ -771,7 +771,7 @@ int __init init_module(void)
 	}
 	if (found)
 		return 0;
-	printk(KERN_WARNING "ne2.c: No NE/2 card found\n");
+;
 	return -ENXIO;
 }
 

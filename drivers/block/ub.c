@@ -557,12 +557,20 @@ static struct ub_scsi_cmd *ub_get_cmd(struct ub_lun *lun)
 static void ub_put_cmd(struct ub_lun *lun, struct ub_scsi_cmd *cmd)
 {
 	if (cmd != &lun->cmdv[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: releasing a foreign cmd %p\n",
 		    lun->name, cmd);
+#else
+		;
+#endif
 		return;
 	}
 	if (!lun->cmda[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: releasing a free cmd\n", lun->name);
+#else
+		;
+#endif
 		return;
 	}
 	lun->cmda[0] = 0;
@@ -675,13 +683,21 @@ static int ub_request_fn_1(struct ub_lun *lun, struct request *rq)
 	n_elem = blk_rq_map_sg(lun->disk->queue, rq, &urq->sgv[0]);
 	if (n_elem < 0) {
 		/* Impossible, because blk_rq_map_sg should not hit ENOMEM. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: failed request map (%d)\n",
 		    lun->name, n_elem);
+#else
+		;
+#endif
 		goto drop;
 	}
 	if (n_elem > UB_MAX_REQ_SG) {	/* Paranoia */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: request with %d segments\n",
 		    lun->name, n_elem);
+#else
+		;
+#endif
 		goto drop;
 	}
 	urq->nsg = n_elem;
@@ -851,10 +867,14 @@ static int ub_rw_cmd_retry(struct ub_dev *sc, struct ub_lun *lun,
 	urq->current_try++;
 
 	/* Remove this if anyone complains of flooding. */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dir %c len/act %d/%d "
 	    "[sense %x %02x %02x] retry %d\n",
 	    sc->name, UB_DIR_CHAR(cmd->dir), cmd->len, cmd->act_len,
 	    cmd->key, cmd->asc, cmd->ascq, urq->current_try);
+#else
+	;
+#endif
 
 	memset(cmd, 0, sizeof(struct ub_scsi_cmd));
 	ub_cmd_build_block(sc, lun, cmd, urq);
@@ -1037,8 +1057,12 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 			 * STALL while clearning STALL.
 			 * The control pipe clears itself - nothing to do.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: stall on control pipe\n",
 			    sc->name);
+#else
+			;
+#endif
 			goto Bad_End;
 		}
 
@@ -1052,8 +1076,12 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 
 	} else if (cmd->state == UB_CMDST_CLR2STS) {
 		if (urb->status == -EPIPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: stall on control pipe\n",
 			    sc->name);
+#else
+			;
+#endif
 			goto Bad_End;
 		}
 
@@ -1067,8 +1095,12 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 
 	} else if (cmd->state == UB_CMDST_CLRRS) {
 		if (urb->status == -EPIPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: stall on control pipe\n",
 			    sc->name);
+#else
+			;
+#endif
 			goto Bad_End;
 		}
 
@@ -1089,9 +1121,13 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		case -EPIPE:
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: "
 				    "unable to submit clear (%d)\n",
 				    sc->name, rc);
+#else
+				;
+#endif
 				/*
 				 * This is typically ENOMEM or some other such shit.
 				 * Retrying is pointless. Just do Bad End on it...
@@ -1124,9 +1160,13 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		if (urb->status == -EPIPE) {
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: "
 				    "unable to submit clear (%d)\n",
 				    sc->name, rc);
+#else
+				;
+#endif
 				ub_state_done(sc, cmd, rc);
 				return;
 			}
@@ -1192,9 +1232,13 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		if (urb->status == -EPIPE) {
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: "
 				    "unable to submit clear (%d)\n",
 				    sc->name, rc);
+#else
+				;
+#endif
 				ub_state_done(sc, cmd, rc);
 				return;
 			}
@@ -1262,9 +1306,13 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 				 * Only start ignoring if this cmd ended well.
 				 */
 				if (cmd->len == cmd->act_len) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_NOTICE "%s: "
 					    "bad residual %d of %d, ignoring\n",
 					    sc->name, len, cmd->len);
+#else
+					;
+#endif
 					sc->bad_resid = 1;
 				}
 			}
@@ -1279,8 +1327,12 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		case US_BULK_STAT_PHASE:
 			goto Bad_End;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: unknown CSW status 0x%x\n",
 			    sc->name, bcs->Status);
+#else
+			;
+#endif
 			ub_state_done(sc, cmd, -EINVAL);
 			return;
 		}
@@ -1298,8 +1350,12 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		ub_state_done(sc, cmd, -EIO);
 
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: wrong command state %d\n",
 		    sc->name, cmd->state);
+#else
+		;
+#endif
 		ub_state_done(sc, cmd, -EINVAL);
 		return;
 	}
@@ -1511,18 +1567,30 @@ static void ub_top_sense_done(struct ub_dev *sc, struct ub_scsi_cmd *scmd)
 	 * save the sense into it, and advance its state machine.
 	 */
 	if ((cmd = ub_cmdq_peek(sc)) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: sense done while idle\n", sc->name);
+#else
+		;
+#endif
 		return;
 	}
 	if (cmd != scmd->back) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: "
 		    "sense done for wrong command 0x%x\n",
 		    sc->name, cmd->tag);
+#else
+		;
+#endif
 		return;
 	}
 	if (cmd->state != UB_CMDST_SENSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: sense done with bad cmd state %d\n",
 		    sc->name, cmd->state);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -1574,8 +1642,12 @@ static void ub_reset_task(struct work_struct *work)
 	int rc;
 
 	if (!sc->reset) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Running reset unrequested\n",
 		    sc->name);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -1591,15 +1663,23 @@ static void ub_reset_task(struct work_struct *work)
 	} else {
 		rc = usb_lock_device_for_reset(sc->dev, sc->intf);
 		if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE
 			    "%s: usb_lock_device_for_reset failed (%d)\n",
 			    sc->name, rc);
+#else
+			;
+#endif
 		} else {
 			rc = usb_reset_device(sc->dev);
 			if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: "
 				    "usb_lock_device_for_reset failed (%d)\n",
 				    sc->name, rc);
+#else
+				;
+#endif
 			}
 			usb_unlock_device(sc->dev);
 		}
@@ -1997,8 +2077,12 @@ static int ub_sync_reset(struct ub_dev *sc)
 	    (unsigned char*) cr, NULL, 0, ub_probe_urb_complete, &compl);
 
 	if ((rc = usb_submit_urb(&sc->work_urb, GFP_KERNEL)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		     "%s: Unable to submit a bulk reset (%d)\n", sc->name, rc);
+#else
+		;
+#endif
 		return rc;
 	}
 
@@ -2115,8 +2199,12 @@ static int ub_probe_clear_stall(struct ub_dev *sc, int stalled_pipe)
 	    (unsigned char*) cr, NULL, 0, ub_probe_urb_complete, &compl);
 
 	if ((rc = usb_submit_urb(&sc->work_urb, GFP_KERNEL)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		     "%s: Unable to submit a probe clear (%d)\n", sc->name, rc);
+#else
+		;
+#endif
 		return rc;
 	}
 
@@ -2170,7 +2258,11 @@ static int ub_get_pipes(struct ub_dev *sc, struct usb_device *dev,
 	}
 
 	if (ep_in == NULL || ep_out == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: failed endpoint check\n", sc->name);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -2418,8 +2510,12 @@ static void ub_disconnect(struct usb_interface *intf)
 			cnt++;
 		}
 		if (cnt != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: "
 			    "%d was queued after shutdown\n", sc->name, cnt);
+#else
+			;
+#endif
 		}
 	}
 	spin_unlock_irqrestore(sc->lock, flags);
@@ -2443,8 +2539,12 @@ static void ub_disconnect(struct usb_interface *intf)
 	 */
 	spin_lock_irqsave(sc->lock, flags);
 	if (sc->work_urb.status == -EINPROGRESS) {	/* janitors: ignore */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: "
 		    "URB is active after disconnect\n", sc->name);
+#else
+		;
+#endif
 	}
 	spin_unlock_irqrestore(sc->lock, flags);
 

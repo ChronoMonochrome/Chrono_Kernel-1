@@ -121,7 +121,11 @@ int mISDN_dsp_element_register(struct mISDN_dsp_element *elem)
 	}
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: %s registered\n", __func__, elem->name);
+#else
+	;
+#endif
 #endif
 
 	return 0;
@@ -146,8 +150,12 @@ void mISDN_dsp_element_unregister(struct mISDN_dsp_element *elem)
 		if (entry->elem == elem) {
 			device_unregister(&entry->dev);
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: %s unregistered\n",
 				__func__, elem->name);
+#else
+			;
+#endif
 #endif
 			return;
 		}
@@ -162,7 +170,11 @@ int dsp_pipeline_module_init(void)
 		return PTR_ERR(elements_class);
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dsp pipeline module initialized\n", __func__);
+#else
+	;
+#endif
 #endif
 
 	dsp_hwec_init();
@@ -180,13 +192,21 @@ void dsp_pipeline_module_exit(void)
 
 	list_for_each_entry_safe(entry, n, &dsp_elements, list) {
 		list_del(&entry->list);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: element was still registered: %s\n",
 			__func__, entry->elem->name);
+#else
+		;
+#endif
 		kfree(entry);
 	}
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dsp pipeline module exited\n", __func__);
+#else
+	;
+#endif
 #endif
 }
 
@@ -198,7 +218,11 @@ int dsp_pipeline_init(struct dsp_pipeline *pipeline)
 	INIT_LIST_HEAD(&pipeline->list);
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dsp pipeline ready\n", __func__);
+#else
+	;
+#endif
 #endif
 
 	return 0;
@@ -228,7 +252,11 @@ void dsp_pipeline_destroy(struct dsp_pipeline *pipeline)
 	_dsp_pipeline_destroy(pipeline);
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dsp pipeline destroyed\n", __func__);
+#else
+	;
+#endif
 #endif
 }
 
@@ -293,11 +321,15 @@ int dsp_pipeline_build(struct dsp_pipeline *pipeline, const char *cfg)
 						list_add_tail(&pipeline_entry->
 							list, &pipeline->list);
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG "%s: created "
 						    "instance of %s%s%s\n",
 						    __func__, name, args ?
 						    " with args " : "", args ?
 						    args : "");
+#else
+						;
+#endif
 #endif
 					} else {
 						printk(KERN_ERR "%s: failed "
@@ -328,8 +360,12 @@ _out:
 		pipeline->inuse = 0;
 
 #ifdef PIPELINE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: dsp pipeline built%s: %s\n",
 		__func__, incomplete ? " incomplete" : "", cfg);
+#else
+	;
+#endif
 #endif
 	kfree(dup);
 	return 0;

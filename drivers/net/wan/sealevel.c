@@ -190,7 +190,7 @@ static int slvl_setup(struct slvl_device *sv, int iobase, int irq)
 	dev->irq = irq;
 
 	if (register_hdlc_device(dev)) {
-		printk(KERN_ERR "sealevel: unable to register HDLC device\n");
+;
 		free_netdev(dev);
 		return -1;
 	}
@@ -215,8 +215,8 @@ static __init struct slvl_board *slvl_init(int iobase, int irq,
 	 */
 
 	if (!request_region(iobase, 8, "Sealevel 4021")) {
-		printk(KERN_WARNING "sealevel: I/O 0x%X already in use.\n",
-		       iobase);
+//		printk(KERN_WARNING "sealevel: I/O 0x%X already in use.\n",
+;
 		return NULL;
 	}
 
@@ -267,7 +267,7 @@ static __init struct slvl_board *slvl_init(int iobase, int irq,
 
 	if (request_irq(irq, z8530_interrupt, IRQF_DISABLED,
 			"SeaLevel", dev) < 0) {
-		printk(KERN_WARNING "sealevel: IRQ %d already in use.\n", irq);
+;
 		goto err_request_irq;
 	}
 
@@ -292,7 +292,7 @@ static __init struct slvl_board *slvl_init(int iobase, int irq,
 	 */
 
 	if (z8530_init(dev) != 0) {
-		printk(KERN_ERR "Z8530 series device not found.\n");
+;
 		enable_irq(irq);
 		goto free_hw;
 	}

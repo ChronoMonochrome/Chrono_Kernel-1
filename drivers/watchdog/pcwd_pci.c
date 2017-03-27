@@ -159,8 +159,12 @@ static int send_command(int cmd, int *msb, int *lsb)
 	int got_response, count;
 
 	if (debug >= DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "sending following data "
 		"cmd=0x%02x msb=0x%02x lsb=0x%02x\n", cmd, *msb, *lsb);
+#else
+		;
+#endif
 
 	spin_lock(&pcipcwd_private.io_lock);
 	/* If a command requires data it should be written first.
@@ -185,12 +189,20 @@ static int send_command(int cmd, int *msb, int *lsb)
 
 	if (debug >= DEBUG) {
 		if (got_response) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX
 				"time to process command was: %d ms\n",
 				count);
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX
 				"card did not respond on command!\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -203,9 +215,13 @@ static int send_command(int cmd, int *msb, int *lsb)
 		inb_p(pcipcwd_private.io_addr + 6);
 
 		if (debug >= DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX "received following data for "
 				"cmd=0x%02x: msb=0x%02x lsb=0x%02x\n",
 				cmd, *msb, *lsb);
+#else
+			;
+#endif
 	}
 
 	spin_unlock(&pcipcwd_private.io_lock);
@@ -243,27 +259,47 @@ static void pcipcwd_show_card_info(void)
 	/* Get switch settings */
 	option_switches = pcipcwd_get_option_switches();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found card at port "
 		"0x%04x (Firmware: %s) %s temp option\n",
 		(int) pcipcwd_private.io_addr, fw_ver_str,
 		(pcipcwd_private.supports_temp ? "with" : "without"));
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Option switches (0x%02x): "
 		"Temperature Reset Enable=%s, Power On Delay=%s\n",
 		option_switches,
 		((option_switches & 0x10) ? "ON" : "OFF"),
 		((option_switches & 0x08) ? "ON" : "OFF"));
+#else
+	;
+#endif
 
 	if (pcipcwd_private.boot_status & WDIOF_CARDRESET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"Previous reset was caused by the Watchdog card\n");
+#else
+		;
+#endif
 
 	if (pcipcwd_private.boot_status & WDIOF_OVERHEAT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Card sensed a CPU Overheat\n");
+#else
+		;
+#endif
 
 	if (pcipcwd_private.boot_status == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"No previous trip detected - Cold boot or reset\n");
+#else
+		;
+#endif
 }
 
 static int pcipcwd_start(void)
@@ -283,7 +319,11 @@ static int pcipcwd_start(void)
 	}
 
 	if (debug >= VERBOSE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "Watchdog started\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -309,7 +349,11 @@ static int pcipcwd_stop(void)
 	}
 
 	if (debug >= VERBOSE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "Watchdog stopped\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -322,7 +366,11 @@ static int pcipcwd_keepalive(void)
 	spin_unlock(&pcipcwd_private.io_lock);
 
 	if (debug >= DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "Watchdog keepalive signal send\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -340,8 +388,12 @@ static int pcipcwd_set_heartbeat(int t)
 
 	heartbeat = t;
 	if (debug >= VERBOSE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "New heartbeat: %d\n",
 		       heartbeat);
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -361,8 +413,12 @@ static int pcipcwd_get_status(int *status)
 	}
 
 	if (debug >= DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "Control Status #1: 0x%02x\n",
 		       control_status);
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -374,14 +430,26 @@ static int pcipcwd_clear_status(void)
 	int reset_counter;
 
 	if (debug >= VERBOSE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "clearing watchdog trip status & LED\n");
+#else
+		;
+#endif
 
 	control_status = inb_p(pcipcwd_private.io_addr + 1);
 
 	if (debug >= DEBUG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "status was: 0x%02x\n", control_status);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "sending: 0x%02x\n",
 		       (control_status & WD_PCI_R2DS) | WD_PCI_WTRP);
+#else
+		;
+#endif
 	}
 
 	/* clear trip status & LED and keep mode of relay 2 */
@@ -394,8 +462,12 @@ static int pcipcwd_clear_status(void)
 	send_command(CMD_GET_CLEAR_RESET_COUNT, &msb, &reset_counter);
 
 	if (debug >= DEBUG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "reset count was: 0x%02x\n",
 		       reset_counter);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -418,8 +490,12 @@ static int pcipcwd_get_temperature(int *temperature)
 	*temperature = (*temperature * 9 / 5) + 32;
 
 	if (debug >= DEBUG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "temperature is: %d F\n",
 		       *temperature);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -437,8 +513,12 @@ static int pcipcwd_get_timeleft(int *time_left)
 	*time_left = (msb << 8) + lsb;
 
 	if (debug >= VERBOSE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "Time left before next reboot: %d\n",
 		       *time_left);
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -602,8 +682,12 @@ static int pcipcwd_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		pcipcwd_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		pcipcwd_keepalive();
 	}
 	expect_release = 0;
@@ -703,7 +787,11 @@ static int __devinit pcipcwd_card_init(struct pci_dev *pdev,
 
 	cards_found++;
 	if (cards_found == 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX DRIVER_VERSION);
+#else
+		;
+#endif
 
 	if (cards_found > 1) {
 		printk(KERN_ERR PFX "This driver only supports 1 device\n");
@@ -755,9 +843,13 @@ static int __devinit pcipcwd_card_init(struct pci_dev *pdev,
 	 * if not reset to the default */
 	if (pcipcwd_set_heartbeat(heartbeat)) {
 		pcipcwd_set_heartbeat(WATCHDOG_HEARTBEAT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"heartbeat value must be 0<heartbeat<65536, using %d\n",
 			WATCHDOG_HEARTBEAT);
+#else
+		;
+#endif
 	}
 
 	ret = register_reboot_notifier(&pcipcwd_notifier);
@@ -784,8 +876,12 @@ static int __devinit pcipcwd_card_init(struct pci_dev *pdev,
 		goto err_out_misc_deregister;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
 		heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -842,7 +938,11 @@ static void __exit pcipcwd_cleanup_module(void)
 {
 	pci_unregister_driver(&pcipcwd_driver);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(pcipcwd_init_module);

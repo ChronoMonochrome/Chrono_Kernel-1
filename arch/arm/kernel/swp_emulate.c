@@ -276,7 +276,11 @@ static int __init swp_emulation_init(void)
 	res->read_proc = proc_read_status;
 #endif /* CONFIG_PROC_FS */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Registering SWP/SWPB emulation handler\n");
+#else
+	;
+#endif
 	register_undef_hook(&swp_hook);
 
 	return 0;

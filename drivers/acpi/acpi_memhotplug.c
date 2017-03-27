@@ -170,7 +170,11 @@ acpi_memory_get_device(acpi_handle handle,
 	/* Get the parent device */
 	result = acpi_bus_get_device(phandle, &pdevice);
 	if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Cannot get acpi bus device");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -180,7 +184,11 @@ acpi_memory_get_device(acpi_handle handle,
 	 */
 	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
 	if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Cannot add acpi bus");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -428,7 +436,11 @@ static int acpi_memory_device_add(struct acpi_device *device)
 	/* Set the device state */
 	mem_device->state = MEMORY_POWER_ON_STATE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
+#else
+	;
+#endif
 
 	/*
 	 * Early boot code has recognized memory area by EFI/E820.

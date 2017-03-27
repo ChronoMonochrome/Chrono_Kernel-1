@@ -257,18 +257,38 @@ void ide_cd_log_error(const char *name, struct request *failed_command,
 
 	printk(KERN_ERR "ATAPI device %s:\n", name);
 	if (sense->error_code == 0x70)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "  Error: ");
+#else
+		;
+#endif
 	else if (sense->error_code == 0x71)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Deferred Error: ");
+#else
+		;
+#endif
 	else if (sense->error_code == 0x7f)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "  Vendor-specific Error: ");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "  Unknown Error Type: ");
+#else
+		;
+#endif
 
 	if (sense->sense_key < ARRAY_SIZE(sense_key_texts))
 		s = sense_key_texts[sense->sense_key];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "%s -- (Sense key=0x%02x)\n", s, sense->sense_key);
+#else
+	;
+#endif
 
 	if (sense->asc == 0x40) {
 		sprintf(buf, "Diagnostic failure on component 0x%02x",
@@ -327,8 +347,16 @@ void ide_cd_log_error(const char *name, struct request *failed_command,
 		printk(KERN_ERR "  The failed \"%s\" packet command "
 				"was: \n  \"", s);
 		for (i = 0; i < BLK_MAX_CDB; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "%02x ", failed_command->cmd[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\"\n");
+#else
+		;
+#endif
 	}
 
 	/* The SKSV bit specifies validity of the sense_key_specific
@@ -351,9 +379,17 @@ void ide_cd_log_error(const char *name, struct request *failed_command,
 				(sense->sks[1] << 8) + sense->sks[2]);
 
 		if ((sense->sks[0] & 0x40) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " bit %d", sense->sks[0] & 0x07);
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\n");
+#else
+		;
+#endif
 	}
 }
 #endif

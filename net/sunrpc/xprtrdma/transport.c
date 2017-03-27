@@ -203,8 +203,8 @@ xprt_rdma_connect_worker(struct work_struct *work)
 		current->flags |= PF_FSTRANS;
 		xprt_clear_connected(xprt);
 
-		dprintk("RPC:       %s: %sconnect\n", __func__,
-				r_xprt->rx_ep.rep_connected != 0 ? "re" : "");
+//		dprintk("RPC:       %s: %sconnect\n", __func__,
+;
 		rc = rpcrdma_ep_connect(&r_xprt->rx_ep, &r_xprt->rx_ia);
 		if (rc)
 			goto out;
@@ -214,7 +214,7 @@ xprt_rdma_connect_worker(struct work_struct *work)
 out:
 	xprt_wake_pending_tasks(xprt, rc);
 out_clear:
-	dprintk("RPC:       %s: exit\n", __func__);
+;
 	xprt_clear_connecting(xprt);
 	current->flags &= ~PF_FSTRANS;
 }
@@ -236,7 +236,7 @@ xprt_rdma_destroy(struct rpc_xprt *xprt)
 	struct rpcrdma_xprt *r_xprt = rpcx_to_rdmax(xprt);
 	int rc;
 
-	dprintk("RPC:       %s: called\n", __func__);
+;
 
 	cancel_delayed_work_sync(&r_xprt->rdma_connect);
 
@@ -245,15 +245,15 @@ xprt_rdma_destroy(struct rpc_xprt *xprt)
 	rpcrdma_buffer_destroy(&r_xprt->rx_buf);
 	rc = rpcrdma_ep_destroy(&r_xprt->rx_ep, &r_xprt->rx_ia);
 	if (rc)
-		dprintk("RPC:       %s: rpcrdma_ep_destroy returned %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: rpcrdma_ep_destroy returned %i\n",
+;
 	rpcrdma_ia_close(&r_xprt->rx_ia);
 
 	xprt_rdma_free_addresses(xprt);
 
 	xprt_free(xprt);
 
-	dprintk("RPC:       %s: returning\n", __func__);
+;
 
 	module_put(THIS_MODULE);
 }
@@ -279,7 +279,7 @@ xprt_setup_rdma(struct xprt_create *args)
 	int rc;
 
 	if (args->addrlen > sizeof(xprt->addr)) {
-		dprintk("RPC:       %s: address too large\n", __func__);
+;
 		return ERR_PTR(-EBADF);
 	}
 
@@ -287,8 +287,8 @@ xprt_setup_rdma(struct xprt_create *args)
 			xprt_rdma_slot_table_entries,
 			xprt_rdma_slot_table_entries);
 	if (xprt == NULL) {
-		dprintk("RPC:       %s: couldn't allocate rpcrdma_xprt\n",
-			__func__);
+//		dprintk("RPC:       %s: couldn't allocate rpcrdma_xprt\n",
+;
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -320,8 +320,8 @@ xprt_setup_rdma(struct xprt_create *args)
 	if (ntohs(sin->sin_port) != 0)
 		xprt_set_bound(xprt);
 
-	dprintk("RPC:       %s: %pI4:%u\n",
-		__func__, &sin->sin_addr.s_addr, ntohs(sin->sin_port));
+//	dprintk("RPC:       %s: %pI4:%u\n",
+;
 
 	/* Set max requests */
 	cdata.max_requests = xprt->max_reqs;
@@ -412,7 +412,7 @@ xprt_rdma_close(struct rpc_xprt *xprt)
 {
 	struct rpcrdma_xprt *r_xprt = rpcx_to_rdmax(xprt);
 
-	dprintk("RPC:       %s: closing\n", __func__);
+;
 	if (r_xprt->rx_ep.rep_connected > 0)
 		xprt->reestablish_timeout = 0;
 	xprt_disconnect_done(xprt);
@@ -428,7 +428,7 @@ xprt_rdma_set_port(struct rpc_xprt *xprt, u16 port)
 	sap->sin_port = htons(port);
 	sap = (struct sockaddr_in *)&rpcx_to_rdmad(xprt).addr;
 	sap->sin_port = htons(port);
-	dprintk("RPC:       %s: %u\n", __func__, port);
+;
 }
 
 static void
@@ -462,8 +462,8 @@ xprt_rdma_reserve_xprt(struct rpc_xprt *xprt, struct rpc_task *task)
 	/* == RPC_CWNDSCALE @ init, but *after* setup */
 	if (r_xprt->rx_buf.rb_cwndscale == 0UL) {
 		r_xprt->rx_buf.rb_cwndscale = xprt->cwnd;
-		dprintk("RPC:       %s: cwndscale %lu\n", __func__,
-			r_xprt->rx_buf.rb_cwndscale);
+//		dprintk("RPC:       %s: cwndscale %lu\n", __func__,
+;
 		BUG_ON(r_xprt->rx_buf.rb_cwndscale <= 0);
 	}
 	xprt->cwnd = credits * r_xprt->rx_buf.rb_cwndscale;
@@ -488,11 +488,11 @@ xprt_rdma_allocate(struct rpc_task *task, size_t size)
 	BUG_ON(NULL == req);
 
 	if (size > req->rl_size) {
-		dprintk("RPC:       %s: size %zd too large for buffer[%zd]: "
-			"prog %d vers %d proc %d\n",
-			__func__, size, req->rl_size,
-			task->tk_client->cl_prog, task->tk_client->cl_vers,
-			task->tk_msg.rpc_proc->p_proc);
+//		dprintk("RPC:       %s: size %zd too large for buffer[%zd]: "
+//			"prog %d vers %d proc %d\n",
+//			__func__, size, req->rl_size,
+//			task->tk_client->cl_prog, task->tk_client->cl_vers,
+;
 		/*
 		 * Outgoing length shortage. Our inline write max must have
 		 * been configured to perform direct i/o.
@@ -512,10 +512,10 @@ xprt_rdma_allocate(struct rpc_task *task, size_t size)
 		if (rpcx_to_rdmax(xprt)->rx_ia.ri_memreg_strategy ==
 				RPCRDMA_BOUNCEBUFFERS) {
 			/* forced to "pure inline" */
-			dprintk("RPC:       %s: too much data (%zd) for inline "
-					"(r/w max %d/%d)\n", __func__, size,
-					rpcx_to_rdmad(xprt).inline_rsize,
-					rpcx_to_rdmad(xprt).inline_wsize);
+//			dprintk("RPC:       %s: too much data (%zd) for inline "
+//					"(r/w max %d/%d)\n", __func__, size,
+//					rpcx_to_rdmad(xprt).inline_rsize,
+;
 			size = req->rl_size;
 			rpc_exit(task, -EIO);		/* fail the operation */
 			rpcx_to_rdmax(xprt)->rx_stats.failed_marshal_count++;
@@ -548,7 +548,7 @@ xprt_rdma_allocate(struct rpc_task *task, size_t size)
 		req->rl_reply = NULL;
 		req = nreq;
 	}
-	dprintk("RPC:       %s: size %zd, request 0x%p\n", __func__, size, req);
+;
 out:
 	req->rl_connect_cookie = 0;	/* our reserved value */
 	return req->rl_xdr_buf;
@@ -581,8 +581,8 @@ xprt_rdma_free(void *buffer)
 		r_xprt = container_of(req->rl_buffer, struct rpcrdma_xprt, rx_buf);
 	rep = req->rl_reply;
 
-	dprintk("RPC:       %s: called on 0x%p%s\n",
-		__func__, rep, (rep && rep->rr_func) ? " (with waiter)" : "");
+//	dprintk("RPC:       %s: called on 0x%p%s\n",
+;
 
 	/*
 	 * Finish the deregistration. When using mw bind, this was
@@ -640,8 +640,8 @@ xprt_rdma_send_request(struct rpc_task *task)
 	/* marshal the send itself */
 	if (req->rl_niovs == 0 && rpcrdma_marshal_req(rqst) != 0) {
 		r_xprt->rx_stats.failed_marshal_count++;
-		dprintk("RPC:       %s: rpcrdma_marshal_req failed\n",
-			__func__);
+//		dprintk("RPC:       %s: rpcrdma_marshal_req failed\n",
+;
 		return -EIO;
 	}
 
@@ -739,7 +739,7 @@ static void __exit xprt_rdma_cleanup(void)
 {
 	int rc;
 
-	dprintk(KERN_INFO "RPCRDMA Module Removed, deregister RPC RDMA transport\n");
+;
 #ifdef RPC_DEBUG
 	if (sunrpc_table_header) {
 		unregister_sysctl_table(sunrpc_table_header);
@@ -748,8 +748,8 @@ static void __exit xprt_rdma_cleanup(void)
 #endif
 	rc = xprt_unregister_transport(&xprt_rdma);
 	if (rc)
-		dprintk("RPC:       %s: xprt_unregister returned %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: xprt_unregister returned %i\n",
+;
 }
 
 static int __init xprt_rdma_init(void)
@@ -761,15 +761,15 @@ static int __init xprt_rdma_init(void)
 	if (rc)
 		return rc;
 
-	dprintk(KERN_INFO "RPCRDMA Module Init, register RPC RDMA transport\n");
+;
 
-	dprintk(KERN_INFO "Defaults:\n");
-	dprintk(KERN_INFO "\tSlots %d\n"
-		"\tMaxInlineRead %d\n\tMaxInlineWrite %d\n",
-		xprt_rdma_slot_table_entries,
-		xprt_rdma_max_inline_read, xprt_rdma_max_inline_write);
-	dprintk(KERN_INFO "\tPadding %d\n\tMemreg %d\n",
-		xprt_rdma_inline_write_padding, xprt_rdma_memreg_strategy);
+;
+//	dprintk(KERN_INFO "\tSlots %d\n"
+//		"\tMaxInlineRead %d\n\tMaxInlineWrite %d\n",
+//		xprt_rdma_slot_table_entries,
+;
+//	dprintk(KERN_INFO "\tPadding %d\n\tMemreg %d\n",
+;
 
 #ifdef RPC_DEBUG
 	if (!sunrpc_table_header)

@@ -110,13 +110,13 @@ static int dt2814_ai_insn_read(struct comedi_device *dev,
 		outb(chan, dev->iobase + DT2814_CSR);
 		for (i = 0; i < DT2814_TIMEOUT; i++) {
 			status = inb(dev->iobase + DT2814_CSR);
-			printk(KERN_INFO "dt2814: status: %02x\n", status);
+;
 			udelay(10);
 			if (status & DT2814_FINISH)
 				break;
 		}
 		if (i >= DT2814_TIMEOUT) {
-			printk(KERN_INFO "dt2814: status: %02x\n", status);
+;
 			return -ETIMEDOUT;
 		}
 
@@ -268,9 +268,9 @@ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long iobase;
 
 	iobase = it->options[0];
-	printk(KERN_INFO "comedi%d: dt2814: 0x%04lx ", dev->minor, iobase);
+;
 	if (!request_region(iobase, DT2814_SIZE, "dt2814")) {
-		printk(KERN_ERR "I/O port conflict\n");
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -279,7 +279,7 @@ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	outb(0, dev->iobase + DT2814_CSR);
 	udelay(100);
 	if (inb(dev->iobase + DT2814_CSR) & DT2814_ERR) {
-		printk(KERN_ERR "reset error (fatal)\n");
+;
 		return -EIO;
 	}
 	i = inb(dev->iobase + DT2814_DATA);
@@ -299,7 +299,7 @@ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		irq = probe_irq_off(irqs);
 		restore_flags(flags);
 		if (inb(dev->iobase + DT2814_CSR) & DT2814_ERR)
-			printk(KERN_DEBUG "error probing irq (bad)\n");
+;
 
 
 		i = inb(dev->iobase + DT2814_DATA);
@@ -309,18 +309,18 @@ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	dev->irq = 0;
 	if (irq > 0) {
 		if (request_irq(irq, dt2814_interrupt, 0, "dt2814", dev)) {
-			printk(KERN_WARNING "(irq %d unavailable)\n", irq);
+;
 		} else {
-			printk(KERN_INFO "( irq = %d )\n", irq);
+;
 			dev->irq = irq;
 		}
 	} else if (irq == 0) {
-		printk(KERN_WARNING "(no irq)\n");
+;
 	} else {
 #if 0
-		printk(KERN_DEBUG "(probe returned multiple irqs--bad)\n");
+;
 #else
-		printk(KERN_WARNING "(irq probe not implemented)\n");
+;
 #endif
 	}
 
@@ -349,7 +349,7 @@ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int dt2814_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: dt2814: remove\n", dev->minor);
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);

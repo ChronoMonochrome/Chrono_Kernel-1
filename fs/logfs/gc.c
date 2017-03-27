@@ -55,8 +55,8 @@ static u8 root_distance(struct super_block *sb, gc_level_t __gc_level)
 		/* inode file data or indirect blocks */
 		return super->s_ifile_levels - (gc_level - 6);
 	default:
-		printk(KERN_ERR"LOGFS: segment of unknown level %x found\n",
-				gc_level);
+//		printk(KERN_ERR"LOGFS: segment of unknown level %x found\n",
+;
 		WARN_ON(1);
 		return super->s_ifile_levels + super->s_iblock_levels;
 	}
@@ -643,7 +643,7 @@ static int check_area(struct super_block *sb, int i)
 	if (super->s_devops->can_write_buf(sb, ofs) == 0)
 		return 0;
 
-	printk(KERN_INFO"LogFS: Possibly incomplete write at %llx\n", ofs);
+;
 	/*
 	 * The device cannot write back the write buffer.  Most likely the
 	 * wbuf was already written out and the system crashed at some point

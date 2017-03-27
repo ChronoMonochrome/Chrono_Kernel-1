@@ -128,7 +128,11 @@ maciisi_init(void)
 		return -EAGAIN;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb: Mac IIsi driver v0.2 for Unified ADB.\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -166,8 +170,12 @@ maciisi_stfu(void)
 
 			tmp = via[SR]; /* Clear shift register */
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "maciisi_stfu: status %x timeout %d data %x\n",
 			       status, poll_timeout, tmp);
+#else
+			;
+#endif
 #endif	
 			if(via[B] & TREQ)
 				break;
@@ -197,7 +205,11 @@ maciisi_init_via(void)
 	/* Shift register on input */
 	via[ACR]  = (via[ACR] & ~SR_CTRL) | SR_EXT;
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "maciisi_init_via: initial status %x\n", via[B] & (TIP|TREQ));
+#else
+	;
+#endif
 #endif
 	/* Wipe any pending data and int */
 	tmp = via[SR];
@@ -241,11 +253,23 @@ maciisi_send_request(struct adb_request* req, int sync)
 
 #ifdef DEBUG_MACIISI_ADB
 	if (dump_packet) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "maciisi_send_request:");
+#else
+		;
+#endif
 		for (i = 0; i < req->nbytes; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %.2x", req->data[i]);
+#else
+			;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" sync %d\n", sync);
+#else
+		;
+#endif
 	}
 #endif
 
@@ -279,7 +303,11 @@ static void maciisi_sync(struct adb_request *req)
 	int count = 0; 
 
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "maciisi_sync called\n");
+#else
+	;
+#endif
 #endif
 
 	/* If for some reason the ADB chip shuts up on us, we want to avoid an endless loop. */
@@ -350,7 +378,11 @@ maciisi_write(struct adb_request* req)
 	else
 	{
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "maciisi_write: would start, but state is %d\n", maciisi_state);
+#else
+		;
+#endif
 #endif
 		local_irq_restore(flags);
 		return -EBUSY;
@@ -370,7 +402,11 @@ maciisi_start(void)
 #ifdef DEBUG_MACIISI_ADB
 	status = via[B] & (TIP | TREQ);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "maciisi_start called, state=%d, status=%x, ifr=%x\n", maciisi_state, status, via[IFR]);
+#else
+	;
+#endif
 #endif
 
 	if (maciisi_state != idle) {
@@ -386,14 +422,22 @@ maciisi_start(void)
 	status = via[B] & (TIP|TREQ);
 	if (!(status & TREQ)) {
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "maciisi_start: bus busy - aborting\n");
+#else
+		;
+#endif
 #endif
 		return -EBUSY;
 	}
 
 	/* Okay, send */
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "maciisi_start: sending\n");
+#else
+	;
+#endif
 #endif
 	/* Set state to active */
 	via[B] |= TIP;
@@ -445,7 +489,11 @@ maciisi_interrupt(int irq, void* arg)
 
 	status = via[B] & (TIP|TREQ);
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "state %d status %x ifr %x\n", maciisi_state, status, via[IFR]);
+#else
+	;
+#endif
 #endif
 
 	if (!(via[IFR] & SR_INT)) {
@@ -597,10 +645,22 @@ maciisi_interrupt(int irq, void* arg)
 #ifdef DEBUG_MACIISI_ADB
 			if (dump_reply) {
 				int i;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "maciisi_interrupt: reply is ");
+#else
+				;
+#endif
 				for (i = 0; i < req->reply_len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(" %.2x", req->reply[i]);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
+#else
+				;
+#endif
 			}
 #endif
 			req->complete = 1;
@@ -617,8 +677,12 @@ maciisi_interrupt(int irq, void* arg)
 		if (!(status & TREQ)) {
 			/* Timeout?! More likely, another packet coming in already */
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "extra data after packet: status %x ifr %x\n",
 			       status, via[IFR]);
+#else
+			;
+#endif
 #endif
 #if 0
 			udelay(ADB_DELAY);
@@ -648,7 +712,11 @@ maciisi_interrupt(int irq, void* arg)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("maciisi_interrupt: unknown maciisi_state %d?\n", maciisi_state);
+#else
+		;
+#endif
 	}
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -667,10 +735,22 @@ maciisi_input(unsigned char *buf, int nb)
 	    break;
     default:
 #ifdef DEBUG_MACIISI_ADB
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(KERN_DEBUG "data from IIsi ADB (%d bytes):", nb);
+#else
+	    ;
+#endif
 	    for (i = 0; i < nb; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk(" %.2x", buf[i]);
+#else
+		    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("\n");
+#else
+	    ;
+#endif
 #endif
 	    break;
     }

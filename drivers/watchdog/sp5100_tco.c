@@ -143,8 +143,12 @@ static int sp5100_tco_release(struct inode *inode, struct file *file)
 	if (tco_expect_close == 42) {
 		tco_timer_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		tco_timer_keepalive();
 	}
 	clear_bit(0, &timer_alive);
@@ -375,9 +379,13 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
 		return -ENODEV;
 
 	/* Check to see if last reboot was due to watchdog timeout */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog reboot %sdetected.\n",
 	       readl(SP5100_WDT_CONTROL(tcobase)) & SP5100_PM_WATCHDOG_FIRED ?
 		      "" : "not ");
+#else
+	;
+#endif
 
 	/* Clear out the old status */
 	val = readl(SP5100_WDT_CONTROL(tcobase));
@@ -403,9 +411,13 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
 
 	clear_bit(0, &timer_alive);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized (0x%p). heartbeat=%d sec"
 		" (nowayout=%d)\n",
 		tcobase, heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -455,8 +467,12 @@ static int __init sp5100_tco_init_module(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "SP5100 TCO WatchDog Timer Driver v%s\n",
 	       TCO_VERSION);
+#else
+	;
+#endif
 
 	err = platform_driver_register(&sp5100_tco_driver);
 	if (err)
@@ -480,7 +496,11 @@ static void __exit sp5100_tco_cleanup_module(void)
 {
 	platform_device_unregister(sp5100_tco_platform_device);
 	platform_driver_unregister(&sp5100_tco_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "SP5100 TCO Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(sp5100_tco_init_module);

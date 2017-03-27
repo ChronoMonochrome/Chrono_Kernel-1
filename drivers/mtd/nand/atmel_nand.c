@@ -574,14 +574,22 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 
 	if (host->board->det_pin) {
 		if (gpio_get_value(host->board->det_pin)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "No SmartMedia card inserted.\n");
+#else
+			;
+#endif
 			res = -ENXIO;
 			goto err_no_card;
 		}
 	}
 
 	if (on_flash_bbt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "atmel_nand: Use On Flash BBT\n");
+#else
+		;
+#endif
 		nand_chip->options |= NAND_USE_FLASH_BBT;
 	}
 

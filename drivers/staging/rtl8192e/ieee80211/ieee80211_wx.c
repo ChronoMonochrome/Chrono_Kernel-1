@@ -394,9 +394,9 @@ int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
 			kfree(new_crypt);
 			new_crypt = NULL;
 
-			printk(KERN_WARNING "%s: could not initialize WEP: "
-			       "load module ieee80211_crypt_wep\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: could not initialize WEP: "
+//			       "load module ieee80211_crypt_wep\n",
+;
 			return -EOPNOTSUPP;
 		}
 		*crypt = new_crypt;
@@ -427,8 +427,8 @@ int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
 					     NULL, (*crypt)->priv);
 		if (len == 0) {
 			/* Set a default key of all 0 */
-			printk("Setting key %d to all zero.\n",
-					   key);
+//			printk("Setting key %d to all zero.\n",
+;
 
 			IEEE80211_DEBUG_WX("Setting key %d to all zero.\n",
 					   key);
@@ -473,7 +473,7 @@ int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
 	if (ieee->reset_on_keychange &&
 	    ieee->iw_mode != IW_MODE_INFRA &&
 	    ieee->reset_port && ieee->reset_port(ieee)) {
-		printk(KERN_DEBUG "%s: reset_port failed\n", dev->name);
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -617,7 +617,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
                 ret = -EINVAL;
                 goto done;
         }
-	printk("alg name:%s\n",alg);
+;
 
 	 ops = ieee80211_get_crypto_ops(alg);
         if (ops == NULL)
@@ -625,7 +625,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
         if (ops == NULL) {
                 IEEE80211_DEBUG_WX("%s: unknown crypto alg %d\n",
                                    dev->name, ext->alg);
-		printk("========>unknown crypto alg %d\n", ext->alg);
+;
                 ret = -EINVAL;
                 goto done;
         }
@@ -661,7 +661,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
             (*crypt)->ops->set_key(ext->key, ext->key_len, ext->rx_seq,
                                    (*crypt)->priv) < 0) {
                 IEEE80211_DEBUG_WX("%s: key setting failed\n", dev->name);
-		printk("key setting failed\n");
+;
                 ret = -EINVAL;
                 goto done;
         }
@@ -851,7 +851,7 @@ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len)
 	{
 		if (len != ie[1]+2)
 		{
-			printk("len:%zu, ie:%d\n", len, ie[1]);
+;
 			return -EINVAL;
 		}
 		buf = kmemdup(ie, len, GFP_KERNEL);

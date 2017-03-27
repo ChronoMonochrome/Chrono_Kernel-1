@@ -282,7 +282,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 	struct pci_dev *pcidev = NULL;
 	int index;
 
-	printk("comedi%d: cb_pcidda: ", dev->minor);
+;
 
 /*
  * Allocate the private structure area.
@@ -293,7 +293,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 /*
  * Probe the device to determine what device in the series it is.
  */
-	printk("\n");
+;
 
 	for_each_pci_dev(pcidev) {
 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
@@ -320,7 +320,7 @@ found:
 	devpriv->pci_dev = pcidev;
 	dev->board_ptr = cb_pcidda_boards + index;
 	/*  "thisboard" macro can be used from here. */
-	printk("Found %s at requested position\n", thisboard->name);
+;
 
 	/*
 	 * Enable PCI device and request regions.
@@ -377,12 +377,12 @@ found:
 	s = dev->subdevices + 2;
 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
 
-	printk(" eeprom:");
+;
 	for (index = 0; index < EEPROM_SIZE; index++) {
 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
-		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
+;
 	}
-	printk("\n");
+;
 
 	/*  set calibrations dacs */
 	for (index = 0; index < thisboard->ao_chans; index++)
@@ -417,7 +417,7 @@ static int cb_pcidda_detach(struct comedi_device *dev)
 		subdev_8255_cleanup(dev, dev->subdevices + 2);
 	}
 
-	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
+;
 
 	return 0;
 }
@@ -429,19 +429,19 @@ static int cb_pcidda_detach(struct comedi_device *dev)
 static int cb_pcidda_ai_cmd(struct comedi_device *dev,
 			    struct comedi_subdevice *s)
 {
-	printk("cb_pcidda_ai_cmd\n");
-	printk("subdev: %d\n", cmd->subdev);
-	printk("flags: %d\n", cmd->flags);
-	printk("start_src: %d\n", cmd->start_src);
-	printk("start_arg: %d\n", cmd->start_arg);
-	printk("scan_begin_src: %d\n", cmd->scan_begin_src);
-	printk("convert_src: %d\n", cmd->convert_src);
-	printk("convert_arg: %d\n", cmd->convert_arg);
-	printk("scan_end_src: %d\n", cmd->scan_end_src);
-	printk("scan_end_arg: %d\n", cmd->scan_end_arg);
-	printk("stop_src: %d\n", cmd->stop_src);
-	printk("stop_arg: %d\n", cmd->stop_arg);
-	printk("chanlist_len: %d\n", cmd->chanlist_len);
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 }
 #endif
 

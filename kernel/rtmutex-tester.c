@@ -410,7 +410,11 @@ static int init_rttest(void)
 			break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Initializing RT-Tester: %s\n", ret ? "Failed" : "OK" );
+#else
+	;
+#endif
 
 	return ret;
 }

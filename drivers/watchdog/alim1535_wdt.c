@@ -268,8 +268,12 @@ static int ali_release(struct inode *inode, struct file *file)
 	if (ali_expect_release == 42)
 		ali_stop();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 				"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		ali_keepalive();
 	}
 	clear_bit(0, &ali_is_open);
@@ -399,9 +403,13 @@ static int __init watchdog_init(void)
 	   if not reset to the default */
 	if (timeout < 1 || timeout >= 18000) {
 		timeout = WATCHDOG_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		     "timeout value must be 0 < timeout < 18000, using %d\n",
 							timeout);
+#else
+		;
+#endif
 	}
 
 	/* Calculate the watchdog's timeout */
@@ -422,8 +430,12 @@ static int __init watchdog_init(void)
 		goto unreg_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 
 out:
 	return ret;

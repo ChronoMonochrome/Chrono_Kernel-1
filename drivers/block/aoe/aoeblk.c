@@ -188,7 +188,11 @@ aoeblk_make_request(struct request_queue *q, struct bio *bio)
 	}
 	buf = mempool_alloc(d->bufpool, GFP_NOIO);
 	if (buf == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "aoe: buf allocation failure\n");
+#else
+		;
+#endif
 		bio_endio(bio, -ENOMEM);
 		return 0;
 	}

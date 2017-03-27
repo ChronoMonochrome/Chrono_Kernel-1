@@ -139,8 +139,12 @@ static int __devinit generic_init_one(struct pci_dev *dev, const struct pci_devi
 		u16 command;
 		pci_read_config_word(dev, PCI_COMMAND, &command);
 		if (!(command & PCI_COMMAND_IO)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: skipping disabled "
 				"controller\n", d->name, pci_name(dev));
+#else
+			;
+#endif
 			goto out;
 		}
 	}

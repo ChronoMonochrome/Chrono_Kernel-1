@@ -25,6 +25,7 @@
 #ifndef DEBUG_GPIO
 #define gpio_dbg(x...) do { } while (0)
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 #define gpio_dbg(x...) printk(KERN_DEBUG x)
 #endif
 
@@ -47,6 +48,9 @@ static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
 				      unsigned int offset)
 {
 	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
+#else
+#define gpio_dbg(x...) ;
+#endif
 	void __iomem *base = ourchip->base;
 	unsigned long con;
 

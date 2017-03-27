@@ -109,7 +109,7 @@
 #define PRINTK(_mask, _type, _lvl, _fmt, args...)			\
 	do {								\
 		if ((_mask) & (_type))					\
-			printk(_lvl "PPPOL2TP: " _fmt, ##args);		\
+;
 	} while (0)
 
 /* Number of bytes to build transmit L2TP headers.
@@ -1813,8 +1813,8 @@ static int __init pppol2tp_init(void)
 		goto out_unregister_pppox;
 #endif
 
-	printk(KERN_INFO "PPPoL2TP kernel driver, %s\n",
-	       PPPOL2TP_DRV_VERSION);
+//	printk(KERN_INFO "PPPoL2TP kernel driver, %s\n",
+;
 
 out:
 	return err;

@@ -51,19 +51,19 @@ struct kmem_cache		*vxfs_inode_cachep;
 void
 vxfs_dumpi(struct vxfs_inode_info *vip, ino_t ino)
 {
-	printk(KERN_DEBUG "\n\n");
+;
 	if (ino)
-		printk(KERN_DEBUG "dumping vxfs inode %ld\n", ino);
+;
 	else
-		printk(KERN_DEBUG "dumping unknown vxfs inode\n");
+;
 
-	printk(KERN_DEBUG "---------------------------\n");
-	printk(KERN_DEBUG "mode is %x\n", vip->vii_mode);
-	printk(KERN_DEBUG "nlink:%u, uid:%u, gid:%u\n",
-			vip->vii_nlink, vip->vii_uid, vip->vii_gid);
-	printk(KERN_DEBUG "size:%Lx, blocks:%u\n",
-			vip->vii_size, vip->vii_blocks);
-	printk(KERN_DEBUG "orgtype:%u\n", vip->vii_orgtype);
+;
+;
+//	printk(KERN_DEBUG "nlink:%u, uid:%u, gid:%u\n",
+;
+//	printk(KERN_DEBUG "size:%Lx, blocks:%u\n",
+;
+;
 }
 #endif
 
@@ -110,7 +110,7 @@ vxfs_blkiget(struct super_block *sbp, u_long extent, ino_t ino)
 	}
 
 fail:
-	printk(KERN_WARNING "vxfs: unable to read block %ld\n", block);
+;
 	brelse(bp);
 	return NULL;
 }
@@ -151,11 +151,11 @@ __vxfs_iget(ino_t ino, struct inode *ilistp)
 		return (vip);
 	}
 
-	printk(KERN_WARNING "vxfs: error on page %p\n", pp);
+;
 	return ERR_CAST(pp);
 
 fail:
-	printk(KERN_WARNING "vxfs: unable to read inode %ld\n", (unsigned long)ino);
+;
 	vxfs_put_page(pp);
 	return ERR_PTR(-ENOMEM);
 }

@@ -371,29 +371,61 @@ static void __init print_filtered(const char *info)
 
 	for (p = info; *p; p++)
 		if (isprint(*p))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "%c", *p);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "\\x%02x", *p & 0xff);
+#else
+			;
+#endif
 }
 
 static void __init dmi_dump_ids(void)
 {
 	const char *board;	/* Board Name is optional */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "DMI: ");
+#else
+	;
+#endif
 	print_filtered(dmi_get_system_info(DMI_SYS_VENDOR));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " ");
+#else
+	;
+#endif
 	print_filtered(dmi_get_system_info(DMI_PRODUCT_NAME));
 	board = dmi_get_system_info(DMI_BOARD_NAME);
 	if (board) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "/");
+#else
+		;
+#endif
 		print_filtered(board);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT ", BIOS ");
+#else
+	;
+#endif
 	print_filtered(dmi_get_system_info(DMI_BIOS_VERSION));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " ");
+#else
+	;
+#endif
 	print_filtered(dmi_get_system_info(DMI_BIOS_DATE));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 }
 
 static int __init dmi_present(const char __iomem *p)
@@ -469,7 +501,11 @@ void __init dmi_scan_machine(void)
 		dmi_iounmap(p, 0x10000);
 	}
  error:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DMI not present or invalid.\n");
+#else
+	;
+#endif
  out:
 	dmi_initialized = 1;
 }

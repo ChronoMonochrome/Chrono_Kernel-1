@@ -59,6 +59,7 @@
 
 
 #ifdef DEBUG_LBA
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(x...)	printk(x)
 #else
 #define DBG(x...)
@@ -102,6 +103,9 @@
 /* non-postable I/O port space, densely packed */
 #define LBA_PORT_BASE	(PCI_F_EXTEND | 0xfee00000UL)
 static void __iomem *astro_iop_base __read_mostly;
+#else
+#define DBG(x...)	;
+#endif
 
 static u32 lba_t32;
 
@@ -165,10 +169,22 @@ lba_dump_res(struct resource *r, int d)
 	if (NULL == r)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "(%p)", r->parent);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	for (i = d; i ; --i) printk(" ");
+#else
+	for (i = d; i ; --i) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%p [%lx,%lx]/%lx\n", r,
 		(long)r->start, (long)r->end, r->flags);
+#else
+	;
+#endif
 	lba_dump_res(r->child, d+2);
 	lba_dump_res(r->sibling, d);
 }
@@ -606,10 +622,14 @@ truncate_pat_collision(struct resource *root, struct resource *new)
 		new->end = tmp->start - 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "LBA: Truncating lmmio_space [%lx/%lx] "
 					"to [%lx,%lx]\n",
 			start, end,
 			(long)new->start, (long)new->end );
+#else
+	;
+#endif
 
 	return 0;	/* truncation successful */
 }
@@ -678,10 +698,14 @@ lba_fixup_bus(struct pci_bus *bus)
 					&(ldev->hba.elmmio_space));
 			if (err < 0) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("FAILED: lba_fixup_bus() request for "
 						"elmmio_space [%lx/%lx]\n",
 						(long)ldev->hba.elmmio_space.start,
 						(long)ldev->hba.elmmio_space.end);
+#else
+				;
+#endif
 
 				/* lba_dump_res(&iomem_resource, 2); */
 				/* BUG(); */
@@ -702,9 +726,13 @@ lba_fixup_bus(struct pci_bus *bus)
 		if (truncate_pat_collision(&iomem_resource,
 				       	&(ldev->hba.lmmio_space))) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "LBA: lmmio_space [%lx/%lx] duplicate!\n",
 					(long)ldev->hba.lmmio_space.start,
 					(long)ldev->hba.lmmio_space.end);
+#else
+			;
+#endif
 		} else {
 			err = request_resource(&iomem_resource, &(ldev->hba.lmmio_space));
 			if (err < 0) {
@@ -721,10 +749,14 @@ lba_fixup_bus(struct pci_bus *bus)
 		if (ldev->hba.gmmio_space.flags) {
 			err = request_resource(&iomem_resource, &(ldev->hba.gmmio_space));
 			if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("FAILED: lba_fixup_bus() request for "
 					"gmmio_space [%lx/%lx]\n",
 					(long)ldev->hba.gmmio_space.start,
 					(long)ldev->hba.gmmio_space.end);
+#else
+				;
+#endif
 				lba_dump_res(&iomem_resource, 2);
 				BUG();
 			}
@@ -1053,8 +1085,12 @@ lba_pat_resources(struct parisc_device *pa_dev, struct lba_device *lba_dev)
 				r = &lba_dev->hba.elmmio_space;
 				r->name = lba_dev->hba.elmmio_name;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING MODULE_NAME
 					" only supports 2 LMMIO resources!\n");
+#else
+				;
+#endif
 				break;
 			}
 
@@ -1077,9 +1113,13 @@ lba_pat_resources(struct parisc_device *pa_dev, struct lba_device *lba_dev)
 			break;
 
 		case PAT_NPIOP:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MODULE_NAME
 				" range[%d] : ignoring NPIOP (0x%lx)\n",
 				i, p->start);
+#else
+			;
+#endif
 			break;
 
 		case PAT_PIOP:
@@ -1100,9 +1140,13 @@ lba_pat_resources(struct parisc_device *pa_dev, struct lba_device *lba_dev)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MODULE_NAME
 				" range[%d] : unknown pat range type (0x%lx)\n",
 				i, p->type & 0xff);
+#else
+			;
+#endif
 			break;
 		}
 	}
@@ -1310,25 +1354,49 @@ lba_hw_init(struct lba_device *d)
 	u32 bus_reset;	/* PDC_PAT_BUG */
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LBA %lx  STAT_CTL %Lx  ERROR_CFG %Lx  STATUS %Lx DMA_CTL %Lx\n",
 		d->hba.base_addr,
 		READ_REG64(d->hba.base_addr + LBA_STAT_CTL),
 		READ_REG64(d->hba.base_addr + LBA_ERROR_CONFIG),
 		READ_REG64(d->hba.base_addr + LBA_ERROR_STATUS),
 		READ_REG64(d->hba.base_addr + LBA_DMA_CTL) );
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "	ARB mask %Lx  pri %Lx  mode %Lx  mtlt %Lx\n",
 		READ_REG64(d->hba.base_addr + LBA_ARB_MASK),
 		READ_REG64(d->hba.base_addr + LBA_ARB_PRI),
 		READ_REG64(d->hba.base_addr + LBA_ARB_MODE),
 		READ_REG64(d->hba.base_addr + LBA_ARB_MTLT) );
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "	HINT cfg 0x%Lx\n",
 		READ_REG64(d->hba.base_addr + LBA_HINT_CFG));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "	HINT reg ");
+#else
+	;
+#endif
 	{ int i;
 	for (i=LBA_HINT_BASE; i< (14*8 + LBA_HINT_BASE); i+=8)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %Lx", READ_REG64(d->hba.base_addr + i));
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif	/* DEBUG_LBA_PAT */
 
 #ifdef CONFIG_64BIT
@@ -1342,12 +1410,20 @@ lba_hw_init(struct lba_device *d)
 	/* PDC_PAT_BUG: exhibited in rev 40.48  on L2000 */
 	bus_reset = READ_REG32(d->hba.base_addr + LBA_STAT_CTL + 4) & 1;
 	if (bus_reset) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "NOTICE: PCI bus reset still asserted! (clearing)\n");
+#else
+		;
+#endif
 	}
 
 	stat = READ_REG32(d->hba.base_addr + LBA_ERROR_CONFIG);
 	if (stat & LBA_SMART_MODE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "NOTICE: LBA in SMART mode! (cleared)\n");
+#else
+		;
+#endif
 		stat &= ~LBA_SMART_MODE;
 		WRITE_REG32(stat, d->hba.base_addr + LBA_ERROR_CONFIG);
 	}
@@ -1374,7 +1450,11 @@ lba_hw_init(struct lba_device *d)
 		** and we can't master transactions on the bus if it's
 		** not at least one. 0x3 enables elroy and first slot.
 		*/
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "NOTICE: Enabling PCI Arbitration\n");
+#else
+		;
+#endif
 		WRITE_REG32(0x3, d->hba.base_addr + LBA_ARB_MASK);
 	}
 
@@ -1426,12 +1506,20 @@ lba_driver_probe(struct parisc_device *dev)
 		default: version = "TR4+";
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Elroy version %s (0x%x) found at 0x%lx\n",
 		       version, func_class & 0xf, (long)dev->hpa.start);
+#else
+		;
+#endif
 
 		if (func_class < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Can't support LBA older than "
 				"TR2.1 - continuing under adversity.\n");
+#else
+			;
+#endif
 		}
 
 #if 0
@@ -1455,9 +1543,13 @@ lba_driver_probe(struct parisc_device *dev)
 		/* We could use one printk for both Elroy and Mercury,
                  * but for the mask for func_class.
                  */ 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s version TR%d.%d (0x%x) found at 0x%lx\n",
 		       IS_MERCURY(dev) ? "Mercury" : "Quicksilver", major,
 		       minor, func_class, (long)dev->hpa.start);
+#else
+		;
+#endif
 
 		cfg_ops = &mercury_cfg_ops;
 	} else {

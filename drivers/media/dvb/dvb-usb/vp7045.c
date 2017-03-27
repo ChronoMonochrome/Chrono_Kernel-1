@@ -21,6 +21,7 @@ MODULE_PARM_DESC(debug, "set debugging level (1=info,xfer=2,rc=4 (or-able))." DV
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...) dprintk(dvb_usb_vp7045_debug,0x01,args)
 #define deb_xfer(args...) dprintk(dvb_usb_vp7045_debug,0x02,args)
 #define deb_rc(args...)   dprintk(dvb_usb_vp7045_debug,0x04,args)
@@ -28,6 +29,9 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in, int inlen, int msec)
 {
 	int ret = 0;
+#else
+#define deb_info(args...) d;
+#endif
 	u8 *buf = d->priv;
 
 	buf[0] = cmd;

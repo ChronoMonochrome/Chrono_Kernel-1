@@ -71,11 +71,19 @@ struct map_info dbox2_flash_map = {
 
 static int __init init_dbox2_flash(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
        	printk(KERN_NOTICE "D-Box 2 flash driver (size->0x%X mem->0x%X)\n", WINDOW_SIZE, WINDOW_ADDR);
+#else
+       	;
+#endif
 	dbox2_flash_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE);
 
 	if (!dbox2_flash_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	simple_map_init(&dbox2_flash_map);

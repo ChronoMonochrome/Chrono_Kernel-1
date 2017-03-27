@@ -202,7 +202,7 @@ static int init_i2c_module(struct i2c_adapter *adapter, const char *type,
 	if (v4l2_i2c_new_subdev(v4l2_dev, adapter, type, addr, NULL))
 		return 0;
 
-	printk(KERN_INFO "go7007: probing for module i2c:%s failed\n", type);
+;
 	return -1;
 }
 
@@ -218,7 +218,7 @@ int go7007_register_encoder(struct go7007 *go)
 {
 	int i, ret;
 
-	printk(KERN_INFO "go7007: registering new %s\n", go->name);
+;
 
 	mutex_lock(&go->hw_lock);
 	ret = go7007_init_encoder(go);

@@ -41,120 +41,120 @@
     Vojtech Pavlik <vojtech@suse.cz> :
     Cleaned up pointer arithmetics.
     Fixed a lot of 64bit issues.
-    Cleaned up printk()s a bit.
-    Fixed some obvious big endian problems.
-
-    Tobias Ringstrom <tori@unhappy.mine.nu> :
-    Use time_after for jiffies calculation.  Added ethtool
-    support.  Updated PCI resource allocation.  Do not
-    forget to unmap PCI mapped skbs.
-
-    Alan Cox <alan@lxorguk.ukuu.org.uk>
-    Added new PCI identifiers provided by Clear Zhang at ALi
-    for their 1563 ethernet device.
-
-    TODO
-
-    Check on 64 bit boxes.
-    Check and fix on big endian boxes.
-
-    Test and make sure PCI latency is now correct for all cases.
-*/
-
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-#define DRV_NAME	"dmfe"
-#define DRV_VERSION	"1.36.4"
-#define DRV_RELDATE	"2002-01-17"
-
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/string.h>
-#include <linux/timer.h>
-#include <linux/ptrace.h>
-#include <linux/errno.h>
-#include <linux/ioport.h>
-#include <linux/interrupt.h>
-#include <linux/pci.h>
-#include <linux/dma-mapping.h>
-#include <linux/init.h>
-#include <linux/netdevice.h>
-#include <linux/etherdevice.h>
-#include <linux/ethtool.h>
-#include <linux/skbuff.h>
-#include <linux/delay.h>
-#include <linux/spinlock.h>
-#include <linux/crc32.h>
-#include <linux/bitops.h>
-
-#include <asm/processor.h>
-#include <asm/io.h>
-#include <asm/dma.h>
-#include <asm/uaccess.h>
-#include <asm/irq.h>
-
-#ifdef CONFIG_TULIP_DM910X
-#include <linux/of.h>
-#endif
-
-
-/* Board/System/Debug information/definition ---------------- */
-#define PCI_DM9132_ID   0x91321282      /* Davicom DM9132 ID */
-#define PCI_DM9102_ID   0x91021282      /* Davicom DM9102 ID */
-#define PCI_DM9100_ID   0x91001282      /* Davicom DM9100 ID */
-#define PCI_DM9009_ID   0x90091282      /* Davicom DM9009 ID */
-
-#define DM9102_IO_SIZE  0x80
-#define DM9102A_IO_SIZE 0x100
-#define TX_MAX_SEND_CNT 0x1             /* Maximum tx packet per time */
-#define TX_DESC_CNT     0x10            /* Allocated Tx descriptors */
-#define RX_DESC_CNT     0x20            /* Allocated Rx descriptors */
-#define TX_FREE_DESC_CNT (TX_DESC_CNT - 2)	/* Max TX packet count */
-#define TX_WAKE_DESC_CNT (TX_DESC_CNT - 3)	/* TX wakeup count */
-#define DESC_ALL_CNT    (TX_DESC_CNT + RX_DESC_CNT)
-#define TX_BUF_ALLOC    0x600
-#define RX_ALLOC_SIZE   0x620
-#define DM910X_RESET    1
-#define CR0_DEFAULT     0x00E00000      /* TX & RX burst mode */
-#define CR6_DEFAULT     0x00080000      /* HD */
-#define CR7_DEFAULT     0x180c1
-#define CR15_DEFAULT    0x06            /* TxJabber RxWatchdog */
-#define TDES0_ERR_MASK  0x4302          /* TXJT, LC, EC, FUE */
-#define MAX_PACKET_SIZE 1514
-#define DMFE_MAX_MULTICAST 14
-#define RX_COPY_SIZE	100
-#define MAX_CHECK_PACKET 0x8000
-#define DM9801_NOISE_FLOOR 8
-#define DM9802_NOISE_FLOOR 5
-
-#define DMFE_WOL_LINKCHANGE	0x20000000
-#define DMFE_WOL_SAMPLEPACKET	0x10000000
-#define DMFE_WOL_MAGICPACKET	0x08000000
-
-
-#define DMFE_10MHF      0
-#define DMFE_100MHF     1
-#define DMFE_10MFD      4
-#define DMFE_100MFD     5
-#define DMFE_AUTO       8
-#define DMFE_1M_HPNA    0x10
-
-#define DMFE_TXTH_72	0x400000	/* TX TH 72 byte */
-#define DMFE_TXTH_96	0x404000	/* TX TH 96 byte */
-#define DMFE_TXTH_128	0x0000		/* TX TH 128 byte */
-#define DMFE_TXTH_256	0x4000		/* TX TH 256 byte */
-#define DMFE_TXTH_512	0x8000		/* TX TH 512 byte */
-#define DMFE_TXTH_1K	0xC000		/* TX TH 1K  byte */
-
-#define DMFE_TIMER_WUT  (jiffies + HZ * 1)/* timer wakeup time : 1 second */
-#define DMFE_TX_TIMEOUT ((3*HZ)/2)	/* tx packet time-out time 1.5 s" */
-#define DMFE_TX_KICK 	(HZ/2)	/* tx packet Kick-out time 0.5 s" */
-
-#define DMFE_DBUG(dbug_now, msg, value)			\
-	do {						\
-		if (dmfe_debug || (dbug_now))		\
-			pr_err("%s %lx\n",		\
-			       (msg), (long) (value));	\
+//    Cleaned up printk()s a bit.
+//    Fixed some obvious big endian problems.
+//
+//    Tobias Ringstrom <tori@unhappy.mine.nu> :
+//    Use time_after for jiffies calculation.  Added ethtool
+//    support.  Updated PCI resource allocation.  Do not
+//    forget to unmap PCI mapped skbs.
+//
+//    Alan Cox <alan@lxorguk.ukuu.org.uk>
+//    Added new PCI identifiers provided by Clear Zhang at ALi
+//    for their 1563 ethernet device.
+//
+//    TODO
+//
+//    Check on 64 bit boxes.
+//    Check and fix on big endian boxes.
+//
+//    Test and make sure PCI latency is now correct for all cases.
+//*/
+//
+//#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+//
+//#define DRV_NAME	"dmfe"
+//#define DRV_VERSION	"1.36.4"
+//#define DRV_RELDATE	"2002-01-17"
+//
+//#include <linux/module.h>
+//#include <linux/kernel.h>
+//#include <linux/string.h>
+//#include <linux/timer.h>
+//#include <linux/ptrace.h>
+//#include <linux/errno.h>
+//#include <linux/ioport.h>
+//#include <linux/interrupt.h>
+//#include <linux/pci.h>
+//#include <linux/dma-mapping.h>
+//#include <linux/init.h>
+//#include <linux/netdevice.h>
+//#include <linux/etherdevice.h>
+//#include <linux/ethtool.h>
+//#include <linux/skbuff.h>
+//#include <linux/delay.h>
+//#include <linux/spinlock.h>
+//#include <linux/crc32.h>
+//#include <linux/bitops.h>
+//
+//#include <asm/processor.h>
+//#include <asm/io.h>
+//#include <asm/dma.h>
+//#include <asm/uaccess.h>
+//#include <asm/irq.h>
+//
+//#ifdef CONFIG_TULIP_DM910X
+//#include <linux/of.h>
+//#endif
+//
+//
+///* Board/System/Debug information/definition ---------------- */
+//#define PCI_DM9132_ID   0x91321282      /* Davicom DM9132 ID */
+//#define PCI_DM9102_ID   0x91021282      /* Davicom DM9102 ID */
+//#define PCI_DM9100_ID   0x91001282      /* Davicom DM9100 ID */
+//#define PCI_DM9009_ID   0x90091282      /* Davicom DM9009 ID */
+//
+//#define DM9102_IO_SIZE  0x80
+//#define DM9102A_IO_SIZE 0x100
+//#define TX_MAX_SEND_CNT 0x1             /* Maximum tx packet per time */
+//#define TX_DESC_CNT     0x10            /* Allocated Tx descriptors */
+//#define RX_DESC_CNT     0x20            /* Allocated Rx descriptors */
+//#define TX_FREE_DESC_CNT (TX_DESC_CNT - 2)	/* Max TX packet count */
+//#define TX_WAKE_DESC_CNT (TX_DESC_CNT - 3)	/* TX wakeup count */
+//#define DESC_ALL_CNT    (TX_DESC_CNT + RX_DESC_CNT)
+//#define TX_BUF_ALLOC    0x600
+//#define RX_ALLOC_SIZE   0x620
+//#define DM910X_RESET    1
+//#define CR0_DEFAULT     0x00E00000      /* TX & RX burst mode */
+//#define CR6_DEFAULT     0x00080000      /* HD */
+//#define CR7_DEFAULT     0x180c1
+//#define CR15_DEFAULT    0x06            /* TxJabber RxWatchdog */
+//#define TDES0_ERR_MASK  0x4302          /* TXJT, LC, EC, FUE */
+//#define MAX_PACKET_SIZE 1514
+//#define DMFE_MAX_MULTICAST 14
+//#define RX_COPY_SIZE	100
+//#define MAX_CHECK_PACKET 0x8000
+//#define DM9801_NOISE_FLOOR 8
+//#define DM9802_NOISE_FLOOR 5
+//
+//#define DMFE_WOL_LINKCHANGE	0x20000000
+//#define DMFE_WOL_SAMPLEPACKET	0x10000000
+//#define DMFE_WOL_MAGICPACKET	0x08000000
+//
+//
+//#define DMFE_10MHF      0
+//#define DMFE_100MHF     1
+//#define DMFE_10MFD      4
+//#define DMFE_100MFD     5
+//#define DMFE_AUTO       8
+//#define DMFE_1M_HPNA    0x10
+//
+//#define DMFE_TXTH_72	0x400000	/* TX TH 72 byte */
+//#define DMFE_TXTH_96	0x404000	/* TX TH 96 byte */
+//#define DMFE_TXTH_128	0x0000		/* TX TH 128 byte */
+//#define DMFE_TXTH_256	0x4000		/* TX TH 256 byte */
+//#define DMFE_TXTH_512	0x8000		/* TX TH 512 byte */
+//#define DMFE_TXTH_1K	0xC000		/* TX TH 1K  byte */
+//
+//#define DMFE_TIMER_WUT  (jiffies + HZ * 1)/* timer wakeup time : 1 second */
+//#define DMFE_TX_TIMEOUT ((3*HZ)/2)	/* tx packet time-out time 1.5 s" */
+//#define DMFE_TX_KICK 	(HZ/2)	/* tx packet Kick-out time 0.5 s" */
+//
+//#define DMFE_DBUG(dbug_now, msg, value)			\
+//	do {						\
+//		if (dmfe_debug || (dbug_now))		\
+//			pr_err("%s %lx\n",		\
+;
 	} while (0)
 
 #define SHOW_MEDIA_TYPE(mode)				\
@@ -774,11 +774,11 @@ static int dmfe_stop(struct DEVICE *dev)
 
 #if 0
 	/* show statistic counter */
-	printk("FU:%lx EC:%lx LC:%lx NC:%lx LOC:%lx TXJT:%lx RESET:%lx RCR8:%lx FAL:%lx TT:%lx\n",
-	       db->tx_fifo_underrun, db->tx_excessive_collision,
-	       db->tx_late_collision, db->tx_no_carrier, db->tx_loss_carrier,
-	       db->tx_jabber_timeout, db->reset_count, db->reset_cr8,
-	       db->reset_fatal, db->reset_TXtimeout);
+//	printk("FU:%lx EC:%lx LC:%lx NC:%lx LOC:%lx TXJT:%lx RESET:%lx RCR8:%lx FAL:%lx TT:%lx\n",
+//	       db->tx_fifo_underrun, db->tx_excessive_collision,
+//	       db->tx_late_collision, db->tx_no_carrier, db->tx_loss_carrier,
+//	       db->tx_jabber_timeout, db->reset_count, db->reset_cr8,
+;
 #endif
 
 	return 0;

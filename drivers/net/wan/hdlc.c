@@ -114,8 +114,8 @@ static int hdlc_device_event(struct notifier_block *this, unsigned long event,
 	on = netif_carrier_ok(dev);
 
 #ifdef DEBUG_LINK
-	printk(KERN_DEBUG "%s: hdlc_device_event NETDEV_CHANGE, carrier %i\n",
-	       dev->name, on);
+//	printk(KERN_DEBUG "%s: hdlc_device_event NETDEV_CHANGE, carrier %i\n",
+;
 #endif
 
 	hdlc = dev_to_hdlc(dev);
@@ -130,10 +130,10 @@ static int hdlc_device_event(struct notifier_block *this, unsigned long event,
 		goto carrier_exit;
 
 	if (hdlc->carrier) {
-		printk(KERN_INFO "%s: Carrier detected\n", dev->name);
+;
 		hdlc_proto_start(dev);
 	} else {
-		printk(KERN_INFO "%s: Carrier lost\n", dev->name);
+;
 		hdlc_proto_stop(dev);
 	}
 
@@ -149,8 +149,8 @@ int hdlc_open(struct net_device *dev)
 {
 	hdlc_device *hdlc = dev_to_hdlc(dev);
 #ifdef DEBUG_LINK
-	printk(KERN_DEBUG "%s: hdlc_open() carrier %i open %i\n", dev->name,
-	       hdlc->carrier, hdlc->open);
+//	printk(KERN_DEBUG "%s: hdlc_open() carrier %i open %i\n", dev->name,
+;
 #endif
 
 	if (hdlc->proto == NULL)
@@ -165,10 +165,10 @@ int hdlc_open(struct net_device *dev)
 	spin_lock_irq(&hdlc->state_lock);
 
 	if (hdlc->carrier) {
-		printk(KERN_INFO "%s: Carrier detected\n", dev->name);
+;
 		hdlc_proto_start(dev);
 	} else
-		printk(KERN_INFO "%s: No carrier\n", dev->name);
+;
 
 	hdlc->open = 1;
 
@@ -183,8 +183,8 @@ void hdlc_close(struct net_device *dev)
 {
 	hdlc_device *hdlc = dev_to_hdlc(dev);
 #ifdef DEBUG_LINK
-	printk(KERN_DEBUG "%s: hdlc_close() carrier %i open %i\n", dev->name,
-	       hdlc->carrier, hdlc->open);
+//	printk(KERN_DEBUG "%s: hdlc_close() carrier %i open %i\n", dev->name,
+;
 #endif
 
 	spin_lock_irq(&hdlc->state_lock);
@@ -281,8 +281,8 @@ int attach_hdlc_protocol(struct net_device *dev, struct hdlc_proto *proto,
 	if (size)
 		if ((dev_to_hdlc(dev)->state = kmalloc(size,
 						       GFP_KERNEL)) == NULL) {
-			printk(KERN_WARNING "Memory squeeze on"
-			       " hdlc_proto_attach()\n");
+//			printk(KERN_WARNING "Memory squeeze on"
+;
 			module_put(proto->module);
 			return -ENOBUFS;
 		}
@@ -363,7 +363,7 @@ static int __init hdlc_module_init(void)
 {
 	int result;
 
-	printk(KERN_INFO "%s\n", version);
+;
 	if ((result = register_netdevice_notifier(&hdlc_notifier)) != 0)
 		return result;
 	dev_add_pack(&hdlc_packet_type);

@@ -236,8 +236,8 @@ get_key(const void *p, const void *end,
 	}
 
 	if (!supported_gss_krb5_enctype(alg)) {
-		printk(KERN_WARNING "gss_kerberos_mech: unsupported "
-			"encryption key algorithm %d\n", alg);
+//		printk(KERN_WARNING "gss_kerberos_mech: unsupported "
+;
 		p = ERR_PTR(-EINVAL);
 		goto out_err;
 	}
@@ -248,14 +248,14 @@ get_key(const void *p, const void *end,
 	*res = crypto_alloc_blkcipher(ctx->gk5e->encrypt_name, 0,
 							CRYPTO_ALG_ASYNC);
 	if (IS_ERR(*res)) {
-		printk(KERN_WARNING "gss_kerberos_mech: unable to initialize "
-			"crypto algorithm %s\n", ctx->gk5e->encrypt_name);
+//		printk(KERN_WARNING "gss_kerberos_mech: unable to initialize "
+;
 		*res = NULL;
 		goto out_err_free_key;
 	}
 	if (crypto_blkcipher_setkey(*res, key.data, key.len)) {
-		printk(KERN_WARNING "gss_kerberos_mech: error setting key for "
-			"crypto algorithm %s\n", ctx->gk5e->encrypt_name);
+//		printk(KERN_WARNING "gss_kerberos_mech: error setting key for "
+;
 		goto out_err_free_tfm;
 	}
 
@@ -351,13 +351,13 @@ context_v2_alloc_cipher(struct krb5_ctx *ctx, const char *cname, u8 *key)
 
 	cp = crypto_alloc_blkcipher(cname, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(cp)) {
-		dprintk("gss_kerberos_mech: unable to initialize "
-			"crypto algorithm %s\n", cname);
+//		dprintk("gss_kerberos_mech: unable to initialize "
+;
 		return NULL;
 	}
 	if (crypto_blkcipher_setkey(cp, key, ctx->gk5e->keylength)) {
-		dprintk("gss_kerberos_mech: error setting key for "
-			"crypto algorithm %s\n", cname);
+//		dprintk("gss_kerberos_mech: error setting key for "
+;
 		crypto_free_blkcipher(cp);
 		return NULL;
 	}
@@ -404,8 +404,8 @@ context_derive_keys_des3(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->cksum;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving cksum key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving cksum key\n",
+;
 		goto out_free_enc;
 	}
 
@@ -434,14 +434,14 @@ context_derive_keys_rc4(struct krb5_ctx *ctx)
 	struct scatterlist sg[1];
 	int err;
 
-	dprintk("RPC:       %s: entered\n", __func__);
+;
 	/*
 	 * derive cksum (aka Ksign) key
 	 */
 	hmac = crypto_alloc_hash(ctx->gk5e->cksum_name, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(hmac)) {
-		dprintk("%s: error %ld allocating hash '%s'\n",
-			__func__, PTR_ERR(hmac), ctx->gk5e->cksum_name);
+//		dprintk("%s: error %ld allocating hash '%s'\n",
+;
 		err = PTR_ERR(hmac);
 		goto out_err;
 	}
@@ -481,14 +481,14 @@ context_derive_keys_rc4(struct krb5_ctx *ctx)
 		goto out_err_free_hmac;
 	}
 
-	dprintk("RPC:       %s: returning success\n", __func__);
+;
 
 	err = 0;
 
 out_err_free_hmac:
 	crypto_free_hash(hmac);
 out_err:
-	dprintk("RPC:       %s: returning %d\n", __func__, err);
+;
 	return err;
 }
 
@@ -511,8 +511,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->initiator_seal;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving initiator_seal key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving initiator_seal key\n",
+;
 		goto out_err;
 	}
 	ctx->initiator_enc = context_v2_alloc_cipher(ctx,
@@ -526,8 +526,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->acceptor_seal;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving acceptor_seal key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving acceptor_seal key\n",
+;
 		goto out_free_initiator_enc;
 	}
 	ctx->acceptor_enc = context_v2_alloc_cipher(ctx,
@@ -541,8 +541,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->initiator_sign;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving initiator_sign key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving initiator_sign key\n",
+;
 		goto out_free_acceptor_enc;
 	}
 
@@ -551,8 +551,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->acceptor_sign;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving acceptor_sign key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving acceptor_sign key\n",
+;
 		goto out_free_acceptor_enc;
 	}
 
@@ -561,8 +561,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->initiator_integ;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving initiator_integ key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving initiator_integ key\n",
+;
 		goto out_free_acceptor_enc;
 	}
 
@@ -571,8 +571,8 @@ context_derive_keys_new(struct krb5_ctx *ctx, gfp_t gfp_mask)
 	keyout.data = ctx->acceptor_integ;
 	err = krb5_derive_key(ctx->gk5e, &keyin, &keyout, &c, gfp_mask);
 	if (err) {
-		dprintk("%s: Error %d deriving acceptor_integ key\n",
-			__func__, err);
+//		dprintk("%s: Error %d deriving acceptor_integ key\n",
+;
 		goto out_free_acceptor_enc;
 	}
 
@@ -623,8 +623,8 @@ gss_import_v2_context(const void *p, const void *end, struct krb5_ctx *ctx,
 	/* set seq_send for use by "older" enctypes */
 	ctx->seq_send = ctx->seq_send64;
 	if (ctx->seq_send64 != ctx->seq_send) {
-		dprintk("%s: seq_send64 %lx, seq_send %x overflow?\n", __func__,
-			(long unsigned)ctx->seq_send64, ctx->seq_send);
+//		dprintk("%s: seq_send64 %lx, seq_send %x overflow?\n", __func__,
+;
 		p = ERR_PTR(-EINVAL);
 		goto out_err;
 	}
@@ -636,8 +636,8 @@ gss_import_v2_context(const void *p, const void *end, struct krb5_ctx *ctx,
 		ctx->enctype = ENCTYPE_DES3_CBC_RAW;
 	ctx->gk5e = get_gss_krb5_enctype(ctx->enctype);
 	if (ctx->gk5e == NULL) {
-		dprintk("gss_kerberos_mech: unsupported krb5 enctype %u\n",
-			ctx->enctype);
+//		dprintk("gss_kerberos_mech: unsupported krb5 enctype %u\n",
+;
 		p = ERR_PTR(-EINVAL);
 		goto out_err;
 	}
@@ -699,7 +699,7 @@ gss_import_sec_context_kerberos(const void *p, size_t len,
 	else
 		kfree(ctx);
 
-	dprintk("RPC:       %s: returning %d\n", __func__, ret);
+;
 	return ret;
 }
 
@@ -767,7 +767,7 @@ static int __init init_kerberos_module(void)
 
 	status = gss_mech_register(&gss_kerberos_mech);
 	if (status)
-		printk("Failed to register kerberos gss mechanism!\n");
+;
 	return status;
 }
 

@@ -85,7 +85,11 @@ void cper_print_bits(const char *pfx, unsigned int bits,
 		if (!str)
 			continue;
 		if (len && len + strlen(str) + 2 > 80) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s\n", buf);
+#else
+			;
+#endif
 			len = 0;
 		}
 		if (!len)
@@ -94,7 +98,11 @@ void cper_print_bits(const char *pfx, unsigned int bits,
 			len += snprintf(buf+len, sizeof(buf)-len, ", %s", str);
 	}
 	if (len)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s\n", buf);
+#else
+		;
+#endif
 }
 
 static const char *cper_proc_type_strs[] = {
@@ -133,45 +141,93 @@ static void cper_print_proc_generic(const char *pfx,
 				    const struct cper_sec_proc_generic *proc)
 {
 	if (proc->validation_bits & CPER_PROC_VALID_TYPE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""processor_type: %d, %s\n", pfx, proc->proc_type,
 		       proc->proc_type < ARRAY_SIZE(cper_proc_type_strs) ?
 		       cper_proc_type_strs[proc->proc_type] : "unknown");
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_ISA)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""processor_isa: %d, %s\n", pfx, proc->proc_isa,
 		       proc->proc_isa < ARRAY_SIZE(cper_proc_isa_strs) ?
 		       cper_proc_isa_strs[proc->proc_isa] : "unknown");
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_ERROR_TYPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""error_type: 0x%02x\n", pfx, proc->proc_error_type);
+#else
+		;
+#endif
 		cper_print_bits(pfx, proc->proc_error_type,
 				cper_proc_error_type_strs,
 				ARRAY_SIZE(cper_proc_error_type_strs));
 	}
 	if (proc->validation_bits & CPER_PROC_VALID_OPERATION)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""operation: %d, %s\n", pfx, proc->operation,
 		       proc->operation < ARRAY_SIZE(cper_proc_op_strs) ?
 		       cper_proc_op_strs[proc->operation] : "unknown");
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_FLAGS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""flags: 0x%02x\n", pfx, proc->flags);
+#else
+		;
+#endif
 		cper_print_bits(pfx, proc->flags, cper_proc_flag_strs,
 				ARRAY_SIZE(cper_proc_flag_strs));
 	}
 	if (proc->validation_bits & CPER_PROC_VALID_LEVEL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""level: %d\n", pfx, proc->level);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_VERSION)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""version_info: 0x%016llx\n", pfx, proc->cpu_version);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""processor_id: 0x%016llx\n", pfx, proc->proc_id);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_TARGET_ADDRESS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""target_address: 0x%016llx\n",
 		       pfx, proc->target_addr);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_REQUESTOR_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""requestor_id: 0x%016llx\n",
 		       pfx, proc->requestor_id);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_RESPONDER_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""responder_id: 0x%016llx\n",
 		       pfx, proc->responder_id);
+#else
+		;
+#endif
 	if (proc->validation_bits & CPER_PROC_VALID_IP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""IP: 0x%016llx\n", pfx, proc->ip);
+#else
+		;
+#endif
 }
 
 static const char *cper_mem_err_type_strs[] = {
@@ -195,40 +251,100 @@ static const char *cper_mem_err_type_strs[] = {
 static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
 {
 	if (mem->validation_bits & CPER_MEM_VALID_ERROR_STATUS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""error_status: 0x%016llx\n", pfx, mem->error_status);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""physical_address: 0x%016llx\n",
 		       pfx, mem->physical_addr);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""physical_address_mask: 0x%016llx\n",
 		       pfx, mem->physical_addr_mask);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_NODE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""node: %d\n", pfx, mem->node);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_CARD)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""card: %d\n", pfx, mem->card);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""module: %d\n", pfx, mem->module);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_BANK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""bank: %d\n", pfx, mem->bank);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""device: %d\n", pfx, mem->device);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_ROW)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""row: %d\n", pfx, mem->row);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_COLUMN)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""column: %d\n", pfx, mem->column);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_BIT_POSITION)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""bit_position: %d\n", pfx, mem->bit_pos);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_REQUESTOR_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""requestor_id: 0x%016llx\n", pfx, mem->requestor_id);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_RESPONDER_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""responder_id: 0x%016llx\n", pfx, mem->responder_id);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_TARGET_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""target_id: 0x%016llx\n", pfx, mem->target_id);
+#else
+		;
+#endif
 	if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE) {
 		u8 etype = mem->error_type;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""error_type: %d, %s\n", pfx, etype,
 		       etype < ARRAY_SIZE(cper_mem_err_type_strs) ?
 		       cper_mem_err_type_strs[etype] : "unknown");
+#else
+		;
+#endif
 	}
 }
 
@@ -250,36 +366,76 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
 			    const struct acpi_hest_generic_data *gdata)
 {
 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
 		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
 		       cper_pcie_port_type_strs[pcie->port_type] : "unknown");
+#else
+		;
+#endif
 	if (pcie->validation_bits & CPER_PCIE_VALID_VERSION)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""version: %d.%d\n", pfx,
 		       pcie->version.major, pcie->version.minor);
+#else
+		;
+#endif
 	if (pcie->validation_bits & CPER_PCIE_VALID_COMMAND_STATUS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""command: 0x%04x, status: 0x%04x\n", pfx,
 		       pcie->command, pcie->status);
+#else
+		;
+#endif
 	if (pcie->validation_bits & CPER_PCIE_VALID_DEVICE_ID) {
 		const __u8 *p;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""device_id: %04x:%02x:%02x.%x\n", pfx,
 		       pcie->device_id.segment, pcie->device_id.bus,
 		       pcie->device_id.device, pcie->device_id.function);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""slot: %d\n", pfx,
 		       pcie->device_id.slot >> CPER_PCIE_SLOT_SHIFT);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""secondary_bus: 0x%02x\n", pfx,
 		       pcie->device_id.secondary_bus);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""vendor_id: 0x%04x, device_id: 0x%04x\n", pfx,
 		       pcie->device_id.vendor_id, pcie->device_id.device_id);
+#else
+		;
+#endif
 		p = pcie->device_id.class_code;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""class_code: %02x%02x%02x\n", pfx, p[0], p[1], p[2]);
+#else
+		;
+#endif
 	}
 	if (pcie->validation_bits & CPER_PCIE_VALID_SERIAL_NUMBER)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""serial number: 0x%04x, 0x%04x\n", pfx,
 		       pcie->serial_number.lower, pcie->serial_number.upper);
+#else
+		;
+#endif
 	if (pcie->validation_bits & CPER_PCIE_VALID_BRIDGE_CONTROL_STATUS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(
 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
+#else
+		;
+#endif
 #ifdef CONFIG_ACPI_APEI_PCIEAER
 	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
 		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
@@ -304,39 +460,71 @@ static void apei_estatus_print_section(
 	__u16 severity;
 
 	severity = gdata->error_severity;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""section: %d, severity: %d, %s\n", pfx, sec_no, severity,
 	       cper_severity_str(severity));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""flags: 0x%02x\n", pfx, gdata->flags);
+#else
+	;
+#endif
 	cper_print_bits(pfx, gdata->flags, apei_estatus_section_flag_strs,
 			ARRAY_SIZE(apei_estatus_section_flag_strs));
 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""fru_id: %pUl\n", pfx, (uuid_le *)gdata->fru_id);
+#else
+		;
+#endif
 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_TEXT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""fru_text: %.20s\n", pfx, gdata->fru_text);
+#else
+		;
+#endif
 
 	if (!uuid_le_cmp(*sec_type, CPER_SEC_PROC_GENERIC)) {
 		struct cper_sec_proc_generic *proc_err = (void *)(gdata + 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""section_type: general processor error\n", pfx);
+#else
+		;
+#endif
 		if (gdata->error_data_length >= sizeof(*proc_err))
 			cper_print_proc_generic(pfx, proc_err);
 		else
 			goto err_section_too_small;
 	} else if (!uuid_le_cmp(*sec_type, CPER_SEC_PLATFORM_MEM)) {
 		struct cper_sec_mem_err *mem_err = (void *)(gdata + 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""section_type: memory error\n", pfx);
+#else
+		;
+#endif
 		if (gdata->error_data_length >= sizeof(*mem_err))
 			cper_print_mem(pfx, mem_err);
 		else
 			goto err_section_too_small;
 	} else if (!uuid_le_cmp(*sec_type, CPER_SEC_PCIE)) {
 		struct cper_sec_pcie *pcie = (void *)(gdata + 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""section_type: PCIe error\n", pfx);
+#else
+		;
+#endif
 		if (gdata->error_data_length >= sizeof(*pcie))
 			cper_print_pcie(pfx, pcie, gdata);
 		else
 			goto err_section_too_small;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""section type: unknown, %pUl\n", pfx, sec_type);
+#else
+		;
+#endif
 
 	return;
 
@@ -352,10 +540,18 @@ void apei_estatus_print(const char *pfx,
 	int sec_no = 0;
 	__u16 severity;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""APEI generic hardware error status\n", pfx);
+#else
+	;
+#endif
 	severity = estatus->error_severity;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""severity: %d, %s\n", pfx, severity,
 	       cper_severity_str(severity));
+#else
+	;
+#endif
 	data_len = estatus->data_length;
 	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
 	while (data_len > sizeof(*gdata)) {

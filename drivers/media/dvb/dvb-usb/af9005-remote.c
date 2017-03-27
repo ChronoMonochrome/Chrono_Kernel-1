@@ -31,6 +31,7 @@ MODULE_PARM_DESC(debug,
 		 "enable (1) or disable (0) debug messages."
 		 DVB_USB_DEBUG_STATUS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_decode(args...)   dprintk(dvb_usb_af9005_remote_debug,0x01,args)
 
 struct rc_map_table rc_map_af9005_table[] = {
@@ -73,6 +74,9 @@ struct rc_map_table rc_map_af9005_table[] = {
 	{0x0055, KEY_0},
 	{0x00d5, KEY_GOTO},	/* marked jump on the remote */
 };
+#else
+#define deb_decode(args...)   d;
+#endif
 
 int rc_map_af9005_table_size = ARRAY_SIZE(rc_map_af9005_table);
 

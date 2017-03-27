@@ -874,7 +874,11 @@ static struct usb_driver si470x_usb_driver = {
  */
 static int __init si470x_module_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRIVER_DESC ", Version " DRIVER_VERSION "\n");
+#else
+	;
+#endif
 	return usb_register(&si470x_usb_driver);
 }
 

@@ -144,7 +144,11 @@ static int macii_probe(void)
 
 	via = via1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb: Mac II ADB Driver v1.0 for Unified ADB\n");
+#else
+	;
+#endif
 	return 0;
 }
 

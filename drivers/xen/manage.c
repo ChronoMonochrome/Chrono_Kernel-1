@@ -125,7 +125,11 @@ static void do_suspend(void)
 		goto out_thaw;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "suspending xenstore...\n");
+#else
+	;
+#endif
 	xs_suspend();
 
 	err = dpm_suspend_noirq(PMSG_FREEZE);
@@ -243,7 +247,11 @@ static void shutdown_handler(struct xenbus_watch *watch,
 	if (handler->cb) {
 		handler->cb();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Ignoring shutdown request: %s\n", str);
+#else
+		;
+#endif
 		shutting_down = SHUTDOWN_INVALID;
 	}
 

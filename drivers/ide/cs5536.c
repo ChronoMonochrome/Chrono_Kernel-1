@@ -269,7 +269,11 @@ static int cs5536_init_one(struct pci_dev *dev, const struct pci_device_id *id)
 	u32 cfg;
 
 	if (use_msr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME ": Using MSR regs instead of PCI\n");
+#else
+		;
+#endif
 
 	cs5536_read(dev, CFG, &cfg);
 

@@ -364,13 +364,21 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 	// This is the input device we need to register
 	// with sweep2wake!
 	sweep2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("s2w: registered input_dev\n");
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 	// This is the input device we need to register
 	// with doubletap2wake!
 	doubletap2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("dt2w: registered input_dev\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;

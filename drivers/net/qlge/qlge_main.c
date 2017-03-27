@@ -375,11 +375,11 @@ static int ql_set_mac_addr_reg(struct ql_adapter *qdev, u8 *addr, u32 type,
 			    (addr[2] << 24) | (addr[3] << 16) | (addr[4] << 8) |
 			    (addr[5]);
 
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "Adding %s address %pM at index %d in the CAM.\n",
-				     type == MAC_ADDR_TYPE_MULTI_MAC ?
-				     "MULTICAST" : "UNICAST",
-				     addr, index);
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//				     "Adding %s address %pM at index %d in the CAM.\n",
+//				     type == MAC_ADDR_TYPE_MULTI_MAC ?
+//				     "MULTICAST" : "UNICAST",
+;
 
 			status =
 			    ql_wait_reg_rdy(qdev,
@@ -468,13 +468,13 @@ static int ql_set_mac_addr(struct ql_adapter *qdev, int set)
 
 	if (set) {
 		addr = &qdev->current_mac_addr[0];
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Set Mac addr %pM\n", addr);
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	} else {
 		memset(zero_mac_addr, 0, ETH_ALEN);
 		addr = &zero_mac_addr[0];
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Clearing MAC address\n");
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	}
 	status = ql_sem_spinlock(qdev, SEM_MAC_ADDR_MASK);
 	if (status)
@@ -534,27 +534,27 @@ static int ql_set_routing_reg(struct ql_adapter *qdev, u32 index, u32 mask,
 	int status = -EINVAL; /* Return error if no mask match. */
 	u32 value = 0;
 
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-		     "%s %s mask %s the routing reg.\n",
-		     enable ? "Adding" : "Removing",
-		     index == RT_IDX_ALL_ERR_SLOT ? "MAC ERROR/ALL ERROR" :
-		     index == RT_IDX_IP_CSUM_ERR_SLOT ? "IP CSUM ERROR" :
-		     index == RT_IDX_TCP_UDP_CSUM_ERR_SLOT ? "TCP/UDP CSUM ERROR" :
-		     index == RT_IDX_BCAST_SLOT ? "BROADCAST" :
-		     index == RT_IDX_MCAST_MATCH_SLOT ? "MULTICAST MATCH" :
-		     index == RT_IDX_ALLMULTI_SLOT ? "ALL MULTICAST MATCH" :
-		     index == RT_IDX_UNUSED6_SLOT ? "UNUSED6" :
-		     index == RT_IDX_UNUSED7_SLOT ? "UNUSED7" :
-		     index == RT_IDX_RSS_MATCH_SLOT ? "RSS ALL/IPV4 MATCH" :
-		     index == RT_IDX_RSS_IPV6_SLOT ? "RSS IPV6" :
-		     index == RT_IDX_RSS_TCP4_SLOT ? "RSS TCP4" :
-		     index == RT_IDX_RSS_TCP6_SLOT ? "RSS TCP6" :
-		     index == RT_IDX_CAM_HIT_SLOT ? "CAM HIT" :
-		     index == RT_IDX_UNUSED013 ? "UNUSED13" :
-		     index == RT_IDX_UNUSED014 ? "UNUSED14" :
-		     index == RT_IDX_PROMISCUOUS_SLOT ? "PROMISCUOUS" :
-		     "(Bad index != RT_IDX)",
-		     enable ? "to" : "from");
+//	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//		     "%s %s mask %s the routing reg.\n",
+//		     enable ? "Adding" : "Removing",
+//		     index == RT_IDX_ALL_ERR_SLOT ? "MAC ERROR/ALL ERROR" :
+//		     index == RT_IDX_IP_CSUM_ERR_SLOT ? "IP CSUM ERROR" :
+//		     index == RT_IDX_TCP_UDP_CSUM_ERR_SLOT ? "TCP/UDP CSUM ERROR" :
+//		     index == RT_IDX_BCAST_SLOT ? "BROADCAST" :
+//		     index == RT_IDX_MCAST_MATCH_SLOT ? "MULTICAST MATCH" :
+//		     index == RT_IDX_ALLMULTI_SLOT ? "ALL MULTICAST MATCH" :
+//		     index == RT_IDX_UNUSED6_SLOT ? "UNUSED6" :
+//		     index == RT_IDX_UNUSED7_SLOT ? "UNUSED7" :
+//		     index == RT_IDX_RSS_MATCH_SLOT ? "RSS ALL/IPV4 MATCH" :
+//		     index == RT_IDX_RSS_IPV6_SLOT ? "RSS IPV6" :
+//		     index == RT_IDX_RSS_TCP4_SLOT ? "RSS TCP4" :
+//		     index == RT_IDX_RSS_TCP6_SLOT ? "RSS TCP6" :
+//		     index == RT_IDX_CAM_HIT_SLOT ? "CAM HIT" :
+//		     index == RT_IDX_UNUSED013 ? "UNUSED13" :
+//		     index == RT_IDX_UNUSED014 ? "UNUSED14" :
+//		     index == RT_IDX_PROMISCUOUS_SLOT ? "PROMISCUOUS" :
+//		     "(Bad index != RT_IDX)",
+;
 
 	switch (mask) {
 	case RT_IDX_CAM_HIT:
@@ -1178,9 +1178,9 @@ static void ql_update_lbq(struct ql_adapter *qdev, struct rx_ring *rx_ring)
 
 	while (rx_ring->lbq_free_cnt > 32) {
 		for (i = 0; i < 16; i++) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "lbq: try cleaning clean_idx = %d.\n",
-				     clean_idx);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "lbq: try cleaning clean_idx = %d.\n",
+;
 			lbq_desc = &rx_ring->lbq[clean_idx];
 			if (ql_get_next_chunk(qdev, rx_ring, lbq_desc)) {
 				netif_err(qdev, ifup, qdev->ndev,
@@ -1211,9 +1211,9 @@ static void ql_update_lbq(struct ql_adapter *qdev, struct rx_ring *rx_ring)
 	}
 
 	if (start_idx != clean_idx) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "lbq: updating prod idx = %d.\n",
-			     rx_ring->lbq_prod_idx);
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//			     "lbq: updating prod idx = %d.\n",
+;
 		ql_write_db_reg(rx_ring->lbq_prod_idx,
 				rx_ring->lbq_prod_idx_db_reg);
 	}
@@ -1231,14 +1231,14 @@ static void ql_update_sbq(struct ql_adapter *qdev, struct rx_ring *rx_ring)
 	while (rx_ring->sbq_free_cnt > 16) {
 		for (i = 0; i < 16; i++) {
 			sbq_desc = &rx_ring->sbq[clean_idx];
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "sbq: try cleaning clean_idx = %d.\n",
-				     clean_idx);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "sbq: try cleaning clean_idx = %d.\n",
+;
 			if (sbq_desc->p.skb == NULL) {
-				netif_printk(qdev, rx_status, KERN_DEBUG,
-					     qdev->ndev,
-					     "sbq: getting new skb for index %d.\n",
-					     sbq_desc->index);
+//				netif_printk(qdev, rx_status, KERN_DEBUG,
+//					     qdev->ndev,
+//					     "sbq: getting new skb for index %d.\n",
+;
 				sbq_desc->p.skb =
 				    netdev_alloc_skb(qdev->ndev,
 						     SMALL_BUFFER_SIZE);
@@ -1279,9 +1279,9 @@ static void ql_update_sbq(struct ql_adapter *qdev, struct rx_ring *rx_ring)
 	}
 
 	if (start_idx != clean_idx) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "sbq: updating prod idx = %d.\n",
-			     rx_ring->sbq_prod_idx);
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//			     "sbq: updating prod idx = %d.\n",
+;
 		ql_write_db_reg(rx_ring->sbq_prod_idx,
 				rx_ring->sbq_prod_idx_db_reg);
 	}
@@ -1313,9 +1313,9 @@ static void ql_unmap_send(struct ql_adapter *qdev,
 			 * then its an OAL.
 			 */
 			if (i == 7) {
-				netif_printk(qdev, tx_done, KERN_DEBUG,
-					     qdev->ndev,
-					     "unmapping OAL area.\n");
+//				netif_printk(qdev, tx_done, KERN_DEBUG,
+//					     qdev->ndev,
+;
 			}
 			pci_unmap_single(qdev->pdev,
 					 dma_unmap_addr(&tx_ring_desc->map[i],
@@ -1324,8 +1324,8 @@ static void ql_unmap_send(struct ql_adapter *qdev,
 						       maplen),
 					 PCI_DMA_TODEVICE);
 		} else {
-			netif_printk(qdev, tx_done, KERN_DEBUG, qdev->ndev,
-				     "unmapping frag %d.\n", i);
+//			netif_printk(qdev, tx_done, KERN_DEBUG, qdev->ndev,
+;
 			pci_unmap_page(qdev->pdev,
 				       dma_unmap_addr(&tx_ring_desc->map[i],
 						      mapaddr),
@@ -1350,8 +1350,8 @@ static int ql_map_send(struct ql_adapter *qdev,
 	int frag_cnt = skb_shinfo(skb)->nr_frags;
 
 	if (frag_cnt) {
-		netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
-			     "frag_cnt = %d.\n", frag_cnt);
+//		netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
+;
 	}
 	/*
 	 * Map the skb buffer first.
@@ -1557,9 +1557,9 @@ static void ql_process_mac_rx_page(struct ql_adapter *qdev,
 		goto err_out;
 	}
 	memcpy(skb_put(skb, ETH_HLEN), addr, ETH_HLEN);
-	netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-		     "%d bytes of headers and data in large. Chain page to new skb and pull tail.\n",
-		     length);
+//	netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//		     "%d bytes of headers and data in large. Chain page to new skb and pull tail.\n",
+;
 	skb_fill_page_desc(skb, 0, lbq_desc->p.pg_chunk.page,
 				lbq_desc->p.pg_chunk.offset+ETH_HLEN,
 				length-ETH_HLEN);
@@ -1576,8 +1576,8 @@ static void ql_process_mac_rx_page(struct ql_adapter *qdev,
 		!(ib_mac_rsp->flags1 & IB_MAC_CSUM_ERR_MASK)) {
 		/* TCP frame. */
 		if (ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_T) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "TCP checksum done!\n");
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
 		} else if ((ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_U) &&
 				(ib_mac_rsp->flags3 & IB_MAC_IOCB_RSP_V4)) {
@@ -1586,9 +1586,9 @@ static void ql_process_mac_rx_page(struct ql_adapter *qdev,
 			if (!(iph->frag_off &
 				cpu_to_be16(IP_MF|IP_OFFSET))) {
 				skb->ip_summed = CHECKSUM_UNNECESSARY;
-				netif_printk(qdev, rx_status, KERN_DEBUG,
-					     qdev->ndev,
-					     "TCP checksum done!\n");
+//				netif_printk(qdev, rx_status, KERN_DEBUG,
+//					     qdev->ndev,
+;
 			}
 		}
 	}
@@ -1664,18 +1664,18 @@ static void ql_process_mac_rx_skb(struct ql_adapter *qdev,
 	prefetch(skb->data);
 	skb->dev = ndev;
 	if (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "%s Multicast.\n",
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_HASH ? "Hash" :
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_REG ? "Registered" :
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_PROM ? "Promiscuous" : "");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//			     "%s Multicast.\n",
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+//			     IB_MAC_IOCB_RSP_M_HASH ? "Hash" :
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+//			     IB_MAC_IOCB_RSP_M_REG ? "Registered" :
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+;
 	}
 	if (ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_P)
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "Promiscuous Packet.\n");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 
 	rx_ring->rx_packets++;
 	rx_ring->rx_bytes += skb->len;
@@ -1689,8 +1689,8 @@ static void ql_process_mac_rx_skb(struct ql_adapter *qdev,
 		!(ib_mac_rsp->flags1 & IB_MAC_CSUM_ERR_MASK)) {
 		/* TCP frame. */
 		if (ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_T) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "TCP checksum done!\n");
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
 		} else if ((ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_U) &&
 				(ib_mac_rsp->flags3 & IB_MAC_IOCB_RSP_V4)) {
@@ -1699,9 +1699,9 @@ static void ql_process_mac_rx_skb(struct ql_adapter *qdev,
 			if (!(iph->frag_off &
 				ntohs(IP_MF|IP_OFFSET))) {
 				skb->ip_summed = CHECKSUM_UNNECESSARY;
-				netif_printk(qdev, rx_status, KERN_DEBUG,
-					     qdev->ndev,
-					     "TCP checksum done!\n");
+//				netif_printk(qdev, rx_status, KERN_DEBUG,
+//					     qdev->ndev,
+;
 			}
 		}
 	}
@@ -1755,8 +1755,8 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 	 */
 	if (ib_mac_rsp->flags4 & IB_MAC_IOCB_RSP_HV &&
 	    ib_mac_rsp->flags4 & IB_MAC_IOCB_RSP_HS) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "Header of %d bytes in small buffer.\n", hdr_len);
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 		/*
 		 * Headers fit nicely into a small buffer.
 		 */
@@ -1775,16 +1775,16 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 	 * Handle the data buffer(s).
 	 */
 	if (unlikely(!length)) {	/* Is there data too? */
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "No Data buffer in this packet.\n");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 		return skb;
 	}
 
 	if (ib_mac_rsp->flags3 & IB_MAC_IOCB_RSP_DS) {
 		if (ib_mac_rsp->flags4 & IB_MAC_IOCB_RSP_HS) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Headers in small, data of %d bytes in small, combine them.\n",
-				     length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Headers in small, data of %d bytes in small, combine them.\n",
+;
 			/*
 			 * Data is less than small buffer size so it's
 			 * stuffed in a small buffer.
@@ -1810,9 +1810,9 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 							maplen),
 						       PCI_DMA_FROMDEVICE);
 		} else {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "%d bytes in a single small buffer.\n",
-				     length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "%d bytes in a single small buffer.\n",
+;
 			sbq_desc = ql_get_curr_sbuf(rx_ring);
 			skb = sbq_desc->p.skb;
 			ql_realign_skb(skb, length);
@@ -1827,18 +1827,18 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 		}
 	} else if (ib_mac_rsp->flags3 & IB_MAC_IOCB_RSP_DL) {
 		if (ib_mac_rsp->flags4 & IB_MAC_IOCB_RSP_HS) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Header in small, %d bytes in large. Chain large to small!\n",
-				     length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Header in small, %d bytes in large. Chain large to small!\n",
+;
 			/*
 			 * The data is in a single large buffer.  We
 			 * chain it to the header buffer's skb and let
 			 * it rip.
 			 */
 			lbq_desc = ql_get_curr_lchunk(qdev, rx_ring);
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Chaining page at offset = %d, for %d bytes  to skb.\n",
-				     lbq_desc->p.pg_chunk.offset, length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Chaining page at offset = %d, for %d bytes  to skb.\n",
+;
 			skb_fill_page_desc(skb, 0, lbq_desc->p.pg_chunk.page,
 						lbq_desc->p.pg_chunk.offset,
 						length);
@@ -1854,8 +1854,8 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 			lbq_desc = ql_get_curr_lchunk(qdev, rx_ring);
 			skb = netdev_alloc_skb(qdev->ndev, length);
 			if (skb == NULL) {
-				netif_printk(qdev, probe, KERN_DEBUG, qdev->ndev,
-					     "No skb available, drop the packet.\n");
+//				netif_printk(qdev, probe, KERN_DEBUG, qdev->ndev,
+;
 				return NULL;
 			}
 			pci_unmap_page(qdev->pdev,
@@ -1864,9 +1864,9 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 				       dma_unmap_len(lbq_desc, maplen),
 				       PCI_DMA_FROMDEVICE);
 			skb_reserve(skb, NET_IP_ALIGN);
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "%d bytes of headers and data in large. Chain page to new skb and pull tail.\n",
-				     length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "%d bytes of headers and data in large. Chain page to new skb and pull tail.\n",
+;
 			skb_fill_page_desc(skb, 0,
 						lbq_desc->p.pg_chunk.page,
 						lbq_desc->p.pg_chunk.offset,
@@ -1907,9 +1907,9 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 			 * a local buffer and use it to find the
 			 * pages to chain.
 			 */
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "%d bytes of headers & data in chain of large.\n",
-				     length);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "%d bytes of headers & data in chain of large.\n",
+;
 			skb = sbq_desc->p.skb;
 			sbq_desc->p.skb = NULL;
 			skb_reserve(skb, NET_IP_ALIGN);
@@ -1919,9 +1919,9 @@ static struct sk_buff *ql_build_rx_skb(struct ql_adapter *qdev,
 			size = (length < rx_ring->lbq_buf_size) ? length :
 				rx_ring->lbq_buf_size;
 
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Adding page %d to skb for %d bytes.\n",
-				     i, size);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Adding page %d to skb for %d bytes.\n",
+;
 			skb_fill_page_desc(skb, i,
 						lbq_desc->p.pg_chunk.page,
 						lbq_desc->p.pg_chunk.offset,
@@ -1951,8 +1951,8 @@ static void ql_process_mac_split_rx_intr(struct ql_adapter *qdev,
 
 	skb = ql_build_rx_skb(qdev, rx_ring, ib_mac_rsp);
 	if (unlikely(!skb)) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "No skb available, drop packet.\n");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 		rx_ring->rx_dropped++;
 		return;
 	}
@@ -1985,18 +1985,18 @@ static void ql_process_mac_split_rx_intr(struct ql_adapter *qdev,
 	prefetch(skb->data);
 	skb->dev = ndev;
 	if (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev, "%s Multicast.\n",
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_HASH ? "Hash" :
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_REG ? "Registered" :
-			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
-			     IB_MAC_IOCB_RSP_M_PROM ? "Promiscuous" : "");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev, "%s Multicast.\n",
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+//			     IB_MAC_IOCB_RSP_M_HASH ? "Hash" :
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+//			     IB_MAC_IOCB_RSP_M_REG ? "Registered" :
+//			     (ib_mac_rsp->flags1 & IB_MAC_IOCB_RSP_M_MASK) ==
+;
 		rx_ring->rx_multicast++;
 	}
 	if (ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_P) {
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "Promiscuous Packet.\n");
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 	}
 
 	skb->protocol = eth_type_trans(skb, ndev);
@@ -2009,8 +2009,8 @@ static void ql_process_mac_split_rx_intr(struct ql_adapter *qdev,
 		!(ib_mac_rsp->flags1 & IB_MAC_CSUM_ERR_MASK)) {
 		/* TCP frame. */
 		if (ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_T) {
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "TCP checksum done!\n");
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
 		} else if ((ib_mac_rsp->flags2 & IB_MAC_IOCB_RSP_U) &&
 				(ib_mac_rsp->flags3 & IB_MAC_IOCB_RSP_V4)) {
@@ -2019,8 +2019,8 @@ static void ql_process_mac_split_rx_intr(struct ql_adapter *qdev,
 			if (!(iph->frag_off &
 				ntohs(IP_MF|IP_OFFSET))) {
 				skb->ip_summed = CHECKSUM_UNNECESSARY;
-				netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-					     "TCP checksum done!\n");
+//				netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 			}
 		}
 	}
@@ -2206,9 +2206,9 @@ static int ql_clean_outbound_rx_ring(struct rx_ring *rx_ring)
 	/* While there are entries in the completion queue. */
 	while (prod != rx_ring->cnsmr_idx) {
 
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "cq_id = %d, prod = %d, cnsmr = %d.\n.",
-			     rx_ring->cq_id, prod, rx_ring->cnsmr_idx);
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//			     "cq_id = %d, prod = %d, cnsmr = %d.\n.",
+;
 
 		net_rsp = (struct ob_mac_iocb_rsp *)rx_ring->curr_entry;
 		rmb();
@@ -2219,9 +2219,9 @@ static int ql_clean_outbound_rx_ring(struct rx_ring *rx_ring)
 			ql_process_mac_tx_intr(qdev, net_rsp);
 			break;
 		default:
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Hit default case, not handled! dropping the packet, opcode = %x.\n",
-				     net_rsp->opcode);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Hit default case, not handled! dropping the packet, opcode = %x.\n",
+;
 		}
 		count++;
 		ql_update_cq(rx_ring);
@@ -2254,9 +2254,9 @@ static int ql_clean_inbound_rx_ring(struct rx_ring *rx_ring, int budget)
 	/* While there are entries in the completion queue. */
 	while (prod != rx_ring->cnsmr_idx) {
 
-		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-			     "cq_id = %d, prod = %d, cnsmr = %d.\n.",
-			     rx_ring->cq_id, prod, rx_ring->cnsmr_idx);
+//		netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//			     "cq_id = %d, prod = %d, cnsmr = %d.\n.",
+;
 
 		net_rsp = rx_ring->curr_entry;
 		rmb();
@@ -2272,9 +2272,9 @@ static int ql_clean_inbound_rx_ring(struct rx_ring *rx_ring, int budget)
 						net_rsp);
 			break;
 		default:
-			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-				     "Hit default case, not handled! dropping the packet, opcode = %x.\n",
-				     net_rsp->opcode);
+//			netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+//				     "Hit default case, not handled! dropping the packet, opcode = %x.\n",
+;
 			break;
 		}
 		count++;
@@ -2296,8 +2296,8 @@ static int ql_napi_poll_msix(struct napi_struct *napi, int budget)
 	int i, work_done = 0;
 	struct intr_context *ctx = &qdev->intr_context[rx_ring->cq_id];
 
-	netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
-		     "Enter, NAPI POLL cq_id = %d.\n", rx_ring->cq_id);
+//	netif_printk(qdev, rx_status, KERN_DEBUG, qdev->ndev,
+;
 
 	/* Service the TX rings first.  They start
 	 * right after the RSS rings. */
@@ -2309,9 +2309,9 @@ static int ql_napi_poll_msix(struct napi_struct *napi, int budget)
 		if ((ctx->irq_mask & (1 << trx_ring->cq_id)) &&
 			(ql_read_sh_reg(trx_ring->prod_idx_sh_reg) !=
 					trx_ring->cnsmr_idx)) {
-			netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
-				     "%s: Servicing TX completion ring %d.\n",
-				     __func__, trx_ring->cq_id);
+//			netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
+//				     "%s: Servicing TX completion ring %d.\n",
+;
 			ql_clean_outbound_rx_ring(trx_ring);
 		}
 	}
@@ -2321,9 +2321,9 @@ static int ql_napi_poll_msix(struct napi_struct *napi, int budget)
 	 */
 	if (ql_read_sh_reg(rx_ring->prod_idx_sh_reg) !=
 					rx_ring->cnsmr_idx) {
-		netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
-			     "%s: Servicing RX completion ring %d.\n",
-			     __func__, rx_ring->cq_id);
+//		netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
+//			     "%s: Servicing RX completion ring %d.\n",
+;
 		work_done = ql_clean_inbound_rx_ring(rx_ring, budget);
 	}
 
@@ -2340,13 +2340,13 @@ static void qlge_vlan_rx_register(struct net_device *ndev, struct vlan_group *gr
 
 	qdev->vlgrp = grp;
 	if (grp) {
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Turning on VLAN in NIC_RCV_CFG.\n");
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 		ql_write32(qdev, NIC_RCV_CFG, NIC_RCV_CFG_VLAN_MASK |
 			   NIC_RCV_CFG_VLAN_MATCH_AND_NON);
 	} else {
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Turning off VLAN in NIC_RCV_CFG.\n");
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 		ql_write32(qdev, NIC_RCV_CFG, NIC_RCV_CFG_VLAN_MASK);
 	}
 }
@@ -2424,8 +2424,8 @@ static irqreturn_t qlge_isr(int irq, void *dev_id)
 
 	spin_lock(&qdev->hw_lock);
 	if (atomic_read(&qdev->intr_context[0].irq_cnt)) {
-		netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
-			     "Shared Interrupt, Not ours!\n");
+//		netif_printk(qdev, intr, KERN_DEBUG, qdev->ndev,
+;
 		spin_unlock(&qdev->hw_lock);
 		return IRQ_NONE;
 	}
@@ -2591,8 +2591,8 @@ static netdev_tx_t qlge_send(struct sk_buff *skb, struct net_device *ndev)
 	mac_iocb_ptr->frame_len = cpu_to_le16((u16) skb->len);
 
 	if (vlan_tx_tag_present(skb)) {
-		netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
-			     "Adding a vlan tag %d.\n", vlan_tx_tag_get(skb));
+//		netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
+;
 		mac_iocb_ptr->flags3 |= OB_MAC_IOCB_V;
 		mac_iocb_ptr->vlan_tci = cpu_to_le16(vlan_tx_tag_get(skb));
 	}
@@ -2618,9 +2618,9 @@ static netdev_tx_t qlge_send(struct sk_buff *skb, struct net_device *ndev)
 	wmb();
 
 	ql_write_db_reg(tx_ring->prod_idx, tx_ring->prod_idx_db_reg);
-	netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
-		     "tx queued, slot %d, len %d\n",
-		     tx_ring->prod_idx, skb->len);
+//	netif_printk(qdev, tx_queued, KERN_DEBUG, qdev->ndev,
+//		     "tx queued, slot %d, len %d\n",
+;
 
 	atomic_dec(&tx_ring->tx_count);
 	return NETDEV_TX_OK;
@@ -3155,11 +3155,11 @@ static int ql_start_rx_ring(struct ql_adapter *qdev, struct rx_ring *rx_ring)
 		cqicb->pkt_delay = cpu_to_le16(qdev->rx_max_coalesced_frames);
 		break;
 	default:
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Invalid rx_ring->type = %d.\n", rx_ring->type);
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	}
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-		     "Initializing rx work queue.\n");
+//	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	err = ql_write_cfg(qdev, cqicb, sizeof(struct cqicb),
 			   CFG_LCQ, rx_ring->cq_id);
 	if (err) {
@@ -3212,8 +3212,8 @@ static int ql_start_tx_ring(struct ql_adapter *qdev, struct tx_ring *tx_ring)
 		netif_err(qdev, ifup, qdev->ndev, "Failed to load tx_ring.\n");
 		return err;
 	}
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-		     "Successfully loaded WQICB.\n");
+//	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	return err;
 }
 
@@ -3290,8 +3290,8 @@ msi:
 		}
 	}
 	qlge_irq_type = LEG_IRQ;
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-		     "Running with legacy interrupts.\n");
+//	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 }
 
 /* Each vector services 1 RSS ring and and 1 or more
@@ -3463,12 +3463,12 @@ static void ql_free_irq(struct ql_adapter *qdev)
 			if (test_bit(QL_MSIX_ENABLED, &qdev->flags)) {
 				free_irq(qdev->msi_x_entry[i].vector,
 					 &qdev->rx_ring[i]);
-				netif_printk(qdev, ifdown, KERN_DEBUG, qdev->ndev,
-					     "freeing msix interrupt %d.\n", i);
+//				netif_printk(qdev, ifdown, KERN_DEBUG, qdev->ndev,
+;
 			} else {
 				free_irq(qdev->pdev->irq, &qdev->rx_ring[0]);
-				netif_printk(qdev, ifdown, KERN_DEBUG, qdev->ndev,
-					     "freeing msi interrupt %d.\n", i);
+//				netif_printk(qdev, ifdown, KERN_DEBUG, qdev->ndev,
+;
 			}
 		}
 	}
@@ -3498,28 +3498,28 @@ static int ql_request_irq(struct ql_adapter *qdev)
 					  i);
 				goto err_irq;
 			} else {
-				netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-					     "Hooked intr %d, queue type %s, with name %s.\n",
-					     i,
-					     qdev->rx_ring[i].type == DEFAULT_Q ?
-					     "DEFAULT_Q" :
-					     qdev->rx_ring[i].type == TX_Q ?
-					     "TX_Q" :
-					     qdev->rx_ring[i].type == RX_Q ?
-					     "RX_Q" : "",
-					     intr_context->name);
+//				netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//					     "Hooked intr %d, queue type %s, with name %s.\n",
+//					     i,
+//					     qdev->rx_ring[i].type == DEFAULT_Q ?
+//					     "DEFAULT_Q" :
+//					     qdev->rx_ring[i].type == TX_Q ?
+//					     "TX_Q" :
+//					     qdev->rx_ring[i].type == RX_Q ?
+//					     "RX_Q" : "",
+;
 			}
 		} else {
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "trying msi or legacy interrupts.\n");
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "%s: irq = %d.\n", __func__, pdev->irq);
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "%s: context->name = %s.\n", __func__,
-				     intr_context->name);
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "%s: dev_id = 0x%p.\n", __func__,
-				     &qdev->rx_ring[0]);
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//				     "%s: context->name = %s.\n", __func__,
+;
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//				     "%s: dev_id = 0x%p.\n", __func__,
+;
 			status =
 			    request_irq(pdev->irq, qlge_isr,
 					test_bit(QL_MSI_ENABLED,
@@ -3577,15 +3577,15 @@ static int ql_start_rss(struct ql_adapter *qdev)
 	memcpy((void *)&ricb->ipv6_hash_key[0], init_hash_seed, 40);
 	memcpy((void *)&ricb->ipv4_hash_key[0], init_hash_seed, 16);
 
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev, "Initializing RSS.\n");
+;
 
 	status = ql_write_cfg(qdev, ricb, sizeof(*ricb), CFG_LR, 0);
 	if (status) {
 		netif_err(qdev, ifup, qdev->ndev, "Failed to load RICB.\n");
 		return status;
 	}
-	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-		     "Successfully loaded RICB.\n");
+//	netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 	return status;
 }
 
@@ -3793,8 +3793,8 @@ static int ql_adapter_initialize(struct ql_adapter *qdev)
 
 	/* Start NAPI for the RSS queues. */
 	for (i = 0; i < qdev->rss_ring_count; i++) {
-		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-			     "Enabling NAPI for rx_ring[%d].\n", i);
+//		netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+;
 		napi_enable(&qdev->rx_ring[i].napi);
 	}
 
@@ -4096,10 +4096,10 @@ static int ql_configure_rings(struct ql_adapter *qdev)
 			rx_ring->lbq_size =
 			    rx_ring->lbq_len * sizeof(__le64);
 			rx_ring->lbq_buf_size = (u16)lbq_buf_len;
-			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
-				     "lbq_buf_size %d, order = %d\n",
-				     rx_ring->lbq_buf_size,
-				     qdev->lbq_buf_order);
+//			netif_printk(qdev, ifup, KERN_DEBUG, qdev->ndev,
+//				     "lbq_buf_size %d, order = %d\n",
+//				     rx_ring->lbq_buf_size,
+;
 			rx_ring->sbq_len = NUM_SMALL_BUFFERS;
 			rx_ring->sbq_size =
 			    rx_ring->sbq_len * sizeof(__le64);

@@ -144,8 +144,8 @@ void __quota_error(struct super_block *sb, const char *func,
 		vaf.fmt = fmt;
 		vaf.va = &args;
 
-		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
-		       sb->s_id, func, &vaf);
+//		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
+;
 
 		va_end(args);
 	}
@@ -1027,9 +1027,9 @@ static void remove_dquot_ref(struct super_block *sb, int type,
 	spin_unlock(&inode_sb_list_lock);
 #ifdef CONFIG_QUOTA_DEBUG
 	if (reserved) {
-		printk(KERN_WARNING "VFS (%s): Writes happened after quota"
-			" was disabled thus quota information is probably "
-			"inconsistent. Please run quotacheck(8).\n", sb->s_id);
+//		printk(KERN_WARNING "VFS (%s): Writes happened after quota"
+//			" was disabled thus quota information is probably "
+;
 	}
 #endif
 }
@@ -2656,7 +2656,7 @@ static int __init dquot_init(void)
 	int i, ret;
 	unsigned long nr_hash, order;
 
-	printk(KERN_NOTICE "VFS: Disk quotas %s\n", __DQUOT_VERSION__);
+;
 
 	register_sysctl_table(sys_table);
 
@@ -2690,8 +2690,8 @@ static int __init dquot_init(void)
 	for (i = 0; i < nr_hash; i++)
 		INIT_HLIST_HEAD(dquot_hash + i);
 
-	printk("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
-			nr_hash, order, (PAGE_SIZE << order));
+//	printk("Dquot-cache hash table entries: %ld (order %ld, %ld bytes)\n",
+;
 
 	register_shrinker(&dqcache_shrinker);
 

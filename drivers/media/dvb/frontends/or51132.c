@@ -47,9 +47,13 @@
 #include "or51132.h"
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "or51132: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 
@@ -80,8 +84,12 @@ static int or51132_writebuf(struct or51132_state *state, const u8 *buf, int len)
 
 	/* msleep(20); */ /* doesn't appear to be necessary */
 	if ((err = i2c_transfer(state->i2c, &msg, 1)) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: I2C write (addr 0x%02x len %d) error: %d\n",
 		       msg.addr, msg.len, err);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -103,8 +111,12 @@ static int or51132_readbuf(struct or51132_state *state, u8 *buf, int len)
 
 	/* msleep(20); */ /* doesn't appear to be necessary */
 	if ((err = i2c_transfer(state->i2c, &msg, 1)) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: I2C read (addr 0x%02x len %d) error: %d\n",
 		       msg.addr, msg.len, err);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -122,8 +134,12 @@ static int or51132_readreg(struct or51132_state *state, u8 reg)
 	int err;
 
 	if ((err = i2c_transfer(state->i2c, msg, 2)) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: I2C error reading register %d: %d\n",
 		       reg, err);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return buf[0] | (buf[1] << 8);
@@ -137,31 +153,59 @@ static int or51132_load_firmware (struct dvb_frontend* fe, const struct firmware
 	u32 firmwareAsize, firmwareBsize;
 	int i,ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Firmware is %Zd bytes\n",fw->size);
+#else
+	d;
+#endif
 
 	/* Get size of firmware A and B */
 	firmwareAsize = le32_to_cpu(*((__le32*)fw->data));
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("FirmwareA is %i bytes\n",firmwareAsize);
+#else
+	d;
+#endif
 	firmwareBsize = le32_to_cpu(*((__le32*)(fw->data+4)));
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("FirmwareB is %i bytes\n",firmwareBsize);
+#else
+	d;
+#endif
 
 	/* Upload firmware */
 	if ((ret = or51132_writebuf(state, &fw->data[8], firmwareAsize))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error 1\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	if ((ret = or51132_writebuf(state, &fw->data[8+firmwareAsize],
 				    firmwareBsize))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error 2\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
 	if ((ret = or51132_writebuf(state, run_buf, 2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error 3\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	if ((ret = or51132_writebuf(state, run_buf, 2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error 4\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -171,15 +215,27 @@ static int or51132_load_firmware (struct dvb_frontend* fe, const struct firmware
 	/* Read back ucode version to besure we loaded correctly and are really up and running */
 	/* Get uCode version */
 	if ((ret = or51132_writebytes(state, 0x10, 0x10, 0x00))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error a\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	if ((ret = or51132_writebytes(state, 0x04, 0x17))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error b\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	if ((ret = or51132_writebytes(state, 0x00, 0x00))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error c\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	for (i=0;i<4;i++) {
@@ -189,21 +245,33 @@ static int or51132_load_firmware (struct dvb_frontend* fe, const struct firmware
 		   {0x04,0x00,0x30,0x00,i+1} */
 		/* Read 8 bytes, two bytes at a time */
 		if ((ret = or51132_readbuf(state, &rec_buf[i*2], 2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "or51132: load_firmware error d - %d\n",i);
+#else
+			;
+#endif
 			return ret;
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING
 	       "or51132: Version: %02X%02X%02X%02X-%02X%02X%02X%02X (%02X%01X-%01X-%02X%01X-%01X)\n",
 	       rec_buf[1],rec_buf[0],rec_buf[3],rec_buf[2],
 	       rec_buf[5],rec_buf[4],rec_buf[7],rec_buf[6],
 	       rec_buf[3],rec_buf[2]>>4,rec_buf[2]&0x0f,
 	       rec_buf[5],rec_buf[4]>>4,rec_buf[4]&0x0f);
+#else
+	;
+#endif
 
 	if ((ret = or51132_writebytes(state, 0x10, 0x00, 0x00))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: load_firmware error e\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	return 0;
@@ -237,7 +305,11 @@ static int or51132_setmode(struct dvb_frontend* fe)
 	u8 cmd_buf1[3] = {0x04, 0x01, 0x5f};
 	u8 cmd_buf2[3] = {0x1c, 0x00, 0 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("setmode %d\n",(int)state->current_modulation);
+#else
+	d;
+#endif
 
 	switch (state->current_modulation) {
 	case VSB_8:
@@ -264,25 +336,45 @@ static int or51132_setmode(struct dvb_frontend* fe)
 		cmd_buf2[2] = 0x43;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "or51132: setmode: Modulation set to unsupported value (%d)\n",
 		       state->current_modulation);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	/* Set Receiver 1 register */
 	if (or51132_writebuf(state, cmd_buf1, 3)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: set_mode error 1\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("set #1 to %02x\n", cmd_buf1[2]);
+#else
+	d;
+#endif
 
 	/* Set operation mode in Receiver 6 register */
 	if (or51132_writebuf(state, cmd_buf2, 3)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: set_mode error 2\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("set #6 to 0x%02x%02x\n", cmd_buf2[1], cmd_buf2[2]);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -320,40 +412,68 @@ static int or51132_set_parameters(struct dvb_frontend* fe,
 	    modulation_fw_class(param->u.vsb.modulation)) {
 		switch(modulation_fw_class(param->u.vsb.modulation)) {
 		case MOD_FWCLASS_VSB:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("set_parameters VSB MODE\n");
+#else
+			d;
+#endif
 			fwname = OR51132_VSB_FIRMWARE;
 
 			/* Set non-punctured clock for VSB */
 			clock_mode = 0;
 			break;
 		case MOD_FWCLASS_QAM:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("set_parameters QAM MODE\n");
+#else
+			d;
+#endif
 			fwname = OR51132_QAM_FIRMWARE;
 
 			/* Set punctured clock for QAM */
 			clock_mode = 1;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("or51132: Modulation type(%d) UNSUPPORTED\n",
 			       param->u.vsb.modulation);
+#else
+			;
+#endif
 			return -1;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("or51132: Waiting for firmware upload(%s)...\n",
 		       fwname);
+#else
+		;
+#endif
 		ret = request_firmware(&fw, fwname, state->i2c->dev.parent);
 		if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "or51132: No firmware up"
 			       "loaded(timeout or file not found?)\n");
+#else
+			;
+#endif
 			return ret;
 		}
 		ret = or51132_load_firmware(fe, fw);
 		release_firmware(fw);
 		if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "or51132: Writing firmware to "
 			       "device failed!\n");
+#else
+			;
+#endif
 			return ret;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("or51132: Firmware upload complete.\n");
+#else
+		;
+#endif
 		state->config->set_ts_params(fe, clock_mode);
 	}
 	/* Change only if we are actually changing the modulation */
@@ -385,7 +505,11 @@ static int or51132_get_parameters(struct dvb_frontend* fe,
 start:
 	/* Receiver Status */
 	if ((status = or51132_readreg(state, 0x00)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: get_parameters: error reading receiver status\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	switch(status&0xff) {
@@ -394,8 +518,12 @@ start:
 		case 0x45: param->u.vsb.modulation = QAM_256; break;
 		default:
 			if (retry--) goto start;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "or51132: unknown status 0x%02x\n",
 			       status&0xff);
+#else
+			;
+#endif
 			return -EREMOTEIO;
 	}
 
@@ -415,11 +543,19 @@ static int or51132_read_status(struct dvb_frontend* fe, fe_status_t* status)
 
 	/* Receiver Status */
 	if ((reg = or51132_readreg(state, 0x00)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: read_status: error reading receiver status: %d\n", reg);
+#else
+		;
+#endif
 		*status = 0;
 		return -EREMOTEIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: read_status %04x\n", __func__, reg);
+#else
+	d;
+#endif
 
 	if (reg & 0x0100) /* Receiver Lock */
 		*status = FE_HAS_SIGNAL|FE_HAS_CARRIER|FE_HAS_VITERBI|
@@ -476,16 +612,28 @@ start:
 	/* SNR after Equalizer */
 	noise = or51132_readreg(state, 0x02);
 	if (noise < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: read_snr: error reading equalizer\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("read_snr noise (%d)\n", noise);
+#else
+	d;
+#endif
 
 	/* Read status, contains modulation type for QAM_AUTO and
 	   NTSC filter for VSB */
 	reg = or51132_readreg(state, 0x00);
 	if (reg < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: read_snr: error reading receiver status\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -500,19 +648,31 @@ start:
 		c = 150290396;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51132: unknown status 0x%02x\n", reg&0xff);
+#else
+		;
+#endif
 		if (retry--) goto start;
 		return -EREMOTEIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: modulation %02x, NTSC rej O%s\n", __func__,
 		reg&0xff, reg&0x1000?"n":"ff");
+#else
+	d;
+#endif
 
 	/* Calculate SNR using noise, c, and NTSC rejection correction */
 	state->snr = calculate_snr(noise, c) - usK;
 	*snr = (state->snr) >> 16;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: noise = 0x%08x, snr = %d.%02d dB\n", __func__, noise,
 		state->snr >> 24, (((state->snr>>8) & 0xffff) * 100) >> 16);
+#else
+	d;
+#endif
 
 	return 0;
 }

@@ -1319,8 +1319,8 @@ void i2400m_unknown_barker(struct i2400m *i2400m,
 	if (size > 64) {
 		print_hex_dump(KERN_ERR, prefix, DUMP_PREFIX_OFFSET,
 			       8, 4, buf, 64, 0);
-		printk(KERN_ERR "%s... (only first 64 bytes "
-		       "dumped)\n", prefix);
+//		printk(KERN_ERR "%s... (only first 64 bytes "
+;
 	} else
 		print_hex_dump(KERN_ERR, prefix, DUMP_PREFIX_OFFSET,
 			       8, 4, buf, size, 0);

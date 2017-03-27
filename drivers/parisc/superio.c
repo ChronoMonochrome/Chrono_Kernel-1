@@ -86,6 +86,7 @@ static struct superio_device sio_dev;
 #undef DEBUG_SUPERIO_INIT
 
 #ifdef DEBUG_SUPERIO_INIT
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG_INIT(x...)  printk(x)
 #else
 #define DBG_INIT(x...)
@@ -98,6 +99,9 @@ static irqreturn_t
 superio_interrupt(int parent_irq, void *devp)
 {
 	u8 results;
+#else
+#define DBG_INIT(x...)  ;
+#endif
 	u8 local_irq;
 
 	/* Poll the 8259 to see if there's an interrupt. */
@@ -133,7 +137,11 @@ superio_interrupt(int parent_irq, void *devp)
 		outb(OCW3_ISR,IC_PIC1+0);
 		results = inb(IC_PIC1+0);
 		if ((results & 0x80) == 0) { /* if ISR7 not set: spurious */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "spurious interrupt!\n");
+#else
+			;
+#endif
 			return IRQ_HANDLED;
 		}
 	}
@@ -169,27 +177,51 @@ superio_init(struct pci_dev *pcidev)
 	/* ...then properly fixup the USB to point at suckyio PIC */
 	sio->usb_pdev->irq = superio_fixup_irq(sio->usb_pdev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found NS87560 Legacy I/O device at %s (IRQ %i)\n",
 	       pci_name(pdev), pdev->irq);
+#else
+	;
+#endif
 
 	pci_read_config_dword (pdev, SIO_SP1BAR, &sio->sp1_base);
 	sio->sp1_base &= ~1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Serial port 1 at 0x%x\n", sio->sp1_base);
+#else
+	;
+#endif
 
 	pci_read_config_dword (pdev, SIO_SP2BAR, &sio->sp2_base);
 	sio->sp2_base &= ~1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Serial port 2 at 0x%x\n", sio->sp2_base);
+#else
+	;
+#endif
 
 	pci_read_config_dword (pdev, SIO_PPBAR, &sio->pp_base);
 	sio->pp_base &= ~1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Parallel port at 0x%x\n", sio->pp_base);
+#else
+	;
+#endif
 
 	pci_read_config_dword (pdev, SIO_FDCBAR, &sio->fdc_base);
 	sio->fdc_base &= ~1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Floppy controller at 0x%x\n", sio->fdc_base);
+#else
+	;
+#endif
 	pci_read_config_dword (pdev, SIO_ACPIBAR, &sio->acpi_base);
 	sio->acpi_base &= ~1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "ACPI at 0x%x\n", sio->acpi_base);
+#else
+	;
+#endif
 
 	request_region (IC_PIC1, 0x1f, "pic1");
 	request_region (IC_PIC2, 0x1f, "pic2");
@@ -270,7 +302,11 @@ superio_init(struct pci_dev *pcidev)
 	/* Setup USB power regulation */
 	outb(1, sio->acpi_base + USB_REG_CR);
 	if (inb(sio->acpi_base + USB_REG_CR) & 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "USB regulator enabled\n");
+#else
+		;
+#endif
 	else
 		printk(KERN_ERR PFX "USB regulator not initialized!\n");
 
@@ -348,10 +384,14 @@ int superio_fixup_irq(struct pci_dev *pcidev)
 		BUG();
 		return -1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("superio_fixup_irq(%s) ven 0x%x dev 0x%x from %p\n",
 		pci_name(pcidev),
 		pcidev->vendor, pcidev->device,
 		__builtin_return_address(0));
+#else
+	;
+#endif
 #endif
 
 	for (i = 0; i < 16; i++) {
@@ -403,7 +443,11 @@ static void __init superio_serial_init(void)
 	serial_port.line	= 0;
 	retval = early_serial_setup(&serial_port);
 	if (retval < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Register Serial #0 failed.\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -413,7 +457,11 @@ static void __init superio_serial_init(void)
 	serial_port.line	= 1;
 	retval = early_serial_setup(&serial_port);
 	if (retval < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Register Serial #1 failed.\n");
+#else
+		;
+#endif
 #endif /* CONFIG_SERIAL_8250 */
 }
 
@@ -428,7 +476,11 @@ static void __init superio_parport_init(void)
 			NULL /*struct pci_dev* */,
 			0 /* shared irq flags */))
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Probing parallel port failed.\n");
+#else
+		;
+#endif
 #endif	/* CONFIG_PARPORT_PC */
 }
 
@@ -441,7 +493,11 @@ static void superio_fixup_pci(struct pci_dev *pdev)
 	pci_write_config_byte(pdev, PCI_CLASS_PROG, pdev->class);
 
 	pci_read_config_byte(pdev, PCI_CLASS_PROG, &prog);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("PCI: Enabled native mode for NS87415 (pif=0x%x)\n", prog);
+#else
+	;
+#endif
 }
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_87415, superio_fixup_pci);
 

@@ -209,8 +209,12 @@ static int orion_wdt_release(struct inode *inode, struct file *file)
 	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
 		orion_wdt_disable();
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "WATCHDOG: Device closed unexpectedly - "
 					"timer will not stop\n");
+#else
+		;
+#endif
 	clear_bit(WDT_IN_USE, &wdt_status);
 	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
 
@@ -257,8 +261,12 @@ static int __devinit orion_wdt_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Orion Watchdog Timer: Initial timeout %d sec%s\n",
 				heartbeat, nowayout ? ", nowayout" : "");
+#else
+	;
+#endif
 	return 0;
 }
 

@@ -19,8 +19,16 @@
 
 static void backtrace_test_normal(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Testing a backtrace from process context.\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("The following trace is a kernel self test and not a bug!\n");
+#else
+	;
+#endif
 
 	dump_stack();
 }
@@ -37,8 +45,16 @@ static DECLARE_TASKLET(backtrace_tasklet, &backtrace_test_irq_callback, 0);
 
 static void backtrace_test_irq(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Testing a backtrace from irq context.\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("The following trace is a kernel self test and not a bug!\n");
+#else
+	;
+#endif
 
 	init_completion(&backtrace_work);
 	tasklet_schedule(&backtrace_tasklet);
@@ -51,8 +67,16 @@ static void backtrace_test_saved(void)
 	struct stack_trace trace;
 	unsigned long entries[8];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Testing a saved backtrace.\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("The following trace is a kernel self test and not a bug!\n");
+#else
+	;
+#endif
 
 	trace.nr_entries = 0;
 	trace.max_entries = ARRAY_SIZE(entries);
@@ -65,19 +89,31 @@ static void backtrace_test_saved(void)
 #else
 static void backtrace_test_saved(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Saved backtrace test skipped.\n");
+#else
+	;
+#endif
 }
 #endif
 
 static int backtrace_regression_test(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("====[ backtrace testing ]===========\n");
+#else
+	;
+#endif
 
 	backtrace_test_normal();
 	backtrace_test_irq();
 	backtrace_test_saved();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("====[ end of backtrace testing ]====\n");
+#else
+	;
+#endif
 	return 0;
 }
 

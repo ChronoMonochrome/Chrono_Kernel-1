@@ -152,9 +152,13 @@ struct dentry *mount_mtd(struct file_system_type *fs_type, int flags,
 					dev_name, data, mtd,
 					fill_super);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "MTD:"
 			       " MTD device with name \"%s\" not found.\n",
 			       dev_name + 4);
+#else
+			;
+#endif
 
 		} else if (isdigit(dev_name[3])) {
 			/* mount by MTD device number name */
@@ -199,9 +203,13 @@ not_an_MTD_device:
 #endif /* CONFIG_BLOCK */
 
 	if (!(flags & MS_SILENT))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "MTD: Attempt to mount non-MTD device \"%s\"\n",
 		       dev_name);
+#else
+		;
+#endif
 	return ERR_PTR(-EINVAL);
 }
 

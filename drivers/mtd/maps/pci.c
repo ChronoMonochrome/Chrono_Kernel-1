@@ -43,7 +43,11 @@ static map_word mtd_pci_read8(struct map_info *_map, unsigned long ofs)
 	struct map_pci_info *map = (struct map_pci_info *)_map;
 	map_word val;
 	val.x[0]= readb(map->base + map->translate(map, ofs));
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("read8 : %08lx => %02x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	return val;
 }
 
@@ -53,7 +57,11 @@ static map_word mtd_pci_read16(struct map_info *_map, unsigned long ofs)
 	struct map_pci_info *map = (struct map_pci_info *)_map;
 	map_word val;
 	val.x[0] = readw(map->base + map->translate(map, ofs));
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("read16: %08lx => %04x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	return val;
 }
 #endif
@@ -62,7 +70,11 @@ static map_word mtd_pci_read32(struct map_info *_map, unsigned long ofs)
 	struct map_pci_info *map = (struct map_pci_info *)_map;
 	map_word val;
 	val.x[0] = readl(map->base + map->translate(map, ofs));
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("read32: %08lx => %08x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	return val;
 }
 
@@ -75,7 +87,11 @@ static void mtd_pci_copyfrom(struct map_info *_map, void *to, unsigned long from
 static void mtd_pci_write8(struct map_info *_map, map_word val, unsigned long ofs)
 {
 	struct map_pci_info *map = (struct map_pci_info *)_map;
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("write8 : %08lx <= %02x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	writeb(val.x[0], map->base + map->translate(map, ofs));
 }
 
@@ -83,14 +99,22 @@ static void mtd_pci_write8(struct map_info *_map, map_word val, unsigned long of
 static void mtd_pci_write16(struct map_info *_map, map_word val, unsigned long ofs)
 {
 	struct map_pci_info *map = (struct map_pci_info *)_map;
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("write16: %08lx <= %04x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	writew(val.x[0], map->base + map->translate(map, ofs));
 }
 #endif
 static void mtd_pci_write32(struct map_info *_map, map_word val, unsigned long ofs)
 {
 	struct map_pci_info *map = (struct map_pci_info *)_map;
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("write32: %08lx <= %08x\n", ofs, val.x[0]);
+#else
+//	;
+#endif
 	writel(val.x[0], map->base + map->translate(map, ofs));
 }
 
@@ -204,7 +228,11 @@ intel_dc21285_init(struct pci_dev *dev, struct map_pci_info *map)
 		 * or simply enabling it?
 		 */
 		pci_enable_rom(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: enabling expansion ROM\n", pci_name(dev));
+#else
+		;
+#endif
 	}
 
 	if (!len || !base)

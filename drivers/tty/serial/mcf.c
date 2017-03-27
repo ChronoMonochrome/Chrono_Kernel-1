@@ -630,7 +630,11 @@ static int __init mcf_init(void)
 {
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ColdFire internal UART serial driver\n");
+#else
+	;
+#endif
 
 	rc = uart_register_driver(&mcf_driver);
 	if (rc)

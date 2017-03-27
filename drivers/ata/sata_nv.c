@@ -620,9 +620,13 @@ static void nv_adma_register_mode(struct ata_port *ap)
 		count++;
 	}
 	if (count == 20)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 			"timeout waiting for ADMA IDLE, stat=0x%hx\n",
 			status);
+#else
+		ata_port_;
+#endif
 
 	tmp = readw(mmio + NV_ADMA_CTL);
 	writew(tmp & ~NV_ADMA_CTL_GO, mmio + NV_ADMA_CTL);
@@ -635,9 +639,13 @@ static void nv_adma_register_mode(struct ata_port *ap)
 		count++;
 	}
 	if (count == 20)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 			 "timeout waiting for ADMA LEGACY, stat=0x%hx\n",
 			 status);
+#else
+		ata_port_;
+#endif
 
 	pp->flags |= NV_ADMA_PORT_REGISTER_MODE;
 }
@@ -665,9 +673,13 @@ static void nv_adma_mode(struct ata_port *ap)
 		count++;
 	}
 	if (count == 20)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 			"timeout waiting for ADMA LEGACY clear and IDLE, stat=0x%hx\n",
 			status);
+#else
+		ata_port_;
+#endif
 
 	pp->flags &= ~NV_ADMA_PORT_REGISTER_MODE;
 }
@@ -772,10 +784,14 @@ static int nv_adma_slave_config(struct scsi_device *sdev)
 
 	blk_queue_segment_boundary(sdev->request_queue, segment_boundary);
 	blk_queue_max_segments(sdev->request_queue, sg_tablesize);
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_INFO,
 		"DMA mask 0x%llX, segment boundary 0x%lX, hw segs %hu\n",
 		(unsigned long long)*ap->host->dev->dma_mask,
 		segment_boundary, sg_tablesize);
+#else
+	ata_port_;
+#endif
 
 	spin_unlock_irqrestore(ap->lock, flags);
 
@@ -1581,15 +1597,23 @@ static int nv_hardreset(struct ata_link *link, unsigned int *class,
 		int rc;
 
 		if (!(ehc->i.flags & ATA_EHI_QUIET))
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_INFO, "nv: skipping "
 					"hardreset on occupied port\n");
+#else
+			ata_link_;
+#endif
 
 		/* make sure the link is online */
 		rc = sata_link_resume(link, timing, deadline);
 		/* whine about phy resume failure but proceed */
 		if (rc && rc != -EOPNOTSUPP)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING, "failed to resume "
 					"link (errno=%d)\n", rc);
+#else
+			ata_link_;
+#endif
 	}
 
 	/* device signature acquisition is unreliable */
@@ -1956,8 +1980,12 @@ static int nv_swncq_slave_config(struct scsi_device *sdev)
 
 	if (strncmp(model_num, "Maxtor", 6) == 0) {
 		ata_scsi_change_queue_depth(sdev, 1, SCSI_QDEPTH_DEFAULT);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_NOTICE,
 			"Disabling SWNCQ mode (depth %x)\n", sdev->queue_depth);
+#else
+		ata_dev_;
+#endif
 	}
 
 	return rc;
@@ -2374,7 +2402,11 @@ static int nv_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 			return -ENODEV;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
@@ -2382,10 +2414,18 @@ static int nv_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	/* determine type and allocate host */
 	if (type == CK804 && adma_enabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_NOTICE, &pdev->dev, "Using ADMA mode\n");
+#else
+		dev_;
+#endif
 		type = ADMA;
 	} else if (type == MCP5x && swncq_enabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_NOTICE, &pdev->dev, "Using SWNCQ mode\n");
+#else
+		dev_;
+#endif
 		type = SWNCQ;
 	}
 
@@ -2429,7 +2469,11 @@ static int nv_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		nv_swncq_host_init(host);
 
 	if (msi_enabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_NOTICE, &pdev->dev, "Using MSI\n");
+#else
+		dev_;
+#endif
 		pci_enable_msi(pdev);
 	}
 

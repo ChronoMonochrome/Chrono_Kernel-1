@@ -174,7 +174,7 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 		return -ENODEV;
 
 	if (net_debug>1)
-		printk("seeq8005: probing at 0x%x\n",ioaddr);
+;
 
 	old_stat = inw(SEEQ_STATUS);					/* read status register */
 	if (old_stat == 0xffff) {
@@ -183,8 +183,8 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	}
 	if ( (old_stat & 0x1800) != 0x1800 ) {				/* assume that unused bits are 1, as my manual says */
 		if (net_debug>1) {
-			printk("seeq8005: reserved stat bits != 0x1800\n");
-			printk("          == 0x%04x\n",old_stat);
+;
+;
 		}
 	 	retval = -ENODEV;
 		goto out;
@@ -199,8 +199,8 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 		}
 	} else if ((old_rear & 0xff00) != 0xff00) {			/* assume that unused bits are 1 */
 		if (net_debug>1) {
-			printk("seeq8005: unused rear bits != 0xff00\n");
-			printk("          == 0x%04x\n",old_rear);
+;
+;
 		}
 		retval = -ENODEV;
 		goto out;
@@ -211,11 +211,11 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	old_dmaar = inw(SEEQ_DMAAR);
 
 	if (net_debug>4) {
-		printk("seeq8005: stat = 0x%04x\n",old_stat);
-		printk("seeq8005: cfg1 = 0x%04x\n",old_cfg1);
-		printk("seeq8005: cfg2 = 0x%04x\n",old_cfg2);
-		printk("seeq8005: raer = 0x%04x\n",old_rear);
-		printk("seeq8005: dmaar= 0x%04x\n",old_dmaar);
+;
+;
+;
+;
+;
 	}
 
 	outw( SEEQCMD_FIFO_WRITE | SEEQCMD_SET_ALL_OFF, SEEQ_CMD);	/* setup for reading PROM */
@@ -232,7 +232,7 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	/* untested because I only have the one card */
 	if ( (j&0xff) != 0 ) {						/* checksum appears to be 8bit = 0 */
 		if (net_debug>1) {					/* check this before deciding that we have a card */
-			printk("seeq8005: prom sum error\n");
+;
 		}
 		outw( old_stat, SEEQ_STATUS);
 		outw( old_dmaar, SEEQ_DMAAR);
@@ -247,21 +247,21 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	outw( SEEQCMD_SET_ALL_OFF, SEEQ_CMD);
 
 	if (net_debug) {
-		printk("seeq8005: prom sum = 0x%08x\n",j);
+;
 		for(j=0; j<32; j+=16) {
-			printk("seeq8005: prom %02x: ",j);
+;
 			for(i=0;i<16;i++) {
-				printk("%02x ",SA_prom[j|i]);
+;
 			}
-			printk(" ");
+;
 			for(i=0;i<16;i++) {
 				if ((SA_prom[j|i]>31)&&(SA_prom[j|i]<127)) {
-					printk("%c", SA_prom[j|i]);
+;
 				} else {
-					printk(" ");
+;
 				}
 			}
-			printk("\n");
+;
 		}
 	}
 
@@ -272,7 +272,7 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	 *			- fixing is not a priority
 	 */
 	if (net_debug>1) {					/* test packet buffer memory */
-		printk("seeq8005: testing packet buffer ... ");
+;
 		outw( SEEQCFG1_BUFFER_BUFFER, SEEQ_CFG1);
 		outw( SEEQCMD_FIFO_WRITE | SEEQCMD_SET_ALL_OFF, SEEQ_CMD);
 		outw( 0 , SEEQ_DMAAR);
@@ -294,17 +294,17 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 				j++;
 		}
 		if (j) {
-			printk("%i\n",j);
+;
 		} else {
-			printk("ok.\n");
+;
 		}
 	}
 #endif
 
 	if (net_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
-	printk("%s: %s found at %#3x, ", dev->name, "seeq8005", ioaddr);
+;
 
 	/* Fill in the 'dev' fields. */
 	dev->base_addr = ioaddr;
@@ -313,7 +313,7 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 	/* Retrieve and print the ethernet address. */
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = SA_prom[i+6];
-	printk("%pM", dev->dev_addr);
+;
 
 	if (dev->irq == 0xff)
 		;			/* Do nothing: a user-level program will set it. */
@@ -325,7 +325,7 @@ static int __init seeq8005_probe1(struct net_device *dev, int ioaddr)
 		dev->irq = probe_irq_off(cookie);
 
 		if (net_debug >= 2)
-			printk(" autoirq is %d\n", dev->irq);
+;
 	} else if (dev->irq == 2)
 	  /* Fixup for users that don't know that IRQ 2 is really IRQ 9,
 	   * or don't know which one to set.
@@ -386,8 +386,8 @@ static int seeq8005_open(struct net_device *dev)
 static void seeq8005_timeout(struct net_device *dev)
 {
 	int ioaddr = dev->base_addr;
-	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
-		   tx_done(dev) ? "IRQ conflict" : "network cable problem");
+//	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
+;
 	/* Try to restart the adaptor. */
 	seeq8005_init(dev, 1);
 	dev->trans_start = jiffies; /* prevent tx timeout */
@@ -454,14 +454,14 @@ static irqreturn_t seeq8005_interrupt(int irq, void *dev_id)
 	status = inw(SEEQ_STATUS);
 	do {
 		if (net_debug >2) {
-			printk("%s: int, status=0x%04x\n",dev->name,status);
+;
 		}
 
 		if (status & SEEQSTAT_WINDOW_INT) {
 			handled = 1;
 			outw( SEEQCMD_WINDOW_INT_ACK | (status & SEEQCMD_INT_MASK), SEEQ_CMD);
 			if (net_debug) {
-				printk("%s: window int!\n",dev->name);
+;
 			}
 		}
 		if (status & SEEQSTAT_TX_INT) {
@@ -479,7 +479,7 @@ static irqreturn_t seeq8005_interrupt(int irq, void *dev_id)
 	} while ( (++boguscount < 10) && (status & SEEQSTAT_ANY_INT)) ;
 
 	if(net_debug>2) {
-		printk("%s: eoi\n",dev->name);
+;
 	}
 	return IRQ_RETVAL(handled);
 }
@@ -506,7 +506,7 @@ static void seeq8005_rx(struct net_device *dev)
 	  	pkt_hdr = inw(SEEQ_BUFFER);
 
 		if (net_debug>2) {
-			printk("%s: 0x%04x recv next=0x%04x, hdr=0x%04x\n",dev->name,lp->receive_ptr,next_packet,pkt_hdr);
+;
 		}
 
 		if ((next_packet == 0) || ((pkt_hdr & SEEQPKTH_CHAIN)==0)) {	/* Read all the frames? */
@@ -523,7 +523,7 @@ static void seeq8005_rx(struct net_device *dev)
 		}
 
 		if (next_packet < ((DEFAULT_TEA+1)<<8)) {			/* is the next_packet address sane? */
-			printk("%s: recv packet ring corrupt, resetting board\n",dev->name);
+;
 			seeq8005_init(dev,1);
 			return;
 		}
@@ -531,7 +531,7 @@ static void seeq8005_rx(struct net_device *dev)
 		lp->receive_ptr = next_packet;
 
 		if (net_debug>2) {
-			printk("%s: recv len=0x%04x\n",dev->name,pkt_len);
+;
 		}
 
 		if (pkt_hdr & SEEQPKTS_ANY_ERROR) {				/* There was an error. */
@@ -550,7 +550,7 @@ static void seeq8005_rx(struct net_device *dev)
 
 			skb = dev_alloc_skb(pkt_len);
 			if (skb == NULL) {
-				printk("%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 				dev->stats.rx_dropped++;
 				break;
 			}
@@ -561,11 +561,11 @@ static void seeq8005_rx(struct net_device *dev)
 
 			if (net_debug>2) {
 				char * p = buf;
-				printk("%s: recv ",dev->name);
+;
 				for(i=0;i<14;i++) {
 					printk("%02x ",*(p++)&0xff);
 				}
-				printk("\n");
+;
 			}
 
 			skb->protocol=eth_type_trans(skb,dev);
@@ -657,16 +657,16 @@ void seeq8005_init(struct net_device *dev, int startp)
 	outw( 0x00ff, SEEQ_REA);		/* Receive Area End */
 
 	if (net_debug>4) {
-		printk("%s: SA0 = ",dev->name);
+;
 
 		outw( SEEQCMD_FIFO_READ | SEEQCMD_SET_ALL_OFF, SEEQ_CMD);
 		outw( 0, SEEQ_DMAAR);
 		outw( SEEQCFG1_BUFFER_MAC0, SEEQ_CFG1);
 
 		for(i=0;i<6;i++) {
-			printk("%02x ",inb(SEEQ_BUFFER));
+;
 		}
-		printk("\n");
+;
 	}
 
 	outw( SEEQCFG1_MAC0_EN | SEEQCFG1_MATCH_BROAD | SEEQCFG1_BUFFER_BUFFER, SEEQ_CFG1);
@@ -676,11 +676,11 @@ void seeq8005_init(struct net_device *dev, int startp)
 	if (net_debug>4) {
 		int old_cfg1;
 		old_cfg1 = inw(SEEQ_CFG1);
-		printk("%s: stat = 0x%04x\n",dev->name,inw(SEEQ_STATUS));
-		printk("%s: cfg1 = 0x%04x\n",dev->name,old_cfg1);
-		printk("%s: cfg2 = 0x%04x\n",dev->name,inw(SEEQ_CFG2));
-		printk("%s: raer = 0x%04x\n",dev->name,inw(SEEQ_REA));
-		printk("%s: dmaar= 0x%04x\n",dev->name,inw(SEEQ_DMAAR));
+;
+;
+;
+;
+;
 
 	}
 }
@@ -694,7 +694,7 @@ static void hardware_send_packet(struct net_device * dev, char *buf, int length)
 	unsigned long tmp;
 
 	if (net_debug>4) {
-		printk("%s: send 0x%04x\n",dev->name,length);
+;
 	}
 
 	/* Set FIFO to writemode and set packet-buffer address */

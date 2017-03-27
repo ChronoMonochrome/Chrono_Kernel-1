@@ -113,7 +113,7 @@ static void do_sync_work(struct work_struct *work)
 	 */
 	sync_filesystems(0);
 	sync_filesystems(0);
-	printk("Emergency Sync complete\n");
+;
 	kfree(work);
 }
 

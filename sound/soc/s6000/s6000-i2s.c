@@ -127,7 +127,11 @@ static void s6000_i2s_start_channel(struct s6000_i2s_dev *dev, int channel)
 		}
 	}
 	if (j < 6)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "s6000-i2s: timeout waiting for WCLK\n");
+#else
+		;
+#endif
 
 	s6_i2s_write_reg(dev, S6_I2S_ENABLE(channel), S6_I2S_ENABLE_IF);
 }
@@ -226,7 +230,11 @@ static void s6000_i2s_wait_disabled(struct s6000_i2s_dev *dev)
 		}
 	}
 	if (n < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "s6000-i2s: timeout disabling interfaces");
+#else
+		;
+#endif
 }
 
 static int s6000_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
@@ -308,8 +316,12 @@ static int s6000_i2s_hw_params(struct snd_pcm_substream *substream,
 		w |= S6_I2S_32BIT | S6_I2S_MEM_32BIT;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "s6000-i2s: unsupported PCM format %x\n",
 		       params_format(params));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

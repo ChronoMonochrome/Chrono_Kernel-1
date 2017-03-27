@@ -74,6 +74,7 @@
 #define ABIT_UGURU3_NAME			"abituguru3"
 #define ABIT_UGURU3_DEBUG(format, arg...)	\
 	if (verbose)				\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG ABIT_UGURU3_NAME ": "	format , ## arg)
 
 /* Macros to help calculate the sysfs_names array length */
@@ -113,6 +114,9 @@
 /* Structures */
 struct abituguru3_sensor_info {
 	const char* name;
+#else
+		;
+#endif
 	int port;
 	int type;
 	int multiplier;

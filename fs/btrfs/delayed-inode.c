@@ -1426,13 +1426,13 @@ int btrfs_insert_delayed_dir_index(struct btrfs_trans_handle *trans,
 	mutex_lock(&delayed_node->mutex);
 	ret = __btrfs_add_delayed_insertion_item(delayed_node, delayed_item);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "err add delayed dir index item(name: %s) into "
-				"the insertion tree of the delayed node"
-				"(root id: %llu, inode id: %llu, errno: %d)\n",
-				name,
-				(unsigned long long)delayed_node->root->objectid,
-				(unsigned long long)delayed_node->inode_id,
-				ret);
+//		printk(KERN_ERR "err add delayed dir index item(name: %s) into "
+//				"the insertion tree of the delayed node"
+//				"(root id: %llu, inode id: %llu, errno: %d)\n",
+//				name,
+//				(unsigned long long)delayed_node->root->objectid,
+//				(unsigned long long)delayed_node->inode_id,
+;
 		BUG();
 	}
 	mutex_unlock(&delayed_node->mutex);
@@ -1500,13 +1500,13 @@ int btrfs_delete_delayed_dir_index(struct btrfs_trans_handle *trans,
 	mutex_lock(&node->mutex);
 	ret = __btrfs_add_delayed_deletion_item(node, item);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "err add delayed dir index item(index: %llu) "
-				"into the deletion tree of the delayed node"
-				"(root id: %llu, inode id: %llu, errno: %d)\n",
-				(unsigned long long)index,
-				(unsigned long long)node->root->objectid,
-				(unsigned long long)node->inode_id,
-				ret);
+//		printk(KERN_ERR "err add delayed dir index item(index: %llu) "
+//				"into the deletion tree of the delayed node"
+//				"(root id: %llu, inode id: %llu, errno: %d)\n",
+//				(unsigned long long)index,
+//				(unsigned long long)node->root->objectid,
+//				(unsigned long long)node->inode_id,
+;
 		BUG();
 	}
 	mutex_unlock(&node->mutex);

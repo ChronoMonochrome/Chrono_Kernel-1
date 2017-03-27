@@ -122,9 +122,13 @@ static int create_packet(void *data, size_t length)
 	newpacket = kzalloc(sizeof (struct packet_data), GFP_KERNEL);
 
 	if (!newpacket) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"dell_rbu:%s: failed to allocate new "
 			"packet\n", __func__);
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		spin_lock(&rbu_data.lock);
 		goto out_noalloc;
@@ -150,10 +154,14 @@ static int create_packet(void *data, size_t length)
 						GFP_KERNEL);
 
 	if (!invalid_addr_packet_array) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"dell_rbu:%s: failed to allocate "
 			"invalid_addr_packet_array \n",
 			__func__);
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		spin_lock(&rbu_data.lock);
 		goto out_alloc_packet;
@@ -163,9 +171,13 @@ static int create_packet(void *data, size_t length)
 		packet_data_temp_buf = (unsigned char *)
 			__get_free_pages(GFP_KERNEL, ordernum);
 		if (!packet_data_temp_buf) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"dell_rbu:%s: failed to allocate new "
 				"packet\n", __func__);
+#else
+			;
+#endif
 			retval = -ENOMEM;
 			spin_lock(&rbu_data.lock);
 			goto out_alloc_packet_array;
@@ -230,8 +242,12 @@ static int packetize_data(const u8 *data, size_t length)
 	u8 *end = (u8 *) data + length;
 	pr_debug("packetize_data: data length %zd\n", length);
 	if (!rbu_data.packetsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"dell_rbu: packetsize not specified\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -484,8 +500,12 @@ static ssize_t read_packet_data(char *buffer, loff_t pos, size_t count)
 
 	if (pos > rbu_data.imagesize) {
 		retval = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "dell_rbu:read_packet_data: "
 			"data underrun\n");
+#else
+		;
+#endif
 		goto read_rbu_data_exit;
 	}
 
@@ -634,7 +654,11 @@ static ssize_t write_rbu_image_type(struct file *filp, struct kobject *kobj,
 			spin_lock(&rbu_data.lock);
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "dell_rbu: image_type is invalid\n");
+#else
+		;
+#endif
 		spin_unlock(&rbu_data.lock);
 		return -EINVAL;
 	}

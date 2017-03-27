@@ -145,7 +145,7 @@ void ieee80211_TURBO_Info(struct ieee80211_device *ieee, u8 **tag_p) {
 	*tag++ = 0x00;
 
 	*tag_p = tag;
-	printk(KERN_ALERT "This is enable turbo mode IE process\n");
+;
 }
 #endif
 
@@ -681,7 +681,7 @@ inline struct sk_buff *ieee80211_authentication_req(struct ieee80211_network *be
 		auth->algorithm = WLAN_AUTH_SHARED_KEY;
 	else if(ieee->auth_mode == 2)
 		auth->algorithm = WLAN_AUTH_OPEN;//0x80;
-	printk("=================>%s():auth->algorithm is %d\n",__FUNCTION__,auth->algorithm);
+;
 	auth->transaction = cpu_to_le16(ieee->associate_seq);
 	ieee->associate_seq++;
 
@@ -1350,25 +1350,25 @@ void ieee80211_associate_step2(struct ieee80211_device *ieee)
 void ieee80211_associate_complete_wq(struct work_struct *work)
 {
         struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, associate_complete_wq);
-	printk(KERN_INFO "Associated successfully\n");
+;
 	ieee->is_roaming = false;
 	if(ieee80211_is_54g(ieee->current_network) &&
 		(ieee->modulation & IEEE80211_OFDM_MODULATION)){
 
 		ieee->rate = 108;
-		printk(KERN_INFO"Using G rates:%d\n", ieee->rate);
+;
 	}else{
 		ieee->rate = 22;
-		printk(KERN_INFO"Using B rates:%d\n", ieee->rate);
+;
 	}
 	if (ieee->pHTInfo->bCurrentHTSupport&&ieee->pHTInfo->bEnableHT)
 	{
-		printk("Successfully associated, ht enabled\n");
+;
 		HTOnAssocRsp(ieee);
 	}
 	else
 	{
-		printk("Successfully associated, ht not enabled(%d, %d)\n", ieee->pHTInfo->bCurrentHTSupport, ieee->pHTInfo->bEnableHT);
+;
 		memset(ieee->dot11HTOperationalRateSet, 0, 16);
 	}
 	ieee->LinkDetectInfo.SlotNum = 2 * (1 + ieee->current_network.beacon_interval/500);
@@ -1380,12 +1380,12 @@ void ieee80211_associate_complete_wq(struct work_struct *work)
 	}
 	ieee->link_change(ieee);
 	if(ieee->is_silent_reset == 0){
-		printk("============>normal associate\n");
+;
 	notify_wx_assoc_event(ieee);
 	}
 	else if(ieee->is_silent_reset == 1)
 	{
-		printk("==================>silent reset associate\n");
+;
 		ieee->is_silent_reset = 0;
 	}
 
@@ -1417,7 +1417,7 @@ void ieee80211_associate_procedure_wq(struct work_struct *work)
 		ieee->data_hard_stop(ieee);
 
 	ieee80211_stop_scan(ieee);
-	printk("===>%s(), chan:%d\n", __FUNCTION__, ieee->current_network.channel);
+;
 	HTSetConnectBwMode(ieee, HT_CHANNEL_WIDTH_20, HT_EXTCHNL_OFFSET_NO_EXT);
 
 	ieee->associate_seq = 1;
@@ -1484,7 +1484,7 @@ inline void ieee80211_softmac_new_net(struct ieee80211_device *ieee, struct ieee
 					strncpy(ieee->current_network.ssid, tmp_ssid, IW_ESSID_MAX_SIZE);
 					ieee->current_network.ssid_len = tmp_ssid_len;
 				}
-				printk(KERN_INFO"Linking with %s,channel:%d, qos:%d, myHT:%d, networkHT:%d\n",ieee->current_network.ssid,ieee->current_network.channel, ieee->current_network.qos_data.supported, ieee->pHTInfo->bEnableHT, ieee->current_network.bssht.bdSupportHT);
+;
 
 				HTResetIOTSetting(ieee->pHTInfo);
 				if (ieee->iw_mode == IW_MODE_INFRA){
@@ -1509,11 +1509,11 @@ inline void ieee80211_softmac_new_net(struct ieee80211_device *ieee, struct ieee
 						(ieee->modulation & IEEE80211_OFDM_MODULATION)){
 						ieee->rate = 108;
 						ieee->SetWirelessMode(ieee, IEEE_G);
-						printk(KERN_INFO"Using G rates\n");
+;
 					}else{
 						ieee->rate = 22;
 						ieee->SetWirelessMode(ieee, IEEE_B);
-						printk(KERN_INFO"Using B rates\n");
+;
 					}
 					memset(ieee->dot11HTOperationalRateSet, 0, 16);
 					ieee->state = IEEE80211_LINKED;
@@ -1710,7 +1710,7 @@ ieee80211_rx_assoc_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
 		ieee80211_resp_to_assoc_rq(ieee, dest);
 	}
 
-	printk(KERN_INFO"New client associated: %pM\n", dest);
+;
 }
 
 
@@ -1828,8 +1828,8 @@ inline void ieee80211_sta_ps(struct ieee80211_device *ieee)
 		ieee->state != IEEE80211_LINKED)){
 
 	//	#warning CHECK_LOCK_HERE
-		printk("=====>%s(): no need to ps,wake up!! ieee->ps is %d,ieee->iw_mode is %d,ieee->state is %d\n",
-			__FUNCTION__,ieee->ps,ieee->iw_mode,ieee->state);
+//		printk("=====>%s(): no need to ps,wake up!! ieee->ps is %d,ieee->iw_mode is %d,ieee->state is %d\n",
+;
 		spin_lock(&ieee->mgmt_tx_lock);
 
 		ieee80211_sta_wakeup(ieee, 1);
@@ -2034,9 +2034,9 @@ ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
 				} else {
 					/* aid could not been allocated */
 					ieee->softmac_stats.rx_ass_err++;
-					printk(
-						"Association response status code 0x%x\n",
-						errcode);
+//					printk(
+//						"Association response status code 0x%x\n",
+;
 					IEEE80211_DEBUG_MGMT(
 						"Association response status code 0x%x\n",
 						errcode);
@@ -2085,7 +2085,7 @@ ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
 											bSupportNmode = false;
 											bHalfSupportNmode = false;
 										}
-									printk("==========>to link with AP using SEC(%d, %d)\n", bSupportNmode, bHalfSupportNmode);
+;
 									}
 								}
 								/* Dummy wirless mode setting to avoid encryption issue */
@@ -2101,7 +2101,7 @@ ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
 
 								if (ieee->current_network.mode == IEEE_N_24G && bHalfSupportNmode == true)
 								{
-									printk("===============>entern half N mode\n");
+;
 									ieee->bHalfWirelessN24GMode = true;
 								}
 								else
@@ -2115,7 +2115,7 @@ ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
 							ieee->softmac_stats.rx_auth_rs_err++;
 							IEEE80211_DEBUG_MGMT("Authentication respose status code 0x%x",errcode);
 
-							printk("Authentication respose status code 0x%x",errcode);
+;
 							ieee80211_associate_abort(ieee);
 						}
 
@@ -2382,7 +2382,7 @@ void ieee80211_start_ibss_wq(struct work_struct *work)
 	 * on the semaphore
 	 */
 	if(!ieee->proto_started){
-		printk("==========oh driver down return\n");
+;
 		return;
 	}
 	down(&ieee->wx_sem);
@@ -2421,7 +2421,7 @@ void ieee80211_start_ibss_wq(struct work_struct *work)
 
 	/* the network definitively is not here.. create a new cell */
 	if (ieee->state == IEEE80211_NOLINK){
-		printk("creating new IBSS cell\n");
+;
 		if(!ieee->wap_set)
 			ieee80211_randomize_cell(ieee);
 
@@ -2839,7 +2839,7 @@ static int ieee80211_wpa_enable(struct ieee80211_device *ieee, int value)
 {
 	/* This is called when wpa_supplicant loads and closes the driver
 	 * interface. */
-	printk("%s WPA\n",value ? "enabling" : "disabling");
+;
 	ieee->wpa_enabled = value;
 	return 0;
 }
@@ -2869,7 +2869,7 @@ static int ieee80211_wpa_mlme(struct ieee80211_device *ieee, int command, int re
 		break;
 
 	default:
-		printk("Unknown MLME request: %d\n", command);
+;
 		ret = -EOPNOTSUPP;
 	}
 
@@ -3005,7 +3005,7 @@ static int ieee80211_wpa_set_param(struct ieee80211_device *ieee, u8 name, u32 v
 		break;
 
 	default:
-		printk("Unknown WPA param: %d\n",name);
+;
 		ret = -EOPNOTSUPP;
 	}
 
@@ -3032,8 +3032,8 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
 	if (param_len !=
 	    (int) ((char *) param->u.crypt.key - (char *) param) +
 	    param->u.crypt.key_len) {
-		printk("Len mismatch %d, %d\n", param_len,
-			       param->u.crypt.key_len);
+//		printk("Len mismatch %d, %d\n", param_len,
+;
 		return -EINVAL;
 	}
 	if (param->sta_addr[0] == 0xff && param->sta_addr[1] == 0xff &&
@@ -3077,7 +3077,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
 	else if (ops == NULL && strcmp(param->u.crypt.alg, "CCMP") == 0)
 		ops = ieee80211_get_crypto_ops(param->u.crypt.alg);
 	if (ops == NULL) {
-		printk("unknown crypto alg '%s'\n", param->u.crypt.alg);
+;
 		param->u.crypt.err = IEEE_CRYPT_ERR_UNKNOWN_ALG;
 		ret = -EINVAL;
 		goto done;
@@ -3113,7 +3113,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
 	    (*crypt)->ops->set_key(param->u.crypt.key,
 				   param->u.crypt.key_len, param->u.crypt.seq,
 				   (*crypt)->priv) < 0) {
-		printk("key setting failed\n");
+;
 		param->u.crypt.err = IEEE_CRYPT_ERR_KEY_SET_FAILED;
 		ret = -EINVAL;
 		goto done;
@@ -3158,7 +3158,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
 	    ieee->iw_mode != IW_MODE_INFRA &&
 	    ieee->reset_port &&
 	    ieee->reset_port(ieee)) {
-		printk("reset_port failed\n");
+;
 		param->u.crypt.err = IEEE_CRYPT_ERR_CARD_CONF_FAILED;
 		return -EINVAL;
 	}
@@ -3252,7 +3252,7 @@ int ieee80211_wpa_supplicant_ioctl(struct ieee80211_device *ieee, struct iw_poin
 		break;
 
 	default:
-		printk("Unknown WPA supplicant request: %d\n",param->cmd);
+;
 		ret = -EOPNOTSUPP;
 		break;
 	}

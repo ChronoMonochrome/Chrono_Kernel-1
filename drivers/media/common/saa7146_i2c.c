@@ -202,8 +202,12 @@ static int saa7146_i2c_writeout(struct saa7146_dev *dev, __le32 *dword, int shor
 				/* a signal arrived */
 				return -ERESTARTSYS;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s %s [irq]: timed out waiting for end of xfer\n",
 				dev->name, __func__);
+#else
+			;
+#endif
 			return -EIO;
 		}
 		status = saa7146_read(dev, I2C_STATUS);
@@ -220,8 +224,12 @@ static int saa7146_i2c_writeout(struct saa7146_dev *dev, __le32 *dword, int shor
 				break;
 			}
 			if (time_after(jiffies,timeout)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s %s: timed out waiting for MC2\n",
 					dev->name, __func__);
+#else
+				;
+#endif
 				return -EIO;
 			}
 		}
@@ -237,8 +245,12 @@ static int saa7146_i2c_writeout(struct saa7146_dev *dev, __le32 *dword, int shor
 				/* this is normal when probing the bus
 				 * (no answer from nonexisistant device...)
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s %s [poll]: timed out waiting for end of xfer\n",
 					dev->name, __func__);
+#else
+				;
+#endif
 				return -EIO;
 			}
 			if (++trial < 50 && short_delay)

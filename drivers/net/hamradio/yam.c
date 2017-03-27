@@ -368,26 +368,26 @@ static unsigned char *add_mcs(unsigned char *bits, int bitrate,
 		predef--;
 		pdev = platform_device_register_simple("yam", 0, NULL, 0);
 		if (IS_ERR(pdev)) {
-			printk(KERN_ERR "yam: Failed to register firmware\n");
+;
 			return NULL;
 		}
 		err = request_firmware(&fw, fw_name[predef], &pdev->dev);
 		platform_device_unregister(pdev);
 		if (err) {
-			printk(KERN_ERR "Failed to load firmware \"%s\"\n",
-			       fw_name[predef]);
+//			printk(KERN_ERR "Failed to load firmware \"%s\"\n",
+;
 			return NULL;
 		}
 		if (fw->size != YAM_FPGA_SIZE) {
-			printk(KERN_ERR "Bogus length %zu in firmware \"%s\"\n",
-			       fw->size, fw_name[predef]);
+//			printk(KERN_ERR "Bogus length %zu in firmware \"%s\"\n",
+;
 			release_firmware(fw);
 			return NULL;
 		}
 		bits = (unsigned char *)fw->data;
 		break;
 	default:
-		printk(KERN_ERR "yam: Invalid predef number %u\n", predef);
+;
 		return NULL;
 	}
 
@@ -403,7 +403,7 @@ static unsigned char *add_mcs(unsigned char *bits, int bitrate,
 
 	/* Allocate a new mcs */
 	if ((p = kmalloc(sizeof(struct yam_mcs), GFP_KERNEL)) == NULL) {
-		printk(KERN_WARNING "YAM: no memory to allocate mcs\n");
+;
 		release_firmware(fw);
 		return NULL;
 	}
@@ -455,7 +455,7 @@ static int fpga_download(int iobase, int bitrate)
 	fpga_reset(iobase);
 	for (i = 0; i < YAM_FPGA_SIZE; i++) {
 		if (fpga_write(iobase, pbits[i])) {
-			printk(KERN_ERR "yam: error in write cycle\n");
+;
 			return -1;			/* write... */
 		}
 	}
@@ -552,7 +552,7 @@ static inline void yam_rx_flag(struct net_device *dev, struct yam_port *yp)
 			/* Bad crc */
 		} else {
 			if (!(skb = dev_alloc_skb(pkt_len))) {
-				printk(KERN_WARNING "%s: memory squeeze, dropping packet\n", dev->name);
+;
 				++dev->stats.rx_dropped;
 			} else {
 				unsigned char *cp;
@@ -768,8 +768,8 @@ static irqreturn_t yam_interrupt(int irq, void *dev_id)
 			yp->dcd = (msr & RX_DCD) ? 1 : 0;
 
 			if (--counter <= 0) {
-				printk(KERN_ERR "%s: too many irq iir=%d\n",
-						dev->name, iir);
+//				printk(KERN_ERR "%s: too many irq iir=%d\n",
+;
 				goto out;
 			}
 			if (msr & TX_RDY) {
@@ -866,7 +866,7 @@ static int yam_open(struct net_device *dev)
 	int i;
 	int ret=0;
 
-	printk(KERN_INFO "Trying %s at iobase 0x%lx irq %u\n", dev->name, dev->base_addr, dev->irq);
+;
 
 	if (!dev || !yp->bitrate)
 		return -ENXIO;
@@ -876,22 +876,22 @@ static int yam_open(struct net_device *dev)
 	}
 	if (!request_region(dev->base_addr, YAM_EXTENT, dev->name))
 	{
-		printk(KERN_ERR "%s: cannot 0x%lx busy\n", dev->name, dev->base_addr);
+;
 		return -EACCES;
 	}
 	if ((u = yam_check_uart(dev->base_addr)) == c_uart_unknown) {
-		printk(KERN_ERR "%s: cannot find uart type\n", dev->name);
+;
 		ret = -EIO;
 		goto out_release_base;
 	}
 	if (fpga_download(dev->base_addr, yp->bitrate)) {
-		printk(KERN_ERR "%s: cannot init FPGA\n", dev->name);
+;
 		ret = -EIO;
 		goto out_release_base;
 	}
 	outb(0, IER(dev->base_addr));
 	if (request_irq(dev->irq, yam_interrupt, IRQF_DISABLED | IRQF_SHARED, dev->name, dev)) {
-		printk(KERN_ERR "%s: irq %d busy\n", dev->name, dev->irq);
+;
 		ret = -EBUSY;
 		goto out_release_base;
 	}
@@ -910,8 +910,8 @@ static int yam_open(struct net_device *dev)
 		yam_dev->stats.rx_fifo_errors = 0;
 	}
 
-	printk(KERN_INFO "%s at iobase 0x%lx irq %u uart %s\n", dev->name, dev->base_addr, dev->irq,
-		   uart_str[u]);
+//	printk(KERN_INFO "%s at iobase 0x%lx irq %u uart %s\n", dev->name, dev->base_addr, dev->irq,
+;
 	return 0;
 
 out_release_base:
@@ -941,8 +941,8 @@ static int yam_close(struct net_device *dev)
 	while ((skb = skb_dequeue(&yp->send_queue)))
 		dev_kfree_skb(skb);
 
-	printk(KERN_INFO "%s: close yam at iobase 0x%lx irq %u\n",
-		   yam_drvname, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: close yam at iobase 0x%lx irq %u\n",
+;
 	return 0;
 }
 
@@ -1143,7 +1143,7 @@ static int __init yam_init_driver(void)
 	int i, err;
 	char name[IFNAMSIZ];
 
-	printk(yam_drvinfo);
+;
 
 	for (i = 0; i < NR_PORTS; i++) {
 		sprintf(name, "yam%d", i);
@@ -1158,7 +1158,7 @@ static int __init yam_init_driver(void)
 		
 		err = register_netdev(dev);
 		if (err) {
-			printk(KERN_WARNING "yam: cannot register net device %s\n", dev->name);
+;
 			goto error;
 		}
 		yam_devs[i] = dev;

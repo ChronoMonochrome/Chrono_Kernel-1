@@ -715,11 +715,11 @@ static inline void pasemi_mac_rx_error(const struct pasemi_mac *mac,
 	rcmdsta = read_dma_reg(PAS_DMA_RXINT_RCMDSTA(mac->dma_if));
 	ccmdsta = read_dma_reg(PAS_DMA_RXCHAN_CCMDSTA(chan->chno));
 
-	printk(KERN_ERR "pasemi_mac: rx error. macrx %016llx, rx status %llx\n",
-		macrx, *chan->status);
+//	printk(KERN_ERR "pasemi_mac: rx error. macrx %016llx, rx status %llx\n",
+;
 
-	printk(KERN_ERR "pasemi_mac: rcmdsta %08x ccmdsta %08x\n",
-		rcmdsta, ccmdsta);
+//	printk(KERN_ERR "pasemi_mac: rcmdsta %08x ccmdsta %08x\n",
+;
 }
 
 static inline void pasemi_mac_tx_error(const struct pasemi_mac *mac,
@@ -733,10 +733,10 @@ static inline void pasemi_mac_tx_error(const struct pasemi_mac *mac,
 
 	cmdsta = read_dma_reg(PAS_DMA_TXCHAN_TCMDSTA(chan->chno));
 
-	printk(KERN_ERR "pasemi_mac: tx error. mactx 0x%016llx, "\
-		"tx status 0x%016llx\n", mactx, *chan->status);
+//	printk(KERN_ERR "pasemi_mac: tx error. mactx 0x%016llx, "\
+;
 
-	printk(KERN_ERR "pasemi_mac: tcmdsta 0x%08x\n", cmdsta);
+;
 }
 
 static int pasemi_mac_clean_rx(struct pasemi_mac_rxring *rx,
@@ -1033,7 +1033,7 @@ static void pasemi_adjust_link(struct net_device *dev)
 		 * link down and return.
 		 */
 		if (mac->link && netif_msg_link(mac))
-			printk(KERN_INFO "%s: Link is down.\n", dev->name);
+;
 
 		netif_carrier_off(dev);
 		pasemi_mac_intf_disable(mac);
@@ -1066,7 +1066,7 @@ static void pasemi_adjust_link(struct net_device *dev)
 			     PAS_MAC_CFG_PCFG_TSR_10M;
 		break;
 	default:
-		printk("Unsupported speed %d\n", mac->phydev->speed);
+;
 	}
 
 	/* Print on link or speed/duplex change */
@@ -1080,8 +1080,8 @@ static void pasemi_adjust_link(struct net_device *dev)
 		write_mac_reg(mac, PAS_MAC_CFG_PCFG, new_flags);
 
 	if (msg && netif_msg_link(mac))
-		printk(KERN_INFO "%s: Link is up at %d Mbps, %s duplex.\n",
-		       dev->name, mac->speed, mac->duplex ? "full" : "half");
+//		printk(KERN_INFO "%s: Link is up at %d Mbps, %s duplex.\n",
+;
 }
 
 static int pasemi_mac_phy_init(struct net_device *dev)
@@ -1102,7 +1102,7 @@ static int pasemi_mac_phy_init(struct net_device *dev)
 				PHY_INTERFACE_MODE_SGMII);
 
 	if (IS_ERR(phydev)) {
-		printk(KERN_ERR "%s: Could not attach to phy\n", dev->name);
+;
 		return PTR_ERR(phydev);
 	}
 
@@ -1348,19 +1348,19 @@ static int pasemi_mac_close(struct net_device *dev)
 	if (sta & (PAS_DMA_RXINT_RCMDSTA_BP |
 		      PAS_DMA_RXINT_RCMDSTA_OO |
 		      PAS_DMA_RXINT_RCMDSTA_BT))
-		printk(KERN_DEBUG "pasemi_mac: rcmdsta error: 0x%08x\n", sta);
+;
 
 	sta = read_dma_reg(PAS_DMA_RXCHAN_CCMDSTA(rxch));
 	if (sta & (PAS_DMA_RXCHAN_CCMDSTA_DU |
 		     PAS_DMA_RXCHAN_CCMDSTA_OD |
 		     PAS_DMA_RXCHAN_CCMDSTA_FD |
 		     PAS_DMA_RXCHAN_CCMDSTA_DT))
-		printk(KERN_DEBUG "pasemi_mac: ccmdsta error: 0x%08x\n", sta);
+;
 
 	sta = read_dma_reg(PAS_DMA_TXCHAN_TCMDSTA(txch));
 	if (sta & (PAS_DMA_TXCHAN_TCMDSTA_SZ | PAS_DMA_TXCHAN_TCMDSTA_DB |
 		      PAS_DMA_TXCHAN_TCMDSTA_DE | PAS_DMA_TXCHAN_TCMDSTA_DA))
-		printk(KERN_DEBUG "pasemi_mac: tcmdsta error: 0x%08x\n", sta);
+;
 
 	/* Clean out any pending buffers */
 	pasemi_mac_clean_tx(tx_ring(mac));
@@ -1833,9 +1833,9 @@ pasemi_mac_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 			err);
 		goto out;
 	} else if netif_msg_probe(mac)
-		printk(KERN_INFO "%s: PA Semi %s: intf %d, hw addr %pM\n",
-		       dev->name, mac->type == MAC_TYPE_GMAC ? "GMAC" : "XAUI",
-		       mac->dma_if, dev->dev_addr);
+//		printk(KERN_INFO "%s: PA Semi %s: intf %d, hw addr %pM\n",
+//		       dev->name, mac->type == MAC_TYPE_GMAC ? "GMAC" : "XAUI",
+;
 
 	return err;
 

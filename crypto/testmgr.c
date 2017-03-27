@@ -2797,13 +2797,21 @@ test_done:
 		panic("%s: %s alg self test failed in fips mode!\n", driver, alg);
 
 	if (fips_enabled && !rc)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "alg: self-tests for %s (%s) passed\n",
 		       driver, alg);
+#else
+		;
+#endif
 
 	return rc;
 
 notest:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "alg: No test for %s (%s)\n", alg, driver);
+#else
+	;
+#endif
 	return 0;
 non_fips_alg:
 	return -EINVAL;

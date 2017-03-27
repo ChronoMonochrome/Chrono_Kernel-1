@@ -635,7 +635,11 @@ static int wm9712_soc_probe(struct snd_soc_codec *codec)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "WM9711/WM9712 SoC Audio Codec %s\n", WM9712_VERSION);
+#else
+	;
+#endif
 
 	ret = snd_soc_new_ac97_codec(codec, &soc_ac97_ops, 0);
 	if (ret < 0) {

@@ -97,7 +97,7 @@ nfs_create_request(struct nfs_open_context *ctx, struct inode *inode,
 void nfs_unlock_request(struct nfs_page *req)
 {
 	if (!NFS_WBACK_BUSY(req)) {
-		printk(KERN_ERR "NFS: Invalid unlock attempted\n");
+;
 		BUG();
 	}
 	smp_mb__before_clear_bit();

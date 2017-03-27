@@ -572,8 +572,12 @@ static int __devinit apbuart_probe(struct platform_device *op)
 
 	apbuart_flush_fifo((struct uart_port *) port);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "grlib-apbuart at 0x%llx, irq %d\n",
 	       (unsigned long long) port->mapbase, port->irq);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -654,7 +658,11 @@ static int __init grlib_apbuart_init(void)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
+#else
+	;
+#endif
 
 	ret = uart_register_driver(&grlib_apbuart_driver);
 

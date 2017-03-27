@@ -163,10 +163,10 @@ static struct rtnl_link_ops vcan_link_ops __read_mostly = {
 
 static __init int vcan_init_module(void)
 {
-	printk(banner);
+;
 
 	if (echo)
-		printk(KERN_INFO "vcan: enabled echo on driver level.\n");
+;
 
 	return rtnl_link_register(&vcan_link_ops);
 }

@@ -554,7 +554,7 @@ int hfsplus_cat_read_inode(struct inode *inode, struct hfs_find_data *fd)
 		inode->i_ctime = hfsp_mt2ut(file->attribute_mod_date);
 		HFSPLUS_I(inode)->create_date = file->create_date;
 	} else {
-		printk(KERN_ERR "hfs: bad catalog entry used to create inode\n");
+;
 		res = -EIO;
 	}
 	return res;

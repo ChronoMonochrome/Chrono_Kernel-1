@@ -328,7 +328,7 @@ static netdev_tx_t slc_xmit(struct sk_buff *skb, struct net_device *dev)
 	spin_lock(&sl->lock);
 	if (!netif_running(dev))  {
 		spin_unlock(&sl->lock);
-		printk(KERN_WARNING "%s: xmit: iface is down\n", dev->name);
+;
 		goto out;
 	}
 	if (sl->tty == NULL) {
@@ -676,19 +676,19 @@ static int __init slcan_init(void)
 	if (maxdev < 4)
 		maxdev = 4; /* Sanity */
 
-	printk(banner);
-	printk(KERN_INFO "slcan: %d dynamic interface channels.\n", maxdev);
+;
+;
 
 	slcan_devs = kzalloc(sizeof(struct net_device *)*maxdev, GFP_KERNEL);
 	if (!slcan_devs) {
-		printk(KERN_ERR "slcan: can't allocate slcan device array!\n");
+;
 		return -ENOMEM;
 	}
 
 	/* Fill in our line protocol discipline, and register it */
 	status = tty_register_ldisc(N_SLCAN, &slc_ldisc);
 	if (status)  {
-		printk(KERN_ERR "slcan: can't register line discipline\n");
+;
 		kfree(slcan_devs);
 	}
 	return status;
@@ -737,8 +737,8 @@ static void __exit slcan_exit(void)
 
 		sl = netdev_priv(dev);
 		if (sl->tty) {
-			printk(KERN_ERR "%s: tty discipline still running\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: tty discipline still running\n",
+;
 			/* Intentionally leak the control block. */
 			dev->destructor = NULL;
 		}
@@ -751,7 +751,7 @@ static void __exit slcan_exit(void)
 
 	i = tty_unregister_ldisc(N_SLCAN);
 	if (i)
-		printk(KERN_ERR "slcan: can't unregister ldisc (err %d)\n", i);
+;
 }
 
 module_init(slcan_init);

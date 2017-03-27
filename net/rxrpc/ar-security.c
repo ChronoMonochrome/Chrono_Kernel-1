@@ -86,8 +86,8 @@ int rxrpc_register_security(struct rxrpc_security *sec)
 
 	list_add(&sec->link, &rxrpc_security_methods);
 
-	printk(KERN_NOTICE "RxRPC: Registered security type %d '%s'\n",
-	       sec->security_index, sec->name);
+//	printk(KERN_NOTICE "RxRPC: Registered security type %d '%s'\n",
+;
 	ret = 0;
 
 out:
@@ -112,8 +112,8 @@ void rxrpc_unregister_security(struct rxrpc_security *sec)
 	list_del_init(&sec->link);
 	up_write(&rxrpc_security_sem);
 
-	printk(KERN_NOTICE "RxRPC: Unregistered security type %d '%s'\n",
-	       sec->security_index, sec->name);
+//	printk(KERN_NOTICE "RxRPC: Unregistered security type %d '%s'\n",
+;
 }
 
 EXPORT_SYMBOL_GPL(rxrpc_unregister_security);

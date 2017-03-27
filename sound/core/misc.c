@@ -61,10 +61,14 @@ static const char *sanity_file_name(const char *path)
 #endif
 
 #if defined(CONFIG_SND_DEBUG) || defined(CONFIG_SND_VERBOSE_PRINTK)
+#ifdef CONFIG_DEBUG_PRINTK
 void __snd_printk(unsigned int level, const char *path, int line,
 		  const char *format, ...)
 {
 	va_list args;
+#else
+void __;
+#endif
 #ifdef CONFIG_SND_VERBOSE_PRINTK
 	struct va_format vaf;
 	char verbose_fmt[] = KERN_DEFAULT "ALSA %s:%d %pV";
@@ -84,9 +88,17 @@ void __snd_printk(unsigned int level, const char *path, int line,
 		vaf.fmt = format + 3;
 	} else if (level)
 		memcpy(verbose_fmt, KERN_DEBUG, 3);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(verbose_fmt, sanity_file_name(path), line, &vaf);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	vprintk(format, args);
+#else
+	v;
+#endif
 #endif
 	va_end(args);
 }

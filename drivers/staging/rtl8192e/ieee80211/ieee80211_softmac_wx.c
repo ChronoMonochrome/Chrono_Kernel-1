@@ -327,12 +327,12 @@ void ieee80211_wx_sync_scan_wq(struct work_struct *work)
 		b40M = 1;
 		chan_offset = ieee->pHTInfo->CurSTAExtChnlOffset;
 		bandwidth = (HT_CHANNEL_WIDTH)ieee->pHTInfo->bCurBW40MHz;
-		printk("Scan in 40M, force to 20M first:%d, %d\n", chan_offset, bandwidth);
+;
 		ieee->SetBWModeHandler(ieee, HT_CHANNEL_WIDTH_20, HT_EXTCHNL_OFFSET_NO_EXT);
 		}
 	ieee80211_start_scan_syncro(ieee);
 	if (b40M) {
-		printk("Scan in 20M, back to 40M\n");
+;
 		if (chan_offset == HT_EXTCHNL_OFFSET_UPPER)
 			ieee->set_chan(ieee, chan + 2);
 		else if (chan_offset == HT_EXTCHNL_OFFSET_LOWER)
@@ -472,8 +472,8 @@ out:
 	else
 		ieee->raw_tx = 0;
 
-	printk(KERN_INFO"raw TX is %s\n",
-	      ieee->raw_tx ? "enabled" : "disabled");
+//	printk(KERN_INFO"raw TX is %s\n",
+;
 
 	if(ieee->iw_mode == IW_MODE_MONITOR)
 	{

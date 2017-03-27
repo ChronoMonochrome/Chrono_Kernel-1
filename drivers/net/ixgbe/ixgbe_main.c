@@ -4562,8 +4562,8 @@ static void ixgbe_acquire_msix_vectors(struct ixgbe_adapter *adapter,
 		 * This just means we'll go with either a single MSI
 		 * vector or fall back to legacy interrupts.
 		 */
-		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
-			     "Unable to allocate MSI-X interrupts\n");
+//		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
+;
 		adapter->flags &= ~IXGBE_FLAG_MSIX_ENABLED;
 		kfree(adapter->msix_entries);
 		adapter->msix_entries = NULL;
@@ -4983,9 +4983,9 @@ static int ixgbe_set_interrupt_capability(struct ixgbe_adapter *adapter)
 	if (!err) {
 		adapter->flags |= IXGBE_FLAG_MSI_ENABLED;
 	} else {
-		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
-			     "Unable to allocate MSI interrupt, "
-			     "falling back to legacy.  Error: %d\n", err);
+//		netif_printk(adapter, hw, KERN_DEBUG, adapter->netdev,
+//			     "Unable to allocate MSI interrupt, "
+;
 		/* reset err */
 		err = 0;
 	}

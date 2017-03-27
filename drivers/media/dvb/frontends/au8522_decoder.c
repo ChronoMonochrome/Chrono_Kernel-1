@@ -780,11 +780,19 @@ static int au8522_probe(struct i2c_client *client,
 		return -EIO;
 	case 1:
 		/* new demod instance */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "au8522_decoder creating new instance...\n");
+#else
+		;
+#endif
 		break;
 	default:
 		/* existing demod instance */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "au8522_decoder attach existing instance.\n");
+#else
+		;
+#endif
 		break;
 	}
 

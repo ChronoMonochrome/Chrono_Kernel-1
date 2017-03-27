@@ -828,9 +828,13 @@ void relay_close(struct rchan *chan)
 				relay_close_buf(chan->buf[i]);
 
 	if (chan->last_toobig)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "relay: one or more items not logged "
 		       "[item size (%Zd) > sub-buffer size (%Zd)]\n",
 		       chan->last_toobig, chan->subbuf_size);
+#else
+		;
+#endif
 
 	list_del(&chan->list);
 	kref_put(&chan->kref, relay_destroy_channel);

@@ -110,14 +110,14 @@ static inline unsigned int if_cs_read8(struct if_cs_card *card, uint reg)
 {
 	unsigned int val = ioread8(card->iobase + reg);
 	if (debug_output)
-		printk(KERN_INFO "inb %08x<%02x\n", reg, val);
+;
 	return val;
 }
 static inline unsigned int if_cs_read16(struct if_cs_card *card, uint reg)
 {
 	unsigned int val = ioread16(card->iobase + reg);
 	if (debug_output)
-		printk(KERN_INFO "inw %08x<%04x\n", reg, val);
+;
 	return val;
 }
 static inline void if_cs_read16_rep(
@@ -127,22 +127,22 @@ static inline void if_cs_read16_rep(
 	unsigned long count)
 {
 	if (debug_output)
-		printk(KERN_INFO "insw %08x<(0x%lx words)\n",
-			reg, count);
+//		printk(KERN_INFO "insw %08x<(0x%lx words)\n",
+;
 	ioread16_rep(card->iobase + reg, buf, count);
 }
 
 static inline void if_cs_write8(struct if_cs_card *card, uint reg, u8 val)
 {
 	if (debug_output)
-		printk(KERN_INFO "outb %08x>%02x\n", reg, val);
+;
 	iowrite8(val, card->iobase + reg);
 }
 
 static inline void if_cs_write16(struct if_cs_card *card, uint reg, u16 val)
 {
 	if (debug_output)
-		printk(KERN_INFO "outw %08x>%04x\n", reg, val);
+;
 	iowrite16(val, card->iobase + reg);
 }
 
@@ -153,8 +153,8 @@ static inline void if_cs_write16_rep(
 	unsigned long count)
 {
 	if (debug_output)
-		printk(KERN_INFO "outsw %08x>(0x%lx words)\n",
-			reg, count);
+//		printk(KERN_INFO "outsw %08x>(0x%lx words)\n",
+;
 	iowrite16_rep(card->iobase + reg, buf, count);
 }
 

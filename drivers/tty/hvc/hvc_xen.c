@@ -642,9 +642,13 @@ void xen_raw_console_write(const char *str)
 	dom0_write_console(0, str, strlen(str));
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 void xen_raw_printk(const char *fmt, ...)
 {
 	static char buf[512];
+#else
+void xen_raw_;
+#endif
 	va_list ap;
 
 	va_start(ap, fmt);

@@ -1027,10 +1027,10 @@ static int print_message(struct gfs2_quota_data *qd, char *type)
 {
 	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
 
-	printk(KERN_INFO "GFS2: fsid=%s: quota %s for %s %u\n",
-	       sdp->sd_fsname, type,
-	       (test_bit(QDF_USER, &qd->qd_flags)) ? "user" : "group",
-	       qd->qd_id);
+//	printk(KERN_INFO "GFS2: fsid=%s: quota %s for %s %u\n",
+//	       sdp->sd_fsname, type,
+//	       (test_bit(QDF_USER, &qd->qd_flags)) ? "user" : "group",
+;
 
 	return 0;
 }

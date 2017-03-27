@@ -271,7 +271,11 @@ setup_teles0(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, teles0_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Teles 8.0/16.0 driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if ((cs->typ != ISDN_CTYPE_16_0) && (cs->typ != ISDN_CTYPE_8_0))
 		return (0);
 
@@ -282,31 +286,47 @@ setup_teles0(struct IsdnCard *card)
 
 	if (card->para[1] < 0x10000) {
 		card->para[1] <<= 4;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		   "Teles0: membase configured DOSish, assuming 0x%lx\n",
 		       (unsigned long) card->para[1]);
+#else
+		;
+#endif
 	}
 	cs->irq = card->para[0];
 	if (cs->hw.teles0.cfg_reg) {
 		if (!request_region(cs->hw.teles0.cfg_reg, 8, "teles cfg")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			  "HiSax: %s config port %x-%x already in use\n",
 			       CardType[card->typ],
 			       cs->hw.teles0.cfg_reg,
 			       cs->hw.teles0.cfg_reg + 8);
+#else
+			;
+#endif
 			return (0);
 		}
 	}
 	if (cs->hw.teles0.cfg_reg) {
 		if ((val = bytein(cs->hw.teles0.cfg_reg + 0)) != 0x51) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Teles0: 16.0 Byte at %x is %x\n",
 			       cs->hw.teles0.cfg_reg + 0, val);
+#else
+			;
+#endif
 			release_region(cs->hw.teles0.cfg_reg, 8);
 			return (0);
 		}
 		if ((val = bytein(cs->hw.teles0.cfg_reg + 1)) != 0x93) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Teles0: 16.0 Byte at %x is %x\n",
 			       cs->hw.teles0.cfg_reg + 1, val);
+#else
+			;
+#endif
 			release_region(cs->hw.teles0.cfg_reg, 8);
 			return (0);
 		}
@@ -315,8 +335,12 @@ setup_teles0(struct IsdnCard *card)
 								   * 0x1c 16.3 ???
 								 */
 		if (val != 0x1e && val != 0x1f) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Teles0: 16.0 Byte at %x is %x\n",
 			       cs->hw.teles0.cfg_reg + 2, val);
+#else
+			;
+#endif
 			release_region(cs->hw.teles0.cfg_reg, 8);
 			return (0);
 		}
@@ -325,22 +349,34 @@ setup_teles0(struct IsdnCard *card)
 	test_and_set_bit(HW_IOM1, &cs->HW_Flags);
 	cs->hw.teles0.phymem = card->para[1];
 	if (!request_mem_region(cs->hw.teles0.phymem, TELES_IOMEM_SIZE, "teles iomem")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"HiSax: %s memory region %lx-%lx already in use\n",
 			CardType[card->typ],
 			cs->hw.teles0.phymem,
 			cs->hw.teles0.phymem + TELES_IOMEM_SIZE);
+#else
+		;
+#endif
 		if (cs->hw.teles0.cfg_reg)
 			release_region(cs->hw.teles0.cfg_reg, 8);
 		return (0);
 	}
 	cs->hw.teles0.membase = ioremap(cs->hw.teles0.phymem, TELES_IOMEM_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "HiSax: %s config irq:%d mem:%p cfg:0x%X\n",
 	       CardType[cs->typ], cs->irq,
 	       cs->hw.teles0.membase, cs->hw.teles0.cfg_reg);
+#else
+	;
+#endif
 	if (reset_teles0(cs)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Teles0: wrong IRQ\n");
+#else
+		;
+#endif
 		release_io_teles0(cs);
 		return (0);
 	}
@@ -356,8 +392,12 @@ setup_teles0(struct IsdnCard *card)
 	cs->irq_func = &teles0_interrupt;
 	ISACVersion(cs, "Teles0:");
 	if (HscxVersion(cs, "Teles0:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		 "Teles0: wrong HSCX versions check IO/MEM addresses\n");
+#else
+		;
+#endif
 		release_io_teles0(cs);
 		return (0);
 	}

@@ -214,7 +214,11 @@ static int snd_es18xx_write(struct snd_es18xx *chip,
  end:
         spin_unlock_irqrestore(&chip->reg_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Reg %02x set to %02x\n", reg, data);
+#else
+	;
+#endif
 #endif
 	return ret;
 }
@@ -233,7 +237,11 @@ static int snd_es18xx_read(struct snd_es18xx *chip, unsigned char reg)
 	data = snd_es18xx_dsp_get_byte(chip);
 	ret = data;
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Reg %02x now is %02x (%d)\n", reg, data, ret);
+#else
+	;
+#endif
 #endif
  end:
         spin_unlock_irqrestore(&chip->reg_lock, flags);
@@ -269,8 +277,12 @@ static int snd_es18xx_bits(struct snd_es18xx *chip, unsigned char reg,
 		if (ret < 0)
 			goto end;
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "Reg %02x was %02x, set to %02x (%d)\n",
 			   reg, old, new, ret);
+#else
+		;
+#endif
 #endif
 	}
 	ret = oval;
@@ -288,7 +300,11 @@ static inline void snd_es18xx_mixer_write(struct snd_es18xx *chip,
         outb(data, chip->port + 0x05);
         spin_unlock_irqrestore(&chip->mixer_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Mixer reg %02x set to %02x\n", reg, data);
+#else
+	;
+#endif
 #endif
 }
 
@@ -301,7 +317,11 @@ static inline int snd_es18xx_mixer_read(struct snd_es18xx *chip, unsigned char r
 	data = inb(chip->port + 0x05);
         spin_unlock_irqrestore(&chip->mixer_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Mixer reg %02x now is %02x\n", reg, data);
+#else
+	;
+#endif
 #endif
         return data;
 }
@@ -320,8 +340,12 @@ static inline int snd_es18xx_mixer_bits(struct snd_es18xx *chip, unsigned char r
 		new = (old & ~mask) | (val & mask);
 		outb(new, chip->port + 0x05);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "Mixer reg %02x was %02x, set to %02x\n",
 			   reg, old, new);
+#else
+		;
+#endif
 #endif
 	}
         spin_unlock_irqrestore(&chip->mixer_lock, flags);
@@ -341,8 +365,12 @@ static inline int snd_es18xx_mixer_writable(struct snd_es18xx *chip, unsigned ch
 	new = inb(chip->port + 0x05);
         spin_unlock_irqrestore(&chip->mixer_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Mixer reg %02x was %02x, set to %02x, now is %02x\n",
 		   reg, old, expected, new);
+#else
+	;
+#endif
 #endif
 	return expected == new;
 }
@@ -1380,7 +1408,11 @@ static void __devinit snd_es18xx_config_write(struct snd_es18xx *chip,
 	outb(reg, chip->ctrl_port);
 	outb(data, chip->ctrl_port + 1);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Config reg %02x set to %02x\n", reg, data);
+#else
+	;
+#endif
 #endif
 }
 
@@ -2148,9 +2180,13 @@ static int __devinit snd_audiodrive_probe(struct snd_card *card, int dev)
 	if (fm_port[dev] > 0 && fm_port[dev] != SNDRV_AUTO_PORT) {
 		if (snd_opl3_create(card, fm_port[dev], fm_port[dev] + 2,
 				    OPL3_HW_OPL3, 0, &opl3) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING PFX
 				   "opl3 not detected at 0x%lx\n",
 				   fm_port[dev]);
+#else
+			;
+#endif
 		} else {
 			err = snd_opl3_hwdep_new(opl3, 0, 1, NULL);
 			if (err < 0)

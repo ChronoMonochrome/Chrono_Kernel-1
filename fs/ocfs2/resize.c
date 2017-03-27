@@ -255,10 +255,10 @@ static void ocfs2_update_super_and_backups(struct inode *inode,
 out:
 	brelse(super_bh);
 	if (ret)
-		printk(KERN_WARNING "ocfs2: Failed to update super blocks on %s"
-			" during fs resize. This condition is not fatal,"
-			" but fsck.ocfs2 should be run to fix it\n",
-			osb->dev_str);
+//		printk(KERN_WARNING "ocfs2: Failed to update super blocks on %s"
+//			" during fs resize. This condition is not fatal,"
+//			" but fsck.ocfs2 should be run to fix it\n",
+;
 	return;
 }
 

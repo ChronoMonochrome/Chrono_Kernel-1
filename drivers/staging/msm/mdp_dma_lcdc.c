@@ -147,8 +147,8 @@ int mdp_lcdc_on(struct platform_device *pdev)
 		break;
 
 	default:
-		printk(KERN_ERR "mdp lcdc can't support format %d bpp!\n",
-		       mfd->panel_info.bpp);
+//		printk(KERN_ERR "mdp lcdc can't support format %d bpp!\n",
+;
 		return -ENODEV;
 	}
 

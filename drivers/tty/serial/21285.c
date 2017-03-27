@@ -487,7 +487,11 @@ static int __init serial21285_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: 21285 driver\n");
+#else
+	;
+#endif
 
 	serial21285_setup_ports();
 

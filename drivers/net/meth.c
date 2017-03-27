@@ -41,15 +41,15 @@
 #endif
 
 #if MFE_DEBUG>=1
-#define DPRINTK(str,args...) printk(KERN_DEBUG "meth: %s: " str, __func__ , ## args)
-#define MFE_RX_DEBUG 2
-#else
-#define DPRINTK(str,args...)
-#define MFE_RX_DEBUG 0
-#endif
-
-
-static const char *meth_str="SGI O2 Fast Ethernet";
+//#define DPRINTK(str,args...) printk(KERN_DEBUG "meth: %s: " str, __func__ , ## args)
+//#define MFE_RX_DEBUG 2
+//#else
+//#define DPRINTK(str,args...)
+//#define MFE_RX_DEBUG 0
+//#endif
+//
+//
+;
 
 /* The maximum time waited (in jiffies) before assuming a Tx failed. (400ms) */
 #define TX_TIMEOUT (400*HZ/1000)
@@ -325,7 +325,7 @@ static int meth_open(struct net_device *dev)
 
 	ret = request_irq(dev->irq, meth_interrupt, 0, meth_str, dev);
 	if (ret) {
-		printk(KERN_ERR "%s: Can't get irq %d\n", dev->name, dev->irq);
+;
 		goto out_free_rx_ring;
 	}
 
@@ -395,9 +395,9 @@ static void meth_rx(struct net_device* dev, unsigned long int_status)
 			int len = (status & 0xffff) - 4; /* omit CRC */
 			/* length sanity check */
 			if (len < 60 || len > 1518) {
-				printk(KERN_DEBUG "%s: bogus packet size: %ld, status=%#2Lx.\n",
-				       dev->name, priv->rx_write,
-				       priv->rx_ring[priv->rx_write]->status.raw);
+//				printk(KERN_DEBUG "%s: bogus packet size: %ld, status=%#2Lx.\n",
+//				       dev->name, priv->rx_write,
+;
 				dev->stats.rx_errors++;
 				dev->stats.rx_length_errors++;
 				skb = priv->rx_skbs[priv->rx_write];
@@ -426,19 +426,19 @@ static void meth_rx(struct net_device* dev, unsigned long int_status)
 			dev->stats.rx_errors++;
 			skb=priv->rx_skbs[priv->rx_write];
 #if MFE_DEBUG>0
-			printk(KERN_WARNING "meth: RX error: status=0x%016lx\n",status);
+;
 			if(status&METH_RX_ST_RCV_CODE_VIOLATION)
-				printk(KERN_WARNING "Receive Code Violation\n");
+;
 			if(status&METH_RX_ST_CRC_ERR)
-				printk(KERN_WARNING "CRC error\n");
+;
 			if(status&METH_RX_ST_INV_PREAMBLE_CTX)
-				printk(KERN_WARNING "Invalid Preamble Context\n");
+;
 			if(status&METH_RX_ST_LONG_EVT_SEEN)
-				printk(KERN_WARNING "Long Event Seen...\n");
+;
 			if(status&METH_RX_ST_BAD_PACKET)
-				printk(KERN_WARNING "Bad Packet\n");
+;
 			if(status&METH_RX_ST_CARRIER_EVT_SEEN)
-				printk(KERN_WARNING "Carrier Event Seen\n");
+;
 #endif
 		}
 		priv->rx_ring[priv->rx_write] = (rx_packet*)skb->head;
@@ -493,18 +493,18 @@ static void meth_tx_cleanup(struct net_device* dev, unsigned long int_status)
 #if MFE_DEBUG>=1
 				DPRINTK("TX error: status=%016lx <",status);
 				if(status & METH_TX_ST_SUCCESS)
-					printk(" SUCCESS");
+;
 				if(status & METH_TX_ST_TOOLONG)
-					printk(" TOOLONG");
+;
 				if(status & METH_TX_ST_UNDERRUN)
-					printk(" UNDERRUN");
+;
 				if(status & METH_TX_ST_EXCCOLL)
-					printk(" EXCCOLL");
+;
 				if(status & METH_TX_ST_DEFER)
-					printk(" DEFER");
+;
 				if(status & METH_TX_ST_LATECOLL)
-					printk(" LATECOLL");
-				printk(" >\n");
+;
+;
 #endif
 			}
 		} else {
@@ -532,19 +532,19 @@ static void meth_error(struct net_device* dev, unsigned status)
 	struct meth_private *priv = netdev_priv(dev);
 	unsigned long flags;
 
-	printk(KERN_WARNING "meth: error status: 0x%08x\n",status);
+;
 	/* check for errors too... */
 	if (status & (METH_INT_TX_LINK_FAIL))
-		printk(KERN_WARNING "meth: link failure\n");
+;
 	/* Should I do full reset in this case? */
 	if (status & (METH_INT_MEM_ERROR))
-		printk(KERN_WARNING "meth: memory error\n");
+;
 	if (status & (METH_INT_TX_ABORT))
-		printk(KERN_WARNING "meth: aborted\n");
+;
 	if (status & (METH_INT_RX_OVERFLOW))
-		printk(KERN_WARNING "meth: Rx overflow\n");
+;
 	if (status & (METH_INT_RX_UNDERFLOW)) {
-		printk(KERN_WARNING "meth: Rx underflow\n");
+;
 		spin_lock_irqsave(&priv->meth_lock, flags);
 		mace->eth.int_stat = METH_INT_RX_UNDERFLOW;
 		/* more underflow interrupts will be delivered,
@@ -702,7 +702,7 @@ static int meth_tx(struct sk_buff *skb, struct net_device *dev)
 
 	/* If TX ring is full, tell the upper layer to stop sending packets */
 	if (meth_tx_full(dev)) {
-	        printk(KERN_DEBUG "TX full: stopping\n");
+;
 		netif_stop_queue(dev);
 	}
 
@@ -723,7 +723,7 @@ static void meth_tx_timeout(struct net_device *dev)
 	struct meth_private *priv = netdev_priv(dev);
 	unsigned long flags;
 
-	printk(KERN_WARNING "%s: transmit timed out\n", dev->name);
+;
 
 	/* Protect against concurrent rx interrupts */
 	spin_lock_irqsave(&priv->meth_lock,flags);
@@ -805,8 +805,8 @@ static int __devinit meth_probe(struct platform_device *pdev)
 		return err;
 	}
 
-	printk(KERN_INFO "%s: SGI MACE Ethernet rev. %d\n",
-	       dev->name, (unsigned int)(mace->eth.mac_ctrl >> 29));
+//	printk(KERN_INFO "%s: SGI MACE Ethernet rev. %d\n",
+;
 	return 0;
 }
 
@@ -836,7 +836,7 @@ static int __init meth_init_module(void)
 
 	err = platform_driver_register(&meth_driver);
 	if (err)
-		printk(KERN_ERR "Driver registration failed\n");
+;
 
 	return err;
 }

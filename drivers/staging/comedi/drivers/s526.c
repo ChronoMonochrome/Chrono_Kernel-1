@@ -306,7 +306,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 /* int subdev_channel = 0; */
 	union cmReg cmReg;
 
-	printk(KERN_INFO "comedi%d: s526: ", dev->minor);
+;
 
 	iobase = it->options[0];
 	if (!iobase || !request_region(iobase, S526_IOSIZE, thisboard->name)) {
@@ -315,12 +315,12 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 	dev->iobase = iobase;
 
-	printk("iobase=0x%lx\n", dev->iobase);
+;
 
 	/*** make it a little quieter, exw, 8/29/06
 	for (i = 0; i < S526_NUM_PORTS; i++) {
-		printk("0x%02x: 0x%04x\n", ADDR_REG(s526_ports[i]),
-				inw(ADDR_REG(s526_ports[i])));
+//		printk("0x%02x: 0x%04x\n", ADDR_REG(s526_ports[i]),
+;
 	}
 	***/
 
@@ -405,7 +405,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		s->type = COMEDI_SUBD_UNUSED;
 	}
 
-	printk(KERN_INFO "attached\n");
+;
 
 	return 1;
 
@@ -452,12 +452,12 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	cmReg.reg.reserved = 0;
 
 	n = 0;
-	printk(KERN_INFO "Mode reg=0x%04x, 0x%04lx\n",
-		cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
+//	printk(KERN_INFO "Mode reg=0x%04x, 0x%04lx\n",
+;
 	outw(cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
 	udelay(1000);
-	printk(KERN_INFO "Read back mode reg=0x%04x\n",
-		inw(ADDR_CHAN_REG(REG_C0M, n)));
+//	printk(KERN_INFO "Read back mode reg=0x%04x\n",
+;
 
 	/*  Load the pre-load register high word */
 /* value = (short) (0x55); */
@@ -480,15 +480,15 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	outw(cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
 	udelay(1000);
-	printk(KERN_INFO "Read back mode reg=0x%04x\n",
-			inw(ADDR_CHAN_REG(REG_C0M, n)));
+//	printk(KERN_INFO "Read back mode reg=0x%04x\n",
+;
 
 #endif
-	printk(KERN_INFO "Current registres:\n");
+;
 
 	for (i = 0; i < S526_NUM_PORTS; i++) {
-		printk(KERN_INFO "0x%02lx: 0x%04x\n",
-			ADDR_REG(s526_ports[i]), inw(ADDR_REG(s526_ports[i])));
+//		printk(KERN_INFO "0x%02lx: 0x%04x\n",
+;
 	}
 	return 1;
 }
@@ -503,7 +503,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int s526_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: s526: remove\n", dev->minor);
+;
 
 	if (dev->iobase > 0)
 		release_region(dev->iobase, S526_IOSIZE);
@@ -522,7 +522,7 @@ static int s526_gpct_rinsn(struct comedi_device *dev,
 
 	/*  Check if (n > 0) */
 	if (insn->n <= 0) {
-		printk(KERN_ERR "s526: INSN_READ: n should be > 0\n");
+;
 		return -EINVAL;
 	}
 	/*  Read the low word first */
@@ -565,7 +565,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
 		   data[2]: Pre-load Register Value
 		   data[3]: Conter Control Register
 		 */
-		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring Encoder\n");
+;
 		devpriv->s526_gpct_config[subdev_channel].app =
 		    PositionMeasurement;
 
@@ -672,7 +672,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
 		   data[3]: Pre-load Register 1 Value
 		   data[4]: Conter Control Register
 		 */
-		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring SPG\n");
+;
 		devpriv->s526_gpct_config[subdev_channel].app =
 		    SinglePulseGeneration;
 
@@ -717,7 +717,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
 		   data[3]: Pre-load Register 1 Value
 		   data[4]: Conter Control Register
 		 */
-		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring PTG\n");
+;
 		devpriv->s526_gpct_config[subdev_channel].app =
 		    PulseTrainGeneration;
 
@@ -755,7 +755,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
 		break;
 
 	default:
-		printk(KERN_ERR "s526: unsupported GPCT_insn_config\n");
+;
 		return -EINVAL;
 		break;
 	}
@@ -771,21 +771,21 @@ static int s526_gpct_winsn(struct comedi_device *dev,
 	short value;
 	union cmReg cmReg;
 
-	printk(KERN_INFO "s526: GPCT_INSN_WRITE on channel %d\n",
-					subdev_channel);
+//	printk(KERN_INFO "s526: GPCT_INSN_WRITE on channel %d\n",
+;
 	cmReg.value = inw(ADDR_CHAN_REG(REG_C0M, subdev_channel));
-	printk(KERN_INFO "s526: Counter Mode Register: %x\n", cmReg.value);
+;
 	/*  Check what Application of Counter this channel is configured for */
 	switch (devpriv->s526_gpct_config[subdev_channel].app) {
 	case PositionMeasurement:
-		printk(KERN_INFO "S526: INSN_WRITE: PM\n");
+;
 		outw(0xFFFF & ((*data) >> 16), ADDR_CHAN_REG(REG_C0H,
 							     subdev_channel));
 		outw(0xFFFF & (*data), ADDR_CHAN_REG(REG_C0L, subdev_channel));
 		break;
 
 	case SinglePulseGeneration:
-		printk(KERN_INFO "S526: INSN_WRITE: SPG\n");
+;
 		outw(0xFFFF & ((*data) >> 16), ADDR_CHAN_REG(REG_C0H,
 							     subdev_channel));
 		outw(0xFFFF & (*data), ADDR_CHAN_REG(REG_C0L, subdev_channel));
@@ -798,15 +798,15 @@ static int s526_gpct_winsn(struct comedi_device *dev,
 		   The above periods must be expressed as a multiple of the
 		   pulse frequency on the selected source
 		 */
-		printk(KERN_INFO "S526: INSN_WRITE: PTG\n");
+;
 		if ((insn->data[1] > insn->data[0]) && (insn->data[0] > 0)) {
 			(devpriv->s526_gpct_config[subdev_channel]).data[0] =
 			    insn->data[0];
 			(devpriv->s526_gpct_config[subdev_channel]).data[1] =
 			    insn->data[1];
 		} else {
-			printk(KERN_ERR "s526: INSN_WRITE: PTG: Problem with Pulse params -> %d %d\n",
-				insn->data[0], insn->data[1]);
+//			printk(KERN_ERR "s526: INSN_WRITE: PTG: Problem with Pulse params -> %d %d\n",
+;
 			return -EINVAL;
 		}
 
@@ -894,8 +894,8 @@ static int s526_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 		if (i == TIMEOUT) {
 			/* printk() should be used instead of printk()
 			 * whenever the code can be called from real-time. */
-			printk(KERN_ERR "s526: ADC(0x%04x) timeout\n",
-			       inw(ADDR_REG(REG_ISR)));
+//			printk(KERN_ERR "s526: ADC(0x%04x) timeout\n",
+;
 			return -ETIMEDOUT;
 		}
 
@@ -993,7 +993,7 @@ static int s526_dio_insn_config(struct comedi_device *dev,
 	int chan = CR_CHAN(insn->chanspec);
 	int group, mask;
 
-	printk(KERN_INFO "S526 DIO insn_config\n");
+;
 
 	/* The input or output configuration of each digital line is
 	 * configured by a special insn_config instruction.  chanspec

@@ -1912,13 +1912,13 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
  					     "lvb! type=%d\n", dlm->name,
  					     res->lockname.len,
  					     res->lockname.name, ml->type);
- 					printk("lockres lvb=[");
+;
  					for (i=0; i<DLM_LVB_LEN; i++)
- 						printk("%02x", res->lvb[i]);
- 					printk("]\nmigrated lvb=[");
+;
+;
  					for (i=0; i<DLM_LVB_LEN; i++)
- 						printk("%02x", mres->lvb[i]);
- 					printk("]\n");
+;
+;
  					dlm_print_one_lock_resource(res);
  					BUG();
 				}

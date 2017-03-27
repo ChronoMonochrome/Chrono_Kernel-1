@@ -39,10 +39,14 @@ module_param_named(debug, stvdebug, int, 0644);
 static int i2cdebug;
 module_param_named(i2c_debug, i2cdebug, int, 0644);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (stvdebug) \
 			printk(KERN_DEBUG args); \
+#else
+#define d;
+#endif
 	} while (0)
 	/* DVB-C */
 
@@ -781,7 +785,11 @@ int stv0367_writeregs(struct stv0367_state *state, u16 reg, u8 *data, int len)
 	memcpy(buf + 2, data, len);
 
 	if (i2cdebug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %02x: %02x\n", __func__, reg, buf[2]);
+#else
+		;
+#endif
 
 	ret = i2c_transfer(state->i2c, &msg, 1);
 	if (ret != 1)
@@ -822,7 +830,11 @@ static u8 stv0367_readreg(struct stv0367_state *state, u16 reg)
 		printk(KERN_ERR "%s: i2c read error\n", __func__);
 
 	if (i2cdebug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %02x: %02x\n", __func__, reg, b1[0]);
+#else
+		;
+#endif
 
 	return b1[0];
 }
@@ -893,7 +905,11 @@ static int stv0367ter_gate_ctrl(struct dvb_frontend *fe, int enable)
 	struct stv0367_state *state = fe->demodulator_priv;
 	u8 tmp = stv0367_readreg(state, R367TER_I2CRPT);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (enable) {
 		stv0367_setbits(&tmp, F367TER_STOP_ENABLE, 0);
@@ -915,7 +931,11 @@ static u32 stv0367_get_tuner_freq(struct dvb_frontend *fe)
 	u32 freq = 0;
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 
 	if (&fe->ops)
@@ -929,7 +949,11 @@ static u32 stv0367_get_tuner_freq(struct dvb_frontend *fe)
 			return err;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: frequency=%d\n", __func__, freq);
+#else
+		d;
+#endif
 
 	} else
 		return -1;
@@ -1018,7 +1042,11 @@ static u32 stv0367ter_get_mclk(struct stv0367_state *state, u32 ExtClk_Hz)
 	u32 mclk_Hz = 0; /* master clock frequency (Hz) */
 	u32 m, n, p;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (stv0367_readbits(state, F367TER_BYPASS_PLLXN) == 0) {
 		n = (u32)stv0367_readbits(state, F367TER_PLL_NDIV);
@@ -1035,12 +1063,20 @@ static u32 stv0367ter_get_mclk(struct stv0367_state *state, u32 ExtClk_Hz)
 
 		mclk_Hz = ((ExtClk_Hz / 2) * n) / (m * (1 << p));
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("N=%d M=%d P=%d mclk_Hz=%d ExtClk_Hz=%d\n",
 				n, m, p, mclk_Hz, ExtClk_Hz);
+#else
+		d;
+#endif
 	} else
 		mclk_Hz = ExtClk_Hz;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: mclk_Hz=%d\n", __func__, mclk_Hz);
+#else
+	d;
+#endif
 
 	return mclk_Hz;
 }
@@ -1050,7 +1086,11 @@ static int stv0367ter_filt_coeff_init(struct stv0367_state *state,
 {
 	int i, j, k, freq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	freq = stv0367ter_get_mclk(state, DemodXtal);
 
@@ -1082,7 +1122,11 @@ static int stv0367ter_filt_coeff_init(struct stv0367_state *state,
 
 static void stv0367ter_agc_iir_lock_detect_set(struct stv0367_state *state)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	stv0367_writebits(state, F367TER_LOCK_DETECT_LSB, 0x00);
 
@@ -1111,7 +1155,11 @@ static void stv0367ter_agc_iir_lock_detect_set(struct stv0367_state *state)
 static int stv0367_iir_filt_init(struct stv0367_state *state, u8 Bandwidth,
 							u32 DemodXtalValue)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	stv0367_writebits(state, F367TER_NRST_IIR, 0);
 
@@ -1148,7 +1196,11 @@ static void stv0367ter_agc_iir_rst(struct stv0367_state *state)
 
 	u8 com_n;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	com_n = stv0367_readbits(state, F367TER_COM_N);
 
@@ -1193,7 +1245,11 @@ stv0367_ter_signal_type stv0367ter_check_syr(struct stv0367_state *state)
 	unsigned short int SYR_var;
 	s32 SYRStatus;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	SYR_var = stv0367_readbits(state, F367TER_SYR_LOCK);
 
@@ -1208,8 +1264,12 @@ stv0367_ter_signal_type stv0367ter_check_syr(struct stv0367_state *state)
 	else
 		SYRStatus =  FE_TER_SYMBOLOK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("stv0367ter_check_syr SYRStatus %s\n",
 				SYR_var == 0 ? "No Symbol" : "OK");
+#else
+	d;
+#endif
 
 	return SYRStatus;
 }
@@ -1222,7 +1282,11 @@ stv0367_ter_signal_type stv0367ter_check_cpamp(struct stv0367_state *state,
 	s32  CPAMPvalue = 0, CPAMPStatus, CPAMPMin;
 	int wd = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	switch (FFTmode) {
 	case 0: /*2k mode*/
@@ -1242,16 +1306,28 @@ stv0367_ter_signal_type stv0367ter_check_cpamp(struct stv0367_state *state,
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: CPAMPMin=%d wd=%d\n", __func__, CPAMPMin, wd);
+#else
+	d;
+#endif
 
 	CPAMPvalue = stv0367_readbits(state, F367TER_PPM_CPAMP_DIRECT);
 	while ((CPAMPvalue < CPAMPMin) && (wd > 0)) {
 		usleep_range(1000, 2000);
 		wd -= 1;
 		CPAMPvalue = stv0367_readbits(state, F367TER_PPM_CPAMP_DIRECT);
+#ifdef CONFIG_DEBUG_PRINTK
 		/*dprintk("CPAMPvalue= %d at wd=%d\n",CPAMPvalue,wd); */
+#else
+		/*d;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("******last CPAMPvalue= %d at wd=%d\n", CPAMPvalue, wd);
+#else
+	d;
+#endif
 	if (CPAMPvalue < CPAMPMin) {
 		CPAMPStatus = FE_TER_NOCPAMP;
 		printk(KERN_ERR "CPAMP failed\n");
@@ -1271,7 +1347,11 @@ stv0367_ter_signal_type stv0367ter_lock_algo(struct stv0367_state *state)
 	u8 try, u_var1 = 0, u_var2 = 0, u_var3 = 0, u_var4 = 0, mode, guard;
 	u8 tmp, tmp2;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (state == NULL)
 		return FE_TER_SWNOK;
@@ -1312,16 +1392,32 @@ stv0367_ter_signal_type stv0367ter_lock_algo(struct stv0367_state *state)
 
 	tmp  = stv0367_readreg(state, R367TER_SYR_STAT);
 	tmp2 = stv0367_readreg(state, R367TER_STATUS);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("state=%p\n", state);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("LOCK OK! mode=%d SYR_STAT=0x%x R367TER_STATUS=0x%x\n",
 							mode, tmp, tmp2);
+#else
+	d;
+#endif
 
 	tmp  = stv0367_readreg(state, R367TER_PRVIT);
 	tmp2 = stv0367_readreg(state, R367TER_I2CRPT);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("PRVIT=0x%x I2CRPT=0x%x\n", tmp, tmp2);
+#else
+	d;
+#endif
 
 	tmp  = stv0367_readreg(state, R367TER_GAIN_SRC1);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("GAIN_SRC1=0x%x\n", tmp);
+#else
+	d;
+#endif
 
 	if ((mode != 0) && (mode != 1) && (mode != 2))
 		return FE_TER_SWNOK;
@@ -1440,7 +1536,11 @@ stv0367_ter_signal_type stv0367ter_lock_algo(struct stv0367_state *state)
 
 	stv0367_writebits(state, F367TER_SYR_TR_DIS, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("FE_TER_LOCKOK !!!\n");
+#else
+	d;
+#endif
 
 	return	FE_TER_LOCKOK;
 
@@ -1450,7 +1550,11 @@ static void stv0367ter_set_ts_mode(struct stv0367_state *state,
 					enum stv0367_ts_mode PathTS)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (state == NULL)
 		return;
@@ -1474,7 +1578,11 @@ static void stv0367ter_set_clk_pol(struct stv0367_state *state,
 					enum stv0367_clk_pol clock)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (state == NULL)
 		return;
@@ -1497,7 +1605,11 @@ static void stv0367ter_set_clk_pol(struct stv0367_state *state,
 static void stv0367ter_core_sw(struct stv0367_state *state)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	stv0367_writebits(state, F367TER_CORE_ACTIVE, 0);
 	stv0367_writebits(state, F367TER_CORE_ACTIVE, 1);
@@ -1508,7 +1620,11 @@ static int stv0367ter_standby(struct dvb_frontend *fe, u8 standby_on)
 {
 	struct stv0367_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (standby_on) {
 		stv0367_writebits(state, F367TER_STDBY, 1);
@@ -1534,7 +1650,11 @@ int stv0367ter_init(struct dvb_frontend *fe)
 	struct stv0367ter_state *ter_state = state->ter_state;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	ter_state->pBER = 0;
 
@@ -1551,7 +1671,11 @@ int stv0367ter_init(struct dvb_frontend *fe)
 		break;
 	default:
 	case 27000000:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("FE_STV0367TER_SetCLKgen for 27Mhz\n");
+#else
+		d;
+#endif
 		stv0367_writereg(state, R367TER_PLLMDIV, 0x1);
 		stv0367_writereg(state, R367TER_PLLNDIV, 0x8);
 		stv0367_writereg(state, R367TER_PLLSETUP, 0x18);
@@ -1589,7 +1713,11 @@ static int stv0367ter_algo(struct dvb_frontend *fe,
 	s32 timing_offset = 0;
 	u32 trl_nomrate = 0, InternalFreq = 0, temp = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	ter_state->frequency = param->frequency;
 	ter_state->force = FE_TER_FORCENONE
@@ -1597,19 +1725,31 @@ static int stv0367ter_algo(struct dvb_frontend *fe,
 	ter_state->if_iq_mode = state->config->if_iq_mode;
 	switch (state->config->if_iq_mode) {
 	case FE_TER_NORMAL_IF_TUNER:  /* Normal IF mode */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("ALGO: FE_TER_NORMAL_IF_TUNER selected\n");
+#else
+		d;
+#endif
 		stv0367_writebits(state, F367TER_TUNER_BB, 0);
 		stv0367_writebits(state, F367TER_LONGPATH_IF, 0);
 		stv0367_writebits(state, F367TER_DEMUX_SWAP, 0);
 		break;
 	case FE_TER_LONGPATH_IF_TUNER:  /* Long IF mode */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("ALGO: FE_TER_LONGPATH_IF_TUNER selected\n");
+#else
+		d;
+#endif
 		stv0367_writebits(state, F367TER_TUNER_BB, 0);
 		stv0367_writebits(state, F367TER_LONGPATH_IF, 1);
 		stv0367_writebits(state, F367TER_DEMUX_SWAP, 1);
 		break;
 	case FE_TER_IQ_TUNER:  /* IQ mode */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("ALGO: FE_TER_IQ_TUNER selected\n");
+#else
+		d;
+#endif
 		stv0367_writebits(state, F367TER_TUNER_BB, 1);
 		stv0367_writebits(state, F367TER_PPM_INVSEL, 0);
 		break;
@@ -1623,7 +1763,11 @@ static int stv0367ter_algo(struct dvb_frontend *fe,
 	switch (param->inversion) {
 	case INVERSION_AUTO:
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: inversion AUTO\n", __func__);
+#else
+		d;
+#endif
 		if (ter_state->if_iq_mode == FE_TER_IQ_TUNER)
 			stv0367_writebits(state, F367TER_IQ_INVERT,
 						ter_state->sense);
@@ -1696,7 +1840,11 @@ static int stv0367ter_algo(struct dvb_frontend *fe,
 		((InternalFreq - state->config->if_khz) * (1 << 16)
 							/ (InternalFreq));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("DEROT temp=0x%x\n", temp);
+#else
+	d;
+#endif
 	stv0367_writebits(state, F367TER_INC_DEROT_HI, temp / 256);
 	stv0367_writebits(state, F367TER_INC_DEROT_LO, temp % 256);
 
@@ -2080,13 +2228,21 @@ static int stv0367ter_read_status(struct dvb_frontend *fe, fe_status_t *status)
 {
 	struct stv0367_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	*status = 0;
 
 	if (stv0367_readbits(state, F367TER_LK)) {
 		*status |= FE_HAS_LOCK;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: stv0367 has locked\n", __func__);
+#else
+		d;
+#endif
 	}
 
 	return 0;
@@ -2317,7 +2473,11 @@ struct dvb_frontend *stv0367ter_attach(const struct stv0367_config *config,
 	state->fe.demodulator_priv = state;
 	state->chip_id = stv0367_readreg(state, 0xf000);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: chip_id = 0x%x\n", __func__, state->chip_id);
+#else
+	d;
+#endif
 
 	/* check if the demod is there */
 	if ((state->chip_id != 0x50) && (state->chip_id != 0x60))
@@ -2336,7 +2496,11 @@ static int stv0367cab_gate_ctrl(struct dvb_frontend *fe, int enable)
 {
 	struct stv0367_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	stv0367_writebits(state, F367CAB_I2CT_ON, (enable > 0) ? 1 : 0);
 
@@ -2365,12 +2529,20 @@ static u32 stv0367cab_get_mclk(struct dvb_frontend *fe, u32 ExtClk_Hz)
 			P = 5;
 
 		mclk_Hz = ((ExtClk_Hz / 2) * N) / (M * (1 << P));
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("stv0367cab_get_mclk BYPASS_PLLXN mclk_Hz=%d\n",
 								mclk_Hz);
+#else
+		d;
+#endif
 	} else
 		mclk_Hz = ExtClk_Hz;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("stv0367cab_get_mclk final mclk_Hz=%d\n", mclk_Hz);
+#else
+	d;
+#endif
 
 	return mclk_Hz;
 }
@@ -2489,7 +2661,11 @@ static u32 stv0367cab_set_derot_freq(struct stv0367_state *state,
 
 	adc_khz = adc_hz / 1000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: adc_hz=%d derot_hz=%d\n", __func__, adc_hz, derot_hz);
+#else
+	d;
+#endif
 
 	if (adc_khz != 0) {
 		if (derot_hz < 1000000)
@@ -2505,7 +2681,11 @@ static u32 stv0367cab_set_derot_freq(struct stv0367_state *state,
 	if (sampled_if > 8388607)
 		sampled_if = 8388607;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: sampled_if=0x%x\n", __func__, sampled_if);
+#else
+	d;
+#endif
 
 	stv0367_writereg(state, R367CAB_MIX_NCO_LL, sampled_if);
 	stv0367_writereg(state, R367CAB_MIX_NCO_HL, (sampled_if >> 8));
@@ -2538,7 +2718,11 @@ static u32 stv0367cab_set_srate(struct stv0367_state *state, u32 adc_hz,
 	u32 u32_tmp = 0, u32_tmp1 = 0;
 	u32 adp_khz;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	/* Set Correction factor of SRC gain */
 	switch (QAMSize) {
@@ -2722,13 +2906,21 @@ static int stv0367cab_read_status(struct dvb_frontend *fe, fe_status_t *status)
 {
 	struct stv0367_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	*status = 0;
 
 	if (stv0367_readbits(state, F367CAB_QAMFEC_LOCK)) {
 		*status |= FE_HAS_LOCK;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: stv0367 has locked\n", __func__);
+#else
+		d;
+#endif
 	}
 
 	return 0;
@@ -2738,7 +2930,11 @@ static int stv0367cab_standby(struct dvb_frontend *fe, u8 standby_on)
 {
 	struct stv0367_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (standby_on) {
 		stv0367_writebits(state, F367CAB_BYPASS_PLLXN, 0x03);
@@ -2774,7 +2970,11 @@ int stv0367cab_init(struct dvb_frontend *fe)
 	struct stv0367cab_state *cab_state = state->cab_state;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	for (i = 0; i < STV0367CAB_NBREGS; i++)
 		stv0367_writereg(state, def0367cab[i].addr,
@@ -2782,7 +2982,11 @@ int stv0367cab_init(struct dvb_frontend *fe)
 
 	switch (state->config->ts_mode) {
 	case STV0367_DVBCI_CLOCK:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Setting TSMode = STV0367_DVBCI_CLOCK\n");
+#else
+		d;
+#endif
 		stv0367_writebits(state, F367CAB_OUTFORMAT, 0x03);
 		break;
 	case STV0367_SERIAL_PUNCT_CLOCK:
@@ -2833,7 +3037,11 @@ enum stv0367_cab_signal_type stv0367cab_algo(struct stv0367_state *state,
 	u8	TrackAGCAccum;
 	s32	tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	/* Timeouts calculation */
 	/* A max lock time of 25 ms is allowed for delayed AGC */
@@ -2896,7 +3104,11 @@ enum stv0367_cab_signal_type stv0367cab_algo(struct stv0367_state *state,
 	FECTimeOut = 20;
 	DemodTimeOut = AGCTimeOut + TRLTimeOut + CRLTimeOut + EQLTimeOut;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: DemodTimeOut=%d\n", __func__, DemodTimeOut);
+#else
+	d;
+#endif
 
 	/* Reset the TRL to ensure nothing starts until the
 	   AGC is stable which ensures a better lock time
@@ -2967,23 +3179,47 @@ enum stv0367_cab_signal_type stv0367cab_algo(struct stv0367_state *state,
 			usleep_range(10000, 20000);
 			LockTime += 10;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("QAM_Lock=0x%x LockTime=%d\n", QAM_Lock, LockTime);
+#else
+		d;
+#endif
 		tmp = stv0367_readreg(state, R367CAB_IT_STATUS1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("R367CAB_IT_STATUS1=0x%x\n", tmp);
+#else
+		d;
+#endif
 
 	} while (((QAM_Lock != 0x0c) && (QAM_Lock != 0x0b)) &&
 						(LockTime < DemodTimeOut));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("QAM_Lock=0x%x\n", QAM_Lock);
+#else
+	d;
+#endif
 
 	tmp = stv0367_readreg(state, R367CAB_IT_STATUS1);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("R367CAB_IT_STATUS1=0x%x\n", tmp);
+#else
+	d;
+#endif
 	tmp = stv0367_readreg(state, R367CAB_IT_STATUS2);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("R367CAB_IT_STATUS2=0x%x\n", tmp);
+#else
+	d;
+#endif
 
 	tmp  = stv0367cab_get_derot_freq(state, cab_state->adc_clk);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("stv0367cab_get_derot_freq=0x%x\n", tmp);
+#else
+	d;
+#endif
 
 	if ((QAM_Lock == 0x0c) || (QAM_Lock == 0x0b)) {
 		/* Wait for FEC lock */
@@ -3089,8 +3325,12 @@ static int stv0367cab_set_frontend(struct dvb_frontend *fe,
 	struct dvb_qam_parameters *op = &param->u.qam;
 	enum stv0367cab_mod QAMSize = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: freq = %d, srate = %d\n", __func__,
 					param->frequency, op->symbol_rate);
+#else
+	d;
+#endif
 
 	cab_state->derot_offset = 0;
 
@@ -3149,7 +3389,11 @@ static int stv0367cab_get_frontend(struct dvb_frontend *fe,
 
 	enum stv0367cab_mod QAMSize;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	op->symbol_rate = stv0367cab_GetSymbolRate(state, cab_state->mclk);
 
@@ -3176,7 +3420,11 @@ static int stv0367cab_get_frontend(struct dvb_frontend *fe,
 
 	param->frequency = stv0367_get_tuner_freq(fe);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: tuner frequency = %d\n", __func__, param->frequency);
+#else
+	d;
+#endif
 
 	if (state->config->if_khz == 0) {
 		param->frequency +=
@@ -3265,14 +3513,22 @@ static int stv0367cab_read_strength(struct dvb_frontend *fe, u16 *strength)
 
 	s32 signal =  stv0367cab_get_rf_lvl(state);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: signal=%d dBm\n", __func__, signal);
+#else
+	d;
+#endif
 
 	if (signal <= -72)
 		*strength = 65535;
 	else
 		*strength = (22 + signal) * (-1311);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: strength=%d\n", __func__, (*strength));
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -3360,7 +3616,11 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
 	else
 		noisepercentage = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: noisepercentage=%d\n", __func__, noisepercentage);
+#else
+	d;
+#endif
 
 	*snr = (noisepercentage * 65535) / 100;
 
@@ -3379,8 +3639,12 @@ static int stv0367cab_read_ucblcks(struct dvb_frontend *fe, u32 *ucblocks)
 	tscount = (stv0367_readreg(state, R367CAB_RS_COUNTER_2) << 8)
 			| stv0367_readreg(state, R367CAB_RS_COUNTER_1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: uncorrected blocks=%d corrected blocks=%d tscount=%d\n",
 				__func__, *ucblocks, corrected, tscount);
+#else
+	d;
+#endif
 
 	return 0;
 };
@@ -3436,7 +3700,11 @@ struct dvb_frontend *stv0367cab_attach(const struct stv0367_config *config,
 	state->fe.demodulator_priv = state;
 	state->chip_id = stv0367_readreg(state, 0xf000);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: chip_id = 0x%x\n", __func__, state->chip_id);
+#else
+	d;
+#endif
 
 	/* check if the demod is there */
 	if ((state->chip_id != 0x50) && (state->chip_id != 0x60))

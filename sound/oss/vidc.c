@@ -110,7 +110,11 @@ vidc_mixer_set(int mdev, unsigned int level)
 
 		vidc_audio_volume_l = SCALE(lev_l, mlev_l);
 		vidc_audio_volume_r = SCALE(lev_r, mlev_r);
+#ifdef CONFIG_DEBUG_PRINTK
 /*printk("VIDC: PCM vol %05X %05X\n", vidc_audio_volume_l, vidc_audio_volume_r);*/
+#else
+/*;
+#endif
 		break;
 	}
 #undef SCALE
@@ -218,14 +222,22 @@ static int vidc_audio_set_speed(int dev, int rate)
 		diff_int = my_abs(rate_ext-rate);
 		diff_ext = my_abs(rate_int-rate);
 		if (diff_ext < diff_int) {
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("VIDC: external %d %d %d\n", rate, rate_ext, hwrate_ext);*/
+#else
+			/*;
+#endif
 			hwrate=hwrate_ext;
 			hwctrl=0x00000002;
 			/* Allow roughly 0.4% tolerance */
 			if (diff_ext > (rate/256))
 				rate=rate_ext;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("VIDC: internal %d %d %d\n", rate, rate_int, hwrate);*/
+#else
+			/*;
+#endif
 			hwctrl=0x00000003;
 			/* Allow roughly 0.4% tolerance */
 			if (diff_int > (rate/256))
@@ -248,7 +260,11 @@ static int vidc_audio_set_speed(int dev, int rate)
 				newsize, new2size);
 			new2size = 4096;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		/*printk("VIDC: dma size %d\n", new2size);*/
+#else
+		/*;
+#endif
 		dma_bufsize = new2size;
 		vidc_audio_rate = rate;
 	}

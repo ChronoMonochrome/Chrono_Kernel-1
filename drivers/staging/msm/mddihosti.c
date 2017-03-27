@@ -1538,16 +1538,16 @@ void mddi_host_configure_interrupts(mddi_host_type host_idx, boolean enable)
 			if (request_irq
 			    (INT_MDDI_PRI, mddi_pmdh_isr_proxy, IRQF_DISABLED,
 			     "PMDH", 0) != 0)
-				printk(KERN_ERR
-				       "a mddi: unable to request_irq\n");
+//				printk(KERN_ERR
+;
 			else
 				int_mddi_pri_flag = TRUE;
 		} else {
 			if (request_irq
 			    (INT_MDDI_EXT, mddi_emdh_isr_proxy, IRQF_DISABLED,
 			     "EMDH", 0) != 0)
-				printk(KERN_ERR
-				       "b mddi: unable to request_irq\n");
+//				printk(KERN_ERR
+;
 			else
 				int_mddi_ext_flag = TRUE;
 		}

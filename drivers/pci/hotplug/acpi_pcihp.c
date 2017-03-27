@@ -36,7 +36,11 @@
 
 #define MY_NAME	"acpi_pcihp"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dbg(fmt, arg...) do { if (debug_acpi) printk(KERN_DEBUG "%s: %s: " fmt , MY_NAME , __func__ , ## arg); } while (0)
+#else
+#define dbg(fmt, arg...) do { if (debug_acpi) ;
+#endif
 #define err(format, arg...) printk(KERN_ERR "%s: " format , MY_NAME , ## arg)
 #define info(format, arg...) printk(KERN_INFO "%s: " format , MY_NAME , ## arg)
 #define warn(format, arg...) printk(KERN_WARNING "%s: " format , MY_NAME , ## arg)
@@ -68,9 +72,13 @@ decode_type0_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t0->enable_perr     = fields[5].integer.value;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Type 0 Revision %d record not supported\n",
 		       __func__, revision);
+#else
+		;
+#endif
 		return AE_ERROR;
 	}
 	return AE_OK;
@@ -97,9 +105,13 @@ decode_type1_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t1->tot_max_split = fields[4].integer.value;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Type 1 Revision %d record not supported\n",
 		       __func__, revision);
+#else
+		;
+#endif
 		return AE_ERROR;
 	}
 	return AE_OK;
@@ -139,9 +151,13 @@ decode_type2_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t2->sec_unc_err_mask_or   = fields[17].integer.value;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Type 2 Revision %d record not supported\n",
 		       __func__, revision);
+#else
+		;
+#endif
 		return AE_ERROR;
 	}
 	return AE_OK;

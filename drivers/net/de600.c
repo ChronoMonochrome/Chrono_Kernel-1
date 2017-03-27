@@ -117,7 +117,7 @@ static int de600_open(struct net_device *dev)
 	unsigned long flags;
 	int ret = request_irq(DE600_IRQ, de600_interrupt, 0, dev->name, dev);
 	if (ret) {
-		printk(KERN_ERR "%s: unable to get IRQ %d\n", dev->name, DE600_IRQ);
+;
 		return ret;
 	}
 	spin_lock_irqsave(&de600_lock, flags);
@@ -170,7 +170,7 @@ static int de600_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		if (tickssofar < HZ/20)
 			return NETDEV_TX_BUSY;
 		/* else */
-		printk(KERN_WARNING "%s: transmit timed out (%d), %s?\n", dev->name, tickssofar, "network cable problem");
+;
 		/* Restart the adapter. */
 		spin_lock_irqsave(&de600_lock, flags);
 		if (adapter_init(dev)) {
@@ -329,7 +329,7 @@ static void de600_rx_intr(struct net_device *dev)
 	de600_put_command(RX_ENABLE);
 
 	if ((size < 32)  ||  (size > 1535)) {
-		printk(KERN_WARNING "%s: Bogus packet size %d.\n", dev->name, size);
+;
 		if (size > 10000)
 			adapter_init(dev);
 		return;
@@ -337,7 +337,7 @@ static void de600_rx_intr(struct net_device *dev)
 
 	skb = dev_alloc_skb(size+2);
 	if (skb == NULL) {
-		printk("%s: Couldn't allocate a sk_buff of size %d.\n", dev->name, size);
+;
 		return;
 	}
 	/* else */
@@ -388,12 +388,12 @@ static struct net_device * __init de600_probe(void)
 
 
 	if (!request_region(DE600_IO, 3, "de600")) {
-		printk(KERN_WARNING "DE600: port 0x%x busy\n", DE600_IO);
+;
 		err = -EBUSY;
 		goto out;
 	}
 
-	printk(KERN_INFO "%s: D-Link DE-600 pocket adapter", dev->name);
+;
 	/* Alpha testers must have the version number to report bugs. */
 	pr_debug("%s", version);
 
@@ -405,7 +405,7 @@ static struct net_device * __init de600_probe(void)
 	de600_put_command(RESET);
 	de600_put_command(STOP_RESET);
 	if (de600_read_status(dev) & 0xf0) {
-		printk(": not at I/O %#3x.\n", DATA_PORT);
+;
 		goto out1;
 	}
 
@@ -430,11 +430,11 @@ static struct net_device * __init de600_probe(void)
 		dev->dev_addr[3] &= 0x0f;
 		dev->dev_addr[3] |= 0x70;
 	} else {
-		printk(" not identified in the printer port\n");
+;
 		goto out1;
 	}
 
-	printk(", Ethernet Address: %pM\n", dev->dev_addr);
+;
 
 	dev->netdev_ops = &de600_netdev_ops;
 
@@ -471,7 +471,7 @@ static int adapter_init(struct net_device *dev)
 	if ((de600_read_byte(READ_DATA, dev) != 0xde) ||
 	    (de600_read_byte(READ_DATA, dev) != 0x15)) {
 	/* was: if (de600_read_status(dev) & 0xf0) { */
-		printk("Something has happened to the DE-600!  Please check it and do a new ifconfig!\n");
+;
 		/* Goodbye, cruel world... */
 		dev->flags &= ~IFF_UP;
 		de600_close(dev);
@@ -481,7 +481,7 @@ static int adapter_init(struct net_device *dev)
 	}
 
 	if (was_down) {
-		printk(KERN_INFO "%s: Thanks, I feel much better now!\n", dev->name);
+;
 		was_down = 0;
 	}
 

@@ -89,7 +89,11 @@ aoe_init(void)
 		goto blkreg_fail;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "aoe: AoE v%s initialised.\n", VERSION);
+#else
+	;
+#endif
 	discover_timer(TINIT);
 	return 0;
 
@@ -102,7 +106,11 @@ aoe_init(void)
  chr_fail:
 	aoedev_exit();
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "aoe: initialisation failure.\n");
+#else
+	;
+#endif
 	return ret;
 }
 

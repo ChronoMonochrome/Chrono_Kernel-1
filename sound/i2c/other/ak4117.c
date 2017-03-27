@@ -53,9 +53,17 @@ static void reg_dump(struct ak4117 *ak4117)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "AK4117 REG DUMP:\n");
+#else
+	;
+#endif
 	for (i = 0; i < 0x1b; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "reg[%02x] = %02x (%02x)\n", i, reg_read(ak4117, i), i < sizeof(ak4117->regmap) ? ak4117->regmap[i] : 0);
+#else
+		;
+#endif
 }
 #endif
 
@@ -469,7 +477,11 @@ int snd_ak4117_check_rate_and_errors(struct ak4117 *ak4117, unsigned int flags)
 		goto __rate;
 	rcs0 = reg_read(ak4117, AK4117_REG_RCS0);
 	rcs2 = reg_read(ak4117, AK4117_REG_RCS2);
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG "AK IRQ: rcs0 = 0x%x, rcs1 = 0x%x, rcs2 = 0x%x\n", rcs0, rcs1, rcs2);
+#else
+	// ;
+#endif
 	spin_lock_irqsave(&ak4117->lock, _flags);
 	if (rcs0 & AK4117_PAR)
 		ak4117->parity_errors++;
@@ -522,7 +534,11 @@ int snd_ak4117_check_rate_and_errors(struct ak4117 *ak4117, unsigned int flags)
 	if (!(flags & AK4117_CHECK_NO_RATE) && runtime && runtime->rate != res) {
 		snd_pcm_stream_lock_irqsave(ak4117->substream, _flags);
 		if (snd_pcm_running(ak4117->substream)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			// printk(KERN_DEBUG "rate changed (%i <- %i)\n", runtime->rate, res);
+#else
+			// ;
+#endif
 			snd_pcm_stop(ak4117->substream, SNDRV_PCM_STATE_DRAINING);
 			wake_up(&runtime->sleep);
 			res = 1;

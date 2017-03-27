@@ -110,8 +110,8 @@ static void ap_sta_hash_del(struct ap_data *ap, struct sta_info *sta)
 	if (s->hnext != NULL)
 		s->hnext = s->hnext->hnext;
 	else
-		printk("AP: could not remove STA %pM from hash table\n",
-		       sta->addr);
+//		printk("AP: could not remove STA %pM from hash table\n",
+;
 }
 
 static void ap_free_sta(struct ap_data *ap, struct sta_info *sta)
@@ -548,7 +548,7 @@ static int prism2_ap_proc_read(char *page, char **start, off_t off,
 		p += sprintf(p, "\n");
 
 		if ((p - page) > PROC_LIMIT) {
-			printk(KERN_DEBUG "hostap: ap proc did not fit\n");
+;
 			break;
 		}
 	}
@@ -579,9 +579,9 @@ void hostap_check_sta_fw_version(struct ap_data *ap, int sta_fw_ver)
 		ap->nullfunc_ack = 0;
 
 	if (sta_fw_ver == PRISM2_FW_VER(1,4,2)) {
-		printk(KERN_WARNING "%s: Warning: secondary station firmware "
-		       "version 1.4.2 does not seem to work in Host AP mode\n",
-		       ap->local->dev->name);
+//		printk(KERN_WARNING "%s: Warning: secondary station firmware "
+//		       "version 1.4.2 does not seem to work in Host AP mode\n",
+;
 	}
 }
 
@@ -633,8 +633,8 @@ static void hostap_ap_tx_cb_auth(struct sk_buff *skb, int ok, void *data)
 	hdr = (struct ieee80211_hdr *) skb->data;
 	if (!ieee80211_is_auth(hdr->frame_control) ||
 	    skb->len < IEEE80211_MGMT_HDR_LEN + 6) {
-		printk(KERN_DEBUG "%s: hostap_ap_tx_cb_auth received invalid "
-		       "frame\n", dev->name);
+//		printk(KERN_DEBUG "%s: hostap_ap_tx_cb_auth received invalid "
+;
 		dev_kfree_skb(skb);
 		return;
 	}
@@ -702,8 +702,8 @@ static void hostap_ap_tx_cb_assoc(struct sk_buff *skb, int ok, void *data)
 	if ((!ieee80211_is_assoc_resp(hdr->frame_control) &&
 	     !ieee80211_is_reassoc_resp(hdr->frame_control)) ||
 	    skb->len < IEEE80211_MGMT_HDR_LEN + 4) {
-		printk(KERN_DEBUG "%s: hostap_ap_tx_cb_assoc received invalid "
-		       "frame\n", dev->name);
+//		printk(KERN_DEBUG "%s: hostap_ap_tx_cb_assoc received invalid "
+;
 		dev_kfree_skb(skb);
 		return;
 	}
@@ -780,7 +780,7 @@ void hostap_init_data(local_info_t *local)
 	struct ap_data *ap = local->ap;
 
 	if (ap == NULL) {
-		printk(KERN_WARNING "hostap_init_data: ap == NULL\n");
+;
 		return;
 	}
 	memset(ap, 0, sizeof(struct ap_data));
@@ -801,8 +801,8 @@ void hostap_init_data(local_info_t *local)
 	ap->tx_callback_idx =
 		hostap_tx_callback_register(local, hostap_ap_tx_cb, ap);
 	if (ap->tx_callback_idx == 0)
-		printk(KERN_WARNING "%s: failed to register TX callback for "
-		       "AP\n", local->dev->name);
+//		printk(KERN_WARNING "%s: failed to register TX callback for "
+;
 #ifndef PRISM2_NO_KERNEL_IEEE80211_MGMT
 	INIT_WORK(&local->ap->wds_oper_queue, handle_wds_oper_queue);
 
@@ -814,8 +814,8 @@ void hostap_init_data(local_info_t *local)
 		hostap_tx_callback_register(local, hostap_ap_tx_cb_poll, ap);
 	if (ap->tx_callback_auth == 0 || ap->tx_callback_assoc == 0 ||
 		ap->tx_callback_poll == 0)
-		printk(KERN_WARNING "%s: failed to register TX callback for "
-		       "AP\n", local->dev->name);
+//		printk(KERN_WARNING "%s: failed to register TX callback for "
+;
 
 	spin_lock_init(&ap->mac_restrictions.lock);
 	INIT_LIST_HEAD(&ap->mac_restrictions.mac_list);
@@ -853,8 +853,8 @@ void hostap_free_data(struct ap_data *ap)
 	struct sta_info *n, *sta;
 
 	if (ap == NULL || !ap->initialized) {
-		printk(KERN_DEBUG "hostap_free_data: ap has not yet been "
-		       "initialized - skip resource freeing\n");
+//		printk(KERN_DEBUG "hostap_free_data: ap has not yet been "
+;
 		return;
 	}
 
@@ -1121,7 +1121,7 @@ static struct sta_info * ap_add_sta(struct ap_data *ap, u8 *addr)
 			ap->add_sta_proc_entries = entry;
 			schedule_work(&ap->add_sta_proc_queue);
 		} else
-			printk(KERN_DEBUG "Failed to add STA proc data\n");
+;
 	}
 
 #ifndef PRISM2_NO_KERNEL_IEEE80211_MGMT
@@ -1220,8 +1220,8 @@ static void ap_crypt_init(struct ap_data *ap)
 	}
 
 	if (ap->crypt == NULL) {
-		printk(KERN_WARNING "AP could not initialize WEP: load module "
-		       "lib80211_crypt_wep.ko\n");
+//		printk(KERN_WARNING "AP could not initialize WEP: load module "
+;
 	}
 }
 
@@ -1713,7 +1713,7 @@ static void handle_deauth(local_info_t *local, struct sk_buff *skb,
 	len = skb->len - IEEE80211_MGMT_HDR_LEN;
 
 	if (len < 2) {
-		printk("handle_deauth - too short payload (len=%d)\n", len);
+;
 		return;
 	}
 
@@ -1733,9 +1733,9 @@ static void handle_deauth(local_info_t *local, struct sk_buff *skb,
 	}
 	spin_unlock_bh(&local->ap->sta_table_lock);
 	if (sta == NULL) {
-		printk("%s: deauthentication from %pM, "
-	       "reason_code=%d, but STA not authenticated\n", dev->name,
-		       hdr->addr2, reason_code);
+//		printk("%s: deauthentication from %pM, "
+//	       "reason_code=%d, but STA not authenticated\n", dev->name,
+;
 	}
 }
 
@@ -1755,7 +1755,7 @@ static void handle_disassoc(local_info_t *local, struct sk_buff *skb,
 	len = skb->len - IEEE80211_MGMT_HDR_LEN;
 
 	if (len < 2) {
-		printk("handle_disassoc - too short payload (len=%d)\n", len);
+;
 		return;
 	}
 
@@ -1775,9 +1775,9 @@ static void handle_disassoc(local_info_t *local, struct sk_buff *skb,
 	}
 	spin_unlock_bh(&local->ap->sta_table_lock);
 	if (sta == NULL) {
-		printk("%s: disassociation from %pM, "
-		       "reason_code=%d, but STA not authenticated\n",
-		       dev->name, hdr->addr2, reason_code);
+//		printk("%s: disassociation from %pM, "
+//		       "reason_code=%d, but STA not authenticated\n",
+;
 	}
 }
 
@@ -1793,7 +1793,7 @@ static void ap_handle_data_nullfunc(local_info_t *local,
 	 * not send this..
 	 * send control::ACK for the data::nullfunc */
 
-	printk(KERN_DEBUG "Sending control::ACK for data::nullfunc\n");
+;
 	prism2_send_mgmt(dev, IEEE80211_FTYPE_CTL | IEEE80211_STYPE_ACK,
 			 NULL, 0, hdr->addr2, 0);
 }
@@ -1993,8 +1993,8 @@ static void handle_beacon(local_info_t *local, struct sk_buff *skb,
 	len = skb->len - IEEE80211_MGMT_HDR_LEN;
 
 	if (len < 8 + 2 + 2) {
-		printk(KERN_DEBUG "handle_beacon - too short payload "
-		       "(len=%d)\n", len);
+//		printk(KERN_DEBUG "handle_beacon - too short payload "
+;
 		return;
 	}
 
@@ -2087,8 +2087,8 @@ static void handle_beacon(local_info_t *local, struct sk_buff *skb,
 		new_sta = 1;
 		sta = ap_add_sta(local->ap, hdr->addr2);
 		if (sta == NULL) {
-			printk(KERN_INFO "prism2: kmalloc failed for AP "
-			       "data structure\n");
+//			printk(KERN_INFO "prism2: kmalloc failed for AP "
+;
 			return;
 		}
 		hostap_event_new_sta(local->dev, sta);
@@ -2294,8 +2294,8 @@ static void schedule_packet_send(local_info_t *local, struct sta_info *sta)
 
 	skb = dev_alloc_skb(16);
 	if (skb == NULL) {
-		printk(KERN_DEBUG "%s: schedule_packet_send: skb alloc "
-		       "failed\n", local->dev->name);
+//		printk(KERN_DEBUG "%s: schedule_packet_send: skb alloc "
+;
 		return;
 	}
 
@@ -2623,8 +2623,8 @@ int prism2_hostapd(struct ap_data *ap, struct prism2_hostapd_param *param)
 	case PRISM2_HOSTAPD_STA_CLEAR_STATS:
 		return prism2_hostapd_sta_clear_stats(ap, param);
 	default:
-		printk(KERN_WARNING "prism2_hostapd: unknown cmd=%d\n",
-		       param->cmd);
+//		printk(KERN_WARNING "prism2_hostapd: unknown cmd=%d\n",
+;
 		return -EOPNOTSUPP;
 	}
 }
@@ -2717,8 +2717,8 @@ ap_tx_ret hostap_handle_sta_tx(local_info_t *local, struct hostap_tx_data *tx)
 		 * ports of the bridge. Since this is a valid scenario, do not
 		 * print out any errors here. */
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "AP: drop packet to non-associated "
-			       "STA %pM\n", hdr->addr1);
+//			printk(KERN_DEBUG "AP: drop packet to non-associated "
+;
 		}
 #endif
 		local->ap->tx_drop_nonassoc++;
@@ -2955,11 +2955,11 @@ ap_rx_ret hostap_handle_sta_rx(local_info_t *local, struct net_device *dev,
 						PRISM2_RX_NON_ASSOC);
 #ifndef PRISM2_NO_KERNEL_IEEE80211_MGMT
 			} else {
-				printk(KERN_DEBUG "%s: dropped received packet"
-				       " from non-associated STA %pM"
-				       " (type=0x%02x, subtype=0x%02x)\n",
-				       dev->name, hdr->addr2,
-				       type >> 2, stype >> 4);
+//				printk(KERN_DEBUG "%s: dropped received packet"
+//				       " from non-associated STA %pM"
+//				       " (type=0x%02x, subtype=0x%02x)\n",
+//				       dev->name, hdr->addr2,
+;
 				hostap_rx(dev, skb, rx_stats);
 #endif /* PRISM2_NO_KERNEL_IEEE80211_MGMT */
 			}
@@ -2971,8 +2971,8 @@ ap_rx_ret hostap_handle_sta_rx(local_info_t *local, struct net_device *dev,
 			/* FromDS frame - not for us; probably
 			 * broadcast/multicast in another BSS - drop */
 			if (memcmp(hdr->addr1, dev->dev_addr, ETH_ALEN) == 0) {
-				printk(KERN_DEBUG "Odd.. FromDS packet "
-				       "received with own BSSID\n");
+//				printk(KERN_DEBUG "Odd.. FromDS packet "
+;
 				hostap_dump_rx_80211(dev->name, skb, rx_stats);
 			}
 			ret = AP_RX_DROP;
@@ -2991,9 +2991,9 @@ ap_rx_ret hostap_handle_sta_rx(local_info_t *local, struct net_device *dev,
 			 * after being unavailable for some time. Speed up
 			 * re-association by informing the station about it not
 			 * being associated. */
-			printk(KERN_DEBUG "%s: rejected received nullfunc frame"
-			       " without ToDS from not associated STA %pM\n",
-			       dev->name, hdr->addr2);
+//			printk(KERN_DEBUG "%s: rejected received nullfunc frame"
+//			       " without ToDS from not associated STA %pM\n",
+;
 			hostap_rx(dev, skb, rx_stats);
 #endif /* PRISM2_NO_KERNEL_IEEE80211_MGMT */
 		}
@@ -3009,10 +3009,10 @@ ap_rx_ret hostap_handle_sta_rx(local_info_t *local, struct net_device *dev,
 		 * broadcast frame from an IBSS network. Drop it silently.
 		 * If BSSID is own, report the dropping of this frame. */
 		if (memcmp(hdr->addr3, dev->dev_addr, ETH_ALEN) == 0) {
-			printk(KERN_DEBUG "%s: dropped received packet from %pM"
-			       " with no ToDS flag "
-			       "(type=0x%02x, subtype=0x%02x)\n", dev->name,
-			       hdr->addr2, type >> 2, stype >> 4);
+//			printk(KERN_DEBUG "%s: dropped received packet from %pM"
+//			       " with no ToDS flag "
+//			       "(type=0x%02x, subtype=0x%02x)\n", dev->name,
+;
 			hostap_dump_rx_80211(dev->name, skb, rx_stats);
 		}
 		ret = AP_RX_DROP;

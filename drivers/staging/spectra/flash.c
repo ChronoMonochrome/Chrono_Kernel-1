@@ -47,9 +47,9 @@ void debug_boundary_lineno_error(int chnl, int limit, int no,
 				int lineno, char *filename)
 {
 	if (chnl >= limit)
-		printk(KERN_ERR "Boundary Check Fail value %d >= limit %d, "
-		"at  %s:%d. Other info:%d. Aborting...\n",
-		chnl, limit, filename, lineno, no);
+//		printk(KERN_ERR "Boundary Check Fail value %d >= limit %d, "
+//		"at  %s:%d. Other info:%d. Aborting...\n",
+;
 }
 /* static int globalmemsize; */
 #endif
@@ -715,8 +715,8 @@ cache_item_fail:
 		kfree(Cache.array[i].buf);
 	kfree(g_pBlockTable);
 block_table_fail:
-	printk(KERN_ERR "Failed to kmalloc memory in %s Line %d.\n",
-		__FILE__, __LINE__);
+//	printk(KERN_ERR "Failed to kmalloc memory in %s Line %d.\n",
+;
 
 	return -ENOMEM;
 }
@@ -1045,8 +1045,8 @@ static void process_cmd(int *first_failed_cmd, u16 idx, int event)
 
 static void process_cmd(int *first_failed_cmd, u16 idx, int event)
 {
-	printk(KERN_ERR "temporary workaround function. "
-		"Should not be called! \n");
+//	printk(KERN_ERR "temporary workaround function. "
+;
 }
 
 /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -1415,7 +1415,7 @@ static int FTL_Cache_Read_All(u8 *pData, u64 phy_addr)
 	}
 
 	if (0xffffffff == lba)
-		printk(KERN_ERR "FTL_Cache_Read_All: Block is not found in BT\n");
+;
 
 #if CMD_DMA
 	wResult = GLOB_LLD_Read_Page_Main_cdma(pData, Block, Page,
@@ -1566,8 +1566,8 @@ static u32 find_least_worn_blk_for_l2_cache(void)
 		if (IS_SPARE_BLOCK(i)) {
 			phy_idx = (u32)((~BAD_BLOCK) & pbt[i]);
 			if (phy_idx > DeviceInfo.wSpectraEndBlock)
-				printk(KERN_ERR "find_least_worn_blk_for_l2_cache: "
-					"Too big phy block num (%d)\n", phy_idx);
+//				printk(KERN_ERR "find_least_worn_blk_for_l2_cache: "
+;
 			if (g_pWearCounter[phy_idx -DeviceInfo.wSpectraStartBlock] < least_wear_cnt) {
 				least_wear_cnt = g_pWearCounter[phy_idx - DeviceInfo.wSpectraStartBlock];
 				least_wear_blk_idx = i;
@@ -1684,7 +1684,7 @@ static int flush_l2_cache(void)
 			ret = GLOB_LLD_Read_Page_Main(cache_l2_blk_buf,
 				phy_blk, 0, DeviceInfo.wPagesPerBlock);
 			if (ret == FAIL) {
-				printk(KERN_ERR "Read NAND page fail in %s, Line %d\n", __FILE__, __LINE__);
+;
 			}
 		}
 
@@ -1694,7 +1694,7 @@ static int flush_l2_cache(void)
 				l2_page = pnd->pages_array[i] & 0xffff;
 				ret = GLOB_LLD_Read_Page_Main(cache_l2_page_buf, l2_blk, l2_page, 1);
 				if (ret == FAIL) {
-					printk(KERN_ERR "Read NAND page fail in %s, Line %d\n", __FILE__, __LINE__);
+;
 				}
 				memcpy(cache_l2_blk_buf + i * DeviceInfo.wPageDataSize, cache_l2_page_buf, DeviceInfo.wPageDataSize);
 			}
@@ -1704,7 +1704,7 @@ static int flush_l2_cache(void)
 		addr = (u64)pnd->logical_blk_num << DeviceInfo.nBitsInBlockDataSize;
 		ret = FTL_Replace_Block(addr);
 		if (ret == FAIL) {
-			printk(KERN_ERR "FTL_Replace_Block fail in %s, Line %d\n", __FILE__, __LINE__);
+;
 		}
 
 		/* Write back the updated data into NAND */
@@ -1722,8 +1722,8 @@ static int flush_l2_cache(void)
 			FTL_Replace_Block(addr);
 			phy_blk = pbt[pnd->logical_blk_num] & (~BAD_BLOCK);
 			if (FAIL == GLOB_LLD_Write_Page_Main(cache_l2_blk_buf, phy_blk, 0, DeviceInfo.wPagesPerBlock)) {
-				printk(KERN_ERR "Failed to write back block %d when flush L2 cache."
-					"Some data will be lost!\n", phy_blk);
+//				printk(KERN_ERR "Failed to write back block %d when flush L2 cache."
+;
 				MARK_BLOCK_AS_BAD(pbt[pnd->logical_blk_num]);
 			}
 		} else {
@@ -1788,7 +1788,7 @@ static int write_back_to_l2_cache(u8 *buf, u64 logical_addr)
 		if (FAIL == get_l2_cache_blks()) {
 			GLOB_FTL_Garbage_Collection();
 			if (FAIL == get_l2_cache_blks()) {
-				printk(KERN_ALERT "Fail to get L2 cache blks!\n");
+;
 				return FAIL;
 			}
 		}
@@ -1846,8 +1846,8 @@ static int write_back_to_l2_cache(u8 *buf, u64 logical_addr)
 			sizeof(u32) * DeviceInfo.wPagesPerBlock;
 		pnd_new = kmalloc(node_size, GFP_ATOMIC);
 		if (!pnd_new) {
-			printk(KERN_ERR "Failed to kmalloc in %s Line %d\n",
-				__FILE__, __LINE__);
+//			printk(KERN_ERR "Failed to kmalloc in %s Line %d\n",
+;
 			/* 
 			 * TODO: Need to flush all the L2 cache into NAND ASAP
 			 * since no memory available here
@@ -2208,14 +2208,14 @@ static int  force_format_nand(void)
 	u32 i;
 
 	/* Force erase the whole unprotected physical partiton of NAND */
-	printk(KERN_ALERT "Start to force erase whole NAND device ...\n");
-	printk(KERN_ALERT "From phyical block %d to %d\n",
-		DeviceInfo.wSpectraStartBlock, DeviceInfo.wSpectraEndBlock);
+;
+//	printk(KERN_ALERT "From phyical block %d to %d\n",
+;
 	for (i = DeviceInfo.wSpectraStartBlock; i <= DeviceInfo.wSpectraEndBlock; i++) {
 		if (GLOB_LLD_Erase_Block(i))
-			printk(KERN_ERR "Failed to force erase NAND block %d\n", i);
+;
 	}
-	printk(KERN_ALERT "Force Erase ends. Please reboot the system ...\n");
+;
 	while(1);
 
 	return PASS;
@@ -2586,9 +2586,9 @@ static int FTL_Read_Block_Table(void)
 			g_pBTBlocks[k-FIRST_BT_ID] = j;
 			block_table_found = 1;
 		} else {
-			printk(KERN_ERR "FTL_Read_Block_Table -"
-				"This should never happens. "
-				"Two block table have same counter %u!\n", k);
+//			printk(KERN_ERR "FTL_Read_Block_Table -"
+//				"This should never happens. "
+;
 		}
 	}
 
@@ -2698,8 +2698,8 @@ static int FTL_Read_Block_Table(void)
 	}
 
 	if (FAIL == wResult)
-		printk(KERN_ERR "Yunpeng - "
-		"Can not find valid spectra block table!\n");
+//		printk(KERN_ERR "Yunpeng - "
+;
 
 #if AUTO_FORMAT_FLASH
 	if (FAIL == wResult) {
@@ -2916,7 +2916,7 @@ static int move_blks_for_wear_leveling(u8 *chg,
 		if (((*rep_blk_num)++) > WEAR_LEVELING_BLOCK_NUM)
 			ret = FAIL;
 	} else {
-		printk(KERN_ERR "Less than 3 spare blocks exist so quit\n");
+;
 		ret = FAIL;
 	}
 
@@ -3150,8 +3150,8 @@ int GLOB_FTL_Garbage_Collection(void)
 			       __FILE__, __LINE__, __func__);
 
 	if (GC_Called) {
-		printk(KERN_ALERT "GLOB_FTL_Garbage_Collection() "
-			"has been re-entered! Exit.\n");
+//		printk(KERN_ALERT "GLOB_FTL_Garbage_Collection() "
+;
 		return PASS;
 	}
 
@@ -3589,9 +3589,9 @@ static u32 FTL_Replace_Block_Table(void)
 		blk = FTL_Replace_LWBlock(BLOCK_TABLE_INDEX, &gc);
 	}
 	if (BAD_BLOCK == blk)
-		printk(KERN_ERR "%s, %s: There is no spare block. "
-			"It should never happen\n",
-			__FILE__, __func__);
+//		printk(KERN_ERR "%s, %s: There is no spare block. "
+//			"It should never happen\n",
+;
 
 	nand_dbg_print(NAND_DBG_DEBUG, "New Block table Block is %d\n", blk);
 
@@ -3645,8 +3645,8 @@ static u32 FTL_Replace_LWBlock(u32 wBlockNum, int *pGarbageCollect)
 		if (IS_SPARE_BLOCK(i)) {
 			u32 wPhysicalIndex = (u32)((~BAD_BLOCK) & pbt[i]);
 			if (wPhysicalIndex > DeviceInfo.wSpectraEndBlock)
-				printk(KERN_ERR "FTL_Replace_LWBlock: "
-					"This should never occur!\n");
+//				printk(KERN_ERR "FTL_Replace_LWBlock: "
+;
 			if (g_pWearCounter[wPhysicalIndex -
 				DeviceInfo.wSpectraStartBlock] <
 				wLeastWornCounter) {
@@ -3807,7 +3807,7 @@ int GLOB_FTL_Flush_Cache(void)
 			if (PASS == ret) {
 				Cache.array[i].changed = CLEAR;
 			} else {
-				printk(KERN_ALERT "Failed when write back to L2 cache!\n");
+;
 				/* TODO - How to handle this? */
 			}
 		}
@@ -3916,8 +3916,8 @@ int GLOB_FTL_Block_Erase(u64 blk_addr)
 	BlkIdx = (u32)(blk_addr >> DeviceInfo.nBitsInBlockDataSize);
 
 	if (BlkIdx < DeviceInfo.wSpectraStartBlock) {
-		printk(KERN_ERR "GLOB_FTL_Block_Erase: "
-			"This should never occur\n");
+//		printk(KERN_ERR "GLOB_FTL_Block_Erase: "
+;
 		return FAIL;
 	}
 
@@ -4009,8 +4009,8 @@ static int FTL_Adjust_Relative_Erase_Count(u32 Index_of_MAX)
 		wWearIndex = (u32)(pbt[i] & (~BAD_BLOCK));
 
 		if ((wWearIndex - DeviceInfo.wSpectraStartBlock) < 0)
-			printk(KERN_ERR "FTL_Adjust_Relative_Erase_Count:"
-					"This should never occur\n");
+//			printk(KERN_ERR "FTL_Adjust_Relative_Erase_Count:"
+;
 		wWearCounter = g_pWearCounter[wWearIndex -
 			DeviceInfo.wSpectraStartBlock];
 		if (wWearCounter < wLeastWornCounter)
@@ -4166,8 +4166,8 @@ int FTL_Read_Disturbance(u32 blk_addr)
 	g_pTempBuf = cp_back_buf_copies[cp_back_buf_idx];
 	cp_back_buf_idx++;
 	if (cp_back_buf_idx > COPY_BACK_BUF_NUM) {
-		printk(KERN_ERR "cp_back_buf_copies overflow! Exit."
-		"Maybe too many pending commands in your CDMA chain.\n");
+//		printk(KERN_ERR "cp_back_buf_copies overflow! Exit."
+;
 		return FAIL;
 	}
 #else

@@ -14,9 +14,9 @@
 #include "mesh.h"
 
 #ifdef CONFIG_MAC80211_VERBOSE_MPL_DEBUG
-#define mpl_dbg(fmt, args...)	printk(KERN_DEBUG fmt, ##args)
-#else
-#define mpl_dbg(fmt, args...)	do { (void)(0); } while (0)
+//#define mpl_dbg(fmt, args...)	printk(KERN_DEBUG fmt, ##args)
+//#else
+;
 #endif
 
 #define PLINK_GET_LLID(p) (p + 2)

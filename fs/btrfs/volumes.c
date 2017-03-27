@@ -626,7 +626,7 @@ static int __btrfs_open_devices(struct btrfs_fs_devices *fs_devices,
 
 		bdev = blkdev_get_by_path(device->name, flags, holder);
 		if (IS_ERR(bdev)) {
-			printk(KERN_INFO "open %s failed\n", device->name);
+;
 			goto error;
 		}
 		filemap_write_and_wait(bdev->bd_inode->i_mapping);
@@ -750,11 +750,11 @@ int btrfs_scan_one_device(const char *path, fmode_t flags, void *holder,
 	devid = btrfs_stack_device_id(&disk_super->dev_item);
 	transid = btrfs_super_generation(disk_super);
 	if (disk_super->label[0])
-		printk(KERN_INFO "device label %s ", disk_super->label);
+;
 	else
-		printk(KERN_INFO "device fsid %pU ", disk_super->fsid);
-	printk(KERN_CONT "devid %llu transid %llu %s\n",
-	       (unsigned long long)devid, (unsigned long long)transid, path);
+;
+//	printk(KERN_CONT "devid %llu transid %llu %s\n",
+;
 	ret = device_list_add(path, disk_super, devid, fs_devices_ret);
 
 	brelse(bh);
@@ -1316,16 +1316,16 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 
 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID10) &&
 	    root->fs_info->fs_devices->num_devices <= 4) {
-		printk(KERN_ERR "btrfs: unable to go below four devices "
-		       "on raid10\n");
+//		printk(KERN_ERR "btrfs: unable to go below four devices "
+;
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID1) &&
 	    root->fs_info->fs_devices->num_devices <= 2) {
-		printk(KERN_ERR "btrfs: unable to go below two "
-		       "devices on raid1\n");
+//		printk(KERN_ERR "btrfs: unable to go below two "
+;
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1350,8 +1350,8 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 		bh = NULL;
 		disk_super = NULL;
 		if (!device) {
-			printk(KERN_ERR "btrfs: no missing devices found to "
-			       "remove\n");
+//			printk(KERN_ERR "btrfs: no missing devices found to "
+;
 			goto out;
 		}
 	} else {
@@ -1381,8 +1381,8 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 	}
 
 	if (device->writeable && root->fs_info->fs_devices->rw_devices == 1) {
-		printk(KERN_ERR "btrfs: unable to remove the only writeable "
-		       "device\n");
+//		printk(KERN_ERR "btrfs: unable to remove the only writeable "
+;
 		ret = -EINVAL;
 		goto error_brelse;
 	}
@@ -3240,8 +3240,8 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 		max_stripe_size = 32 * 1024 * 1024;
 		max_chunk_size = 2 * max_stripe_size;
 	} else {
-		printk(KERN_ERR "btrfs: invalid chunk type 0x%llx requested\n",
-		       type);
+//		printk(KERN_ERR "btrfs: invalid chunk type 0x%llx requested\n",
+;
 		BUG_ON(1);
 	}
 
@@ -3271,8 +3271,8 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 		cur = cur->next;
 
 		if (!device->writeable) {
-			printk(KERN_ERR
-			       "btrfs: read-only device in alloc_list\n");
+//			printk(KERN_ERR
+;
 			WARN_ON(1);
 			continue;
 		}
@@ -3726,9 +3726,9 @@ static int __btrfs_map_block(struct btrfs_mapping_tree *map_tree, int rw,
 	read_unlock(&em_tree->lock);
 
 	if (!em) {
-		printk(KERN_CRIT "unable to find logical %llu len %llu\n",
-		       (unsigned long long)logical,
-		       (unsigned long long)*length);
+//		printk(KERN_CRIT "unable to find logical %llu len %llu\n",
+//		       (unsigned long long)logical,
+;
 		BUG();
 	}
 
@@ -4136,10 +4136,10 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
 
 	total_devs = bbio->num_stripes;
 	if (map_length < length) {
-		printk(KERN_CRIT "mapping failed logical %llu bio len %llu "
-		       "len %llu\n", (unsigned long long)logical,
-		       (unsigned long long)length,
-		       (unsigned long long)map_length);
+//		printk(KERN_CRIT "mapping failed logical %llu bio len %llu "
+//		       "len %llu\n", (unsigned long long)logical,
+//		       (unsigned long long)length,
+;
 		BUG();
 	}
 
@@ -4408,8 +4408,8 @@ static int read_one_dev(struct btrfs_root *root,
 			return -EIO;
 
 		if (!device) {
-			printk(KERN_WARNING "warning devid %llu missing\n",
-			       (unsigned long long)devid);
+//			printk(KERN_WARNING "warning devid %llu missing\n",
+;
 			device = add_missing_dev(root, devid, dev_uuid);
 			if (!device)
 				return -ENOMEM;

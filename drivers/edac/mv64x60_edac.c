@@ -187,8 +187,12 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
 			res = -ENODEV;
 			goto err2;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for PCI Err\n",
 		       pdata->irq);
+#else
+		;
+#endif
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_pci_err_probe);
@@ -356,8 +360,12 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for SRAM Err\n",
 		       pdata->irq);
+#else
+		;
+#endif
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_sram_err_probe);
@@ -551,8 +559,12 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR
 		       " acquired irq %d for CPU Err\n", pdata->irq);
+#else
+		;
+#endif
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_cpu_err_probe);
@@ -746,7 +758,11 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 	ctl = in_le32(pdata->mc_vbase + MV64X60_SDRAM_CONFIG);
 	if (!(ctl & MV64X60_SDRAM_ECC)) {
 		/* Non-ECC RAM? */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
+#else
+		;
+#endif
 		res = -ENODEV;
 		goto err2;
 	}
@@ -795,8 +811,12 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for MC Err\n",
 		       pdata->irq);
+#else
+		;
+#endif
 	}
 
 	/* get this far and it's successful */
@@ -835,8 +855,16 @@ static int __init mv64x60_edac_init(void)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Marvell MV64x60 EDAC driver " MV64x60_REVISION "\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\t(C) 2006-2007 MontaVista Software\n");
+#else
+	;
+#endif
 	/* make sure error reporting method is sane */
 	switch (edac_op_state) {
 	case EDAC_OPSTATE_POLL:
@@ -849,23 +877,39 @@ static int __init mv64x60_edac_init(void)
 
 	ret = platform_driver_register(&mv64x60_mc_err_driver);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR "MC err failed to register\n");
+#else
+		;
+#endif
 
 	ret = platform_driver_register(&mv64x60_cpu_err_driver);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR
 			"CPU err failed to register\n");
+#else
+		;
+#endif
 
 	ret = platform_driver_register(&mv64x60_sram_err_driver);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR
 			"SRAM err failed to register\n");
+#else
+		;
+#endif
 
 #ifdef CONFIG_PCI
 	ret = platform_driver_register(&mv64x60_pci_err_driver);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR
 			"PCI err failed to register\n");
+#else
+		;
+#endif
 #endif
 
 	return ret;

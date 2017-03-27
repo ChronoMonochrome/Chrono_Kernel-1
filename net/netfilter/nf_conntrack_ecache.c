@@ -202,7 +202,7 @@ static int nf_conntrack_event_init_sysctl(struct net *net)
 		register_net_sysctl_table(net,
 					  nf_net_netfilter_sysctl_path, table);
 	if (!net->ct.event_sysctl_header) {
-		printk(KERN_ERR "nf_ct_event: can't register to sysctl.\n");
+;
 		goto out_register;
 	}
 	return 0;
@@ -242,8 +242,8 @@ int nf_conntrack_ecache_init(struct net *net)
 	if (net_eq(net, &init_net)) {
 		ret = nf_ct_extend_register(&event_extend);
 		if (ret < 0) {
-			printk(KERN_ERR "nf_ct_event: Unable to register "
-					"event extension.\n");
+//			printk(KERN_ERR "nf_ct_event: Unable to register "
+;
 			goto out_extend_register;
 		}
 	}

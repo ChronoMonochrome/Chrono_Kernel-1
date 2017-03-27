@@ -287,7 +287,11 @@ static int __devinit xxs1500_pcmcia_probe(struct platform_device *pdev)
 		goto out2;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MyCable XXS1500 PCMCIA socket services\n");
+#else
+	;
+#endif
 
 	return 0;
 

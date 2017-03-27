@@ -95,10 +95,14 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 		 * >= 12.5% apart, redo calibration.
 		 */
 		if (start >= post_end)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
 					"timer_rate as we had a TSC wrap around"
 					" start=%lu >=post_end=%lu\n",
 				start, post_end);
+#else
+			;
+#endif
 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
 			good_timer_count++;
@@ -134,15 +138,23 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 		good_timer_count = 0;
 		if ((measured_times[max] - estimate) <
 				(estimate - measured_times[min])) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
 					"min bogoMips estimate %d = %lu\n",
 				min, measured_times[min]);
+#else
+			;
+#endif
 			measured_times[min] = 0;
 			min = max;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
 					"max bogoMips estimate %d = %lu\n",
 				max, measured_times[max]);
+#else
+			;
+#endif
 			measured_times[max] = 0;
 			max = min;
 		}
@@ -160,9 +172,13 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
 	       "estimate for loops_per_jiffy.\nProbably due to long platform "
 		"interrupts. Consider using \"lpj=\" boot option.\n");
+#else
+	;
+#endif
 	return 0;
 }
 #else

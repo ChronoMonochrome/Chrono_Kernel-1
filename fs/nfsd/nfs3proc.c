@@ -46,8 +46,8 @@ nfsd3_proc_getattr(struct svc_rqst *rqstp, struct nfsd_fhandle  *argp,
 	int	err;
 	__be32	nfserr;
 
-	dprintk("nfsd: GETATTR(3)  %s\n",
-		SVCFH_fmt(&argp->fh));
+//	dprintk("nfsd: GETATTR(3)  %s\n",
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	nfserr = fh_verify(rqstp, &resp->fh, 0,
@@ -71,8 +71,8 @@ nfsd3_proc_setattr(struct svc_rqst *rqstp, struct nfsd3_sattrargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: SETATTR(3)  %s\n",
-				SVCFH_fmt(&argp->fh));
+//	dprintk("nfsd: SETATTR(3)  %s\n",
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	nfserr = nfsd_setattr(rqstp, &resp->fh, &argp->attrs,
@@ -113,9 +113,9 @@ nfsd3_proc_access(struct svc_rqst *rqstp, struct nfsd3_accessargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: ACCESS(3)   %s 0x%x\n",
-				SVCFH_fmt(&argp->fh),
-				argp->access);
+//	dprintk("nfsd: ACCESS(3)   %s 0x%x\n",
+//				SVCFH_fmt(&argp->fh),
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	resp->access = argp->access;
@@ -132,7 +132,7 @@ nfsd3_proc_readlink(struct svc_rqst *rqstp, struct nfsd3_readlinkargs *argp,
 {
 	__be32 nfserr;
 
-	dprintk("nfsd: READLINK(3) %s\n", SVCFH_fmt(&argp->fh));
+;
 
 	/* Read the symlink. */
 	fh_copy(&resp->fh, &argp->fh);
@@ -151,10 +151,10 @@ nfsd3_proc_read(struct svc_rqst *rqstp, struct nfsd3_readargs *argp,
 	__be32	nfserr;
 	u32	max_blocksize = svc_max_payload(rqstp);
 
-	dprintk("nfsd: READ(3) %s %lu bytes at %Lu\n",
-				SVCFH_fmt(&argp->fh),
-				(unsigned long) argp->count,
-				(unsigned long long) argp->offset);
+//	dprintk("nfsd: READ(3) %s %lu bytes at %Lu\n",
+//				SVCFH_fmt(&argp->fh),
+//				(unsigned long) argp->count,
+;
 
 	/* Obtain buffer pointer for payload.
 	 * 1 (status) + 22 (post_op_attr) + 1 (count) + 1 (eof)
@@ -191,11 +191,11 @@ nfsd3_proc_write(struct svc_rqst *rqstp, struct nfsd3_writeargs *argp,
 	__be32	nfserr;
 	unsigned long cnt = argp->len;
 
-	dprintk("nfsd: WRITE(3)    %s %d bytes at %Lu%s\n",
-				SVCFH_fmt(&argp->fh),
-				argp->len,
-				(unsigned long long) argp->offset,
-				argp->stable? " stable" : "");
+//	dprintk("nfsd: WRITE(3)    %s %d bytes at %Lu%s\n",
+//				SVCFH_fmt(&argp->fh),
+//				argp->len,
+//				(unsigned long long) argp->offset,
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	resp->committed = argp->stable;
@@ -400,8 +400,8 @@ nfsd3_proc_link(struct svc_rqst *rqstp, struct nfsd3_linkargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: LINK(3)     %s ->\n",
-				SVCFH_fmt(&argp->ffh));
+//	dprintk("nfsd: LINK(3)     %s ->\n",
+;
 	dprintk("nfsd:   -> %s %.*s\n",
 				SVCFH_fmt(&argp->tfh),
 				argp->tlen,
@@ -424,9 +424,9 @@ nfsd3_proc_readdir(struct svc_rqst *rqstp, struct nfsd3_readdirargs *argp,
 	__be32		nfserr;
 	int		count;
 
-	dprintk("nfsd: READDIR(3)  %s %d bytes at %d\n",
-				SVCFH_fmt(&argp->fh),
-				argp->count, (u32) argp->cookie);
+//	dprintk("nfsd: READDIR(3)  %s %d bytes at %d\n",
+//				SVCFH_fmt(&argp->fh),
+;
 
 	/* Make sure we've room for the NULL ptr & eof flag, and shrink to
 	 * client read size */
@@ -463,9 +463,9 @@ nfsd3_proc_readdirplus(struct svc_rqst *rqstp, struct nfsd3_readdirargs *argp,
 	int	i;
 	caddr_t	page_addr = NULL;
 
-	dprintk("nfsd: READDIR+(3) %s %d bytes at %d\n",
-				SVCFH_fmt(&argp->fh),
-				argp->count, (u32) argp->cookie);
+//	dprintk("nfsd: READDIR+(3) %s %d bytes at %d\n",
+//				SVCFH_fmt(&argp->fh),
+;
 
 	/* Convert byte count to number of words (i.e. >> 2),
 	 * and reserve room for the NULL ptr & eof flag (-2 words) */
@@ -518,8 +518,8 @@ nfsd3_proc_fsstat(struct svc_rqst * rqstp, struct nfsd_fhandle    *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: FSSTAT(3)   %s\n",
-				SVCFH_fmt(&argp->fh));
+//	dprintk("nfsd: FSSTAT(3)   %s\n",
+;
 
 	nfserr = nfsd_statfs(rqstp, &argp->fh, &resp->stats, 0);
 	fh_put(&argp->fh);
@@ -536,8 +536,8 @@ nfsd3_proc_fsinfo(struct svc_rqst * rqstp, struct nfsd_fhandle    *argp,
 	__be32	nfserr;
 	u32	max_blocksize = svc_max_payload(rqstp);
 
-	dprintk("nfsd: FSINFO(3)   %s\n",
-				SVCFH_fmt(&argp->fh));
+//	dprintk("nfsd: FSINFO(3)   %s\n",
+;
 
 	resp->f_rtmax  = max_blocksize;
 	resp->f_rtpref = max_blocksize;
@@ -578,8 +578,8 @@ nfsd3_proc_pathconf(struct svc_rqst * rqstp, struct nfsd_fhandle      *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: PATHCONF(3) %s\n",
-				SVCFH_fmt(&argp->fh));
+//	dprintk("nfsd: PATHCONF(3) %s\n",
+;
 
 	/* Set default pathconf */
 	resp->p_link_max = 255;		/* at least */
@@ -621,10 +621,10 @@ nfsd3_proc_commit(struct svc_rqst * rqstp, struct nfsd3_commitargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: COMMIT(3)   %s %u@%Lu\n",
-				SVCFH_fmt(&argp->fh),
-				argp->count,
-				(unsigned long long) argp->offset);
+//	dprintk("nfsd: COMMIT(3)   %s %u@%Lu\n",
+//				SVCFH_fmt(&argp->fh),
+//				argp->count,
+;
 
 	if (argp->offset > NFS_OFFSET_MAX)
 		RETURN_STATUS(nfserr_inval);

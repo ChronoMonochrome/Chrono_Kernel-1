@@ -642,8 +642,12 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
 	region->end_pfn = end_pfn;
 	list_add_tail(&region->list, &nosave_regions);
  Report:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Registered nosave memory: %016lx - %016lx\n",
 		start_pfn << PAGE_SHIFT, end_pfn << PAGE_SHIFT);
+#else
+	;
+#endif
 }
 
 /*
@@ -1310,7 +1314,11 @@ int hibernate_preallocate_memory(void)
 	struct timeval start, stop;
 	int error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Preallocating image memory... ");
+#else
+	;
+#endif
 	do_gettimeofday(&start);
 
 	error = memory_bm_create(&orig_bm, GFP_IMAGE, PG_ANY);
@@ -1437,13 +1445,21 @@ int hibernate_preallocate_memory(void)
 
  out:
 	do_gettimeofday(&stop);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "done (allocated %lu pages)\n", pages);
+#else
+	;
+#endif
 	swsusp_show_speed(&start, &stop, pages, "Allocated");
 
 	return 0;
 
  err_out:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 	swsusp_free();
 	return -ENOMEM;
 }
@@ -1580,12 +1596,20 @@ asmlinkage int swsusp_save(void)
 {
 	unsigned int nr_pages, nr_highmem;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Creating hibernation image:\n");
+#else
+	;
+#endif
 
 	drain_local_pages(NULL);
 	nr_pages = count_data_pages();
 	nr_highmem = count_highmem_pages();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Need to copy %u pages\n", nr_pages + nr_highmem);
+#else
+	;
+#endif
 
 	if (!enough_free_mem(nr_pages, nr_highmem)) {
 		printk(KERN_ERR "PM: Not enough free memory\n");
@@ -1613,8 +1637,12 @@ asmlinkage int swsusp_save(void)
 	nr_copy_pages = nr_pages;
 	nr_meta_pages = DIV_ROUND_UP(nr_pages * sizeof(long), PAGE_SIZE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
 		nr_pages);
+#else
+	;
+#endif
 
 	return 0;
 }

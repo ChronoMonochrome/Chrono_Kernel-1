@@ -269,9 +269,13 @@ struct tifm_dev *tifm_alloc_device(struct tifm_adapter *fm, unsigned int id,
 
 		dev_set_name(&sock->dev, "tifm_%s%u:%u",
 			     tifm_media_type_name(type, 2), fm->id, id);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRIVER_NAME
 		       ": %s card detected in socket %u:%u\n",
 		       tifm_media_type_name(type, 0), fm->id, id);
+#else
+		;
+#endif
 	}
 	return sock;
 }

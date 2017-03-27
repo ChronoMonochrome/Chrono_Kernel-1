@@ -1278,31 +1278,63 @@ static int ide_cdrom_probe_capabilities(ide_drive_t *drive)
 
 	ide_cdrom_update_speed(drive, buf);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "%s: ATAPI", drive->name);
+#else
+	;
+#endif
 
 	/* don't print speed if the drive reported 0 */
 	if (cd->max_speed)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " %dX", cd->max_speed);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " %s", (cdi->mask & CDC_DVD) ? "CD-ROM" : "DVD-ROM");
+#else
+	;
+#endif
 
 	if ((cdi->mask & CDC_DVD_R) == 0 || (cdi->mask & CDC_DVD_RAM) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " DVD%s%s",
 				 (cdi->mask & CDC_DVD_R) ? "" : "-R",
 				 (cdi->mask & CDC_DVD_RAM) ? "" : "/RAM");
+#else
+		;
+#endif
 
 	if ((cdi->mask & CDC_CD_R) == 0 || (cdi->mask & CDC_CD_RW) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " CD%s%s",
 				 (cdi->mask & CDC_CD_R) ? "" : "-R",
 				 (cdi->mask & CDC_CD_RW) ? "" : "/RW");
+#else
+		;
+#endif
 
 	if ((cdi->mask & CDC_SELECT_DISC) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " changer w/%d slots", nslots);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " drive");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT ", %dkB Cache\n",
 			 be16_to_cpup((__be16 *)&buf[8 + 12]));
+#else
+	;
+#endif
 
 	return nslots;
 }
@@ -1801,7 +1833,11 @@ static void __exit ide_cdrom_exit(void)
 
 static int __init ide_cdrom_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME " driver " IDECD_VERSION "\n");
+#else
+	;
+#endif
 	return driver_register(&ide_cdrom_driver.gen_driver);
 }
 

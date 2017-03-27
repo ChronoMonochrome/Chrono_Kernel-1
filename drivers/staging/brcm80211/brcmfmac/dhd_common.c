@@ -771,10 +771,10 @@ static void wl_show_host_event(wl_event_msg_t *event, void *event_data)
 			p = (char *)&buf[MSGTRACE_HDRLEN];
 			while ((s = strstr(p, "\n")) != NULL) {
 				*s = '\0';
-				printk(KERN_DEBUG"%s\n", p);
+;
 				p = s + 1;
 			}
-			printk(KERN_DEBUG "%s\n", p);
+;
 
 			/* Reset datalen to avoid display below */
 			datalen = 0;

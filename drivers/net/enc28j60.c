@@ -108,8 +108,8 @@ spi_read_buf(struct enc28j60_net *priv, int len, u8 *data)
 		ret = msg.status;
 	}
 	if (ret && netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
-			__func__, ret);
+//		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
+;
 
 	return ret;
 }
@@ -129,8 +129,8 @@ static int spi_write_buf(struct enc28j60_net *priv, int len,
 		memcpy(&priv->spi_transfer_buf[1], data, len);
 		ret = spi_write(priv->spi, priv->spi_transfer_buf, len + 1);
 		if (ret && netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
-				__func__, ret);
+//			printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
+;
 	}
 	return ret;
 }
@@ -154,8 +154,8 @@ static u8 spi_read_op(struct enc28j60_net *priv, u8 op,
 	tx_buf[0] = op | (addr & ADDR_MASK);
 	ret = spi_write_then_read(priv->spi, tx_buf, 1, rx_buf, slen);
 	if (ret)
-		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
-			__func__, ret);
+//		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
+;
 	else
 		val = rx_buf[slen - 1];
 
@@ -174,15 +174,15 @@ static int spi_write_op(struct enc28j60_net *priv, u8 op,
 	priv->spi_transfer_buf[1] = val;
 	ret = spi_write(priv->spi, priv->spi_transfer_buf, 2);
 	if (ret && netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
-			__func__, ret);
+//		printk(KERN_DEBUG DRV_NAME ": %s() failed: ret = %d\n",
+;
 	return ret;
 }
 
 static void enc28j60_soft_reset(struct enc28j60_net *priv)
 {
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enter\n", __func__);
+;
 
 	spi_write_op(priv, ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
 	/* Errata workaround #1, CLKRDY check is unreliable,
@@ -371,8 +371,8 @@ static void enc28j60_mem_read(struct enc28j60_net *priv,
 		u16 reg;
 		reg = nolock_regw_read(priv, ERDPTL);
 		if (reg != addr)
-			printk(KERN_DEBUG DRV_NAME ": %s() error writing ERDPT "
-				"(0x%04x - 0x%04x)\n", __func__, reg, addr);
+//			printk(KERN_DEBUG DRV_NAME ": %s() error writing ERDPT "
+;
 	}
 #endif
 	spi_read_buf(priv, len, data);
@@ -393,9 +393,9 @@ enc28j60_packet_write(struct enc28j60_net *priv, int len, const u8 *data)
 		u16 reg;
 		reg = nolock_regw_read(priv, EWRPTL);
 		if (reg != TXSTART_INIT)
-			printk(KERN_DEBUG DRV_NAME
-				": %s() ERWPT:0x%04x != 0x%04x\n",
-				__func__, reg, TXSTART_INIT);
+//			printk(KERN_DEBUG DRV_NAME
+//				": %s() ERWPT:0x%04x != 0x%04x\n",
+;
 	}
 #endif
 	/* Set the TXND pointer to correspond to the packet size given */
@@ -403,15 +403,15 @@ enc28j60_packet_write(struct enc28j60_net *priv, int len, const u8 *data)
 	/* write per-packet control byte */
 	spi_write_op(priv, ENC28J60_WRITE_BUF_MEM, 0, 0x00);
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME
-			": %s() after control byte ERWPT:0x%04x\n",
-			__func__, nolock_regw_read(priv, EWRPTL));
+//		printk(KERN_DEBUG DRV_NAME
+//			": %s() after control byte ERWPT:0x%04x\n",
+;
 	/* copy the packet into the transmit buffer */
 	spi_write_buf(priv, len, data);
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME
-			 ": %s() after write packet ERWPT:0x%04x, len=%d\n",
-			 __func__, nolock_regw_read(priv, EWRPTL), len);
+//		printk(KERN_DEBUG DRV_NAME
+//			 ": %s() after write packet ERWPT:0x%04x, len=%d\n",
+;
 	mutex_unlock(&priv->lock);
 }
 
@@ -493,9 +493,9 @@ static int enc28j60_set_hw_macaddr(struct net_device *ndev)
 	mutex_lock(&priv->lock);
 	if (!priv->hw_enable) {
 		if (netif_msg_drv(priv))
-			printk(KERN_INFO DRV_NAME
-				": %s: Setting MAC address to %pM\n",
-				ndev->name, ndev->dev_addr);
+//			printk(KERN_INFO DRV_NAME
+//				": %s: Setting MAC address to %pM\n",
+;
 		/* NOTE: MAC address in ENC28J60 is byte-backward */
 		nolock_regb_write(priv, MAADR5, ndev->dev_addr[0]);
 		nolock_regb_write(priv, MAADR4, ndev->dev_addr[1]);
@@ -506,9 +506,9 @@ static int enc28j60_set_hw_macaddr(struct net_device *ndev)
 		ret = 0;
 	} else {
 		if (netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME
-				": %s() Hardware must be disabled to set "
-				"Mac address\n", __func__);
+//			printk(KERN_DEBUG DRV_NAME
+//				": %s() Hardware must be disabled to set "
+;
 		ret = -EBUSY;
 	}
 	mutex_unlock(&priv->lock);
@@ -537,32 +537,32 @@ static int enc28j60_set_mac_address(struct net_device *dev, void *addr)
 static void enc28j60_dump_regs(struct enc28j60_net *priv, const char *msg)
 {
 	mutex_lock(&priv->lock);
-	printk(KERN_DEBUG DRV_NAME " %s\n"
-		"HwRevID: 0x%02x\n"
-		"Cntrl: ECON1 ECON2 ESTAT  EIR  EIE\n"
-		"       0x%02x  0x%02x  0x%02x  0x%02x  0x%02x\n"
-		"MAC  : MACON1 MACON3 MACON4\n"
-		"       0x%02x   0x%02x   0x%02x\n"
-		"Rx   : ERXST  ERXND  ERXWRPT ERXRDPT ERXFCON EPKTCNT MAMXFL\n"
-		"       0x%04x 0x%04x 0x%04x  0x%04x  "
-		"0x%02x    0x%02x    0x%04x\n"
-		"Tx   : ETXST  ETXND  MACLCON1 MACLCON2 MAPHSUP\n"
-		"       0x%04x 0x%04x 0x%02x     0x%02x     0x%02x\n",
-		msg, nolock_regb_read(priv, EREVID),
-		nolock_regb_read(priv, ECON1), nolock_regb_read(priv, ECON2),
-		nolock_regb_read(priv, ESTAT), nolock_regb_read(priv, EIR),
-		nolock_regb_read(priv, EIE), nolock_regb_read(priv, MACON1),
-		nolock_regb_read(priv, MACON3), nolock_regb_read(priv, MACON4),
-		nolock_regw_read(priv, ERXSTL), nolock_regw_read(priv, ERXNDL),
-		nolock_regw_read(priv, ERXWRPTL),
-		nolock_regw_read(priv, ERXRDPTL),
-		nolock_regb_read(priv, ERXFCON),
-		nolock_regb_read(priv, EPKTCNT),
-		nolock_regw_read(priv, MAMXFLL), nolock_regw_read(priv, ETXSTL),
-		nolock_regw_read(priv, ETXNDL),
-		nolock_regb_read(priv, MACLCON1),
-		nolock_regb_read(priv, MACLCON2),
-		nolock_regb_read(priv, MAPHSUP));
+//	printk(KERN_DEBUG DRV_NAME " %s\n"
+//		"HwRevID: 0x%02x\n"
+//		"Cntrl: ECON1 ECON2 ESTAT  EIR  EIE\n"
+//		"       0x%02x  0x%02x  0x%02x  0x%02x  0x%02x\n"
+//		"MAC  : MACON1 MACON3 MACON4\n"
+//		"       0x%02x   0x%02x   0x%02x\n"
+//		"Rx   : ERXST  ERXND  ERXWRPT ERXRDPT ERXFCON EPKTCNT MAMXFL\n"
+//		"       0x%04x 0x%04x 0x%04x  0x%04x  "
+//		"0x%02x    0x%02x    0x%04x\n"
+//		"Tx   : ETXST  ETXND  MACLCON1 MACLCON2 MAPHSUP\n"
+//		"       0x%04x 0x%04x 0x%02x     0x%02x     0x%02x\n",
+//		msg, nolock_regb_read(priv, EREVID),
+//		nolock_regb_read(priv, ECON1), nolock_regb_read(priv, ECON2),
+//		nolock_regb_read(priv, ESTAT), nolock_regb_read(priv, EIR),
+//		nolock_regb_read(priv, EIE), nolock_regb_read(priv, MACON1),
+//		nolock_regb_read(priv, MACON3), nolock_regb_read(priv, MACON4),
+//		nolock_regw_read(priv, ERXSTL), nolock_regw_read(priv, ERXNDL),
+//		nolock_regw_read(priv, ERXWRPTL),
+//		nolock_regw_read(priv, ERXRDPTL),
+//		nolock_regb_read(priv, ERXFCON),
+//		nolock_regb_read(priv, EPKTCNT),
+//		nolock_regw_read(priv, MAMXFLL), nolock_regw_read(priv, ETXSTL),
+//		nolock_regw_read(priv, ETXNDL),
+//		nolock_regb_read(priv, MACLCON1),
+//		nolock_regb_read(priv, MACLCON2),
+;
 	mutex_unlock(&priv->lock);
 }
 
@@ -598,8 +598,8 @@ static void nolock_rxfifo_init(struct enc28j60_net *priv, u16 start, u16 end)
 
 	if (start > 0x1FFF || end > 0x1FFF || start > end) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR DRV_NAME ": %s(%d, %d) RXFIFO "
-				"bad parameters!\n", __func__, start, end);
+//			printk(KERN_ERR DRV_NAME ": %s(%d, %d) RXFIFO "
+;
 		return;
 	}
 	/* set receive buffer start + end */
@@ -614,8 +614,8 @@ static void nolock_txfifo_init(struct enc28j60_net *priv, u16 start, u16 end)
 {
 	if (start > 0x1FFF || end > 0x1FFF || start > end) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR DRV_NAME ": %s(%d, %d) TXFIFO "
-				"bad parameters!\n", __func__, start, end);
+//			printk(KERN_ERR DRV_NAME ": %s(%d, %d) TXFIFO "
+;
 		return;
 	}
 	/* set transmit buffer start + end */
@@ -654,8 +654,8 @@ static int enc28j60_hw_init(struct enc28j60_net *priv)
 	u8 reg;
 
 	if (netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() - %s\n", __func__,
-			priv->full_duplex ? "FullDuplex" : "HalfDuplex");
+//		printk(KERN_DEBUG DRV_NAME ": %s() - %s\n", __func__,
+;
 
 	mutex_lock(&priv->lock);
 	/* first reset the chip */
@@ -681,11 +681,11 @@ static int enc28j60_hw_init(struct enc28j60_net *priv)
 	 */
 	reg = locked_regb_read(priv, EREVID);
 	if (netif_msg_drv(priv))
-		printk(KERN_INFO DRV_NAME ": chip RevID: 0x%02x\n", reg);
+;
 	if (reg == 0x00 || reg == 0xff) {
 		if (netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME ": %s() Invalid RevId %d\n",
-				__func__, reg);
+//			printk(KERN_DEBUG DRV_NAME ": %s() Invalid RevId %d\n",
+;
 		return 0;
 	}
 
@@ -747,8 +747,8 @@ static void enc28j60_hw_enable(struct enc28j60_net *priv)
 {
 	/* enable interrupts */
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enabling interrupts.\n",
-			__func__);
+//		printk(KERN_DEBUG DRV_NAME ": %s() enabling interrupts.\n",
+;
 
 	enc28j60_phy_write(priv, PHIE, PHIE_PGEIE | PHIE_PLNKIE);
 
@@ -810,8 +810,8 @@ static void enc28j60_read_tsv(struct enc28j60_net *priv, u8 tsv[TSV_SIZE])
 
 	endptr = locked_regw_read(priv, ETXNDL);
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME ": reading TSV at addr:0x%04x\n",
-			 endptr + 1);
+//		printk(KERN_DEBUG DRV_NAME ": reading TSV at addr:0x%04x\n",
+;
 	enc28j60_mem_read(priv, endptr + 1, TSV_SIZE, tsv);
 }
 
@@ -820,7 +820,7 @@ static void enc28j60_dump_tsv(struct enc28j60_net *priv, const char *msg,
 {
 	u16 tmp1, tmp2;
 
-	printk(KERN_DEBUG DRV_NAME ": %s - TSV:\n", msg);
+;
 	tmp1 = tsv[1];
 	tmp1 <<= 8;
 	tmp1 |= tsv[0];
@@ -829,30 +829,30 @@ static void enc28j60_dump_tsv(struct enc28j60_net *priv, const char *msg,
 	tmp2 <<= 8;
 	tmp2 |= tsv[4];
 
-	printk(KERN_DEBUG DRV_NAME ": ByteCount: %d, CollisionCount: %d,"
-		" TotByteOnWire: %d\n", tmp1, tsv[2] & 0x0f, tmp2);
-	printk(KERN_DEBUG DRV_NAME ": TxDone: %d, CRCErr:%d, LenChkErr: %d,"
-		" LenOutOfRange: %d\n", TSV_GETBIT(tsv, TSV_TXDONE),
-		TSV_GETBIT(tsv, TSV_TXCRCERROR),
-		TSV_GETBIT(tsv, TSV_TXLENCHKERROR),
-		TSV_GETBIT(tsv, TSV_TXLENOUTOFRANGE));
-	printk(KERN_DEBUG DRV_NAME ": Multicast: %d, Broadcast: %d, "
-		"PacketDefer: %d, ExDefer: %d\n",
-		TSV_GETBIT(tsv, TSV_TXMULTICAST),
-		TSV_GETBIT(tsv, TSV_TXBROADCAST),
-		TSV_GETBIT(tsv, TSV_TXPACKETDEFER),
-		TSV_GETBIT(tsv, TSV_TXEXDEFER));
-	printk(KERN_DEBUG DRV_NAME ": ExCollision: %d, LateCollision: %d, "
-		 "Giant: %d, Underrun: %d\n",
-		 TSV_GETBIT(tsv, TSV_TXEXCOLLISION),
-		 TSV_GETBIT(tsv, TSV_TXLATECOLLISION),
-		 TSV_GETBIT(tsv, TSV_TXGIANT), TSV_GETBIT(tsv, TSV_TXUNDERRUN));
-	printk(KERN_DEBUG DRV_NAME ": ControlFrame: %d, PauseFrame: %d, "
-		 "BackPressApp: %d, VLanTagFrame: %d\n",
-		 TSV_GETBIT(tsv, TSV_TXCONTROLFRAME),
-		 TSV_GETBIT(tsv, TSV_TXPAUSEFRAME),
-		 TSV_GETBIT(tsv, TSV_BACKPRESSUREAPP),
-		 TSV_GETBIT(tsv, TSV_TXVLANTAGFRAME));
+//	printk(KERN_DEBUG DRV_NAME ": ByteCount: %d, CollisionCount: %d,"
+;
+//	printk(KERN_DEBUG DRV_NAME ": TxDone: %d, CRCErr:%d, LenChkErr: %d,"
+//		" LenOutOfRange: %d\n", TSV_GETBIT(tsv, TSV_TXDONE),
+//		TSV_GETBIT(tsv, TSV_TXCRCERROR),
+//		TSV_GETBIT(tsv, TSV_TXLENCHKERROR),
+;
+//	printk(KERN_DEBUG DRV_NAME ": Multicast: %d, Broadcast: %d, "
+//		"PacketDefer: %d, ExDefer: %d\n",
+//		TSV_GETBIT(tsv, TSV_TXMULTICAST),
+//		TSV_GETBIT(tsv, TSV_TXBROADCAST),
+//		TSV_GETBIT(tsv, TSV_TXPACKETDEFER),
+;
+//	printk(KERN_DEBUG DRV_NAME ": ExCollision: %d, LateCollision: %d, "
+//		 "Giant: %d, Underrun: %d\n",
+//		 TSV_GETBIT(tsv, TSV_TXEXCOLLISION),
+//		 TSV_GETBIT(tsv, TSV_TXLATECOLLISION),
+;
+//	printk(KERN_DEBUG DRV_NAME ": ControlFrame: %d, PauseFrame: %d, "
+//		 "BackPressApp: %d, VLanTagFrame: %d\n",
+//		 TSV_GETBIT(tsv, TSV_TXCONTROLFRAME),
+//		 TSV_GETBIT(tsv, TSV_TXPAUSEFRAME),
+//		 TSV_GETBIT(tsv, TSV_BACKPRESSUREAPP),
+;
 }
 
 /*
@@ -861,32 +861,32 @@ static void enc28j60_dump_tsv(struct enc28j60_net *priv, const char *msg,
 static void enc28j60_dump_rsv(struct enc28j60_net *priv, const char *msg,
 			      u16 pk_ptr, int len, u16 sts)
 {
-	printk(KERN_DEBUG DRV_NAME ": %s - NextPk: 0x%04x - RSV:\n",
-		msg, pk_ptr);
-	printk(KERN_DEBUG DRV_NAME ": ByteCount: %d, DribbleNibble: %d\n", len,
-		 RSV_GETBIT(sts, RSV_DRIBBLENIBBLE));
-	printk(KERN_DEBUG DRV_NAME ": RxOK: %d, CRCErr:%d, LenChkErr: %d,"
-		 " LenOutOfRange: %d\n", RSV_GETBIT(sts, RSV_RXOK),
-		 RSV_GETBIT(sts, RSV_CRCERROR),
-		 RSV_GETBIT(sts, RSV_LENCHECKERR),
-		 RSV_GETBIT(sts, RSV_LENOUTOFRANGE));
-	printk(KERN_DEBUG DRV_NAME ": Multicast: %d, Broadcast: %d, "
-		 "LongDropEvent: %d, CarrierEvent: %d\n",
-		 RSV_GETBIT(sts, RSV_RXMULTICAST),
-		 RSV_GETBIT(sts, RSV_RXBROADCAST),
-		 RSV_GETBIT(sts, RSV_RXLONGEVDROPEV),
-		 RSV_GETBIT(sts, RSV_CARRIEREV));
-	printk(KERN_DEBUG DRV_NAME ": ControlFrame: %d, PauseFrame: %d,"
-		 " UnknownOp: %d, VLanTagFrame: %d\n",
-		 RSV_GETBIT(sts, RSV_RXCONTROLFRAME),
-		 RSV_GETBIT(sts, RSV_RXPAUSEFRAME),
-		 RSV_GETBIT(sts, RSV_RXUNKNOWNOPCODE),
-		 RSV_GETBIT(sts, RSV_RXTYPEVLAN));
+//	printk(KERN_DEBUG DRV_NAME ": %s - NextPk: 0x%04x - RSV:\n",
+;
+//	printk(KERN_DEBUG DRV_NAME ": ByteCount: %d, DribbleNibble: %d\n", len,
+;
+//	printk(KERN_DEBUG DRV_NAME ": RxOK: %d, CRCErr:%d, LenChkErr: %d,"
+//		 " LenOutOfRange: %d\n", RSV_GETBIT(sts, RSV_RXOK),
+//		 RSV_GETBIT(sts, RSV_CRCERROR),
+//		 RSV_GETBIT(sts, RSV_LENCHECKERR),
+;
+//	printk(KERN_DEBUG DRV_NAME ": Multicast: %d, Broadcast: %d, "
+//		 "LongDropEvent: %d, CarrierEvent: %d\n",
+//		 RSV_GETBIT(sts, RSV_RXMULTICAST),
+//		 RSV_GETBIT(sts, RSV_RXBROADCAST),
+//		 RSV_GETBIT(sts, RSV_RXLONGEVDROPEV),
+;
+//	printk(KERN_DEBUG DRV_NAME ": ControlFrame: %d, PauseFrame: %d,"
+//		 " UnknownOp: %d, VLanTagFrame: %d\n",
+//		 RSV_GETBIT(sts, RSV_RXCONTROLFRAME),
+//		 RSV_GETBIT(sts, RSV_RXPAUSEFRAME),
+//		 RSV_GETBIT(sts, RSV_RXUNKNOWNOPCODE),
+;
 }
 
 static void dump_packet(const char *msg, int len, const char *data)
 {
-	printk(KERN_DEBUG DRV_NAME ": %s - packet len:%d\n", msg, len);
+;
 	print_hex_dump(KERN_DEBUG, "pk data: ", DUMP_PREFIX_OFFSET, 16, 1,
 			data, len, true);
 }
@@ -905,8 +905,8 @@ static void enc28j60_hw_rx(struct net_device *ndev)
 	int len;
 
 	if (netif_msg_rx_status(priv))
-		printk(KERN_DEBUG DRV_NAME ": RX pk_addr:0x%04x\n",
-			priv->next_pk_ptr);
+//		printk(KERN_DEBUG DRV_NAME ": RX pk_addr:0x%04x\n",
+;
 
 	if (unlikely(priv->next_pk_ptr > RXEND_INIT)) {
 		if (netif_msg_rx_err(priv))
@@ -983,8 +983,8 @@ static void enc28j60_hw_rx(struct net_device *ndev)
 	 */
 	erxrdpt = erxrdpt_workaround(next_packet, RXSTART_INIT, RXEND_INIT);
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() ERXRDPT:0x%04x\n",
-			__func__, erxrdpt);
+//		printk(KERN_DEBUG DRV_NAME ": %s() ERXRDPT:0x%04x\n",
+;
 
 	mutex_lock(&priv->lock);
 	nolock_regw_write(priv, ERXRDPTL, erxrdpt);
@@ -993,9 +993,9 @@ static void enc28j60_hw_rx(struct net_device *ndev)
 		u16 reg;
 		reg = nolock_regw_read(priv, ERXRDPTL);
 		if (reg != erxrdpt)
-			printk(KERN_DEBUG DRV_NAME ": %s() ERXRDPT verify "
-				"error (0x%04x - 0x%04x)\n", __func__,
-				reg, erxrdpt);
+//			printk(KERN_DEBUG DRV_NAME ": %s() ERXRDPT verify "
+//				"error (0x%04x - 0x%04x)\n", __func__,
+;
 	}
 #endif
 	priv->next_pk_ptr = next_packet;
@@ -1031,8 +1031,8 @@ static int enc28j60_get_free_rxfifo(struct enc28j60_net *priv)
 	}
 	mutex_unlock(&priv->lock);
 	if (netif_msg_rx_status(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() free_space = %d\n",
-			__func__, free_space);
+//		printk(KERN_DEBUG DRV_NAME ": %s() free_space = %d\n",
+;
 	return free_space;
 }
 
@@ -1047,9 +1047,9 @@ static void enc28j60_check_link_status(struct net_device *ndev)
 
 	reg = enc28j60_phy_read(priv, PHSTAT2);
 	if (netif_msg_hw(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() PHSTAT1: %04x, "
-			"PHSTAT2: %04x\n", __func__,
-			enc28j60_phy_read(priv, PHSTAT1), reg);
+//		printk(KERN_DEBUG DRV_NAME ": %s() PHSTAT1: %04x, "
+//			"PHSTAT2: %04x\n", __func__,
+;
 	duplex = reg & PHSTAT2_DPXSTAT;
 
 	if (reg & PHSTAT2_LSTAT) {
@@ -1098,13 +1098,13 @@ static int enc28j60_rx_interrupt(struct net_device *ndev)
 
 	pk_counter = locked_regb_read(priv, EPKTCNT);
 	if (pk_counter && netif_msg_intr(priv))
-		printk(KERN_DEBUG DRV_NAME ": intRX, pk_cnt: %d\n", pk_counter);
+;
 	if (pk_counter > priv->max_pk_counter) {
 		/* update statistics */
 		priv->max_pk_counter = pk_counter;
 		if (netif_msg_rx_status(priv) && priv->max_pk_counter > 1)
-			printk(KERN_DEBUG DRV_NAME ": RX max_pk_cnt: %d\n",
-				priv->max_pk_counter);
+//			printk(KERN_DEBUG DRV_NAME ": RX max_pk_cnt: %d\n",
+;
 	}
 	ret = pk_counter;
 	while (pk_counter-- > 0)
@@ -1121,7 +1121,7 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 	int intflags, loop;
 
 	if (netif_msg_intr(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enter\n", __func__);
+;
 	/* disable further interrupts */
 	locked_reg_bfclr(priv, EIE, EIE_INTIE);
 
@@ -1132,16 +1132,16 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 		if ((intflags & EIR_DMAIF) != 0) {
 			loop++;
 			if (netif_msg_intr(priv))
-				printk(KERN_DEBUG DRV_NAME
-					": intDMA(%d)\n", loop);
+//				printk(KERN_DEBUG DRV_NAME
+;
 			locked_reg_bfclr(priv, EIR, EIR_DMAIF);
 		}
 		/* LINK changed handler */
 		if ((intflags & EIR_LINKIF) != 0) {
 			loop++;
 			if (netif_msg_intr(priv))
-				printk(KERN_DEBUG DRV_NAME
-					": intLINK(%d)\n", loop);
+//				printk(KERN_DEBUG DRV_NAME
+;
 			enc28j60_check_link_status(ndev);
 			/* read PHIR to clear the flag */
 			enc28j60_phy_read(priv, PHIR);
@@ -1151,8 +1151,8 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 			bool err = false;
 			loop++;
 			if (netif_msg_intr(priv))
-				printk(KERN_DEBUG DRV_NAME
-					": intTX(%d)\n", loop);
+//				printk(KERN_DEBUG DRV_NAME
+;
 			priv->tx_retry_count = 0;
 			if (locked_regb_read(priv, ESTAT) & ESTAT_TXABRT) {
 				if (netif_msg_tx_err(priv))
@@ -1174,8 +1174,8 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 
 			loop++;
 			if (netif_msg_intr(priv))
-				printk(KERN_DEBUG DRV_NAME
-					": intTXErr(%d)\n", loop);
+//				printk(KERN_DEBUG DRV_NAME
+;
 			locked_reg_bfclr(priv, ECON1, ECON1_TXRTS);
 			enc28j60_read_tsv(priv, tsv);
 			if (netif_msg_tx_err(priv))
@@ -1189,9 +1189,9 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 			/* Transmit Late collision check for retransmit */
 			if (TSV_GETBIT(tsv, TSV_TXLATECOLLISION)) {
 				if (netif_msg_tx_err(priv))
-					printk(KERN_DEBUG DRV_NAME
-						": LateCollision TXErr (%d)\n",
-						priv->tx_retry_count);
+//					printk(KERN_DEBUG DRV_NAME
+//						": LateCollision TXErr (%d)\n",
+;
 				if (priv->tx_retry_count++ < MAX_TX_RETRYCOUNT)
 					locked_reg_bfset(priv, ECON1,
 							   ECON1_TXRTS);
@@ -1205,13 +1205,13 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 		if ((intflags & EIR_RXERIF) != 0) {
 			loop++;
 			if (netif_msg_intr(priv))
-				printk(KERN_DEBUG DRV_NAME
-					": intRXErr(%d)\n", loop);
+//				printk(KERN_DEBUG DRV_NAME
+;
 			/* Check free FIFO space to flag RX overrun */
 			if (enc28j60_get_free_rxfifo(priv) <= 0) {
 				if (netif_msg_rx_err(priv))
-					printk(KERN_DEBUG DRV_NAME
-						": RX Overrun\n");
+//					printk(KERN_DEBUG DRV_NAME
+;
 				ndev->stats.rx_dropped++;
 			}
 			locked_reg_bfclr(priv, EIR, EIR_RXERIF);
@@ -1224,7 +1224,7 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 	/* re-enable interrupts */
 	locked_reg_bfset(priv, EIE, EIE_INTIE);
 	if (netif_msg_intr(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() exit\n", __func__);
+;
 }
 
 /*
@@ -1235,8 +1235,8 @@ static void enc28j60_irq_work_handler(struct work_struct *work)
 static void enc28j60_hw_tx(struct enc28j60_net *priv)
 {
 	if (netif_msg_tx_queued(priv))
-		printk(KERN_DEBUG DRV_NAME
-			": Tx Packet Len:%d\n", priv->tx_skb->len);
+//		printk(KERN_DEBUG DRV_NAME
+;
 
 	if (netif_msg_pktdata(priv))
 		dump_packet(__func__,
@@ -1259,16 +1259,16 @@ static void enc28j60_hw_tx(struct enc28j60_net *priv)
 		okflag = 1;
 		for (k = 0; k < test_len; k++) {
 			if (priv->tx_skb->data[k] != test_buf[k]) {
-				printk(KERN_DEBUG DRV_NAME
-					 ": Error, %d location differ: "
-					 "0x%02x-0x%02x\n", k,
-					 priv->tx_skb->data[k], test_buf[k]);
+//				printk(KERN_DEBUG DRV_NAME
+//					 ": Error, %d location differ: "
+//					 "0x%02x-0x%02x\n", k,
+;
 				okflag = 0;
 			}
 		}
 		if (!okflag)
-			printk(KERN_DEBUG DRV_NAME ": Tx write buffer, "
-				"verify ERROR!\n");
+//			printk(KERN_DEBUG DRV_NAME ": Tx write buffer, "
+;
 	}
 #endif
 	/* set TX request flag */
@@ -1281,7 +1281,7 @@ static netdev_tx_t enc28j60_send_packet(struct sk_buff *skb,
 	struct enc28j60_net *priv = netdev_priv(dev);
 
 	if (netif_msg_tx_queued(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enter\n", __func__);
+;
 
 	/* If some error occurs while trying to transmit this
 	 * packet, you should return '1' from this function.
@@ -1350,7 +1350,7 @@ static int enc28j60_net_open(struct net_device *dev)
 	struct enc28j60_net *priv = netdev_priv(dev);
 
 	if (netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enter\n", __func__);
+;
 
 	if (!is_valid_ether_addr(dev->dev_addr)) {
 		if (netif_msg_ifup(priv))
@@ -1386,7 +1386,7 @@ static int enc28j60_net_close(struct net_device *dev)
 	struct enc28j60_net *priv = netdev_priv(dev);
 
 	if (netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": %s() enter\n", __func__);
+;
 
 	enc28j60_hw_disable(priv);
 	enc28j60_lowpower(priv, true);
@@ -1432,17 +1432,17 @@ static void enc28j60_setrx_work_handler(struct work_struct *work)
 
 	if (priv->rxfilter == RXFILTER_PROMISC) {
 		if (netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME ": promiscuous mode\n");
+;
 		locked_regb_write(priv, ERXFCON, 0x00);
 	} else if (priv->rxfilter == RXFILTER_MULTI) {
 		if (netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME ": multicast mode\n");
+;
 		locked_regb_write(priv, ERXFCON,
 					ERXFCON_UCEN | ERXFCON_CRCEN |
 					ERXFCON_BCEN | ERXFCON_MCEN);
 	} else {
 		if (netif_msg_drv(priv))
-			printk(KERN_DEBUG DRV_NAME ": normal mode\n");
+;
 		locked_regb_write(priv, ERXFCON,
 					ERXFCON_UCEN | ERXFCON_CRCEN |
 					ERXFCON_BCEN);
@@ -1625,7 +1625,7 @@ static int __devexit enc28j60_remove(struct spi_device *spi)
 	struct enc28j60_net *priv = dev_get_drvdata(&spi->dev);
 
 	if (netif_msg_drv(priv))
-		printk(KERN_DEBUG DRV_NAME ": remove\n");
+;
 
 	unregister_netdev(priv->netdev);
 	free_irq(spi->irq, priv);

@@ -92,13 +92,13 @@
 #define at76_dbg(bits, format, arg...)					\
 do {									\
 	if (at76_debug & (bits))					\
-		printk(KERN_DEBUG DRIVER_NAME ": " format "\n", ##arg);	\
+;
 } while (0)
 
 #define at76_dbg_dump(bits, buf, len, format, arg...)			\
 do {									\
 	if (at76_debug & (bits)) {					\
-		printk(KERN_DEBUG DRIVER_NAME ": " format "\n", ##arg);	\
+;
 		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
 	}								\
 } while (0)
@@ -379,7 +379,7 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *buf, u32 size,
 		 manifest_sync_timeout);
 
 	if (!size) {
-		dev_printk(KERN_ERR, &udev->dev, "FW buffer length invalid!\n");
+;
 		return -EINVAL;
 	}
 
@@ -391,8 +391,8 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *buf, u32 size,
 		if (need_dfu_state) {
 			ret = at76_dfu_get_state(udev, &dfu_state);
 			if (ret < 0) {
-				dev_printk(KERN_ERR, &udev->dev,
-					   "cannot get DFU state: %d\n", ret);
+//				dev_printk(KERN_ERR, &udev->dev,
+;
 				goto exit;
 			}
 			need_dfu_state = 0;
@@ -407,9 +407,9 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *buf, u32 size,
 				dfu_timeout = at76_get_timeout(&dfu_stat_buf);
 				need_dfu_state = 0;
 			} else
-				dev_printk(KERN_ERR, &udev->dev,
-					   "at76_dfu_get_status returned %d\n",
-					   ret);
+//				dev_printk(KERN_ERR, &udev->dev,
+//					   "at76_dfu_get_status returned %d\n",
+;
 			break;
 
 		case STATE_DFU_DOWNLOAD_BUSY:
@@ -438,9 +438,9 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *buf, u32 size,
 			blockno++;
 
 			if (ret != bsize)
-				dev_printk(KERN_ERR, &udev->dev,
-					   "at76_load_int_fw_block "
-					   "returned %d\n", ret);
+//				dev_printk(KERN_ERR, &udev->dev,
+//					   "at76_load_int_fw_block "
+;
 			need_dfu_state = 1;
 			break;
 
@@ -1287,8 +1287,8 @@ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
 	at76_dbg(DBG_DEVSTART, "opmode %d", op_mode);
 
 	if (op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
-		dev_printk(KERN_ERR, &udev->dev, "unexpected opmode %d\n",
-			   op_mode);
+//		dev_printk(KERN_ERR, &udev->dev, "unexpected opmode %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -1307,9 +1307,9 @@ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
 			 size, bsize, blockno);
 		ret = at76_load_ext_fw_block(udev, blockno, block, bsize);
 		if (ret != bsize) {
-			dev_printk(KERN_ERR, &udev->dev,
-				   "loading %dth firmware block failed: %d\n",
-				   blockno, ret);
+//			dev_printk(KERN_ERR, &udev->dev,
+//				   "loading %dth firmware block failed: %d\n",
+;
 			goto exit;
 		}
 		buf += bsize;
@@ -1325,8 +1325,8 @@ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
 exit:
 	kfree(block);
 	if (ret < 0)
-		dev_printk(KERN_ERR, &udev->dev,
-			   "downloading external firmware failed: %d\n", ret);
+//		dev_printk(KERN_ERR, &udev->dev,
+;
 	return ret;
 }
 
@@ -1340,8 +1340,8 @@ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
 				   need_remap ? 0 : 2 * HZ);
 
 	if (ret < 0) {
-		dev_printk(KERN_ERR, &udev->dev,
-			   "downloading internal fw failed with %d\n", ret);
+//		dev_printk(KERN_ERR, &udev->dev,
+;
 		goto exit;
 	}
 
@@ -1351,8 +1351,8 @@ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
 	if (need_remap) {
 		ret = at76_remap(udev);
 		if (ret < 0) {
-			dev_printk(KERN_ERR, &udev->dev,
-				   "sending REMAP failed with %d\n", ret);
+//			dev_printk(KERN_ERR, &udev->dev,
+;
 			goto exit;
 		}
 	}
@@ -1587,11 +1587,11 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
 	at76_dbg(DBG_FW, "downloading firmware %s", fwe->fwname);
 	ret = request_firmware(&fwe->fw, fwe->fwname, &udev->dev);
 	if (ret < 0) {
-		dev_printk(KERN_ERR, &udev->dev, "firmware %s not found!\n",
-			   fwe->fwname);
-		dev_printk(KERN_ERR, &udev->dev,
-			   "you may need to download the firmware from "
-			   "http://developer.berlios.de/projects/at76c503a/\n");
+//		dev_printk(KERN_ERR, &udev->dev, "firmware %s not found!\n",
+;
+//		dev_printk(KERN_ERR, &udev->dev,
+//			   "you may need to download the firmware from "
+;
 		goto exit;
 	}
 
@@ -1599,17 +1599,17 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
 	fwh = (struct at76_fw_header *)(fwe->fw->data);
 
 	if (fwe->fw->size <= sizeof(*fwh)) {
-		dev_printk(KERN_ERR, &udev->dev,
-			   "firmware is too short (0x%zx)\n", fwe->fw->size);
+//		dev_printk(KERN_ERR, &udev->dev,
+;
 		goto exit;
 	}
 
 	/* CRC currently not checked */
 	fwe->board_type = le32_to_cpu(fwh->board_type);
 	if (fwe->board_type != board_type) {
-		dev_printk(KERN_ERR, &udev->dev,
-			   "board type mismatch, requested %u, got %u\n",
-			   board_type, fwe->board_type);
+//		dev_printk(KERN_ERR, &udev->dev,
+//			   "board type mismatch, requested %u, got %u\n",
+;
 		goto exit;
 	}
 
@@ -1626,9 +1626,9 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
 
 	fwe->loaded = 1;
 
-	dev_printk(KERN_DEBUG, &udev->dev,
-		   "using firmware %s (version %d.%d.%d-%d)\n",
-		   fwe->fwname, fwh->major, fwh->minor, fwh->patch, fwh->build);
+//	dev_printk(KERN_DEBUG, &udev->dev,
+//		   "using firmware %s (version %d.%d.%d-%d)\n",
+;
 
 	at76_dbg(DBG_DEVSTART, "board %u, int %d:%d, ext %d:%d", board_type,
 		 le32_to_cpu(fwh->int_fw_offset), le32_to_cpu(fwh->int_fw_len),
@@ -2122,8 +2122,8 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
 
 	hw = ieee80211_alloc_hw(sizeof(struct at76_priv), &at76_ops);
 	if (!hw) {
-		printk(KERN_ERR DRIVER_NAME ": could not register"
-		       " ieee80211_hw\n");
+//		printk(KERN_ERR DRIVER_NAME ": could not register"
+;
 		return NULL;
 	}
 
@@ -2180,8 +2180,8 @@ static int at76_alloc_urbs(struct at76_priv *priv,
 	}
 
 	if (!ep_in || !ep_out) {
-		dev_printk(KERN_ERR, &interface->dev,
-			   "bulk endpoints missing\n");
+//		dev_printk(KERN_ERR, &interface->dev,
+;
 		return -ENXIO;
 	}
 
@@ -2191,15 +2191,15 @@ static int at76_alloc_urbs(struct at76_priv *priv,
 	priv->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
 	priv->tx_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (!priv->rx_urb || !priv->tx_urb) {
-		dev_printk(KERN_ERR, &interface->dev, "cannot allocate URB\n");
+;
 		return -ENOMEM;
 	}
 
 	buffer_size = sizeof(struct at76_tx_buffer) + MAX_PADDING_SIZE;
 	priv->bulk_out_buffer = kmalloc(buffer_size, GFP_KERNEL);
 	if (!priv->bulk_out_buffer) {
-		dev_printk(KERN_ERR, &interface->dev,
-			   "cannot allocate output buffer\n");
+//		dev_printk(KERN_ERR, &interface->dev,
+;
 		return -ENOMEM;
 	}
 
@@ -2260,8 +2260,8 @@ static int at76_init_new_device(struct at76_priv *priv,
 	/* MAC address */
 	ret = at76_get_hw_config(priv);
 	if (ret < 0) {
-		dev_printk(KERN_ERR, &interface->dev,
-			   "cannot get MAC address\n");
+//		dev_printk(KERN_ERR, &interface->dev,
+;
 		goto exit;
 	}
 
@@ -2303,8 +2303,8 @@ static int at76_init_new_device(struct at76_priv *priv,
 
 	ret = ieee80211_register_hw(priv->hw);
 	if (ret) {
-		printk(KERN_ERR "cannot register mac80211 hw (status %d)!\n",
-		       ret);
+//		printk(KERN_ERR "cannot register mac80211 hw (status %d)!\n",
+;
 		goto exit;
 	}
 
@@ -2388,8 +2388,8 @@ static int at76_probe(struct usb_interface *interface,
 	   we get 204 with 2.4.23, Fiberline FL-WL240u (505A+RFMD2958) ??? */
 
 	if (op_mode == OPMODE_HW_CONFIG_MODE) {
-		dev_printk(KERN_ERR, &interface->dev,
-			   "cannot handle a device in HW_CONFIG_MODE\n");
+//		dev_printk(KERN_ERR, &interface->dev,
+;
 		ret = -EBUSY;
 		goto error;
 	}
@@ -2397,13 +2397,13 @@ static int at76_probe(struct usb_interface *interface,
 	if (op_mode != OPMODE_NORMAL_NIC_WITH_FLASH
 	    && op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
 		/* download internal firmware part */
-		dev_printk(KERN_DEBUG, &interface->dev,
-			   "downloading internal firmware\n");
+//		dev_printk(KERN_DEBUG, &interface->dev,
+;
 		ret = at76_load_internal_fw(udev, fwe);
 		if (ret < 0) {
-			dev_printk(KERN_ERR, &interface->dev,
-				   "error %d downloading internal firmware\n",
-				   ret);
+//			dev_printk(KERN_ERR, &interface->dev,
+//				   "error %d downloading internal firmware\n",
+;
 			goto error;
 		}
 		usb_put_dev(udev);
@@ -2428,8 +2428,8 @@ static int at76_probe(struct usb_interface *interface,
 		need_ext_fw = 1;
 
 	if (need_ext_fw) {
-		dev_printk(KERN_DEBUG, &interface->dev,
-			   "downloading external firmware\n");
+//		dev_printk(KERN_DEBUG, &interface->dev,
+;
 
 		ret = at76_load_external_fw(udev, fwe);
 		if (ret)
@@ -2438,8 +2438,8 @@ static int at76_probe(struct usb_interface *interface,
 		/* Re-check firmware version */
 		ret = at76_get_mib(udev, MIB_FW_VERSION, &fwv, sizeof(fwv));
 		if (ret < 0) {
-			dev_printk(KERN_ERR, &interface->dev,
-				   "error %d getting firmware version\n", ret);
+//			dev_printk(KERN_ERR, &interface->dev,
+;
 			goto error;
 		}
 	}
@@ -2479,7 +2479,7 @@ static void at76_disconnect(struct usb_interface *interface)
 
 	wiphy_info(priv->hw->wiphy, "disconnecting\n");
 	at76_delete_device(priv);
-	dev_printk(KERN_INFO, &interface->dev, "disconnected\n");
+;
 }
 
 /* Structure for registering this driver with the USB subsystem */
@@ -2494,15 +2494,15 @@ static int __init at76_mod_init(void)
 {
 	int result;
 
-	printk(KERN_INFO DRIVER_DESC " " DRIVER_VERSION " loading\n");
+;
 
 	mutex_init(&fw_mutex);
 
 	/* register this driver with the USB subsystem */
 	result = usb_register(&at76_driver);
 	if (result < 0)
-		printk(KERN_ERR DRIVER_NAME
-		       ": usb_register failed (status %d)\n", result);
+//		printk(KERN_ERR DRIVER_NAME
+;
 
 	led_trigger_register_simple("at76_usb-tx", &ledtrig_tx);
 	return result;
@@ -2512,7 +2512,7 @@ static void __exit at76_mod_exit(void)
 {
 	int i;
 
-	printk(KERN_INFO DRIVER_DESC " " DRIVER_VERSION " unloading\n");
+;
 	usb_deregister(&at76_driver);
 	for (i = 0; i < ARRAY_SIZE(firmwares); i++) {
 		if (firmwares[i].fw)

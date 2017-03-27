@@ -79,7 +79,11 @@ void handle_IRQ(unsigned int irq, struct pt_regs *regs)
 	 */
 	if (unlikely(irq >= nr_irqs)) {
 		if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Bad IRQ%u\n", irq);
+#else
+			;
+#endif
 		ack_bad_irq(irq);
 	} else {
 		generic_handle_irq(irq);

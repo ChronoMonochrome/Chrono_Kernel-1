@@ -1280,10 +1280,14 @@ static void __init report_hugepages(void)
 
 	for_each_hstate(h) {
 		char buf[32];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HugeTLB registered %s page size, "
 				 "pre-allocated %ld pages\n",
 			memfmt(buf, huge_page_size(h)),
 			h->free_huge_pages);
+#else
+		;
+#endif
 	}
 }
 
@@ -1911,7 +1915,11 @@ void __init hugetlb_add_hstate(unsigned order)
 	unsigned long i;
 
 	if (size_to_hstate(PAGE_SIZE << order)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
+#else
+		;
+#endif
 		return;
 	}
 	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
@@ -1946,8 +1954,12 @@ static int __init hugetlb_nrpages_setup(char *s)
 		mhp = &parsed_hstate->max_huge_pages;
 
 	if (mhp == last_mhp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hugepages= specified twice without "
 			"interleaving hugepagesz=, ignoring\n");
+#else
+		;
+#endif
 		return 1;
 	}
 
@@ -2658,9 +2670,13 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	 * COW. Warn that such a situation has occurred as it may not be obvious
 	 */
 	if (is_vma_resv_set(vma, HPAGE_RESV_UNMAPPED)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"PID %d killed due to inadequate hugepage pool\n",
 			current->pid);
+#else
+		;
+#endif
 		return ret;
 	}
 

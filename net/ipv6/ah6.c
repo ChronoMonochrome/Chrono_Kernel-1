@@ -190,7 +190,7 @@ static void ipv6_rearrange_destopt(struct ipv6hdr *iph, struct ipv6_opt_hdr *des
 				hao = (struct ipv6_destopt_hao *)&opt[off];
 				if (hao->length != sizeof(hao->addr)) {
 					if (net_ratelimit())
-						printk(KERN_WARNING "destopt hao: invalid header length: %u\n", hao->length);
+;
 					goto bad;
 				}
 				final_addr = hao->addr;
@@ -659,9 +659,9 @@ static int ah6_init_state(struct xfrm_state *x)
 
 	if (aalg_desc->uinfo.auth.icv_fullbits/8 !=
 	    crypto_ahash_digestsize(ahash)) {
-		printk(KERN_INFO "AH: %s digestsize %u != %hu\n",
-		       x->aalg->alg_name, crypto_ahash_digestsize(ahash),
-		       aalg_desc->uinfo.auth.icv_fullbits/8);
+//		printk(KERN_INFO "AH: %s digestsize %u != %hu\n",
+//		       x->aalg->alg_name, crypto_ahash_digestsize(ahash),
+;
 		goto error;
 	}
 
@@ -727,12 +727,12 @@ static const struct inet6_protocol ah6_protocol = {
 static int __init ah6_init(void)
 {
 	if (xfrm_register_type(&ah6_type, AF_INET6) < 0) {
-		printk(KERN_INFO "ipv6 ah init: can't add xfrm type\n");
+;
 		return -EAGAIN;
 	}
 
 	if (inet6_add_protocol(&ah6_protocol, IPPROTO_AH) < 0) {
-		printk(KERN_INFO "ipv6 ah init: can't add protocol\n");
+;
 		xfrm_unregister_type(&ah6_type, AF_INET6);
 		return -EAGAIN;
 	}
@@ -743,10 +743,10 @@ static int __init ah6_init(void)
 static void __exit ah6_fini(void)
 {
 	if (inet6_del_protocol(&ah6_protocol, IPPROTO_AH) < 0)
-		printk(KERN_INFO "ipv6 ah close: can't remove protocol\n");
+;
 
 	if (xfrm_unregister_type(&ah6_type, AF_INET6) < 0)
-		printk(KERN_INFO "ipv6 ah close: can't remove xfrm type\n");
+;
 
 }
 

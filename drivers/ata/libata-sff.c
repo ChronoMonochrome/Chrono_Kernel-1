@@ -227,9 +227,13 @@ int ata_sff_busy_sleep(struct ata_port *ap,
 	}
 
 	if (status != 0xff && (status & ATA_BUSY))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 				"port is slow to respond, please be patient "
 				"(Status 0x%x)\n", status);
+#else
+		ata_port_;
+#endif
 
 	timeout = ata_deadline(timer_start, tmout);
 	while (status != 0xff && (status & ATA_BUSY) &&
@@ -350,8 +354,12 @@ static void ata_dev_select(struct ata_port *ap, unsigned int device,
 			   unsigned int wait, unsigned int can_sleep)
 {
 	if (ata_msg_probe(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO, "ata_dev_select: ENTER, "
 				"device %u, wait %u\n", device, wait);
+#else
+		ata_port_;
+#endif
 
 	if (wait)
 		ata_wait_idle(ap);
@@ -1335,7 +1343,11 @@ void ata_sff_flush_pio_task(struct ata_port *ap)
 	ap->hsm_task_state = HSM_ST_IDLE;
 
 	if (ata_msg_ctl(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_DEBUG, "%s: EXIT\n", __func__);
+#else
+		ata_port_;
+#endif
 }
 
 static void ata_sff_pio_task(struct work_struct *work)
@@ -1513,7 +1525,11 @@ static unsigned int ata_sff_idle_irq(struct ata_port *ap)
 		ap->ops->sff_check_status(ap);
 		if (ap->ops->sff_irq_clear)
 			ap->ops->sff_irq_clear(ap);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING, "irq trap\n");
+#else
+		ata_port_;
+#endif
 		return 1;
 	}
 #endif
@@ -1711,8 +1727,12 @@ void ata_sff_lost_interrupt(struct ata_port *ap)
 
 	/* There was a command running, we are no longer busy and we have
 	   no interrupt. */
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_WARNING, "lost interrupt (Status 0x%x)\n",
 								status);
+#else
+	ata_port_;
+#endif
 	/* Run the host interrupt logic as if the interrupt had not been
 	   lost */
 	ata_sff_port_intr(ap, qc);
@@ -1798,8 +1818,12 @@ int ata_sff_prereset(struct ata_link *link, unsigned long deadline)
 	if (!ata_link_offline(link)) {
 		rc = ata_sff_wait_ready(link, deadline);
 		if (rc && rc != -ENODEV) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING, "device not ready "
 					"(errno=%d), forcing hardreset\n", rc);
+#else
+			ata_link_;
+#endif
 			ehc->i.action |= ATA_EH_HARDRESET;
 		}
 	}
@@ -2170,8 +2194,12 @@ void ata_sff_drain_fifo(struct ata_queued_cmd *qc)
 
 	/* Can become DEBUG later */
 	if (count)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_DEBUG,
 			"drained %d bytes to clear DRQ.\n", count);
+#else
+		ata_port_;
+#endif
 
 }
 EXPORT_SYMBOL_GPL(ata_sff_drain_fifo);
@@ -2316,9 +2344,13 @@ int ata_pci_sff_init_host(struct ata_host *host)
 		rc = pcim_iomap_regions(pdev, 0x3 << base,
 					dev_driver_string(gdev));
 		if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, gdev,
 				   "failed to request/iomap BARs for port %d "
 				   "(errno=%d)\n", i, rc);
+#else
+			dev_;
+#endif
 			if (rc == -EBUSY)
 				pcim_pin_device(pdev);
 			ap->ops = &ata_dummy_port_ops;

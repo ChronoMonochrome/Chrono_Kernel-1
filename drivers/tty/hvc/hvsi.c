@@ -203,26 +203,54 @@ static void dump_hex(const uint8_t *data, int len)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("    ");
+#else
+	;
+#endif
 	for (i=0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%.2x", data[i]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n    ");
+#else
+	;
+#endif
 	for (i=0; i < len; i++) {
 		if (isprint(data[i]))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", data[i]);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(".");
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static void dump_packet(uint8_t *packet)
 {
 	struct hvsi_header *header = (struct hvsi_header *)packet;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("type 0x%x, len %i, seqno %i:\n", header->type, header->len,
 			header->seqno);
+#else
+	;
+#endif
 
 	dump_hex(packet, header->len);
 }
@@ -259,8 +287,12 @@ static void hvsi_recv_control(struct hvsi_struct *hp, uint8_t *packet,
 			}
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hvsi%i: unknown HVSI control packet: ",
 				hp->index);
+#else
+			;
+#endif
 			dump_packet(packet);
 			break;
 	}
@@ -1111,7 +1143,11 @@ static int __init hvsi_init(void)
 	if (tty_register_driver(hvsi_driver))
 		panic("Couldn't register hvsi console driver\n");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HVSI: registered %i devices\n", hvsi_count);
+#else
+	;
+#endif
 
 	return 0;
 }

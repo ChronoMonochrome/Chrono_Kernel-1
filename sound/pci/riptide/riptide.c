@@ -2040,9 +2040,13 @@ snd_riptide_joystick_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	if (!gameport)
 		return -ENOMEM;
 	if (!request_region(joystick_port[dev], 8, "Riptide gameport")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "Riptide: cannot grab gameport 0x%x\n",
 			   joystick_port[dev]);
+#else
+		;
+#endif
 		gameport_free_port(gameport);
 		return -EBUSY;
 	}
@@ -2112,9 +2116,13 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 					  val, 0, chip->irq, 0,
 					  &chip->rmidi);
 		if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "Riptide: Can't Allocate MPU at 0x%x\n",
 				   val);
+#else
+			;
+#endif
 		else
 			chip->mpuaddr = val;
 	}
@@ -2124,15 +2132,23 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		err = snd_opl3_create(card, val, val + 2,
 				      OPL3_HW_RIPTIDE, 0, &chip->opl3);
 		if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "Riptide: Can't Allocate OPL3 at 0x%x\n",
 				   val);
+#else
+			;
+#endif
 		else {
 			chip->opladdr = val;
 			err = snd_opl3_hwdep_new(chip->opl3, 0, 1, NULL);
 			if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING
 					   "Riptide: Can't Allocate OPL3-HWDEP\n");
+#else
+				;
+#endif
 		}
 	}
 #ifdef SUPPORT_JOYSTICK

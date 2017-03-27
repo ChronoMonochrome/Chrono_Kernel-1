@@ -717,8 +717,12 @@ static int floppy_ioctl(struct block_device *bdev, fmode_t mode,
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "SWIM floppy_ioctl: unknown cmd %d\n",
 		       cmd);
+#else
+		;
+#endif
 		return -ENOSYS;
 	}
 	return 0;
@@ -904,7 +908,11 @@ static int __devinit swim_probe(struct platform_device *dev)
 
 	set_swim_mode(swim_base, 1);
 	if (!get_swim_mode(swim_base)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SWIM device not found !\n");
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_iounmap;
 	}
@@ -982,7 +990,11 @@ static struct platform_driver swim_driver = {
 
 static int __init swim_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SWIM floppy driver %s\n", DRIVER_VERSION);
+#else
+	;
+#endif
 
 	return platform_driver_register(&swim_driver);
 }

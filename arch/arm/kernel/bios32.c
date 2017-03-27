@@ -46,7 +46,11 @@ static void pcibios_bus_report_status(struct pci_bus *bus, u_int status_mask, in
 		pci_write_config_word(dev, PCI_STATUS, status & status_mask);
 
 		if (warn)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(%s: %04X) ", pci_name(dev), status);
+#else
+			;
+#endif
 	}
 
 	list_for_each_entry(dev, &bus->devices, bus_list)
@@ -275,7 +279,11 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ITE, PCI_DEVICE_ID_ITE_8152, pci_fixup_it
 void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
 {
 	if (debug_pci)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PCI: Assigning IRQ %02d to %s\n", irq, pci_name(dev));
+#else
+		;
+#endif
 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
 }
 
@@ -366,8 +374,12 @@ void pcibios_fixup_bus(struct pci_bus *bus)
 	/*
 	 * Report what we did for this bus
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
 		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+#else
+	;
+#endif
 }
 #ifdef CONFIG_HOTPLUG
 EXPORT_SYMBOL(pcibios_fixup_bus);
@@ -386,8 +398,12 @@ static u8 __devinit pcibios_swizzle(struct pci_dev *dev, u8 *pin)
 		slot = sys->swizzle(dev, pin);
 
 	if (debug_pci)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PCI: %s swizzling pin %d => pin %d slot %d\n",
 			pci_name(dev), oldpin, *pin, slot);
+#else
+		;
+#endif
 
 	return slot;
 }
@@ -404,8 +420,12 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
 		irq = sys->map_irq(dev, slot, pin);
 
 	if (debug_pci)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PCI: %s mapping slot %d pin %d => irq %d\n",
 			pci_name(dev), slot, pin, irq);
+#else
+		;
+#endif
 
 	return irq;
 }
@@ -581,8 +601,12 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
 		cmd |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY;
 
 	if (cmd != old_cmd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PCI: enabling device %s (%04x -> %04x)\n",
 		       pci_name(dev), old_cmd, cmd);
+#else
+		;
+#endif
 		pci_write_config_word(dev, PCI_COMMAND, cmd);
 	}
 	return 0;

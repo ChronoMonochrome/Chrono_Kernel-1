@@ -169,7 +169,11 @@ static void snd_interwave_i2c_setlines(struct snd_i2c_bus *bus, int ctrl, int da
 	unsigned long port = bus->private_value;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c_setlines - 0x%lx <- %i,%i\n", port, ctrl, data);
+#else
+	;
+#endif
 #endif
 	outb((data << 1) | ctrl, port);
 	udelay(10);
@@ -182,7 +186,11 @@ static int snd_interwave_i2c_getclockline(struct snd_i2c_bus *bus)
 
 	res = inb(port) & 1;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c_getclockline - 0x%lx -> %i\n", port, res);
+#else
+	;
+#endif
 #endif
 	return res;
 }
@@ -196,7 +204,11 @@ static int snd_interwave_i2c_getdataline(struct snd_i2c_bus *bus, int ack)
 		udelay(10);
 	res = (inb(port) & 2) >> 1;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c_getdataline - 0x%lx -> %i\n", port, res);
+#else
+	;
+#endif
 #endif
 	return res;
 }
@@ -341,12 +353,16 @@ static void __devinit snd_interwave_bank_sizes(struct snd_gus_card * gus, int *s
 			snd_gf1_poke(gus, local, d);
 			snd_gf1_poke(gus, local + 1, d + 1);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "d = 0x%x, local = 0x%x, "
 			       "local + 1 = 0x%x, idx << 22 = 0x%x\n",
 			       d,
 			       snd_gf1_peek(gus, local),
 			       snd_gf1_peek(gus, local + 1),
 			       snd_gf1_peek(gus, idx << 22));
+#else
+			;
+#endif
 #endif
 			if (snd_gf1_peek(gus, local) != d ||
 			    snd_gf1_peek(gus, local + 1) != d + 1 ||
@@ -356,8 +372,12 @@ static void __devinit snd_interwave_bank_sizes(struct snd_gus_card * gus, int *s
 		}
 	}
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "sizes: %i %i %i %i\n",
 	       sizes[0], sizes[1], sizes[2], sizes[3]);
+#else
+	;
+#endif
 #endif
 }
 
@@ -411,12 +431,20 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		lmct = (psizes[3] << 24) | (psizes[2] << 16) |
 		    (psizes[1] << 8) | psizes[0];
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "lmct = 0x%08x\n", lmct);
+#else
+		;
+#endif
 #endif
 		for (i = 0; i < ARRAY_SIZE(lmc); i++)
 			if (lmct == lmc[i]) {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "found !!! %i\n", i);
+#else
+				;
+#endif
 #endif
 				snd_gf1_write16(gus, SNDRV_GF1_GW_MEMORY_CONFIG, (snd_gf1_look16(gus, SNDRV_GF1_GW_MEMORY_CONFIG) & 0xfff0) | i);
 				snd_interwave_bank_sizes(gus, psizes);
@@ -443,9 +471,13 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		for (i = 0; i < 8; ++i)
 			iwave[i] = snd_gf1_peek(gus, bank_pos + i);
 #ifdef CONFIG_SND_DEBUG_ROM
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ROM at 0x%06x = %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n", bank_pos,
 		       iwave[0], iwave[1], iwave[2], iwave[3],
 		       iwave[4], iwave[5], iwave[6], iwave[7]);
+#else
+		;
+#endif
 #endif
 		if (strncmp(iwave, "INTRWAVE", 8))
 			continue;	/* first check */
@@ -453,7 +485,11 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		for (i = 0; i < sizeof(struct rom_hdr); i++)
 			csum += snd_gf1_peek(gus, bank_pos + i);
 #ifdef CONFIG_SND_DEBUG_ROM
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ROM checksum = 0x%x (computed)\n", csum);
+#else
+		;
+#endif
 #endif
 		if (csum != 0)
 			continue;	/* not valid rom */

@@ -35,6 +35,7 @@
 
 #define EDAC_MOD_STR      "i7300_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define i7300_printk(level, fmt, arg...) \
 	edac_printk(level, "i7300", fmt, ##arg)
 
@@ -74,6 +75,9 @@
 /* Device name and register DID (Device ID) */
 struct i7300_dev_info {
 	const char *ctl_name;	/* name for this device */
+#else
+#define i7300_;
+#endif
 	u16 fsb_mapping_errors;	/* DID for the branchmap,control */
 };
 
@@ -414,8 +418,12 @@ static void i7300_process_error_global(struct mem_ctl_info *mci)
 	return;
 
 error_global:
+#ifdef CONFIG_DEBUG_PRINTK
 	i7300_mc_printk(mci, KERN_EMERG, "%s misc error: %s\n",
 			is_fatal ? "Fatal" : "NOT fatal", specific);
+#else
+	i7300_mc_;
+#endif
 }
 
 /**
@@ -1138,12 +1146,20 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
 	/* allocating generic PCI control info */
 	i7300_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i7300_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	return 0;
