@@ -195,12 +195,8 @@ static void multipath_error (struct mddev *mddev, struct md_rdev *rdev)
 		 * first check if this is a queued request for a device
 		 * which has just failed.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT 
 		       "multipath: only one IO path left and IO error.\n");
-#else
-		;
-#endif
 		/* leave it active... it's all we have */
 		return;
 	}
@@ -215,16 +211,12 @@ static void multipath_error (struct mddev *mddev, struct md_rdev *rdev)
 	}
 	set_bit(Faulty, &rdev->flags);
 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "multipath: IO failure on %s,"
 	       " disabling IO path.\n"
 	       "multipath: Operation continuing"
 	       " on %d IO paths.\n",
 	       bdevname(rdev->bdev, b),
 	       conf->raid_disks - mddev->degraded);
-#else
-	;
-#endif
 }
 
 static void print_multipath_conf (struct mpconf *conf)
@@ -232,37 +224,21 @@ static void print_multipath_conf (struct mpconf *conf)
 	int i;
 	struct multipath_info *tmp;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("MULTIPATH conf printout:\n");
-#else
-	;
-#endif
 	if (!conf) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("(conf==NULL)\n");
-#else
-		;
-#endif
 		return;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" --- wd:%d rd:%d\n", conf->raid_disks - conf->mddev->degraded,
 			 conf->raid_disks);
-#else
-	;
-#endif
 
 	for (i = 0; i < conf->raid_disks; i++) {
 		char b[BDEVNAME_SIZE];
 		tmp = conf->multipaths + i;
 		if (tmp->rdev)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" disk%d, o:%d, dev:%s\n",
 				i,!test_bit(Faulty, &tmp->rdev->flags),
 			       bdevname(tmp->rdev->bdev,b));
-#else
-			;
-#endif
 	}
 }
 
@@ -381,14 +357,10 @@ static void multipathd (struct mddev *mddev)
 		bio->bi_sector = mp_bh->master_bio->bi_sector;
 		
 		if ((mp_bh->path = multipath_map (conf))<0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT "multipath: %s: unrecoverable IO read"
 				" error for block %llu\n",
 				bdevname(bio->bi_bdev,b),
 				(unsigned long long)bio->bi_sector);
-#else
-			;
-#endif
 			multipath_end_bh_io(mp_bh, -EIO);
 		} else {
 			printk(KERN_ERR "multipath: %s: redirecting sector %llu"
@@ -427,12 +399,8 @@ static int multipath_run (struct mddev *mddev)
 		return -EINVAL;
 
 	if (mddev->level != LEVEL_MULTIPATH) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("multipath: %s: raid level not set to multipath IO (%d)\n",
 		       mdname(mddev), mddev->level);
-#else
-		;
-#endif
 		goto out;
 	}
 	/*
@@ -514,14 +482,10 @@ static int multipath_run (struct mddev *mddev)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO 
 		"multipath: array %s active with %d out of %d IO paths\n",
 		mdname(mddev), conf->raid_disks - mddev->degraded,
 	       mddev->raid_disks);
-#else
-	;
-#endif
 	/*
 	 * Ok, everything is just fine now
 	 */
