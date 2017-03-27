@@ -10,7 +10,7 @@
 #include <linux/sched.h>
 #include <linux/unistd.h>
 #include <linux/cpu.h>
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/kthread.h>
 #include <linux/stop_machine.h>
 #include <linux/mutex.h>
@@ -22,23 +22,18 @@
 static DEFINE_MUTEX(cpu_add_remove_lock);
 
 /*
- * The following two APIs (cpu_maps_update_begin/done) must be used when
- * attempting to serialize the updates to cpu_online_mask & cpu_present_mask.
- * The APIs cpu_notifier_register_begin/done() must be used to protect CPU
- * hotplug callback (un)registration performed using __register_cpu_notifier()
- * or __unregister_cpu_notifier().
+ * The following two API's must be used when attempting
+ * to serialize the updates to cpu_online_mask, cpu_present_mask.
  */
 void cpu_maps_update_begin(void)
 {
 	mutex_lock(&cpu_add_remove_lock);
 }
-EXPORT_SYMBOL(cpu_notifier_register_begin);
 
 void cpu_maps_update_done(void)
 {
 	mutex_unlock(&cpu_add_remove_lock);
 }
-EXPORT_SYMBOL(cpu_notifier_register_done);
 
 static RAW_NOTIFIER_HEAD(cpu_chain);
 
@@ -165,11 +160,6 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
 	return ret;
 }
 
-int __ref __register_cpu_notifier(struct notifier_block *nb)
-{
-	return raw_notifier_chain_register(&cpu_chain, nb);
-}
-
 static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
 			int *nr_calls)
 {
@@ -193,7 +183,6 @@ static void cpu_notify_nofail(unsigned long val, void *v)
 	BUG_ON(cpu_notify(val, v));
 }
 EXPORT_SYMBOL(register_cpu_notifier);
-EXPORT_SYMBOL(__register_cpu_notifier);
 
 void __ref unregister_cpu_notifier(struct notifier_block *nb)
 {
@@ -202,12 +191,6 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
 	cpu_maps_update_done();
 }
 EXPORT_SYMBOL(unregister_cpu_notifier);
-
-void __ref __unregister_cpu_notifier(struct notifier_block *nb)
-{
-	raw_notifier_chain_unregister(&cpu_chain, nb);
-}
-EXPORT_SYMBOL(__unregister_cpu_notifier);
 
 static inline void check_for_tasks(int cpu)
 {
@@ -268,12 +251,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	if (err) {
 		nr_calls--;
 		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: attempt to take down CPU %u failed\n",
 				__func__, cpu);
-#else
-		;
-#endif
 		goto out_release;
 	}
 
@@ -345,12 +324,8 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
 	if (ret) {
 		nr_calls--;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: attempt to bring up CPU %u failed\n",
 				__func__, cpu);
-#else
-		;
-#endif
 		goto out_notify;
 	}
 
@@ -451,11 +426,7 @@ int disable_nonboot_cpus(void)
 	cpumask_clear(frozen_cpus);
 	arch_disable_nonboot_cpus_begin();
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Disabling non-boot CPUs ...\n");
-#else
-	;
-#endif
 	for_each_online_cpu(cpu) {
 		if (cpu == first_cpu)
 			continue;
@@ -500,29 +471,17 @@ void __ref enable_nonboot_cpus(void)
 	if (cpumask_empty(frozen_cpus))
 		goto out;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Enabling non-boot CPUs ...\n");
-#else
-	;
-#endif
 
 	arch_enable_nonboot_cpus_begin();
 
 	for_each_cpu(cpu, frozen_cpus) {
 		error = _cpu_up(cpu, 1);
 		if (!error) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "CPU%d is up\n", cpu);
-#else
-			;
-#endif
 			continue;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error taking CPU%d up: %d\n", cpu, error);
-#else
-		;
-#endif
 	}
 
 	arch_enable_nonboot_cpus_end();

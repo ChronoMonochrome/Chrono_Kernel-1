@@ -16,6 +16,7 @@
  * 3 = blink rear cam flash only
  */
 
+#include <linux/export.h>
 #include <linux/platform_device.h>
 #include <linux/stat.h>
 #include <linux/init.h>

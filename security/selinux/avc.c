@@ -620,12 +620,8 @@ static int avc_latest_notif_update(int seqno, int is_insert)
 	spin_lock_irqsave(&notif_lock, flag);
 	if (is_insert) {
 		if (seqno < avc_cache.latest_notif) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "SELinux: avc:  seqno %d < latest_notif %d\n",
 			       seqno, avc_cache.latest_notif);
-#else
-			;
-#endif
 			ret = -EAGAIN;
 		}
 	} else {

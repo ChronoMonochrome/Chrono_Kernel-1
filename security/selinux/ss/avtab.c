@@ -299,12 +299,8 @@ int avtab_alloc(struct avtab *h, u32 nrules)
 	h->nel = 0;
 	h->nslot = nslot;
 	h->mask = mask;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux: %d avtab hash slots, %d rules.\n",
 	       h->nslot, nrules);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -333,14 +329,10 @@ void avtab_hash_eval(struct avtab *h, char *tag)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux: %s:  %d entries and %d/%d buckets used, "
 	       "longest chain length %d sum of chain length^2 %llu\n",
 	       tag, h->nel, slots_used, h->nslot, max_chain_len,
 	       chain2_len_sum);
-#else
-	;
-#endif
 }
 
 /*

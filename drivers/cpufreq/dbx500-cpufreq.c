@@ -17,6 +17,11 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/id.h>
 
+/* These strip const, as traditionally they weren't const. */
+#define cpu_possible_map       (*(cpumask_t *)cpu_possible_mask)
+#define cpu_online_map         (*(cpumask_t *)cpu_online_mask)
+#define cpu_present_map                (*(cpumask_t *)cpu_present_mask)
+#define cpu_active_map         (*(cpumask_t *)cpu_active_mask)
 
 static struct cpufreq_frequency_table *freq_table;
 static int freq_table_len;

@@ -19,6 +19,7 @@
 #include <asm/io.h>
 #include <linux/ioport.h>
 #include <linux/slab.h>
+#include <linux/stat.h>
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
 #include <linux/spinlock.h>

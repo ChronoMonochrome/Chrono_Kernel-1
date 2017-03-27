@@ -41,7 +41,7 @@ static inline long do_strncpy_from_user(char *dst, const char __user *src, long 
 		if (unlikely(__get_user(c,(unsigned long __user *)(src+res))))
 			break;
 		*(unsigned long *)(dst+res) = c;
-		if (has_zero(c, &data, &constants)) {
+		if (has_zero1(c, &data, &constants)) {
 			data = prep_zero_mask(c, data, &constants);
 			data = create_zero_mask(data);
 			return res + find_zero(data);

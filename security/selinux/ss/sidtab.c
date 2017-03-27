@@ -220,13 +220,9 @@ int sidtab_context_to_sid(struct sidtab *s,
 		}
 		sid = s->next_sid++;
 		if (context->len)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 		       "SELinux:  Context %s is not valid (left unmapped).\n",
 			       context->str);
-#else
-			;
-#endif
 		ret = sidtab_insert(s, sid, context);
 		if (ret)
 			s->next_sid--;
@@ -263,13 +259,9 @@ void sidtab_hash_eval(struct sidtab *h, char *tag)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s:  %d entries and %d/%d buckets used, longest "
 	       "chain length %d\n", tag, h->nel, slots_used, SIDTAB_SIZE,
 	       max_chain_len);
-#else
-	;
-#endif
 }
 
 void sidtab_destroy(struct sidtab *s)
