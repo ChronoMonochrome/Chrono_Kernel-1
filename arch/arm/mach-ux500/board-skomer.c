@@ -564,8 +564,12 @@ static void nts_touchkey_power(bool on)
 		regulator_disable(toutchkey_reg_2v2);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s is finished.(%s)\n",
 						__func__, (on) ? "on" : "off");
+#else
+	;
+#endif
 
 	return;
 
@@ -691,8 +695,12 @@ static int tc360_setup_power(struct device *dev, bool setup)
 			       ret);
 			goto err_set_vdd_voltage;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",
 		       __func__, min_uV, max_uV, ret);
+#else
+		;
+#endif
 
 		min_uV = max_uV = 3300000;
 		tc360_vled_regulator = regulator_get(dev, "v_led_3v3");
@@ -710,8 +718,12 @@ static int tc360_setup_power(struct device *dev, bool setup)
 			       max_uV, ret);
 			goto err_set_vled_voltage;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set vled to %d uV - %d uV (%d)\n",
 		       __func__, min_uV, max_uV, ret);
+#else
+		;
+#endif
 	} else {
 		regulator_force_disable(tc360_vdd_regulator);
 		regulator_put(tc360_vdd_regulator);
@@ -745,7 +757,11 @@ static void tc360_power(bool on)
 	else
 		ret = regulator_disable(tc360_vdd_regulator);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s (%d)\n", __func__, (on) ? "on" : "off", ret);
+#else
+	;
+#endif
 }
 
 static void tc360_led_power(bool on)
@@ -762,7 +778,11 @@ static void tc360_led_power(bool on)
 	else
 		ret = regulator_disable(tc360_vled_regulator);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s (%d)\n", __func__, (on) ? "on" : "off", ret);
+#else
+	;
+#endif
 }
 
 static void tc360_pin_configure(bool to_gpios)
@@ -2179,7 +2199,11 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -2668,43 +2692,83 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x0101:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.0\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_0;
 		break;
 	case 0x0102:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.1\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_1;
 		break;
 	case 0x0103:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.2\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_2;
 		break;
 	case 0x0104:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.3\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_3;
 		break;
 	case 0x0105:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.4\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_4;
 		break;
 	case 0x0106:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.5\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_5;
 		break;				
 	case 0x0107:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.6\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_6;
 		break;	
 	case 0x0108:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.7\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_7;
 		break;	
 	case 0x0109:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.8\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_8;
 		break;	
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_0;
 		break;
 	};

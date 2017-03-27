@@ -64,7 +64,7 @@
 #define FORCE_PRERECOVERY		0	/* enter pre recovery mode, if set */
 #define REBOOT_MODE			REBOOT_MODE_RECOVERY
 #define NATION_SEL			0	/* set nation specific configuration */
-#define DEBUG_LEVEL			1	/* set debug level, default 1 */
+#define DEBUG_LEVEL			0
 #define SET_DEFAULT_PARAM		0	/* set default param */
 #define BATT_CAPACITY			0	/* set initial battery capacity */
 #define FLASH_LOCK_STATUS		FLASH_UNLOCK
@@ -163,8 +163,8 @@ typedef struct {
     param_str_t param_str_list[MAX_STRING_PARAM];
 }param_file2_t;
 
-extern void (*sec_set_param_value) (int idx, void *value);
-extern void (*sec_get_param_value) (int idx, void *value);
+extern void set_param_value (int idx, void *value);
+extern void get_param_value (int idx, void *value);
 
 #if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN)
 extern int alarm_en_exit;

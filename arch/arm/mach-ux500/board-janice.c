@@ -487,7 +487,11 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_JANICE_R0_0, 0);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[TSP] GPIO output (%s)\n", (on) ? "on" : "off");
+#else
+	;
+#endif
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -510,7 +514,11 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxt224_register_callback\n");
+#else
+	;
+#endif
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -1799,7 +1807,11 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -1985,7 +1997,11 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev == JANICE_R0_2) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
+#else
+		;
+#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2004,7 +2020,11 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev >= JANICE_R0_3) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
+#else
+		;
+#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2175,35 +2195,67 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_0;
 		break;
 	case 8:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_1;
 		break;
 	case 9:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_2;
 		break;
 	case 10:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.3\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_3;
 		break;
 	case 11:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_4;
 		break;
 	case 12:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.5\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_5;
 		break;
 	case 13:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.6\n");
+#else
+		;
+#endif
 		system_rev = JANICE_R0_6;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		break;
 	};
 

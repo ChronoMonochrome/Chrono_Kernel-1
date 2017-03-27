@@ -296,16 +296,9 @@ static struct platform_suspend_ops ux500_suspend_ops = {
 
 static __init int ux500_suspend_init(void)
 {
-	if (cpu_is_u9500()) {
-		suspend_wakeups = (PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC) |
-				   PRCMU_WAKEUP(HSI0));
-		running_wakeups = (PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
-				   PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(HSI0));
-	} else {
-		suspend_wakeups = PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC);
-		running_wakeups = (PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
+	suspend_wakeups = PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC);
+	running_wakeups = (PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
 				   PRCMU_WAKEUP(ABB));
-	}
 
 	ux500_suspend_dbg_init();
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ,

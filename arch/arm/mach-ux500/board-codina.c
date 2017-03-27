@@ -820,7 +820,11 @@ static int __init bt404_ts_init(void)
 	bt404_ts_pdata.panel_type = (system_rev <= CODINA_TMO_R0_4) ?
 						GFF_PANEL : EX_CLEAR_PANEL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "bt404: initialize pins\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -2478,59 +2482,115 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_0;
 		break;
 	case 8:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_1;
 		break;
 	case 9:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_2;
 		break;
 	case 10:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.3\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_3;
 		break;
 	case 11:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_4;
 		break;
 	case 12:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.5\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_5;
 		break;
 	case 0x101:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board pre-Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_0;
 		break;
 	case 0x102:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_0_A;
 		break;
 	case 0x103:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_1;
 		break;
 	case 0x104:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_2;
 		break;
 	case 0x105:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_4;
 		break;
 	case 0x106:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.6\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_6;
 		break;
 	case 0x107:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.7\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_7;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		break;
 	};
 

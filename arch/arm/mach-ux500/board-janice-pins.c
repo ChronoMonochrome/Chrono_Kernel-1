@@ -417,7 +417,11 @@ static void __init sdmmc_pins_init(void)
 		janice_regulators[AB8500_LDO_AUX3].constraints.valid_ops_mask = 0;
 		janice_regulators[AB8500_LDO_AUX3].constraints.always_on = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SD Card I/F set for STM APE Trace\n");
+#else
+		;
+#endif
 
 	} else if (sec_debug_settings & SEC_DBG_STM_MODEM_OPT) {
 
@@ -432,7 +436,11 @@ static void __init sdmmc_pins_init(void)
 		janice_regulators[AB8500_LDO_AUX3].constraints.valid_ops_mask = 0;
 		janice_regulators[AB8500_LDO_AUX3].constraints.always_on = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SD Card I/F set for STM Modem Trace\n");
+#else
+		;
+#endif
 	} else if (sec_debug_settings & SEC_DBG_STM_FIDO_OPT) {
 
 		value = readl(prcm_gpiocr);
@@ -441,7 +449,11 @@ static void __init sdmmc_pins_init(void)
 
 		nmk_config_pins(janice_r0_0_fidobox_trace, ARRAY_SIZE(janice_r0_0_fidobox_trace));
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "XTI I/F set for STM Fidobox Trace\n");
+#else
+		;
+#endif
 	} else {
 		/* Set GPIO ALT to A */
 		value = readl(prcm_gpiocr);
