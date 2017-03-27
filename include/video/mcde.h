@@ -11,6 +11,10 @@
 #ifndef __MCDE__H__
 #define __MCDE__H__
 
+
+#include "nova_dsilink.h"
+
+
 /* Physical interface types */
 enum mcde_port_type {
 	MCDE_PORTTYPE_DSI = 0,
@@ -96,6 +100,11 @@ struct mcde_col_transform {
 	u16 offset[3];
 };
 
+struct mcde_oled_transform {
+	u16 matrix[3][3];
+	u16 offset[3];
+};
+
 /* DSI video mode */
 enum mcde_dsi_vid_mode {
 	NON_BURST_MODE_WITH_SYNC_EVENT = 0,
@@ -103,6 +112,11 @@ enum mcde_dsi_vid_mode {
 	NON_BURST_MODE_WITH_SYNC_EVENT_TVG_ENABLED = 1,
 	BURST_MODE_WITH_SYNC_EVENT  = 2,
 	BURST_MODE_WITH_SYNC_PULSE  = 3,
+};
+
+enum mcde_vsync_polarity {
+	VSYNC_ACTIVE_HIGH = 0,
+	VSYNC_ACTIVE_LOW = 1,
 };
 
 #define MCDE_PORT_DPI_NO_CLOCK_DIV	0
@@ -119,37 +133,21 @@ struct mcde_port {
 	enum mcde_port_type type;
 	enum mcde_port_mode mode;
 	enum mcde_port_pix_fmt pixel_format;
-	u8 refresh_rate;	/* display refresh rate given in Hz */
 	u8 ifc;
 	u8 link;
 	enum mcde_sync_src sync_src;
 	enum mcde_trig_method frame_trig;
+	enum mcde_sync_src requested_sync_src;
+	enum mcde_trig_method requested_frame_trig;
+	enum mcde_vsync_polarity vsync_polarity;
+	u8 vsync_clock_div;
+	/* duration is expressed as number of (STBCLK / VSPDIV) clock period */
+	u16 vsync_min_duration;
+	u16 vsync_max_duration;
 	bool update_auto_trig;
 	enum mcde_hdmi_sdtv_switch hdmi_sdtv_switch;
 	union {
-		struct {
-			u8 virt_id;
-			u8 num_data_lanes;
-			u8 ui;
-			bool clk_cont;
-			bool host_eot_gen;
-
-			/* DSI video mode operating modes */
-			enum mcde_dsi_vid_mode vid_mode;
-
-			/*
-			 * wakeup_time is the time to perform
-			 * LP->HS on D-PHY. Given in clock
-			 * cycles of byte clock frequency.
-			 */
-			u32 vid_wakeup_time;
-
-			u32 hs_freq;
-			u32 lp_freq;
-
-			/* DSI data lanes are swapped if true */
-			bool data_lanes_swap;
-		} dsi;
+		struct dsilink_phy dsi;
 		struct {
 			u8 bus_width;
 			bool tv_mode;
@@ -178,24 +176,33 @@ enum mcde_display_power_mode {
 	MCDE_DISPLAY_PM_ON      = 2, /* DCS normal mode, display on */
 };
 
+/* MCDE channel rotation */
+enum mcde_hw_rotation {
+	MCDE_HW_ROT_0 = 0,
+	MCDE_HW_ROT_90_CCW,
+	MCDE_HW_ROT_90_CW,
+	MCDE_HW_ROT_VERT_MIRROR
+};
+
 /* Display rotation */
 enum mcde_display_rotation {
 	MCDE_DISPLAY_ROT_0       = 0,
 	MCDE_DISPLAY_ROT_90_CCW  = 90,
-	MCDE_DISPLAY_ROT_180_CCW = 180,
+	MCDE_DISPLAY_ROT_180     = 180,
 	MCDE_DISPLAY_ROT_270_CCW = 270,
 	MCDE_DISPLAY_ROT_90_CW   = MCDE_DISPLAY_ROT_270_CCW,
-	MCDE_DISPLAY_ROT_180_CW  = MCDE_DISPLAY_ROT_180_CCW,
 	MCDE_DISPLAY_ROT_270_CW  = MCDE_DISPLAY_ROT_90_CCW,
 };
+
+u8 mcde_get_hw_alignment(void);
 
 /* REVIEW: Verify */
 #define MCDE_MIN_WIDTH  16
 #define MCDE_MIN_HEIGHT 16
 #define MCDE_MAX_WIDTH  2048
 #define MCDE_MAX_HEIGHT 2048
-#define MCDE_BUF_START_ALIGMENT 8
-#define MCDE_BUF_LINE_ALIGMENT 8
+#define MCDE_BUF_START_ALIGMENT mcde_get_hw_alignment()
+#define MCDE_BUF_LINE_ALIGMENT mcde_get_hw_alignment()
 
 /* Tv-out defines */
 #define MCDE_CONFIG_TVOUT_BACKGROUND_LUMINANCE		0x83
@@ -220,19 +227,17 @@ struct mcde_video_mode {
 	u32 vbp;	/* vertical back porch: upper margin (excl. vsync) */
 	u32 vfp;	/* vertical front porch: lower margin (excl. vsync) */
 	u32 vsw;	/* vertical sync width*/
+	/* +445681 display padding */
+	u32 xres_padding;
+	u32 yres_padding;
+	/* -445681 display padding */
 	bool interlaced;
 	bool force_update; /* when switching between hdmi and sdtv */
 };
 
-struct mcde_rectangle {
-	u16 x;
-	u16 y;
-	u16 w;
-	u16 h;
-};
-
 struct mcde_overlay_info {
 	u32 paddr;
+	void *kaddr;
 	u32 *vaddr;
 	u16 stride; /* buffer line len in bytes */
 	enum mcde_ovly_pix_fmt fmt;
@@ -244,7 +249,6 @@ struct mcde_overlay_info {
 	u16 dst_z;
 	u16 w;
 	u16 h;
-	struct mcde_rectangle dirty;
 };
 
 struct mcde_overlay {
@@ -280,29 +284,29 @@ void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
 					enum   mcde_col_convert    convert);
 int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 					struct mcde_video_mode *vmode);
-/* TODO: Remove rotbuf* parameters when ESRAM allocator is implemented*/
 int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
-					enum mcde_display_rotation rotation);
+					enum mcde_hw_rotation hw_rot);
 int mcde_chnl_set_power_mode(struct mcde_chnl_state *chnl,
 				enum mcde_display_power_mode power_mode);
 
 int mcde_chnl_apply(struct mcde_chnl_state *chnl);
 int mcde_chnl_update(struct mcde_chnl_state *chnl,
-			struct mcde_rectangle *update_area,
 			bool tripple_buffer);
+int mcde_chnl_wait_for_next_vsync(struct mcde_chnl_state *chnl, s64 *timestamp);
 void mcde_chnl_put(struct mcde_chnl_state *chnl);
 
 void mcde_chnl_stop_flow(struct mcde_chnl_state *chnl);
 
 void mcde_chnl_enable(struct mcde_chnl_state *chnl);
 void mcde_chnl_disable(struct mcde_chnl_state *chnl);
+void mcde_formatter_enable(struct mcde_chnl_state *chnl);
 
 /* MCDE overlay */
 struct mcde_ovly_state;
 
 struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl);
 void mcde_ovly_set_source_buf(struct mcde_ovly_state *ovly,
-	u32 paddr);
+	u32 paddr, void *kaddr);
 void mcde_ovly_set_source_info(struct mcde_ovly_state *ovly,
 	u32 stride, enum mcde_ovly_pix_fmt pix_fmt);
 void mcde_ovly_set_source_area(struct mcde_ovly_state *ovly,
@@ -356,7 +360,7 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly);
 #define DCS_CMD_WRITE_START           0x2C
 
 #define MCDE_MAX_DCS_READ   4
-#define MCDE_MAX_DSI_DIRECT_CMD_WRITE 15
+#define MCDE_MAX_DSI_DIRECT_CMD_WRITE 160 /* Smallest FIFO in MCDE */
 
 int mcde_dsi_generic_write(struct mcde_chnl_state *chnl, u8* para, int len);
 int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl,
@@ -364,12 +368,35 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl,
 int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 		u8 cmd, u32 *data, int *len);
 int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl);
+int mcde_dsi_turn_on_peripheral(struct mcde_chnl_state *chnl);
+int mcde_dsi_shut_down_peripheral(struct mcde_chnl_state *chnl);
 
 /* MCDE */
 
 /* Driver data */
 #define MCDE_IRQ     "MCDE IRQ"
 #define MCDE_IO_AREA "MCDE I/O Area"
+
+/*
+ * Default pixelfetch watermark levels per overlay.
+ * Values are in pixels and 2 basic rules should be followed:
+ * 1. The value should be at least 256 bits.
+ * 2. The sum of all active overlays pixelfetch watermark level multiplied with
+ *    bits per pixel, should be lower than the size of input_fifo_size in bits.
+ * 3. The value should be a multiple of a line (256 bits).
+ */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL0 48		/* LCD 32 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL1 64		/* LCD 16 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL2 128	/* HDMI 32 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL3 192	/* HDMI 16 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL4 16
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL5 16
+
+struct mcde_opp_requirements {
+	u8 num_rot_channels;
+	u8 num_overlays;
+	u32 total_bw;
+};
 
 struct mcde_platform_data {
 	/* DPI */
@@ -380,6 +407,8 @@ struct mcde_platform_data {
 	u32 rotbuf1;
 	u32 rotbuf2;
 	u32 rotbufsize;
+
+	u32 pixelfetchwtrmrk[6];
 
 	const char *regulator_vana_id;
 	const char *regulator_mcde_epod_id;
@@ -392,6 +421,8 @@ struct mcde_platform_data {
 	int (*platform_set_clocks)(void);
 	int (*platform_enable_dsipll)(void);
 	int (*platform_disable_dsipll)(void);
+	void (*update_opp)(struct device *dev,
+					struct mcde_opp_requirements *reqs);
 };
 
 int mcde_init(void);

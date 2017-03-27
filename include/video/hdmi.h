@@ -104,6 +104,7 @@ enum hdmi_event {
 	HDMI_EVENT_CECTXERR =		0x10,
 	HDMI_EVENT_WAKEUP =		0x20,
 	HDMI_EVENT_CECTX =		0x40,
+	HDMI_EVENT_CCIERR =		0x80, /* 5V short circuit */
 };
 
 enum hdmi_hdcp_auth_type {

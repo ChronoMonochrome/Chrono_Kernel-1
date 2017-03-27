@@ -8,9 +8,7 @@
 #ifndef __LINUX_MFD_STMPE_H
 #define __LINUX_MFD_STMPE_H
 
-#include <linux/mutex.h>
-
-struct device;
+#include <linux/device.h>
 
 enum stmpe_block {
 	STMPE_BLOCK_GPIO	= 1 << 0,

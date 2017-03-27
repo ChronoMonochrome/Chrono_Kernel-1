@@ -1,5 +1,5 @@
 /*
- * Copyright ST-Ericsson 2012.
+ * Copyright ST-Ericsson 2009.
  *
  * Author: Arun Murthy <arun.murthy@stericsson.com>
  * Licensed under GPLv2.
@@ -9,7 +9,6 @@
 #define _AB8500_BM_H
 
 #include <linux/kernel.h>
-#include <linux/mfd/abx500.h>
 
 /*
  * System control 2 register offsets.
@@ -23,6 +22,8 @@
  * Bank : 0x5
  */
 #define AB8500_USB_LINE_STAT_REG	0x80
+#define AB8500_USB_LINE_CTRL2_REG	0x82
+#define AB8500_USB_LINK1_STAT_REG	0x94
 
 /*
  * Charger / status register offfsets
@@ -68,6 +69,7 @@
 #define AB8500_USBCH_CTRL1_REG		0xC0
 #define AB8500_USBCH_CTRL2_REG		0xC1
 #define AB8500_USBCH_IPT_CRNTLVL_REG	0xC2
+#define AB8500_USBCH_OPT_CRNTLVL_REG	0xF5
 
 /*
  * Gas Gauge register offsets
@@ -221,16 +223,38 @@
 
 /* RTC constants */
 #define RTC_BUP_CH_ENA			0x10
+#define RTC_BUP_CH_OFF_VALID	0x20
 
 /* BatCtrl Current Source Constants */
 #define BAT_CTRL_7U_ENA			0x01
 #define BAT_CTRL_20U_ENA		0x02
+#define BAT_CTRL_18U_ENA		0x01
+#define BAT_CTRL_16U_ENA		0x02
 #define BAT_CTRL_CMP_ENA		0x04
 #define FORCE_BAT_CTRL_CMP_HIGH		0x08
 #define BAT_CTRL_PULL_UP_ENA		0x10
 
 /* Battery type */
 #define BATTERY_UNKNOWN			00
+
+/* Registers for pcut feature in ab8505 and ab9540 */
+#define AB8505_RTC_PCUT_CTL_STATUS_REG	0x12
+#define AB8505_RTC_PCUT_TIME_REG	0x13
+#define AB8505_RTC_PCUT_MAX_TIME_REG	0x14
+#define AB8505_RTC_PCUT_RESTART_REG	0x16
+#define AB8505_RTC_PCUT_DEBOUNCE_REG	0x17
+
+/*
+ * ADC for the battery thermistor.
+ * When using the ADC_THERM_BATCTRL the battery ID resistor is combined with
+ * a NTC resistor to both identify the battery and to measure its temperature.
+ * Different phone manufactures uses different techniques to both identify the
+ * battery and to read its temperature.
+ */
+enum adc_therm {
+	ADC_THERM_BATCTRL,
+	ADC_THERM_BATTEMP,
+};
 
 /**
  * struct res_to_temp - defines one point in a temp to res curve. To
@@ -253,6 +277,26 @@ struct res_to_temp {
 struct batres_vs_temp {
 	int temp;
 	int resist;
+};
+
+/**
+ * struct v_to_cap - Table for translating voltage to capacity
+ * @voltage:		Voltage in mV
+ * @capacity:		Capacity in percent
+ */
+struct v_to_cap {
+	int voltage;
+	int capacity;
+};
+
+/**
+ * struct v_to_res - Table for translating voltage to Resistance
+ * @voltage:		Voltage in mV
+ * @resistance:	Battery resistance
+ */
+struct v_to_res {
+	int voltage;
+	int resistance;
 };
 
 /* Forward declaration */
@@ -313,6 +357,89 @@ struct ab8500_maxim_parameters {
 };
 
 /**
+ * struct battery_type - different batteries supported
+ * @name:			battery technology
+ * @resis_high:			battery upper resistance limit
+ * @resis_low:			battery lower resistance limit
+ * @charge_full_design:		Maximum battery capacity in mAh
+ * @nominal_voltage:		Nominal voltage of the battery in mV
+ * @termination_vol:		max voltage upto which battery can be charged
+ * @termination_curr		battery charging termination current in mA
+ * @recharge_cap		battery capacity limit that will trigger a new
+ * @termination_curr_1st:	1st battery charging termination current in mA
+				(UI Full charging)
+ * @termination_curr_2nd:	2nd battery charging termination current in mA
+ * @recharge_vol		battery voltage limit that will trigger a new
+ *				full charging cycle in the case where maintenan-
+ *				-ce charging has been disabled
+ * @normal_cur_lvl:		charger current in normal state in mA
+ * @normal_vol_lvl:		charger voltage in normal state in mV
+ * @maint_a_cur_lvl:		charger current in maintenance A state in mA
+ * @maint_a_vol_lvl:		charger voltage in maintenance A state in mV
+ * @maint_a_chg_timer_h:	charge time in maintenance A state
+ * @maint_b_cur_lvl:		charger current in maintenance B state in mA
+ * @maint_b_vol_lvl:		charger voltage in maintenance B state in mV
+ * @maint_b_chg_timer_h:	charge time in maintenance B state
+ * @low_high_cur_lvl:		charger current in temp low/high state in mA
+ * @low_high_vol_lvl:		charger voltage in temp low/high state in mV'
+ * @battery_resistance:		battery inner resistance in mOhm.
+ * @n_r_t_tbl_elements:		number of elements in r_to_t_tbl
+ * @r_to_t_tbl:			table containing resistance to temp points
+ * @n_v_cap_tbl_elements:	number of elements in v_to_cap_tbl
+ * @v_to_cap_tbl:		Voltage to capacity (in %) table
+ * @n_batres_tbl_elements	number of elements in the batres_tbl
+ * @batres_tbl			battery internal resistance vs temperature table
+ */
+struct battery_type {
+	int name;
+	int resis_high;
+	int resis_low;
+	int charge_full_design;
+	int nominal_voltage;
+	int termination_vol;
+#ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+	int termination_curr_1st;
+	int termination_curr_2nd;
+	int recharge_vol;
+#else
+	int termination_curr;
+	int recharge_cap;
+#endif
+	int normal_cur_lvl;
+	int normal_vol_lvl;
+	int maint_a_cur_lvl;
+	int maint_a_vol_lvl;
+	int maint_a_chg_timer_h;
+	int maint_b_cur_lvl;
+	int maint_b_vol_lvl;
+	int maint_b_chg_timer_h;
+	int low_high_cur_lvl;
+	int low_high_vol_lvl;
+	int battery_resistance;
+#ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+	int line_impedance;
+	int battery_resistance_for_charging;
+#endif
+	int n_temp_tbl_elements;
+	struct res_to_temp *r_to_t_tbl;
+	int n_v_cap_tbl_elements;
+	struct v_to_cap *v_to_cap_tbl;
+#ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+	int n_v_res_tbl_elements;
+	struct v_to_res *v_to_res_tbl;
+	int n_v_chg_res_tbl_elements;
+	struct v_to_res *v_to_chg_res_tbl;
+	unsigned long timeout_chargeoff_time ;
+	unsigned long initial_timeout_time ;
+	unsigned long subsequent_timeout_time ;
+	unsigned long error_charge_stoptime;
+	int over_voltage_threshold ;
+#endif
+	int n_batres_tbl_elements;
+	struct batres_vs_temp *batres_tbl;
+};
+
+/**
  * struct ab8500_bm_capacity_levels - ab8500 capacity level data
  * @critical:		critical capacity level in percent
  * @low:		low capacity level in percent
@@ -340,6 +467,10 @@ struct ab8500_bm_charger_parameters {
 	int usb_curr_max;
 	int ac_volt_max;
 	int ac_curr_max;
+#ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+	int ac_volt_max_recovery;
+	int usb_volt_max_recovery;
+#endif
 };
 
 /**
@@ -355,6 +486,7 @@ struct ab8500_bm_charger_parameters {
  * @bkup_bat_v		voltage which we charge the backup battery with
  * @bkup_bat_i		current which we charge the backup battery with
  * @no_maintenance	indicates that maintenance charging is disabled
+ * @capacity_scaling	indicates whether capacity scaling is to be used
  * @adc_therm		placement of thermistor, batctrl or battemp adc
  * @chg_unknown_bat	flag to enable charging of unknown batteries
  * @enable_overshoot	flag to enable VBAT overshoot control
@@ -378,14 +510,23 @@ struct ab8500_bm_data {
 	int temp_over;
 	int temp_interval_chg;
 	int temp_interval_nochg;
+#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+	int ta_chg_current;
+	int ta_chg_current_input;
+	int ta_chg_voltage;
+	int usb_chg_current;
+	int usb_chg_current_input;
+	int usb_chg_voltage;
+#endif
 	int main_safety_tmr_h;
 	int usb_safety_tmr_h;
 	int bkup_bat_v;
 	int bkup_bat_i;
 	bool no_maintenance;
+	bool capacity_scaling;
 	bool chg_unknown_bat;
 	bool enable_overshoot;
-	enum abx500_adc_therm adc_therm;
+	enum adc_therm adc_therm;
 	int fg_res;
 	int n_btypes;
 	int batt_id;
@@ -395,15 +536,25 @@ struct ab8500_bm_data {
 	int gnd_lift_resistance;
 	const struct ab8500_maxim_parameters *maxi;
 	const struct ab8500_bm_capacity_levels *cap_levels;
-	const struct abx500_battery_type *bat_type;
+	const struct battery_type *bat_type;
 	const struct ab8500_bm_charger_parameters *chg_params;
 	const struct ab8500_fg_parameters *fg_params;
+#ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+	int charge_state;
+	int n_temp_tbl_elements;
+	int batt_res;
+	int low_temp_hysteresis;
+	struct res_to_temp *pcb_ntc;
+	int use_safety_timer ;
+#endif
 };
 
 struct ab8500_charger_platform_data {
 	char **supplied_to;
 	size_t num_supplicants;
 	bool autopower_cfg;
+	bool ac_enabled;
+	bool usb_enabled;
 };
 
 struct ab8500_btemp_platform_data {
@@ -423,7 +574,7 @@ struct ab8500_chargalg_platform_data {
 struct ab8500_btemp;
 struct ab8500_gpadc;
 struct ab8500_fg;
-#ifdef CONFIG_AB8500_BM
+#if defined(CONFIG_AB8500_BM) || defined(CONFIG_ABB_BM)
 void ab8500_fg_reinit(void);
 void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
 struct ab8500_btemp *ab8500_btemp_get(void);
@@ -432,31 +583,27 @@ struct ab8500_fg *ab8500_fg_get(void);
 int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev);
 int ab8500_fg_inst_curr_start(struct ab8500_fg *di);
 int ab8500_fg_inst_curr_finalize(struct ab8500_fg *di, int *res);
+int ab8500_fg_inst_curr_started(struct ab8500_fg *di);
 int ab8500_fg_inst_curr_done(struct ab8500_fg *di);
-
+struct ab8500_fg *ab8500_fg_get(void);
 #else
-int ab8500_fg_inst_curr_done(struct ab8500_fg *di)
-{
-}
-static void ab8500_fg_reinit(void)
-{
-}
-static void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA)
-{
-}
-static struct ab8500_btemp *ab8500_btemp_get(void)
-{
-	return NULL;
-}
-static int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp)
+#ifdef CONFIG_BATTERY_SAMSUNG
+struct ab8500_fuelgauge_info;
+int ab8500_fg_inst_curr_blocking(struct ab8500_fuelgauge_info *di);
+int ab8500_fg_inst_curr_start(struct ab8500_fuelgauge_info *di);
+int ab8500_fg_inst_curr_finalize(struct ab8500_fuelgauge_info *di, int *res);
+int ab8500_fg_inst_curr_started(struct ab8500_fuelgauge_info *di);
+int ab8500_fg_inst_curr_done(struct ab8500_fuelgauge_info *di);
+#else
+static inline int ab8500_fg_inst_curr_started(struct ab8500_fg *di)
 {
 	return 0;
 }
-struct ab8500_fg *ab8500_fg_get(void)
+static inline int ab8500_fg_inst_curr_done(struct ab8500_fg *di)
 {
-	return NULL;
+	return 0;
 }
-static int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev)
+static inline int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev)
 {
 	return -ENODEV;
 }
@@ -470,6 +617,24 @@ static inline int ab8500_fg_inst_curr_finalize(struct ab8500_fg *di, int *res)
 {
 	return -ENODEV;
 }
-
+#endif
+static inline void ab8500_fg_reinit(void)
+{
+}
+static inline void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA)
+{
+}
+static inline struct ab8500_btemp *ab8500_btemp_get(void)
+{
+	return NULL;
+}
+static inline int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp)
+{
+	return 0;
+}
+static inline struct ab8500_fg *ab8500_fg_get(void)
+{
+	return NULL;
+}
 #endif
 #endif /* _AB8500_BM_H */

@@ -10,6 +10,7 @@
 #define __MODEM_H__
 
 #include <linux/device.h>
+#include <linux/notifier.h>
 
 struct modem_dev;
 
