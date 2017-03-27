@@ -250,12 +250,12 @@ load_som_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	current->mm->start_stack = bprm->p;
 
 #if 0
-;
-;
-;
-;
-;
-;
+	printk("(start_brk) %08lx\n" , (unsigned long) current->mm->start_brk);
+	printk("(end_code) %08lx\n" , (unsigned long) current->mm->end_code);
+	printk("(start_code) %08lx\n" , (unsigned long) current->mm->start_code);
+	printk("(end_data) %08lx\n" , (unsigned long) current->mm->end_data);
+	printk("(start_stack) %08lx\n" , (unsigned long) current->mm->start_stack);
+	printk("(brk) %08lx\n" , (unsigned long) current->mm->brk);
 #endif
 
 	map_hpux_gateway_page(current,current->mm);

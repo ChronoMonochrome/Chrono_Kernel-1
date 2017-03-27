@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * AppArmor security module
  *
@@ -18,7 +21,6 @@
 #include <linux/vmalloc.h>
 
 #include "include/audit.h"
-#include "include/apparmor.h"
 
 
 /**
@@ -65,13 +67,15 @@ void aa_info_message(const char *str)
 {
 	if (audit_enabled) {
 		struct common_audit_data sa;
-		struct apparmor_audit_data aad = {0,};
 		COMMON_AUDIT_DATA_INIT(&sa, NONE);
-		sa.aad = &aad;
-		aad.info = str;
+		sa.aad.info = str;
 		aa_audit_msg(AUDIT_APPARMOR_STATUS, &sa, NULL);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AppArmor: %s\n", str);
+#else
+	;
+#endif
 }
 
 /**

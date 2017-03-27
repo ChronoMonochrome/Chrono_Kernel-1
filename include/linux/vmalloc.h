@@ -120,7 +120,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
 #endif
 
 /* Allocate/destroy a 'vmalloc' VM area. */
-extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
+extern struct vm_struct *alloc_vm_area(size_t size);
 extern void free_vm_area(struct vm_struct *area);
 
 /* for /dev/kmem */

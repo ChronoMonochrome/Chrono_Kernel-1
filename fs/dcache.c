@@ -23,7 +23,7 @@
 #include <linux/init.h>
 #include <linux/hash.h>
 #include <linux/cache.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/mount.h>
 #include <linux/file.h>
 #include <asm/uaccess.h>
@@ -141,29 +141,18 @@ int proc_nr_dentry(ctl_table *table, int write, void __user *buffer,
  * Compare 2 name strings, return 0 if they match, otherwise non-zero.
  * The strings are both count bytes long, and count is non-zero.
  */
-#ifdef CONFIG_DCACHE_WORD_ACCESS
-
-#include <asm/word-at-a-time.h>
-/*
- * NOTE! 'cs' and 'scount' come from a dentry, so it has a
- * aligned allocation for this particular component. We don't
- * strictly need the load_unaligned_zeropad() safety, but it
- * doesn't hurt either.
- *
- * In contrast, 'ct' and 'tcount' can be from a pathname, and do
- * need the careful unaligned handling.
- */
 static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 				const unsigned char *ct, size_t tcount)
 {
+#ifdef CONFIG_DCACHE_WORD_ACCESS
 	unsigned long a,b,mask;
 
 	if (unlikely(scount != tcount))
 		return 1;
 
 	for (;;) {
-		a = load_unaligned_zeropad(cs);
-		b = load_unaligned_zeropad(ct);
+		a = *(unsigned long *)cs;
+		b = *(unsigned long *)ct;
 		if (tcount < sizeof(unsigned long))
 			break;
 		if (unlikely(a != b))
@@ -176,13 +165,7 @@ static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 	}
 	mask = ~(~0ul << tcount*8);
 	return unlikely(!!((a ^ b) & mask));
-}
-
 #else
-
-static inline int dentry_cmp(const unsigned char *cs, size_t scount,
-				const unsigned char *ct, size_t tcount)
-{
 	if (scount != tcount)
 		return 1;
 
@@ -194,9 +177,8 @@ static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 		tcount--;
 	} while (tcount);
 	return 0;
-}
-
 #endif
+}
 
 static void __d_free(struct rcu_head *head)
 {
@@ -935,17 +917,17 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
 			__d_shrink(dentry);
 
 			if (dentry->d_count != 0) {
-//				printk(KERN_ERR
-//				       "BUG: Dentry %p{i=%lx,n=%s}"
-//				       " still in use (%d)"
-//				       " [unmount of %s %s]\n",
-//				       dentry,
-//				       dentry->d_inode ?
-//				       dentry->d_inode->i_ino : 0UL,
-//				       dentry->d_name.name,
-//				       dentry->d_count,
-//				       dentry->d_sb->s_type->name,
-;
+				printk(KERN_ERR
+				       "BUG: Dentry %p{i=%lx,n=%s}"
+				       " still in use (%d)"
+				       " [unmount of %s %s]\n",
+				       dentry,
+				       dentry->d_inode ?
+				       dentry->d_inode->i_ino : 0UL,
+				       dentry->d_name.name,
+				       dentry->d_count,
+				       dentry->d_sb->s_type->name,
+				       dentry->d_sb->s_id);
 				BUG();
 			}
 
@@ -2222,7 +2204,7 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
 static void __d_move(struct dentry * dentry, struct dentry * target)
 {
 	if (!dentry->d_inode)
-;
+		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
 
 	BUG_ON(d_ancestor(dentry, target));
 	BUG_ON(d_ancestor(target, dentry));

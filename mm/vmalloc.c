@@ -445,13 +445,9 @@ overflow:
 		goto retry;
 	}
 	if (printk_ratelimit())
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"vmap allocation for size %lu failed: "
 			"use vmalloc=<size> to increase size.\n", size);
-#else
-		;
-#endif
 	kfree(va);
 	return ERR_PTR(-EBUSY);
 }
@@ -2181,30 +2177,23 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
 
 static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
 {
-	pte_t ***p = data;
-
-	if (p) {
-		*(*p) = pte;
-		(*p)++;
-	}
+	/* apply_to_page_range() does all the hard work. */
 	return 0;
 }
 
 /**
  *	alloc_vm_area - allocate a range of kernel address space
  *	@size:		size of the area
- *	@ptes:		returns the PTEs for the address space
  *
  *	Returns:	NULL on failure, vm_struct on success
  *
  *	This function reserves a range of kernel address space, and
  *	allocates pagetables to map that range.  No actual mappings
- *	are created.
- *
- *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
- *	allocated for the VM area are returned.
+ *	are created.  If the kernel address space is not shared
+ *	between processes, it syncs the pagetable across all
+ *	processes.
  */
-struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
+struct vm_struct *alloc_vm_area(size_t size)
 {
 	struct vm_struct *area;
 
@@ -2218,10 +2207,18 @@ struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
 	 * of kernel virtual address space and mapped into init_mm.
 	 */
 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
-				size, f, ptes ? &ptes : NULL)) {
+				area->size, f, NULL)) {
 		free_vm_area(area);
 		return NULL;
 	}
+
+	/*
+	 * If the allocated address space is passed to a hypercall
+	 * before being used then we cannot rely on a page fault to
+	 * trigger an update of the page tables.  So sync all the page
+	 * tables here.
+	 */
+	vmalloc_sync_all();
 
 	return area;
 }

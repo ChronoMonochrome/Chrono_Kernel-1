@@ -357,6 +357,12 @@ static int blkdev_readpage(struct file * file, struct page * page)
 	return block_read_full_page(page, blkdev_get_block);
 }
 
+static int blkdev_readpages(struct file *file, struct address_space *mapping,
+			struct list_head *pages, unsigned nr_pages)
+{
+	return mpage_readpages(mapping, pages, nr_pages, blkdev_get_block);
+}
+
 static int blkdev_write_begin(struct file *file, struct address_space *mapping,
 			loff_t pos, unsigned len, unsigned flags,
 			struct page **pagep, void **fsdata)
@@ -998,8 +1004,8 @@ static void flush_disk(struct block_device *bdev, bool kill_dirty)
 
 		if (bdev->bd_disk)
 			disk_name(bdev->bd_disk, 0, name);
-//		printk(KERN_WARNING "VFS: busy inodes on changed media or "
-;
+		printk(KERN_WARNING "VFS: busy inodes on changed media or "
+		       "resized disk %s\n", name);
 	}
 
 	if (!bdev->bd_disk)
@@ -1026,9 +1032,9 @@ void check_disk_size_change(struct gendisk *disk, struct block_device *bdev)
 		char name[BDEVNAME_SIZE];
 
 		disk_name(disk, 0, name);
-//		printk(KERN_INFO
-//		       "%s: detected capacity change from %lld to %lld\n",
-;
+		printk(KERN_INFO
+		       "%s: detected capacity change from %lld to %lld\n",
+		       name, bdev_size, disk_size);
 		i_size_write(bdev->bd_inode, disk_size);
 		flush_disk(bdev, false);
 	}
@@ -1623,6 +1629,7 @@ static int blkdev_releasepage(struct page *page, gfp_t wait)
 
 static const struct address_space_operations def_blk_aops = {
 	.readpage	= blkdev_readpage,
+	.readpages	= blkdev_readpages,
 	.writepage	= blkdev_writepage,
 	.write_begin	= blkdev_write_begin,
 	.write_end	= blkdev_write_end,

@@ -225,7 +225,9 @@ static ssize_t max_ratio_store(struct device *dev,
 }
 BDI_SHOW(max_ratio, bdi->max_ratio)
 
+#ifndef __ATTR_RW
 #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
+#endif
 
 static struct device_attribute bdi_dev_attrs[] = {
 	__ATTR_RW(read_ahead_kb),
@@ -406,8 +408,9 @@ static int bdi_forker_thread(void *ptr)
 		/*
 		 * In the following loop we are going to check whether we have
 		 * some work to do without any synchronization with tasks
-		 * waking us up to do work for them. Set the task state here
-		 * so that we don't miss wakeups after verifying conditions.
+		 * waking us up to do work for them. So we have to set task
+		 * state already here so that we don't miss wakeups coming
+		 * after we verify some condition.
 		 */
 		set_current_state(TASK_INTERRUPTIBLE);
 
