@@ -66,7 +66,7 @@ static struct usb_class {
 	struct class *class;
 } *usb_class;
 
-static char *usb_devnode(struct device *dev, mode_t *mode)
+static char *usb_devnode(struct device *dev, umode_t *mode)
 {
 	struct usb_class_driver *drv;
 
@@ -95,7 +95,7 @@ static int init_usb_class(void)
 	usb_class->class = class_create(THIS_MODULE, "usb");
 	if (IS_ERR(usb_class->class)) {
 		result = IS_ERR(usb_class->class);
-		printk(KERN_ERR "class_create failed for usb devices\n");
+;
 		kfree(usb_class);
 		usb_class = NULL;
 		goto exit;
@@ -126,8 +126,8 @@ int usb_major_init(void)
 
 	error = register_chrdev(USB_MAJOR, "usb", &usb_fops);
 	if (error)
-		printk(KERN_ERR "Unable to get major %d for usb devices\n",
-		       USB_MAJOR);
+//		printk(KERN_ERR "Unable to get major %d for usb devices\n",
+;
 
 	return error;
 }

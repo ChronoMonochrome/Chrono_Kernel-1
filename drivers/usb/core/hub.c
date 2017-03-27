@@ -24,6 +24,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/freezer.h>
+#include <linux/random.h>
 
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
@@ -118,7 +119,7 @@ static DECLARE_WAIT_QUEUE_HEAD(khubd_wait);
 static struct task_struct *khubd_task;
 
 /* cycle leds on hubs that aren't blinking for attention */
-static int blinkenlights = 0;
+static bool blinkenlights = 0;
 module_param (blinkenlights, bool, S_IRUGO);
 MODULE_PARM_DESC (blinkenlights, "true to cycle leds on hubs");
 
@@ -147,12 +148,12 @@ MODULE_PARM_DESC(initial_descriptor_timeout,
  * otherwise the new scheme is used.  If that fails and "use_both_schemes"
  * is set, then the driver will make another attempt, using the other scheme.
  */
-static int old_scheme_first = 0;
+static bool old_scheme_first = 0;
 module_param(old_scheme_first, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(old_scheme_first,
 		 "start with the old device initialization scheme");
 
-static int use_both_schemes = 1;
+static bool use_both_schemes = 1;
 module_param(use_both_schemes, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(use_both_schemes,
 		"try the other device initialization scheme if the "
@@ -478,6 +479,15 @@ resubmit:
 static inline int
 hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
 {
+	/* Need to clear both directions for control ep */
+	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
+			USB_ENDPOINT_XFER_CONTROL) {
+		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
+				devinfo ^ 0x8000, tt, NULL, 0, 1000);
+		if (status)
+			return status;
+	}
 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
 			       tt, NULL, 0, 1000);
@@ -497,12 +507,15 @@ static void hub_tt_work(struct work_struct *work)
 	int			limit = 100;
 
 	spin_lock_irqsave (&hub->tt.lock, flags);
-	while (--limit && !list_empty (&hub->tt.clear_list)) {
+	while (!list_empty(&hub->tt.clear_list)) {
 		struct list_head	*next;
 		struct usb_tt_clear	*clear;
 		struct usb_device	*hdev = hub->hdev;
 		const struct hc_driver	*drv;
 		int			status;
+
+		if (!hub->quiescing && --limit < 0)
+			break;
 
 		next = hub->tt.clear_list.next;
 		clear = list_entry (next, struct usb_tt_clear, clear_list);
@@ -967,7 +980,7 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
 	if (hub->has_indicators)
 		cancel_delayed_work_sync(&hub->leds);
 	if (hub->tt.hub)
-		cancel_work_sync(&hub->tt.clear_work);
+		flush_work_sync(&hub->tt.clear_work);
 }
 
 /* caller has locked the hub device */
@@ -1736,7 +1749,7 @@ static void show_string(struct usb_device *udev, char *id, char *string)
 {
 	if (!string)
 		return;
-	dev_printk(KERN_INFO, &udev->dev, "%s: %s\n", id, string);
+;
 }
 
 static void announce_device(struct usb_device *udev)
@@ -2034,6 +2047,14 @@ int usb_new_device(struct usb_device *udev)
 	/* Tell the world! */
 	announce_device(udev);
 
+	if (udev->serial)
+		add_device_randomness(udev->serial, strlen(udev->serial));
+	if (udev->product)
+		add_device_randomness(udev->product, strlen(udev->product));
+	if (udev->manufacturer)
+		add_device_randomness(udev->manufacturer,
+				      strlen(udev->manufacturer));
+
 	device_enable_async_suspend(&udev->dev);
 	/* Register the device.  The device driver is responsible
 	 * for configuring the device and invoking the add-device
@@ -2165,12 +2186,12 @@ static unsigned hub_is_wusb(struct usb_hub *hub)
 #define SET_ADDRESS_TRIES	2
 #define GET_DESCRIPTOR_TRIES	2
 #define SET_CONFIG_TRIES	(2 * (use_both_schemes + 1))
-#define USE_NEW_SCHEME(i)	((i) / 2 == old_scheme_first)
+#define USE_NEW_SCHEME(i)	((i) / 2 == (int)old_scheme_first)
 
 #define HUB_ROOT_RESET_TIME	50	/* times are in msec */
 #define HUB_SHORT_RESET_TIME	10
 #define HUB_LONG_RESET_TIME	200
-#define HUB_RESET_TIMEOUT	500
+#define HUB_RESET_TIMEOUT	800
 
 static int hub_port_wait_reset(struct usb_hub *hub, int port1,
 				struct usb_device *udev, unsigned int delay)
@@ -2481,7 +2502,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 			dev_dbg(&udev->dev, "won't remote wakeup, status %d\n",
 					status);
 			/* bail if autosuspend is requested */
-			if (msg.event & PM_EVENT_AUTO)
+			if (PMSG_IS_AUTO(msg))
 				return status;
 		}
 	}
@@ -2521,12 +2542,12 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 				USB_CTRL_SET_TIMEOUT);
 
 		/* System sleep transitions should never fail */
-		if (!(msg.event & PM_EVENT_AUTO))
+		if (!PMSG_IS_AUTO(msg))
 			status = 0;
 	} else {
 		/* device has up to 10 msec to fully suspend */
 		dev_dbg(&udev->dev, "usb %ssuspend\n",
-				(msg.event & PM_EVENT_AUTO ? "auto-" : ""));
+				(PMSG_IS_AUTO(msg) ? "auto-" : ""));
 		usb_set_device_state(udev, USB_STATE_SUSPENDED);
 		msleep(10);
 	}
@@ -2548,7 +2569,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 static int finish_port_resume(struct usb_device *udev)
 {
 	int	status = 0;
-	u16	devstatus;
+	u16	devstatus = 0;
 
 	/* caller owns the udev device lock */
 	dev_dbg(&udev->dev, "%s\n",
@@ -2593,7 +2614,13 @@ static int finish_port_resume(struct usb_device *udev)
 	if (status) {
 		dev_dbg(&udev->dev, "gone after usb resume? status %d\n",
 				status);
-	} else if (udev->actconfig) {
+	/*
+	 * There are a few quirky devices which violate the standard
+	 * by claiming to have remote wakeup enabled after a reset,
+	 * which crash if the feature is cleared, hence check for
+	 * udev->reset_resume
+	 */
+	} else if (udev->actconfig && !udev->reset_resume) {
 		le16_to_cpus(&devstatus);
 		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
 			status = usb_control_msg(udev,
@@ -2652,7 +2679,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	struct usb_hub	*hub = hdev_to_hub(udev->parent);
 	int		port1 = udev->portnum;
 	int		status;
-	u16		portchange, portstatus;
+	u16		portchange = 0, portstatus = 0;
 
 #ifdef CONFIG_USB_OTG_20
 		if (!udev->bus->is_b_host && udev->bus->hnp_support &&
@@ -2683,7 +2710,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	} else {
 		/* drive resume for at least 20 msec */
 		dev_dbg(&udev->dev, "usb %sresume\n",
-				(msg.event & PM_EVENT_AUTO ? "auto-" : ""));
+				(PMSG_IS_AUTO(msg) ? "auto-" : ""));
 		msleep(25);
 
 		/* Virtual root hubs can trigger on GET_PORT_STATUS to
@@ -2785,7 +2812,7 @@ static int hub_suspend(struct usb_interface *intf, pm_message_t msg)
 		udev = hdev->children [port1-1];
 		if (udev && udev->can_submit) {
 			dev_warn(&intf->dev, "port %d nyet suspended\n", port1);
-			if (msg.event & PM_EVENT_AUTO)
+			if (PMSG_IS_AUTO(msg))
 				return -EBUSY;
 		}
 	}
@@ -3959,8 +3986,8 @@ static struct usb_driver hub_driver = {
 int usb_hub_init(void)
 {
 	if (usb_register(&hub_driver) < 0) {
-		printk(KERN_ERR "%s: can't register hub driver\n",
-			usbcore_name);
+//		printk(KERN_ERR "%s: can't register hub driver\n",
+;
 		return -1;
 	}
 
@@ -3970,7 +3997,7 @@ int usb_hub_init(void)
 
 	/* Fall through if kernel_thread failed */
 	usb_deregister(&hub_driver);
-	printk(KERN_ERR "%s: can't start khubd\n", usbcore_name);
+;
 
 	return -1;
 }

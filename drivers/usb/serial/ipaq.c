@@ -68,7 +68,7 @@
 #define DRIVER_DESC "USB PocketPC PDA driver"
 
 static __u16 product, vendor;
-static int debug;
+static bool debug;
 static int connect_retries = KP_RETRIES;
 static int initial_wait;
 
@@ -669,8 +669,8 @@ static int __init ipaq_init(void)
 	if (retval)
 		goto failed_usb_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&ipaq_device);

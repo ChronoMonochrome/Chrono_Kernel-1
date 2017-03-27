@@ -146,7 +146,7 @@ static struct usb_driver usb_ipw_driver = {
 	.no_dynamic_id = 	1,
 };
 
-static int debug;
+static bool debug;
 
 static int ipw_open(struct tty_struct *tty, struct usb_serial_port *port)
 {
@@ -316,8 +316,8 @@ static int __init usb_ipw_init(void)
 		usb_serial_deregister(&ipw_device);
 		return retval;
 	}
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 }
 

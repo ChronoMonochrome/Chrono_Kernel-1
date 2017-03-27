@@ -47,7 +47,7 @@
 
 const char *usbcore_name = "usbcore";
 
-static int nousb;	/* Disable USB when built into kernel image */
+static bool nousb;	/* Disable USB when built into kernel image */
 
 #ifdef	CONFIG_USB_SUSPEND
 static int usb_autosuspend_delay = 2;		/* Default delay value,
@@ -90,9 +90,9 @@ struct usb_host_interface *usb_find_alt_setting(
 		if (intf_cache->altsetting[i].desc.bAlternateSetting == alt_num)
 			return &intf_cache->altsetting[i];
 
-	printk(KERN_DEBUG "Did not find alt setting %u for intf %u, "
-			"config %u\n", alt_num, iface_num,
-			config->desc.bConfigurationValue);
+//	printk(KERN_DEBUG "Did not find alt setting %u for intf %u, "
+//			"config %u\n", alt_num, iface_num,
+;
 	return NULL;
 }
 EXPORT_SYMBOL_GPL(usb_find_alt_setting);
@@ -325,7 +325,7 @@ static const struct dev_pm_ops usb_device_pm_ops = {
 #endif	/* CONFIG_PM */
 
 
-static char *usb_devnode(struct device *dev, mode_t *mode)
+static char *usb_devnode(struct device *dev, umode_t *mode)
 {
 	struct usb_device *usb_dev;
 
@@ -631,11 +631,11 @@ int __usb_get_extra_descriptor(char *buffer, unsigned size,
 		header = (struct usb_descriptor_header *)buffer;
 
 		if (header->bLength < 2) {
-			printk(KERN_ERR
-				"%s: bogus descriptor, type %d length %d\n",
-				usbcore_name,
-				header->bDescriptorType,
-				header->bLength);
+//			printk(KERN_ERR
+//				"%s: bogus descriptor, type %d length %d\n",
+//				usbcore_name,
+//				header->bDescriptorType,
+;
 			return -1;
 		}
 

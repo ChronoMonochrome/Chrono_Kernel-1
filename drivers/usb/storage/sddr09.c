@@ -770,7 +770,7 @@ sddr09_read_data(struct us_data *us,
 	len = min(sectors, (unsigned int) info->blocksize) * info->pagesize;
 	buffer = kmalloc(len, GFP_NOIO);
 	if (buffer == NULL) {
-		printk(KERN_WARNING "sddr09_read_data: Out of memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -885,8 +885,8 @@ sddr09_write_lba(struct us_data *us, unsigned int lba,
 	if (pba == UNDEF) {
 		pba = sddr09_find_unused_pba(info, lba);
 		if (!pba) {
-			printk(KERN_WARNING
-			       "sddr09_write_lba: Out of unused blocks\n");
+//			printk(KERN_WARNING
+;
 			return -ENOSPC;
 		}
 		info->pba_to_lba[pba] = lba;
@@ -897,7 +897,7 @@ sddr09_write_lba(struct us_data *us, unsigned int lba,
 	if (pba == 1) {
 		/* Maybe it is impossible to write to PBA 1.
 		   Fake success, but don't do anything. */
-		printk(KERN_WARNING "sddr09: avoid writing to pba 1\n");
+;
 		return 0;
 	}
 
@@ -1002,7 +1002,7 @@ sddr09_write_data(struct us_data *us,
 	blocklen = (pagelen << info->blockshift);
 	blockbuffer = kmalloc(blocklen, GFP_NOIO);
 	if (!blockbuffer) {
-		printk(KERN_WARNING "sddr09_write_data: Out of memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1013,7 +1013,7 @@ sddr09_write_data(struct us_data *us,
 	len = min(sectors, (unsigned int) info->blocksize) * info->pagesize;
 	buffer = kmalloc(len, GFP_NOIO);
 	if (buffer == NULL) {
-		printk(KERN_WARNING "sddr09_write_data: Out of memory\n");
+;
 		kfree(blockbuffer);
 		return -ENOMEM;
 	}
@@ -1160,7 +1160,7 @@ sddr09_get_cardinfo(struct us_data *us, unsigned char flags) {
 
 	if (result) {
 		US_DEBUGP("Result of read_deviceID is %d\n", result);
-		printk(KERN_WARNING "sddr09: could not read card info\n");
+;
 		return NULL;
 	}
 
@@ -1201,7 +1201,7 @@ sddr09_get_cardinfo(struct us_data *us, unsigned char flags) {
 		sprintf(blurbtxt + strlen(blurbtxt),
 			", WP");
 
-	printk(KERN_WARNING "%s\n", blurbtxt);
+;
 
 	return cardinfo;
 }
@@ -1232,7 +1232,7 @@ sddr09_read_map(struct us_data *us) {
 	alloc_len = (alloc_blocks << CONTROL_SHIFT);
 	buffer = kmalloc(alloc_len, GFP_NOIO);
 	if (buffer == NULL) {
-		printk(KERN_WARNING "sddr09_read_map: out of memory\n");
+;
 		result = -1;
 		goto done;
 	}
@@ -1246,7 +1246,7 @@ sddr09_read_map(struct us_data *us) {
 	info->pba_to_lba = kmalloc(numblocks*sizeof(int), GFP_NOIO);
 
 	if (info->lba_to_pba == NULL || info->pba_to_lba == NULL) {
-		printk(KERN_WARNING "sddr09_read_map: out of memory\n");
+;
 		result = -1;
 		goto done;
 	}
@@ -1286,8 +1286,8 @@ sddr09_read_map(struct us_data *us) {
 			if (ptr[j] != 0)
 				goto nonz;
 		info->pba_to_lba[i] = UNUSABLE;
-		printk(KERN_WARNING "sddr09: PBA %d has no logical mapping\n",
-		       i);
+//		printk(KERN_WARNING "sddr09: PBA %d has no logical mapping\n",
+;
 		continue;
 
 	nonz:
@@ -1300,30 +1300,30 @@ sddr09_read_map(struct us_data *us) {
 	nonff:
 		/* normal PBAs start with six FFs */
 		if (j < 6) {
-			printk(KERN_WARNING
-			       "sddr09: PBA %d has no logical mapping: "
-			       "reserved area = %02X%02X%02X%02X "
-			       "data status %02X block status %02X\n",
-			       i, ptr[0], ptr[1], ptr[2], ptr[3],
-			       ptr[4], ptr[5]);
+//			printk(KERN_WARNING
+//			       "sddr09: PBA %d has no logical mapping: "
+//			       "reserved area = %02X%02X%02X%02X "
+//			       "data status %02X block status %02X\n",
+//			       i, ptr[0], ptr[1], ptr[2], ptr[3],
+;
 			info->pba_to_lba[i] = UNUSABLE;
 			continue;
 		}
 
 		if ((ptr[6] >> 4) != 0x01) {
-			printk(KERN_WARNING
-			       "sddr09: PBA %d has invalid address field "
-			       "%02X%02X/%02X%02X\n",
-			       i, ptr[6], ptr[7], ptr[11], ptr[12]);
+//			printk(KERN_WARNING
+//			       "sddr09: PBA %d has invalid address field "
+//			       "%02X%02X/%02X%02X\n",
+;
 			info->pba_to_lba[i] = UNUSABLE;
 			continue;
 		}
 
 		/* check even parity */
 		if (parity[ptr[6] ^ ptr[7]]) {
-			printk(KERN_WARNING
-			       "sddr09: Bad parity in LBA for block %d"
-			       " (%02X %02X)\n", i, ptr[6], ptr[7]);
+//			printk(KERN_WARNING
+//			       "sddr09: Bad parity in LBA for block %d"
+;
 			info->pba_to_lba[i] = UNUSABLE;
 			continue;
 		}
@@ -1341,18 +1341,18 @@ sddr09_read_map(struct us_data *us) {
 		 */
 
 		if (lba >= 1000) {
-			printk(KERN_WARNING
-			       "sddr09: Bad low LBA %d for block %d\n",
-			       lba, i);
+//			printk(KERN_WARNING
+//			       "sddr09: Bad low LBA %d for block %d\n",
+;
 			goto possibly_erase;
 		}
 
 		lba += 1000*(i/0x400);
 
 		if (info->lba_to_pba[lba] != UNDEF) {
-			printk(KERN_WARNING
-			       "sddr09: LBA %d seen for PBA %d and %d\n",
-			       lba, info->lba_to_pba[lba], i);
+//			printk(KERN_WARNING
+//			       "sddr09: LBA %d seen for PBA %d and %d\n",
+;
 			goto possibly_erase;
 		}
 
@@ -1484,8 +1484,8 @@ usb_stor_sddr09_dpcm_init(struct us_data *us) {
 	if (result == 0 && data[2] != 0) {
 		int j;
 		for (j=0; j<18; j++)
-			printk(" %02X", data[j]);
-		printk("\n");
+;
+;
 		// get 70 00 00 00 00 00 00 * 00 00 00 00 00 00
 		// 70: current command
 		// sense key 0, sense code 0, extd sense code 0

@@ -37,7 +37,7 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 
-static int debug;
+static bool debug;
 /*
  * Version information
  */
@@ -49,7 +49,7 @@ static int debug;
 #define DRIVER_NAME "ark3116"
 
 /* usb timeout of 1 second */
-#define ARK_TIMEOUT (1*HZ)
+#define ARK_TIMEOUT 1000
 
 static const struct usb_device_id id_table[] = {
 	{ USB_DEVICE(0x6547, 0x0232) },
@@ -754,10 +754,10 @@ static int __init ark3116_init(void)
 		return retval;
 	retval = usb_register(&ark3116_driver);
 	if (retval == 0) {
-		printk(KERN_INFO "%s:"
-		       DRIVER_VERSION ":"
-		       DRIVER_DESC "\n",
-		       KBUILD_MODNAME);
+//		printk(KERN_INFO "%s:"
+//		       DRIVER_VERSION ":"
+//		       DRIVER_DESC "\n",
+;
 	} else
 		usb_serial_deregister(&ark3116_device);
 	return retval;

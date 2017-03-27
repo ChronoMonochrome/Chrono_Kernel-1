@@ -84,7 +84,7 @@
 #include <linux/usb.h>
 #include <linux/usb/serial.h>
 
-static int debug;
+static bool debug;
 
 /* make a simple define to handle if we are compiling keyspan_pda or xircom support */
 #if defined(CONFIG_USB_SERIAL_KEYSPAN_PDA) || defined(CONFIG_USB_SERIAL_KEYSPAN_PDA_MODULE)
@@ -903,8 +903,8 @@ static int __init keyspan_pda_init(void)
 	retval = usb_register(&keyspan_pda_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 #ifdef XIRCOM

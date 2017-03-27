@@ -555,7 +555,7 @@ uvc_function_bind(struct usb_configuration *c, struct usb_function *f)
 	/* Register a V4L2 device. */
 	ret = uvc_register_video(uvc);
 	if (ret < 0) {
-		printk(KERN_INFO "Unable to register video device\n");
+;
 		goto error;
 	}
 

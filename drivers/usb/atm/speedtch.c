@@ -73,9 +73,9 @@ static const char speedtch_driver_name[] = "speedtch";
 #define DEFAULT_SW_BUFFERING	0
 
 static unsigned int altsetting = 0; /* zero means: use the default */
-static int dl_512_first = DEFAULT_DL_512_FIRST;
-static int enable_isoc = DEFAULT_ENABLE_ISOC;
-static int sw_buffering = DEFAULT_SW_BUFFERING;
+static bool dl_512_first = DEFAULT_DL_512_FIRST;
+static bool enable_isoc = DEFAULT_ENABLE_ISOC;
+static bool sw_buffering = DEFAULT_SW_BUFFERING;
 
 #define DEFAULT_B_MAX_DSL	8128
 #define DEFAULT_MODEM_MODE	11
@@ -634,8 +634,8 @@ static void speedtch_handle_int(struct urb *int_urb)
 
 		atm_dbg(usbatm, "%s: unknown interrupt packet of length %d:", __func__, count);
 		for (i = 0; i < count; i++)
-			printk(" %02x", instance->int_data[i]);
-		printk("\n");
+;
+;
 		goto fail;
 	}
 

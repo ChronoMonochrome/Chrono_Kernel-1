@@ -1830,7 +1830,7 @@ static int imx21_probe(struct platform_device *pdev)
 	int ret;
 	int irq;
 
-	printk(KERN_INFO "%s\n", imx21_hc_driver.product_desc);
+;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
