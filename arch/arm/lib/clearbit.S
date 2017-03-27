@@ -12,4 +12,6 @@
 #include "bitops.h"
                 .text
 
-bitop	_clear_bit, bic
+ENTRY(_clear_bit)
+	bitop	bic
+ENDPROC(_clear_bit)
