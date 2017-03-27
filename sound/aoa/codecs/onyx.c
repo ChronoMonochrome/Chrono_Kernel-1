@@ -1075,6 +1075,7 @@ static int onyx_i2c_probe(struct i2c_client *client,
 #endif
 	return 0;
  fail:
+	i2c_set_clientdata(client, NULL);
 	kfree(onyx);
 	return -ENODEV;
 }
@@ -1127,7 +1128,8 @@ static int onyx_i2c_remove(struct i2c_client *client)
 
 	aoa_codec_unregister(&onyx->codec);
 	of_node_put(onyx->codec.node);
-	kfree(onyx->codec_info);
+	if (onyx->codec_info)
+		kfree(onyx->codec_info);
 	kfree(onyx);
 	return 0;
 }
@@ -1148,4 +1150,15 @@ static struct i2c_driver onyx_driver = {
 	.id_table = onyx_i2c_id,
 };
 
-module_i2c_driver(onyx_driver);
+static int __init onyx_init(void)
+{
+	return i2c_add_driver(&onyx_driver);
+}
+
+static void __exit onyx_exit(void)
+{
+	i2c_del_driver(&onyx_driver);
+}
+
+module_init(onyx_init);
+module_exit(onyx_exit);

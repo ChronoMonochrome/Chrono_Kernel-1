@@ -853,7 +853,7 @@ static void vortex_fifo_setadbvalid(vortex_t * vortex, int fifo, int en)
 }
 
 static void
-vortex_fifo_setadbctrl(vortex_t * vortex, int fifo, int stereo, int priority,
+vortex_fifo_setadbctrl(vortex_t * vortex, int fifo, int b, int priority,
 		       int empty, int valid, int f)
 {
 	int temp, lifeboat = 0;
@@ -885,7 +885,7 @@ vortex_fifo_setadbctrl(vortex_t * vortex, int fifo, int stereo, int priority,
 #else
 			temp = (this_4 & 0x3f) << 0xc;
 #endif
-			temp = (temp & 0xfffffffd) | ((stereo & 1) << 1);
+			temp = (temp & 0xfffffffd) | ((b & 1) << 1);
 			temp = (temp & 0xfffffff3) | ((priority & 3) << 2);
 			temp = (temp & 0xffffffef) | ((valid & 1) << 4);
 			temp |= FIFO_U1;
@@ -1200,11 +1200,11 @@ vortex_adbdma_setbuffers(vortex_t * vortex, int adbdma,
 
 static void
 vortex_adbdma_setmode(vortex_t * vortex, int adbdma, int ie, int dir,
-		      int fmt, int stereo, u32 offset)
+		      int fmt, int d, u32 offset)
 {
 	stream_t *dma = &vortex->dma_adb[adbdma];
 
-	dma->dma_unknown = stereo;
+	dma->dma_unknown = d;
 	dma->dma_ctrl =
 	    ((offset & OFFSET_MASK) | (dma->dma_ctrl & ~OFFSET_MASK));
 	/* Enable PCMOUT interrupts. */
@@ -1392,6 +1392,7 @@ static void vortex_adbdma_pausefifo(vortex_t * vortex, int adbdma)
 	dma->fifo_status = FIFO_PAUSE;
 }
 
+#if 0				// Using pause instead
 static void vortex_adbdma_stopfifo(vortex_t * vortex, int adbdma)
 {
 	stream_t *dma = &vortex->dma_adb[adbdma];
@@ -1406,6 +1407,7 @@ static void vortex_adbdma_stopfifo(vortex_t * vortex, int adbdma)
 	dma->fifo_enabled = 0;
 }
 
+#endif
 /* WTDMA */
 
 #ifndef CHIP_AU8810
@@ -2122,6 +2124,8 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
 }
 
 /* Default Connections  */
+static int
+vortex_adb_allocroute(vortex_t * vortex, int dma, int nr_ch, int dir, int type);
 
 static void vortex_connect_default(vortex_t * vortex, int en)
 {
@@ -2181,13 +2185,15 @@ static void vortex_connect_default(vortex_t * vortex, int en)
   Return: Return allocated DMA or same DMA passed as "dma" when dma >= 0.
 */
 static int
-vortex_adb_allocroute(vortex_t *vortex, int dma, int nr_ch, int dir,
-			int type, int subdev)
+vortex_adb_allocroute(vortex_t * vortex, int dma, int nr_ch, int dir, int type)
 {
 	stream_t *stream;
 	int i, en;
-	struct pcm_vol *p;
 	
+	if ((nr_ch == 3)
+	    || ((dir == SNDRV_PCM_STREAM_CAPTURE) && (nr_ch > 2)))
+		return -EBUSY;
+
 	if (dma >= 0) {
 		en = 0;
 		vortex_adb_checkinout(vortex,
@@ -2317,14 +2323,6 @@ vortex_adb_allocroute(vortex_t *vortex, int dma, int nr_ch, int dir,
 							      mix[i % nr_ch],
 							      MIX_DEFIGAIN);
 #endif
-			}
-			if (stream->type == VORTEX_PCM_ADB && en) {
-				p = &vortex->pcm_vol[subdev];
-				p->dma = dma;
-				for (i = 0; i < nr_ch; i++)
-					p->mixin[i] = mix[i];
-				for (i = 0; i < ch_top; i++)
-					p->vol[i] = 0;
 			}
 		}
 #ifndef CHIP_AU8820
@@ -2549,7 +2547,7 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
 		hwread(vortex->mmio, VORTEX_IRQ_STAT);
 		handled = 1;
 	}
-	if ((source & IRQ_MIDI) && vortex->rmidi) {
+	if (source & IRQ_MIDI) {
 		snd_mpu401_uart_interrupt(vortex->irq,
 					  vortex->rmidi->private_data);
 		handled = 1;
