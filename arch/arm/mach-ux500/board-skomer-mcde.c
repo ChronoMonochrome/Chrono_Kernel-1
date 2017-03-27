@@ -82,7 +82,11 @@ static void skomer_lcd_pwr_setup(struct device *dev)
 		regulator_put(vreg_lcd_1v8_regulator);
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",  __func__, min_uV, max_uV, ret);
+#else
+	;
+#endif
 
 	min_uV = max_uV = 3000000;
 	vreg_lcd_3v0_regulator = regulator_get(dev, "v_lcd_3v0");
@@ -98,7 +102,11 @@ static void skomer_lcd_pwr_setup(struct device *dev)
 		regulator_put(vreg_lcd_3v0_regulator);
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",  __func__, min_uV, max_uV, ret);
+#else
+	;
+#endif
 }
 
 
@@ -120,7 +128,11 @@ static void skomer_lcd_pwr_onoff(bool on)
 		regulator_disable(vreg_lcd_1v8_regulator);
 		regulator_disable(vreg_lcd_3v0_regulator);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s\n", __func__, (is_on) ? "on" : "off");
+#else
+	;
+#endif
 }
 
 extern void skomer_backlight_on_off(bool on);
