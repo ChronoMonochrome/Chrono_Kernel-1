@@ -117,9 +117,9 @@
 
 /* If compiled into kernel, it enable or disable pss mixer */
 #ifdef CONFIG_PSS_MIXER
-static bool pss_mixer = 1;
+static int pss_mixer = 1;
 #else
-static bool pss_mixer;
+static int pss_mixer;
 #endif
 
 
@@ -147,7 +147,7 @@ static DEFINE_SPINLOCK(lock);
 static int      pss_initialized;
 static int      nonstandard_microcode;
 static int	pss_cdrom_port = -1;	/* Parameter for the PSS cdrom port */
-static bool	pss_enable_joystick;    /* Parameter for enabling the joystick */
+static int	pss_enable_joystick;    /* Parameter for enabling the joystick */
 static coproc_operations pss_coproc_operations;
 
 static void pss_write(pss_confdata *devc, int data)
@@ -171,7 +171,11 @@ static void pss_write(pss_confdata *devc, int data)
  			return;
  		}
  	}
+#ifdef CONFIG_DEBUG_PRINTK
  	printk(KERN_WARNING "PSS: DSP Command (%04x) Timeout.\n", data);
+#else
+ 	;
+#endif
 }
 
 static int __init probe_pss(struct address_info *hw_config)
@@ -344,7 +348,11 @@ static int pss_download_boot(pss_confdata * devc, unsigned char *block, int size
 				break;
 			else
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
+#else
+				;
+#endif
 				printk(KERN_ERR "PSS: Download timeout problems, byte %d=%d\n", count, size);
 				return 0;
 			}
@@ -391,7 +399,11 @@ static int pss_download_boot(pss_confdata * devc, unsigned char *block, int size
 			return 0;
 
 		val = inw(REG(PSS_DATA));
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk( "<PSS: microcode version %d.%d loaded>",  val/16,  val % 16); */
+#else
+		/* ;
+#endif
 	}
 	return 1;
 }
@@ -662,23 +674,38 @@ static void configure_nonsound_components(void)
 	if(pss_enable_joystick)
 	{
 		outw(0x0400, REG(CONF_PSS));	/* 0x0400 enables joystick */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSS: joystick enabled.\n");
+#else
+		;
+#endif
 	}
 	else
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSS: joystick port not enabled.\n");
+#else
+		;
+#endif
 	}
 
 	/* Configure CDROM port */
 
 	if (pss_cdrom_port == -1) {	/* If cdrom port enablation wasn't requested */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSS: CDROM port not enabled.\n");
-	} else if (!request_region(pss_cdrom_port, 2, "PSS CDROM")) {
-		pss_cdrom_port = -1;
+#else
+		;
+#endif
+	} else if (check_region(pss_cdrom_port, 2)) {
 		printk(KERN_ERR "PSS: CDROM I/O port conflict.\n");
 	} else {
 		set_io_base(devc, CONF_CDROM, pss_cdrom_port);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSS: CDROM I/O port set to 0x%x.\n", pss_cdrom_port);
+#else
+		;
+#endif
 	}
 }
 
@@ -707,14 +734,22 @@ static int __init attach_pss(struct address_info *hw_config)
 #ifdef YOU_REALLY_WANT_TO_ALLOCATE_THESE_RESOURCES
 	if (sound_alloc_dma(hw_config->dma, "PSS"))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pss.c: Can't allocate DMA channel.\n");
+#else
+		;
+#endif
 		release_region(hw_config->io_base, 0x10);
 		release_region(hw_config->io_base+0x10, 0x9);
 		return 0;
 	}
 	if (!set_irq(devc, CONF_PSS, devc->irq))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PSS: IRQ allocation error.\n");
+#else
+		;
+#endif
 		release_region(hw_config->io_base, 0x10);
 		release_region(hw_config->io_base+0x10, 0x9);
 		return 0;
@@ -851,7 +886,11 @@ static int pss_coproc_ioctl(void *dev_info, unsigned int cmd, void __user *arg, 
 	unsigned long flags;
 	unsigned short *data;
 	int i, err;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk( "PSS coproc ioctl %x %x %d\n",  cmd,  arg,  local); */
+#else
+	/* ;
+#endif
 	
 	switch (cmd) 
 	{
@@ -1047,7 +1086,11 @@ static int __init probe_pss_mss(struct address_info *hw_config)
 	}
 	set_io_base(devc, CONF_WSS, hw_config->io_base);
 	if (!set_irq(devc, CONF_WSS, hw_config->irq)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PSS: WSS IRQ allocation error.\n");
+#else
+		;
+#endif
 		goto fail;
 	}
 	if (!set_dma(devc, CONF_WSS, hw_config->dma)) {
@@ -1133,8 +1176,8 @@ static int mss_irq __initdata	= -1;
 static int mss_dma __initdata	= -1;
 static int mpu_io __initdata	= -1;
 static int mpu_irq __initdata	= -1;
-static bool pss_no_sound = 0;	/* Just configure non-sound components */
-static bool pss_keep_settings  = 1;	/* Keep hardware settings at module exit */
+static int pss_no_sound = 0;	/* Just configure non-sound components */
+static int pss_keep_settings  = 1;	/* Keep hardware settings at module exit */
 static char *pss_firmware = "/etc/sound/pss_synth";
 
 module_param(pss_io, int, 0);
@@ -1181,8 +1224,16 @@ static int __init init_pss(void)
 		cfg.io_base = pss_io;
 		if(!probe_pss(&cfg))
 			return -ENODEV;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ECHO-PSS  Rev. %d\n", inw(REG(PSS_ID)) & 0x00ff);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSS: loading in no sound mode.\n");
+#else
+		;
+#endif
 		disable_all_emulations();
 		configure_nonsound_components();
 		release_region(pss_io, 0x10);
@@ -1200,7 +1251,11 @@ static int __init init_pss(void)
 	cfg_mpu.irq = mpu_irq;
 
 	if (cfg.io_base == -1 || cfg2.io_base == -1 || cfg2.irq == -1 || cfg.dma == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pss: mss_io, mss_dma, mss_irq and pss_io must be set.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1233,13 +1288,16 @@ static void __exit cleanup_pss(void)
 		if(pssmpu)
 			unload_pss_mpu(&cfg_mpu);
 		unload_pss(&cfg);
-	} else if (pss_cdrom_port != -1)
-		release_region(pss_cdrom_port, 2);
+	}
 
 	if(!pss_keep_settings)	/* Keep hardware settings if asked */
 	{
 		disable_all_emulations();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Resetting PSS sound card configurations.\n");
+#else
+		;
+#endif
 	}
 }
 
