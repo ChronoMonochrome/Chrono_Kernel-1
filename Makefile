@@ -1,8 +1,11 @@
 VERSION = 3
-PATCHLEVEL = 0
-SUBLEVEL = 101
+PATCHLEVEL = 4
+SUBLEVEL = 67
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
+
+CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+#CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -246,8 +249,14 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -pipe
+
+HOSTCXXFLAGS := -O2 -pipe
+
+ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
+		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -313,7 +322,7 @@ endif
 # If the user is running make -s (silent mode), suppress echoing of
 # commands
 
-ifneq ($(findstring s,$(MAKEFLAGS)),)
+ifneq ($(filter s% -s%,$(MAKEFLAGS)),)
   quiet=silent_
 endif
 
@@ -329,12 +338,17 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
-CPP		= $(CC) -E
-AR		= $(CROSS_COMPILE)ar
-NM		= $(CROSS_COMPILE)nm
+ifneq ("$(USE_CCACHE)", "")
+  CCACHE=ccache
+endif
+
+AS		= $(CCACHE) $(CROSS_COMPILE)as
+LD		= $(CCACHE) $(CROSS_COMPILE)ld
+LDFINAL		= $(CCACHE) $(CROSS_COMPILE)ld
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc
+CPP		= $(CCACHE) $(CC) -E
+AR		= $(CCACHE) $(CROSS_COMPILE)ar
+NM		= $(CCACHE) $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
@@ -348,12 +362,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -fno-pic
+CFLAGS_MODULE   = -pipe -fno-lto
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -D__linux__
+CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -pipe
 
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
@@ -361,48 +375,44 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                   -include include/generated/autoconf.h
+                   -include $(srctree)/include/linux/kconfig.h
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks \
-		   -funsafe-math-optimizations \
-		   -ftree-vectorize -pipe -marm \
-		   -mcpu=cortex-a9 \
-		   -mtune=cortex-a9 \
-		   -mfloat-abi=softfp \
-		   -mfpu=vfpv3 \
-		   -mvectorize-with-neon-double \
-		   -floop-interchange \
-		   -floop-strip-mine \
-		   -floop-block \
-		   -floop-nest-optimize \
-		   -fgraphite-identity \
-		   -floop-parallelize-all \
-		   -DNDEBUG \
-		   -fsection-anchors \
-		   -funsafe-loop-optimizations \
-		   -fivopts \
-		   -ftree-loop-im \
-		   -ftree-loop-ivcanon \
-		   -funswitch-loops \
-		   -frename-registers \
-		   -fgcse-sm \
-		   -fgcse-las \
-		   -fweb \
-		   -ftracer \
-		   -fipa-pta \
-		   -fmodulo-sched \
-		   -fmodulo-sched-allow-regmoves
+KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
+		  -fno-common \
+		  -Werror-implicit-function-declaration \
+		  -Wno-format-security \
+		  -fno-delete-null-pointer-checks \
+		  -marm \
+		  -march=armv7-a \
+		  -mtune=cortex-a9 \
+		  -mcpu=cortex-a9 \
+		  -mfpu=vfpv3-fp16 \
+		  -mfloat-abi=hard \
+		  -mhard-float \
+		  -funsafe-loop-optimizations \
+		  -ftree-parallelize-loops=2 \
+		  -fcx-limited-range \
+		  -fno-signed-zeros \
+                  -fgraphite \
+                  -fgraphite-identity \
+                  -floop-block \
+                  -floop-interchange \
+                  -floop-nest-optimize \
+                  -floop-strip-mine \
+                  -floop-parallelize-all \
+		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
+		  -pipe \
+		  --param l1-cache-size=32 \
+		  --param l1-cache-line-size=32 \
+		  --param l2-cache-size=512 \
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE -pipe
+KBUILD_CFLAGS_MODULE := -DMODULE -pipe
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -471,7 +481,7 @@ asm-generic:
 
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help %docs check% coccicheck \
-			 include/linux/version.h headers_% \
+			 include/linux/version.h headers_% archheaders archscripts \
 			 kernelrelease kernelversion %src-pkg
 
 config-targets := 0
@@ -590,10 +600,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
-LDFLAGS += -O3 --sort-common
+LDFLAGS += -O2 --as-needed --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
@@ -998,11 +1008,6 @@ PHONY += prepare archprepare prepare0 prepare1 prepare2 prepare3
 prepare3: include/config/kernel.release
 ifneq ($(KBUILD_SRC),)
 	@$(kecho) '  Using $(srctree) as source for kernel'
-	$(Q)if [ -f $(srctree)/.config -o -d $(srctree)/include/config ]; then \
-		echo "  $(srctree) is not clean, please run 'make mrproper'";\
-		echo "  in the '$(srctree)' directory.";\
-		/bin/false; \
-	fi;
 endif
 
 # prepare2 creates a makefile if using a separate output directory
@@ -1012,11 +1017,10 @@ prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
                    include/config/auto.conf
 	$(cmd_crmodverdir)
 
-archprepare: prepare1 scripts_basic
+archprepare: archheaders archscripts prepare1 scripts_basic
 
 prepare0: archprepare FORCE
 	$(Q)$(MAKE) $(build)=.
-	$(Q)$(MAKE) $(build)=. missing-syscalls
 
 # All the preparing..
 prepare: prepare0
@@ -1080,8 +1084,14 @@ hdr-inst := -rR -f $(srctree)/scripts/Makefile.headersinst obj
 # If we do an all arch process set dst to asm-$(hdr-arch)
 hdr-dst = $(if $(KBUILD_HEADERS), dst=include/asm-$(hdr-arch), dst=include/asm)
 
+PHONY += archheaders
+archheaders:
+
+PHONY += archscripts
+archscripts:
+
 PHONY += __headers
-__headers: include/linux/version.h scripts_basic asm-generic FORCE
+__headers: include/linux/version.h scripts_basic asm-generic archheaders archscripts FORCE
 	$(Q)$(MAKE) $(build)=scripts build_unifdef
 
 PHONY += headers_install_all
@@ -1201,7 +1211,7 @@ MRPROPER_FILES += .config .config.old .version .old_version             \
 #
 clean: rm-dirs  := $(CLEAN_DIRS)
 clean: rm-files := $(CLEAN_FILES)
-clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation)
+clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation samples)
 
 PHONY += $(clean-dirs) clean archclean
 $(clean-dirs):
@@ -1231,7 +1241,7 @@ distclean: mrproper
 	@find $(srctree) $(RCS_FIND_IGNORE) \
 		\( -name '*.orig' -o -name '*.rej' -o -name '*~' \
 		-o -name '*.bak' -o -name '#*#' -o -name '.*.orig' \
-		-o -name '.*.rej' -o -size 0 \
+		-o -name '.*.rej' \
 		-o -name '*%' -o -name '.*.cmd' -o -name 'core' \) \
 		-type f -print | xargs rm -f
 
@@ -1328,7 +1338,6 @@ help:
 	@echo  '		2: warnings which occur quite often but may still be relevant'
 	@echo  '		3: more obscure warnings, can most likely be ignored'
 	@echo  '		Multiple levels can be combined with W=12 or W=123'
-	@echo  '  make RECORDMCOUNT_WARN=1 [targets] Warn about ignored mcount sections'
 	@echo  ''
 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
 	@echo  'For further info see the ./README file'
