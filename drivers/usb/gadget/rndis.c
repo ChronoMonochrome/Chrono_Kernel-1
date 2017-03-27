@@ -159,10 +159,11 @@ static const u32 oid_supported_list[] =
 #endif	/* RNDIS_PM */
 };
 
-/* HACK: copied from net/core/dev.c to replace dev_get_stats since
- * dev_get_stats cannot be called from atomic context */
-static void netdev_stats_to_stats64(struct rtnl_link_stats64 *stats64,
-				    const struct net_device_stats *netdev_stats)
+/* Convert net_device_stats to rtnl_link_stats64.  They have the same
+ * fields in the same order, with only the type differing.
+ */
+static void netdev_stats_to_stats64_(struct rtnl_link_stats64 *stats64,
+			     const struct net_device_stats *netdev_stats)
 {
 #if BITS_PER_LONG == 64
 	BUILD_BUG_ON(sizeof(*stats64) != sizeof(*netdev_stats));
@@ -178,6 +179,7 @@ static void netdev_stats_to_stats64(struct rtnl_link_stats64 *stats64,
 		dst[i] = src[i];
 #endif
 }
+//EXPORT_SYMBOL(netdev_stats_to_stats64);
 
 /* NDIS Functions */
 static int gen_ndis_query_resp(int configNr, u32 OID, u8 *buf,
@@ -213,7 +215,7 @@ static int gen_ndis_query_resp(int configNr, u32 OID, u8 *buf,
 	resp->InformationBufferOffset = cpu_to_le32(16);
 
 	net = rndis_per_dev_params[configNr].dev;
-	netdev_stats_to_stats64(stats, &net->stats);
+	netdev_stats_to_stats64_(stats, &net->stats);
 
 	switch (OID) {
 
