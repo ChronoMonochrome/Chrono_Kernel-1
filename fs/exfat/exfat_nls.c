@@ -353,7 +353,11 @@ void nls_cstring_to_uniname(struct super_block *sb, UNI_NAME_T *p_uniname, u8 *p
 		lossy = TRUE;
 
 	if (nls == NULL) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,101)
+		i = utf8s_to_utf16s(p_cstring, MAX_NAME_LENGTH, uniname);
+#else
 		i = utf8s_to_utf16s(p_cstring, MAX_NAME_LENGTH, UTF16_HOST_ENDIAN, uniname, MAX_NAME_LENGTH);
+#endif
 		for (j = 0; j < i; j++)
 			SET16_A(upname + j * 2, nls_upper(sb, uniname[j]));
 		uniname[i] = '\0';
@@ -405,7 +409,7 @@ static s32 convert_ch_to_uni(struct nls_table *nls, u16 *uni, u8 *ch, s32 *lossy
 	len = nls->char2uni(ch, NLS_MAX_CHARSET_SIZE, uni);
 	if (len < 0) {
 		/* conversion failed */
-;
+		printk("%s: fail to use nls\n", __func__);
 		if (lossy != NULL)
 			*lossy = TRUE;
 		*uni = (u16) '_';
@@ -432,7 +436,7 @@ static s32 convert_uni_to_ch(struct nls_table *nls, u8 *ch, u16 uni, s32 *lossy)
 	len = nls->uni2char(uni, ch, NLS_MAX_CHARSET_SIZE);
 	if (len < 0) {
 		/* conversion failed */
-;
+		printk("%s: fail to use nls\n", __func__);
 		if (lossy != NULL)
 			*lossy = TRUE;
 		ch[0] = '_';
