@@ -30,10 +30,6 @@ config OPROFILE_EVENT_MULTIPLEX
 config HAVE_OPROFILE
 	bool
 
-config OPROFILE_NMI_TIMER
-	def_bool y
-	depends on PERF_EVENTS && HAVE_PERF_EVENTS_NMI
-
 config KPROBES
 	bool "Kprobes"
 	depends on MODULES
@@ -120,9 +116,6 @@ config HAVE_KRETPROBES
 
 config HAVE_OPTPROBES
 	bool
-
-config HAVE_NMI_WATCHDOG
-	bool
 #
 # An arch should select this if it provides all these things:
 #
@@ -140,6 +133,9 @@ config HAVE_ARCH_TRACEHOOK
 	bool
 
 config HAVE_DMA_ATTRS
+	bool
+
+config HAVE_DMA_CONTIGUOUS
 	bool
 
 config USE_GENERIC_SMP_HELPERS
@@ -196,26 +192,6 @@ config HAVE_ARCH_MUTEX_CPU_RELAX
 config HAVE_RCU_TABLE_FREE
 	bool
 
-config ARCH_HAVE_NMI_SAFE_CMPXCHG
-	bool
-
-config HAVE_ALIGNED_STRUCT_PAGE
-	bool
-	help
-	  This makes sure that struct pages are double word aligned and that
-	  e.g. the SLUB allocator can perform double word atomic operations
-	  on a struct page for better performance. However selecting this
-	  might increase the size of a struct page by a word.
-
-config HAVE_CMPXCHG_LOCAL
-	bool
-
-config HAVE_CMPXCHG_DOUBLE
-	bool
-
-config ARCH_WANT_OLD_COMPAT_IPC
-	bool
-
 config HAVE_ARCH_SECCOMP_FILTER
 	bool
 	help
@@ -240,72 +216,12 @@ config SECCOMP_FILTER
 
 	  See Documentation/prctl/seccomp_filter.txt for details.
 
-config HAVE_ARCH_MMAP_RND_BITS
+config HAVE_ALIGNED_STRUCT_PAGE
 	bool
 	help
-	  An arch should select this symbol if it supports setting a variable
-	  number of bits for use in establishing the base address for mmap
-	  allocations, has MMU enabled and provides values for both:
-	  - ARCH_MMAP_RND_BITS_MIN
-	  - ARCH_MMAP_RND_BITS_MAX
-
-config ARCH_MMAP_RND_BITS_MIN
-	int
-
-config ARCH_MMAP_RND_BITS_MAX
-	int
-
-config ARCH_MMAP_RND_BITS_DEFAULT
-	int
-
-config ARCH_MMAP_RND_BITS
-	int "Number of bits to use for ASLR of mmap base address" if EXPERT
-	range ARCH_MMAP_RND_BITS_MIN ARCH_MMAP_RND_BITS_MAX
-	default ARCH_MMAP_RND_BITS_DEFAULT if ARCH_MMAP_RND_BITS_DEFAULT
-	default ARCH_MMAP_RND_BITS_MIN
-	depends on HAVE_ARCH_MMAP_RND_BITS
-	help
-	  This value can be used to select the number of bits to use to
-	  determine the random offset to the base address of vma regions
-	  resulting from mmap allocations. This value will be bounded
-	  by the architecture's minimum and maximum supported values.
-
-	  This value can be changed after boot using the
-	  /proc/sys/vm/mmap_rnd_bits tunable
-
-config HAVE_ARCH_MMAP_RND_COMPAT_BITS
-	bool
-	help
-	  An arch should select this symbol if it supports running applications
-	  in compatibility mode, supports setting a variable number of bits for
-	  use in establishing the base address for mmap allocations, has MMU
-	  enabled and provides values for both:
-	  - ARCH_MMAP_RND_COMPAT_BITS_MIN
-	  - ARCH_MMAP_RND_COMPAT_BITS_MAX
-
-config ARCH_MMAP_RND_COMPAT_BITS_MIN
-	int
-
-config ARCH_MMAP_RND_COMPAT_BITS_MAX
-	int
-
-config ARCH_MMAP_RND_COMPAT_BITS_DEFAULT
-	int
-
-config ARCH_MMAP_RND_COMPAT_BITS
-	int "Number of bits to use for ASLR of mmap base address for compatible applications" if EXPERT
-	range ARCH_MMAP_RND_COMPAT_BITS_MIN ARCH_MMAP_RND_COMPAT_BITS_MAX
-	default ARCH_MMAP_RND_COMPAT_BITS_DEFAULT if ARCH_MMAP_RND_COMPAT_BITS_DEFAULT
-	default ARCH_MMAP_RND_COMPAT_BITS_MIN
-	depends on HAVE_ARCH_MMAP_RND_COMPAT_BITS
-	help
-	  This value can be used to select the number of bits to use to
-	  determine the random offset to the base address of vma regions
-	  resulting from mmap allocations for compatible applications This
-	  value will be bounded by the architecture's minimum and maximum
-	  supported values.
-
-	  This value can be changed after boot using the
-	  /proc/sys/vm/mmap_rnd_compat_bits tunable
+	  This makes sure that struct pages are double word aligned and that
+	  e.g. the SLUB allocator can perform double word atomic operations
+	  on a struct page for better performance. However selecting this
+	  might increase the size of a struct page by a word.
 
 source "kernel/gcov/Kconfig"
