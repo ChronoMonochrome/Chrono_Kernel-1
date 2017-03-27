@@ -236,13 +236,9 @@ static int sel_netnode_sid_slow(void *addr, u16 family, u32 *sid)
 out:
 	spin_unlock_bh(&sel_netnode_lock);
 	if (unlikely(ret)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "SELinux: failure in sel_netnode_sid_slow(),"
 		       " unable to determine network node label\n");
-#else
-		;
-#endif
 		kfree(new);
 	}
 	return ret;
