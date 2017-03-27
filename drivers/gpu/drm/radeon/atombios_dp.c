@@ -22,6 +22,7 @@
  *
  * Authors: Dave Airlie
  *          Alex Deucher
+ *          Jerome Glisse
  */
 #include "drmP.h"
 #include "radeon_drm.h"
@@ -482,7 +483,8 @@ static int radeon_dp_get_dp_link_clock(struct drm_connector *connector,
 	int bpp = convert_bpc_to_bpp(connector->display_info.bpc);
 	int lane_num, max_pix_clock;
 
-	if (radeon_connector_encoder_is_dp_bridge(connector))
+	if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) !=
+	    ENCODER_OBJECT_ID_NONE)
 		return 270000;
 
 	lane_num = radeon_dp_get_dp_lane_number(connector, dpcd, pix_clock);
@@ -559,8 +561,12 @@ static void radeon_dp_set_panel_mode(struct drm_encoder *encoder,
 	if (!ASIC_IS_DCE4(rdev))
 		return;
 
-	if (radeon_connector_encoder_is_dp_bridge(connector))
+	if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) ==
+	    ENCODER_OBJECT_ID_NUTMEG)
 		panel_mode = DP_PANEL_MODE_INTERNAL_DP1_MODE;
+	else if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) ==
+		 ENCODER_OBJECT_ID_TRAVIS)
+		panel_mode = DP_PANEL_MODE_INTERNAL_DP2_MODE;
 	else if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
 		u8 tmp = radeon_read_dpcd_reg(radeon_connector, DP_EDP_CONFIGURATION_CAP);
 		if (tmp & 1)
@@ -624,7 +630,6 @@ static bool radeon_dp_get_link_status(struct radeon_connector *radeon_connector,
 	ret = radeon_dp_aux_native_read(radeon_connector, DP_LANE0_1_STATUS,
 					link_status, DP_LINK_STATUS_SIZE, 100);
 	if (ret <= 0) {
-		DRM_ERROR("displayport link status failed\n");
 		return false;
 	}
 
@@ -797,8 +802,10 @@ static int radeon_dp_link_train_cr(struct radeon_dp_link_train_info *dp_info)
 		else
 			mdelay(dp_info->rd_interval * 4);
 
-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
+		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
+			DRM_ERROR("displayport link status failed\n");
 			break;
+		}
 
 		if (dp_clock_recovery_ok(dp_info->link_status, dp_info->dp_lane_count)) {
 			clock_recovery = true;
@@ -860,8 +867,10 @@ static int radeon_dp_link_train_ce(struct radeon_dp_link_train_info *dp_info)
 		else
 			mdelay(dp_info->rd_interval * 4);
 
-		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status))
+		if (!radeon_dp_get_link_status(dp_info->radeon_connector, dp_info->link_status)) {
+			DRM_ERROR("displayport link status failed\n");
 			break;
+		}
 
 		if (dp_channel_eq_ok(dp_info->link_status, dp_info->dp_lane_count)) {
 			channel_eq = true;
