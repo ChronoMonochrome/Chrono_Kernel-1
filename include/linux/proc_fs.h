@@ -174,7 +174,6 @@ extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
 	struct proc_dir_entry *parent);
 
 extern struct file *proc_ns_fget(int fd);
-extern bool proc_ns_inode(struct inode *inode);
 
 extern int proc_alloc_inum(unsigned int *pino);
 extern void proc_free_inum(unsigned int inum);
@@ -267,8 +266,6 @@ struct proc_ns_operations {
 extern const struct proc_ns_operations netns_operations;
 extern const struct proc_ns_operations utsns_operations;
 extern const struct proc_ns_operations ipcns_operations;
-extern const struct proc_ns_operations pidns_operations;
-extern const struct proc_ns_operations mntns_operations;
 
 union proc_op {
 	int (*proc_get_link)(struct dentry *, struct path *);
