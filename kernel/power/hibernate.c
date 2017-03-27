@@ -658,6 +658,10 @@ int hibernate(void)
 
  Thaw:
 	thaw_processes();
+
+	/* Don't bother checking whether freezer_test_done is true */
+	freezer_test_done = false;
+
  Free_bitmaps:
 	free_basic_memory_bitmaps();
  Exit:
@@ -786,10 +790,8 @@ static int software_resume(void)
 		goto close_finish;
 
 	error = create_basic_memory_bitmaps();
-	if (error) {
-		usermodehelper_enable();
+	if (error)
 		goto close_finish;
-	}
 
 	pr_debug("PM: Preparing processes for restore.\n");
 	error = freeze_processes();
