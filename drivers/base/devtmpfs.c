@@ -370,17 +370,9 @@ int devtmpfs_mount(const char *mntdir)
 
 	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
 	if (err)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "devtmpfs: mounted\n");
-#else
-		;
-#endif
 	return err;
 }
 
@@ -458,10 +450,6 @@ int __init devtmpfs_init(void)
 		return err;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "devtmpfs: initialized\n");
-#else
-	;
-#endif
 	return 0;
 }

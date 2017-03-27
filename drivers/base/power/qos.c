@@ -39,7 +39,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/mutex.h>
-#include <linux/export.h>
+#include <linux/module.h>
 
 #include "power.h"
 
