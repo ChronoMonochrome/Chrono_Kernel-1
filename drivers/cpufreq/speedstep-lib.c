@@ -113,12 +113,8 @@ static unsigned int pentiumM_get_frequency(void)
 
 	/* see table B-2 of 24547212.pdf */
 	if (msr_lo & 0x00040000) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "PM - invalid FSB: 0x%x 0x%x\n",
 				msr_lo, msr_tmp);
-#else
-		;
-#endif
 		return 0;
 	}
 
@@ -212,12 +208,8 @@ static unsigned int pentium4_get_frequency(void)
 	}
 
 	if (!fsb)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "couldn't detect FSB speed. "
 				"Please send an e-mail to <linux@brodo.de>\n");
-#else
-		;
-#endif
 
 	/* Multiplier. */
 	mult = msr_lo >> 24;
@@ -461,15 +453,11 @@ unsigned int speedstep_get_freqs(enum speedstep_processor processor,
 		 */
 		if (*transition_latency > 10000000 ||
 		    *transition_latency < 50000) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "frequency transition "
 					"measured seems out of range (%u "
 					"nSec), falling back to a safe one of"
 					"%u nSec.\n",
 					*transition_latency, 500000);
-#else
-			;
-#endif
 			*transition_latency = 500000;
 		}
 	}
