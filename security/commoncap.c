@@ -7,6 +7,7 @@
  *
  */
 
+#include <linux/god_mode.h>
 #include <linux/capability.h>
 #include <linux/audit.h>
 #include <linux/module.h>
