@@ -4,9 +4,8 @@ SUBLEVEL = 0
 EXTRAVERSION =
 NAME = Unicycling Gorilla
 
-ifeq ("$(CROSS_COMPILE)", "")
-   CROSS_COMPILE=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf-
-endif
+CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+#CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -395,7 +394,6 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-common \
-		  -fno-strict-aliasing \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
@@ -406,6 +404,18 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -mfpu=vfpv3-fp16 \
 		  -mfloat-abi=hard \
 		  -mhard-float \
+		  -funsafe-loop-optimizations \
+		  -ftree-parallelize-loops=2 \
+		  -fcx-limited-range \
+		  -fno-signed-zeros \
+                  -fgraphite \
+                  -fgraphite-identity \
+                  -floop-block \
+                  -floop-interchange \
+                  -floop-nest-optimize \
+                  -floop-strip-mine \
+                  -floop-parallelize-all \
+		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param l1-cache-size=32 \
 		  --param l1-cache-line-size=32 \
@@ -863,6 +873,9 @@ PHONY += prepare archprepare prepare0 prepare1 prepare2 prepare3
 # and if so do:
 # 1) Check that make has not been executed in the kernel src $(srctree)
 prepare3: include/config/kernel.release
+ifneq ($(KBUILD_SRC),)
+	@$(kecho) '  Using $(srctree) as source for kernel'
+endif
 
 # prepare2 creates a makefile if using a separate output directory
 prepare2: prepare3 outputmakefile asm-generic
@@ -1007,16 +1020,16 @@ modules_install: _modinst_ _modinst_post
 
 PHONY += _modinst_
 _modinst_:
-	@rm -rf $(MODLIB)/kernel
-	@rm -f $(MODLIB)/source
-	@mkdir -p $(MODLIB)/kernel
-	@ln -s $(srctree) $(MODLIB)/source
-	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
-		rm -f $(MODLIB)/build ; \
-		ln -s $(objtree) $(MODLIB)/build ; \
-	fi
-	@cp -f $(objtree)/modules.order $(MODLIB)/
-	@cp -f $(objtree)/modules.builtin $(MODLIB)/
+#	@rm -rf $(MODLIB)/kernel
+#	@rm -f $(MODLIB)/source
+#	@mkdir -p $(MODLIB)/kernel
+#	@ln -s $(srctree) $(MODLIB)/source
+#	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
+#		rm -f $(MODLIB)/build ; \
+#		ln -s $(objtree) $(MODLIB)/build ; \
+#	fi
+#	@cp -f $(objtree)/modules.order $(MODLIB)/
+#	@cp -f $(objtree)/modules.builtin $(MODLIB)/
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst
 
 # This depmod is only for convenience to give the initial
