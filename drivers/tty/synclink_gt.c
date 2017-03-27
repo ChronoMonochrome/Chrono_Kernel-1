@@ -554,44 +554,20 @@ static void trace_block(struct slgt_info *info, const char *data, int count, con
 {
 	int i;
 	int linecount;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s %s data:\n",info->device_name, label);
-#else
-	;
-#endif
 	while(count) {
 		linecount = (count > 16) ? 16 : count;
 		for(i=0; i < linecount; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02X ",(unsigned char)data[i]);
-#else
-			;
-#endif
 		for(;i<17;i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("   ");
-#else
-			;
-#endif
 		for(i=0;i<linecount;i++) {
 			if (data[i]>=040 && data[i]<=0176)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("%c",data[i]);
-#else
-				;
-#endif
 			else
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(".");
-#else
-				;
-#endif
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 		data  += linecount;
 		count -= linecount;
 	}
@@ -604,18 +580,10 @@ static void trace_block(struct slgt_info *info, const char *data, int count, con
 static void dump_tbufs(struct slgt_info *info)
 {
 	int i;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("tbuf_current=%d\n", info->tbuf_current);
-#else
-	;
-#endif
 	for (i=0 ; i < info->tbuf_count ; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d: count=%04X status=%04X\n",
 			i, le16_to_cpu(info->tbufs[i].count), le16_to_cpu(info->tbufs[i].status));
-#else
-		;
-#endif
 	}
 }
 #else
@@ -626,18 +594,10 @@ static void dump_tbufs(struct slgt_info *info)
 static void dump_rbufs(struct slgt_info *info)
 {
 	int i;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("rbuf_current=%d\n", info->rbuf_current);
-#else
-	;
-#endif
 	for (i=0 ; i < info->rbuf_count ; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d: count=%04X status=%04X\n",
 			i, le16_to_cpu(info->rbufs[i].count), le16_to_cpu(info->rbufs[i].status));
-#else
-		;
-#endif
 	}
 }
 #else
@@ -648,19 +608,11 @@ static inline int sanity_check(struct slgt_info *info, char *devname, const char
 {
 #ifdef SANITY_CHECK
 	if (!info) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("null struct slgt_info for (%s) in %s\n", devname, name);
-#else
-		;
-#endif
 		return 1;
 	}
 	if (info->magic != MGSL_MAGIC) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("bad magic number struct slgt_info (%s) in %s\n", devname, name);
-#else
-		;
-#endif
 		return 1;
 	}
 #else
@@ -1874,11 +1826,7 @@ static int hdlcdev_init(struct slgt_info *info)
 
 	/* register objects with HDLC layer */
 	if ((rc = register_hdlc_device(dev))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:unable to register hdlc device\n",__FILE__);
-#else
-		;
-#endif
 		free_netdev(dev);
 		return rc;
 	}
@@ -3621,13 +3569,9 @@ static void add_device(struct slgt_info *info)
 	default:
 		devstr = "(unknown model)";
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("SyncLink %s %s IO=%08x IRQ=%d MaxFrameSize=%u\n",
 		devstr, info->device_name, info->phys_reg_addr,
 		info->irq_level, info->max_frame_size);
-#else
-	;
-#endif
 
 #if SYNCLINK_GENERIC_HDLC
 	hdlcdev_init(info);
@@ -3753,11 +3697,7 @@ static int __devinit init_one(struct pci_dev *dev,
 			      const struct pci_device_id *ent)
 {
 	if (pci_enable_device(dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("error enabling pci device %p\n", dev);
-#else
-		;
-#endif
 		return -EIO;
 	}
 	pci_set_master(dev);
@@ -3801,11 +3741,7 @@ static void slgt_cleanup(void)
 	struct slgt_info *info;
 	struct slgt_info *tmp;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "unload %s\n", driver_name);
-#else
-	;
-#endif
 
 	if (serial_driver) {
 		for (info=slgt_device_list ; info != NULL ; info=info->next_device)
@@ -3848,19 +3784,11 @@ static int __init slgt_init(void)
 {
 	int rc;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", driver_name);
-#else
-	;
-#endif
 
 	serial_driver = alloc_tty_driver(MAX_DEVICES);
 	if (!serial_driver) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s can't allocate tty driver\n", driver_name);
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 
@@ -3886,30 +3814,18 @@ static int __init slgt_init(void)
 		goto error;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s, tty major#%d\n",
 	       driver_name, serial_driver->major);
-#else
-	;
-#endif
 
 	slgt_device_count = 0;
 	if ((rc = pci_register_driver(&pci_driver)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s pci_register_driver error=%d\n", driver_name, rc);
-#else
-		;
-#endif
 		goto error;
 	}
 	pci_registered = true;
 
 	if (!slgt_device_list)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s no devices found\n",driver_name);
-#else
-		;
-#endif
 
 	return 0;
 
@@ -5191,25 +5107,13 @@ static int adapter_test(struct slgt_info *info)
 {
 	DBGINFO(("testing %s\n", info->device_name));
 	if (register_test(info) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("register test failure %s addr=%08X\n",
 			info->device_name, info->phys_reg_addr);
-#else
-		;
-#endif
 	} else if (irq_test(info) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("IRQ test failure %s IRQ=%d\n",
 			info->device_name, info->irq_level);
-#else
-		;
-#endif
 	} else if (loopback_test(info) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("loopback test failure %s\n", info->device_name);
-#else
-		;
-#endif
 	}
 	return info->init_error;
 }

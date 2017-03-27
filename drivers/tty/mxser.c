@@ -39,8 +39,8 @@
 #include <linux/pci.h>
 #include <linux/bitops.h>
 #include <linux/slab.h>
+#include <linux/ratelimit.h>
 
-#include <asm/system.h>
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/uaccess.h>
@@ -1009,8 +1009,6 @@ static int mxser_open(struct tty_struct *tty, struct file *filp)
 	line = tty->index;
 	if (line == MXSER_PORTS)
 		return 0;
-	if (line < 0 || line > MXSER_PORTS)
-		return -ENODEV;
 	info = &mxser_boards[line / MXSER_PORTS_PER_BOARD].ports[line % MXSER_PORTS_PER_BOARD];
 	if (!info->ioaddr)
 		return -ENODEV;
@@ -1490,14 +1488,9 @@ static int mxser_ioctl_special(unsigned int cmd, void __user *argp)
 
 	switch (cmd) {
 	case MOXA_GET_MAJOR:
-		if (printk_ratelimit())
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "mxser: '%s' uses deprecated ioctl "
+		printk_ratelimited(KERN_WARNING "mxser: '%s' uses deprecated ioctl "
 					"%x (GET_MAJOR), fix your userspace\n",
 					current->comm, cmd);
-#else
-			;
-#endif
 		return put_user(ttymajor, (int __user *)argp);
 
 	case MOXA_CHKPORTENABLE:
@@ -2009,28 +2002,9 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	 */
 	if (!timeout || timeout > 2 * info->timeout)
 		timeout = 2 * info->timeout;
-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "In rs_wait_until_sent(%d) check=%lu...",
-		timeout, char_time);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("jiff=%lu...", jiffies);
-#else
-	;
-#endif
-#endif
+
 	spin_lock_irqsave(&info->slock, flags);
 	while (!((lsr = inb(info->ioaddr + UART_LSR)) & UART_LSR_TEMT)) {
-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("lsr = %d (jiff=%lu)...", lsr, jiffies);
-#else
-		;
-#endif
-#endif
 		spin_unlock_irqrestore(&info->slock, flags);
 		schedule_timeout_interruptible(char_time);
 		spin_lock_irqsave(&info->slock, flags);
@@ -2041,14 +2015,6 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	}
 	spin_unlock_irqrestore(&info->slock, flags);
 	set_current_state(TASK_RUNNING);
-
-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
-#else
-	;
-#endif
-#endif
 }
 
 /*
@@ -2385,12 +2351,8 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
 	unsigned int i;
 	int retval;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxser: max. baud rate = %d bps\n",
 			brd->ports[0].max_baud);
-#else
-	;
-#endif
 
 	for (i = 0; i < brd->info->nports; i++) {
 		info = &brd->ports[i];
@@ -2689,20 +2651,13 @@ static int __init mxser_module_init(void)
 	if (!mxvar_sdriver)
 		return -ENOMEM;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MOXA Smartio/Industio family driver version %s\n",
 		MXSER_VERSION);
-#else
-	;
-#endif
 
 	/* Initialize the tty_driver structure */
-	mxvar_sdriver->owner = THIS_MODULE;
-	mxvar_sdriver->magic = TTY_DRIVER_MAGIC;
 	mxvar_sdriver->name = "ttyMI";
 	mxvar_sdriver->major = ttymajor;
 	mxvar_sdriver->minor_start = 0;
-	mxvar_sdriver->num = MXSER_PORTS + 1;
 	mxvar_sdriver->type = TTY_DRIVER_TYPE_SERIAL;
 	mxvar_sdriver->subtype = SERIAL_TYPE_NORMAL;
 	mxvar_sdriver->init_termios = tty_std_termios;
@@ -2729,12 +2684,8 @@ static int __init mxser_module_init(void)
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "mxser: found MOXA %s board (CAP=0x%lx)\n",
 				brd->info->name, ioaddr[b]);
-#else
-		;
-#endif
 
 		/* mxser_initbrd will hook ISR. */
 		if (mxser_initbrd(brd, NULL) < 0) {

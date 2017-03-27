@@ -1314,12 +1314,8 @@ imx_console_get_options(struct imx_port *sport, int *baud,
 		}
 
 		if(*baud != baud_raw)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Serial: Console IMX rounded baud rate from %d to %d\n",
 				baud_raw, *baud);
-#else
-			;
-#endif
 	}
 }
 
@@ -1597,11 +1593,7 @@ static int __init imx_serial_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: IMX driver\n");
-#else
-	;
-#endif
 
 	ret = uart_register_driver(&imx_reg);
 	if (ret)

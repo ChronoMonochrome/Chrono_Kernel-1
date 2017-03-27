@@ -548,11 +548,7 @@ static int __init clps711xuart_init(void)
 {
 	int ret, i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: CLPS711x driver\n");
-#else
-	;
-#endif
 
 	ret = uart_register_driver(&clps711x_reg);
 	if (ret)

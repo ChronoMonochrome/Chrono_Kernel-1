@@ -458,11 +458,7 @@ static int msm_hs_init_clk_locked(struct uart_port *uport)
 	/* Set up the MREG/NREG/DREG/MNDREG */
 	ret = clk_set_rate(msm_uport->clk, uport->uartclk);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error setting clock rate on UART\n");
-#else
-		;
-#endif
 		clk_disable(msm_uport->clk);
 		return ret;
 	}
@@ -598,11 +594,7 @@ static void msm_hs_set_bps_locked(struct uart_port *uport,
 		uport->uartclk = UARTCLK;
 
 	if (clk_set_rate(msm_uport->clk, uport->uartclk)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error setting clock rate on UART\n");
-#else
-		;
-#endif
 		return;
 	}
 

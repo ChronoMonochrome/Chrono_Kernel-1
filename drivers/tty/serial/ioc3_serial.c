@@ -54,7 +54,6 @@ static unsigned int Submodule_slot;
 #define DPRINT_CONFIG(_x...)	;
 //#define DPRINT_CONFIG(_x...)  printk _x
 #define NOT_PROGRESS()	;
-#ifdef CONFIG_DEBUG_PRINTK
 //#define NOT_PROGRESS()	printk("%s : fails %d\n", __func__, __LINE__)
 
 /* number of characters we want to transmit to the lower level at a time */
@@ -125,9 +124,6 @@ struct ioc3_card {
 	struct {
 		/* uart ports are allocated here */
 		struct uart_port icp_uart_port[LOGICAL_PORTS];
-#else
-//#define NOT_PROGRESS()	;
-#endif
 		/* the ioc3_port used for this port */
 		struct ioc3_port *icp_port;
 	} ic_port[PORTS_PER_CARD];
@@ -396,13 +392,9 @@ static int inline port_init(struct ioc3_port *port)
 	do {
 		sio_cr = readl(&idd->vma->sio_cr);
 		if (reset_loop_counter-- <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "IOC3 unable to come out of reset"
 				" scr 0x%x\n", sio_cr);
-#else
-			;
-#endif
 			return -1;
 		}
 	} while (!(sio_cr & SIO_CR_ARB_DIAG_IDLE) &&
@@ -1222,14 +1214,10 @@ static inline int do_read(struct uart_port *the_port, char *buf, int len)
 		entry = (struct ring_entry *)((caddr_t) inring + cons_ptr);
 
 		if (loop_counter-- <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IOC3 serial: "
 			       "possible hang condition/"
 			       "port stuck on read (line %d).\n",
 				the_port->line);
-#else
-			;
-#endif
 			break;
 		}
 
@@ -1487,14 +1475,10 @@ ioc3uart_intr_one(struct ioc3_submodule *is,
 		uint32_t shadow;
 
 		if (loop_counter-- <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IOC3 serial: "
 			       "possible hang condition/"
 			       "port stuck on interrupt (line %d).\n",
 				((struct uart_port *)port->ip_port)->line);
-#else
-			;
-#endif
 			break;
 		}
 		/* Handle a DCD change */
@@ -1966,13 +1950,9 @@ static inline int ioc3_serial_core_attach( struct ioc3_submodule *is,
 		the_port->dev = &pdev->dev;
 
 		if (uart_add_one_port(&ioc3_uart, the_port) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 		          "%s: unable to add port %d bus %d\n",
 			       __func__, the_port->line, pdev->bus->number);
-#else
-			;
-#endif
 		} else {
 			DPRINT_CONFIG(("IOC3 serial port %d irq %d bus %d\n",
 		          the_port->line, the_port->irq, pdev->bus->number));
@@ -2044,12 +2024,8 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
 
 	card_ptr = kzalloc(sizeof(struct ioc3_card), GFP_KERNEL);
 	if (!card_ptr) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ioc3_attach_one"
 		       ": unable to get memory for the IOC3\n");
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 	idd->data[is->id] = card_ptr;
@@ -2068,12 +2044,8 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
 	for (phys_port = 0; phys_port < PORTS_PER_CARD; phys_port++) {
 		port = kzalloc(sizeof(struct ioc3_port), GFP_KERNEL);
 		if (!port) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "IOC3 serial memory not available for port\n");
-#else
-			;
-#endif
 			ret = -ENOMEM;
 			goto out4;
 		}
@@ -2203,13 +2175,9 @@ static int __init ioc3uart_init(void)
 
 	/* register with serial core */
 	if ((ret = uart_register_driver(&ioc3_uart)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Couldn't register IOC3 uart serial driver\n",
 		       __func__);
-#else
-		;
-#endif
 		return ret;
 	}
 	ret = ioc3_register_submodule(&ioc3uart_ops);

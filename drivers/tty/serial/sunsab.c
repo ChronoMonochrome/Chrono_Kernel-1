@@ -881,12 +881,8 @@ static int sunsab_console_setup(struct console *con, char *options)
 	if (up->port.type != PORT_SUNSAB)
 		return -1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Console: ttyS%d (SAB82532)\n",
 	       (sunsab_reg.minor - 64) + con->index);
-#else
-	;
-#endif
 
 	sunserial_console_termios(con, up->port.dev->of_node);
 

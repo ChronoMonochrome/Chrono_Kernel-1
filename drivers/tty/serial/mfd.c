@@ -1291,12 +1291,8 @@ static int serial_hsu_probe(struct pci_dev *pdev,
 	struct uart_hsu_port *uport;
 	int index, ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HSU: found PCI Serial controller(ID: %04x:%04x)\n",
 		pdev->vendor, pdev->device);
-#else
-	;
-#endif
 
 	switch (pdev->device) {
 	case 0x081B:

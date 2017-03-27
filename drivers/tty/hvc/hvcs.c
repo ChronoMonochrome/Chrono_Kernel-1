@@ -389,11 +389,7 @@ static ssize_t hvcs_current_vty_store(struct device *dev, struct device_attribut
 	 * Don't need this feature at the present time because firmware doesn't
 	 * yet support multiple partners.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: Denied current_vty change: -EPERM.\n");
-#else
-	;
-#endif
 	return -EPERM;
 }
 
@@ -428,36 +424,24 @@ static ssize_t hvcs_vterm_state_store(struct device *dev, struct device_attribut
 
 	if (hvcsd->open_count > 0) {
 		spin_unlock_irqrestore(&hvcsd->lock, flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HVCS: vterm state unchanged.  "
 				"The hvcs device node is still in use.\n");
-#else
-		;
-#endif
 		return -EPERM;
 	}
 
 	if (hvcsd->connected == 0) {
 		spin_unlock_irqrestore(&hvcsd->lock, flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HVCS: vterm state unchanged. The"
 				" vty-server is not connected to a vty.\n");
-#else
-		;
-#endif
 		return -EPERM;
 	}
 
 	hvcs_partner_free(hvcsd);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: Closed vty-server@%X and"
 			" partner vty@%X:%d connection.\n",
 			hvcsd->vdev->unit_address,
 			hvcsd->p_unit_address,
 			(uint32_t)hvcsd->p_partition_ID);
-#else
-	;
-#endif
 
 	spin_unlock_irqrestore(&hvcsd->lock, flags);
 	return count;
@@ -520,12 +504,8 @@ static ssize_t hvcs_rescan_store(struct device_driver *ddp, const char * buf,
 		return -EINVAL;
 
 	hvcs_rescan_status = 1;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: rescanning partner info for all"
 		" vty-servers.\n");
-#else
-	;
-#endif
 	hvcs_rescan_devices_list();
 	hvcs_rescan_status = 0;
 	return count;
@@ -736,22 +716,14 @@ static void destroy_hvcs_struct(struct kref *kref)
 
 	if (hvcsd->connected == 1) {
 		hvcs_partner_free(hvcsd);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HVCS: Closed vty-server@%X and"
 				" partner vty@%X:%d connection.\n",
 				hvcsd->vdev->unit_address,
 				hvcsd->p_unit_address,
 				(uint32_t)hvcsd->p_partition_ID);
-#else
-		;
-#endif
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: Destroyed hvcs_struct for vty-server@%X.\n",
 			hvcsd->vdev->unit_address);
-#else
-	;
-#endif
 
 	vdev = hvcsd->vdev;
 	hvcsd->vdev = NULL;
@@ -858,11 +830,7 @@ static int __devinit hvcs_probe(
 		return retval;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: vty-server@%X added to the vio bus.\n", dev->unit_address);
-#else
-	;
-#endif
 
 	/*
 	 * DON'T enable interrupts here because there is no user to receive the
@@ -902,12 +870,8 @@ static int __devexit hvcs_remove(struct vio_dev *dev)
 	if (tty)
 		tty_hangup(tty);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: vty-server@%X removed from the"
 			" vio bus.\n", dev->unit_address);
-#else
-	;
-#endif
 	return 0;
 };
 
@@ -1063,12 +1027,8 @@ static int hvcs_partner_connect(struct hvcs_struct *hvcsd)
 	 * data but thanks to ambiguous firmware return codes we can't really
 	 * tell.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: vty-server or partner"
 			" vty is busy.  Try again later.\n");
-#else
-	;
-#endif
 	return -EBUSY;
 }
 
@@ -1167,12 +1127,8 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
 	 * This function increments the kref index.
 	 */
 	if (!(hvcsd = hvcs_get_by_index(tty->index))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HVCS: open failed, no device associated"
 				" with tty->index %d.\n", tty->index);
-#else
-		;
-#endif
 		return -ENODEV;
 	}
 
@@ -1205,11 +1161,7 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
 	 */
 	if (((rc = hvcs_enable_device(hvcsd, unit_address, irq, vdev)))) {
 		kref_put(&hvcsd->kref, destroy_hvcs_struct);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HVCS: enable device failed.\n");
-#else
-		;
-#endif
 		return rc;
 	}
 
@@ -1227,12 +1179,8 @@ fast_open:
 open_success:
 	hvcs_kick();
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: vty-server@%X connection opened.\n",
 		hvcsd->vdev->unit_address );
-#else
-	;
-#endif
 
 	return 0;
 
@@ -1240,11 +1188,7 @@ error_release:
 	spin_unlock_irqrestore(&hvcsd->lock, flags);
 	kref_put(&hvcsd->kref, destroy_hvcs_struct);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "HVCS: partner connect failed.\n");
-#else
-	;
-#endif
 	return retval;
 }
 
@@ -1388,12 +1332,8 @@ static int hvcs_write(struct tty_struct *tty,
 
 	/* Reasonable size to prevent user level flooding */
 	if (count > HVCS_MAX_FROM_USER) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HVCS write: count being truncated to"
 				" HVCS_MAX_FROM_USER.\n");
-#else
-		;
-#endif
 		count = HVCS_MAX_FROM_USER;
 	}
 
@@ -1660,11 +1600,7 @@ static void __exit hvcs_module_exit(void)
 
 	put_tty_driver(hvcs_tty_driver);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HVCS: driver module removed.\n");
-#else
-	;
-#endif
 }
 
 module_init(hvcs_module_init);
