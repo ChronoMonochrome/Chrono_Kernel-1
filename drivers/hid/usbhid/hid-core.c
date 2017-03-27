@@ -1116,12 +1116,8 @@ static int usbhid_start(struct hid_device *hid)
 		if (hid->quirks & HID_QUIRK_FULLSPEED_INTERVAL &&
 		    dev->speed == USB_SPEED_HIGH) {
 			interval = fls(endpoint->bInterval*8);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: Fixing fullspeed to highspeed interval: %d -> %d\n",
 			       hid->name, endpoint->bInterval, interval);
-#else
-			;
-#endif
 		}
 
 		/* Change the polling interval of mice. */
@@ -1585,11 +1581,7 @@ static int __init hid_init(void)
 	retval = usb_register(&hid_driver);
 	if (retval)
 		goto usb_register_fail;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
-#else
-	;
-#endif
 
 	return 0;
 usb_register_fail:
