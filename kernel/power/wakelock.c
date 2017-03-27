@@ -22,6 +22,9 @@
 #ifdef CONFIG_WAKELOCK_STAT
 #include <linux/proc_fs.h>
 #endif
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 #include "power.h"
 
 enum {
@@ -286,7 +289,12 @@ static void suspend(struct work_struct *work)
 	}
 
 	entry_event_num = current_event_num;
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active)
+		sys_sync();
+#else
 	sys_sync();
+#endif
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("suspend: enter suspend\n");
 	getnstimeofday(&ts_entry);
