@@ -25,6 +25,9 @@
 #include <linux/cpu.h>
 #include <linux/freezer.h>
 #include <scsi/scsi_scan.h>
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include <asm/uaccess.h>
 
@@ -217,9 +220,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
 		if (data->frozen)
 			break;
 
-		printk("Syncing filesystems ... ");
+#ifdef CONFIG_PM_SYNC_CTRL
+		if (pm_sync_active)
+			sys_sync();
+#else
 		sys_sync();
-		printk("done.\n");
+#endif
 
 		error = freeze_processes();
 		if (!error)
