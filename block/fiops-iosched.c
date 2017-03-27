@@ -467,11 +467,11 @@ static void fiops_init_prio_data(struct fiops_ioc *cic)
 		cic->wl_type = fiops_wl_type(task_nice_ioclass(tsk));
 		break;
 	case IOPRIO_CLASS_RT:
-		cic->ioprio = IOPRIO_PRIO_DATA(ioc->ioprio);
+		cic->ioprio = task_ioprio(ioc);
 		cic->wl_type = fiops_wl_type(IOPRIO_CLASS_RT);
 		break;
 	case IOPRIO_CLASS_BE:
-		cic->ioprio = IOPRIO_PRIO_DATA(ioc->ioprio);
+		cic->ioprio = task_ioprio(ioc);
 		cic->wl_type = fiops_wl_type(IOPRIO_CLASS_BE);
 		break;
 	case IOPRIO_CLASS_IDLE:
@@ -614,14 +614,14 @@ static void fiops_kick_queue(struct work_struct *work)
 	spin_unlock_irq(q->queue_lock);
 }
 
-static int fiops_init_queue(struct request_queue *q)
+static void *fiops_init_queue(struct request_queue *q)
 {
 	struct fiops_data *fiopsd;
 	int i;
 
 	fiopsd = kzalloc_node(sizeof(*fiopsd), GFP_KERNEL, q->node);
 	if (!fiopsd)
-		return -ENOMEM;
+		return NULL;
 
 	fiopsd->queue = q;
 
@@ -635,7 +635,7 @@ static int fiops_init_queue(struct request_queue *q)
 	fiopsd->sync_scale = VIOS_SYNC_SCALE;
 	fiopsd->async_scale = VIOS_ASYNC_SCALE;
 
-	return 0;
+	return fiopsd;
 }
 
 static void fiops_init_icq(struct io_cq *icq)

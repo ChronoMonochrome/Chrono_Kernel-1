@@ -156,19 +156,19 @@ static int zen_dispatch_requests(struct request_queue *q, int force)
 	return 1;
 }
 
-static int zen_init_queue(struct request_queue *q)
+static void *zen_init_queue(struct request_queue *q)
 {
 	struct zen_data *zdata;
 
 	zdata = kmalloc_node(sizeof(*zdata), GFP_KERNEL, q->node);
 	if (!zdata)
-		return -ENOMEM;
+		return NULL;
 	INIT_LIST_HEAD(&zdata->fifo_list[SYNC]);
 	INIT_LIST_HEAD(&zdata->fifo_list[ASYNC]);
 	zdata->fifo_expire[SYNC] = sync_expire;
 	zdata->fifo_expire[ASYNC] = async_expire;
 	zdata->fifo_batch = fifo_batch;
-	return 0;
+	return zdata;
 }
 
 static void zen_exit_queue(struct elevator_queue *e)
