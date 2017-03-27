@@ -24,8 +24,9 @@
 #include <linux/modem/shrm/shrm.h>
 #include <linux/cdev.h>
 #include <linux/kthread.h>
+#include <linux/wakelock.h>
 
-#define ISA_DEVICES 8
+#define ISA_DEVICES 10
 
 #define BOOT_INIT  (0)
 #define BOOT_INFO_SYNC  (1)
@@ -62,6 +63,7 @@
  * @ac_audio_shared_rptr:	ape-cmt audio channel read pointer
  * @ca_audio_shared_wptr:	cmt-ape audio channel write pointer
  * @ca_audio_shared_rptr:	cmt-ape audio channel read pointer
+ * @ca_reset_status_rptr:	cmt-ape modem reset status pointer
  * @dev:			pointer to the driver device
  * @ndev:			pointer to the network device structure
  * @modem:			poiner to struct modem
@@ -86,6 +88,7 @@
  * @shm_ca_wake_req:		work to send cmt-ape wake request
  * @shm_ca_sleep_req:		work to send cmt-ape sleep request
  * @shm_ac_sleep_req:		work to send ape-cmt sleep request
+ * @shm_mod_reset_process:	work to process a modem reset request
  * @shm_mod_reset_req:		work to send a reset request to modem
  * @shm_print_dbg_info:		work function to print all prcmu/abb registers
  */
@@ -112,6 +115,9 @@ struct shrm_dev {
 	int cmt_audio_fifo_size;
 	int netdev_flag_up;
 	int msr_flag;
+	void (*msr_crash_cb)(void *);
+	void (*msr_reinit_cb)(void *);
+	void *msr_cookie;
 
 	void __iomem *ac_common_shared_wptr;
 	void __iomem *ac_common_shared_rptr;
@@ -122,6 +128,8 @@ struct shrm_dev {
 	void __iomem *ac_audio_shared_rptr;
 	void __iomem *ca_audio_shared_wptr;
 	void __iomem *ca_audio_shared_rptr;
+
+	void __iomem *ca_reset_status_rptr;
 
 	struct device *dev;
 	struct net_device *ndev;
@@ -145,8 +153,11 @@ struct shrm_dev {
 	struct kthread_work shm_ca_wake_req;
 	struct kthread_work shm_ca_sleep_req;
 	struct kthread_work shm_ac_sleep_req;
+	struct kthread_work shm_mod_reset_process;
 	struct kthread_work shm_mod_reset_req;
 	struct kthread_work shm_print_dbg_info;
+	struct wake_lock rpc_wake_lock;
+	struct wake_lock sec_wake_lock;
 };
 
 /**

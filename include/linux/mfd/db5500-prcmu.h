@@ -11,7 +11,6 @@
 #ifdef CONFIG_MFD_DB5500_PRCMU
 
 void db5500_prcmu_early_init(void);
-int db5500_prcmu_set_epod(u16 epod_id, u8 epod_state);
 int db5500_prcmu_set_display_clocks(void);
 int db5500_prcmu_disable_dsipll(void);
 int db5500_prcmu_enable_dsipll(void);
@@ -61,16 +60,7 @@ static inline int prcmu_set_clock_rate(u8 clock, unsigned long rate)
 	return 0;
 }
 int db5500_prcmu_get_hotdog(void);
-int db5500_prcmu_config_hotdog(u8 threshold);
-int db5500_prcmu_config_hotmon(u8 low, u8 high);
-int db5500_prcmu_start_temp_sense(u16 cycles32k);
-int db5500_prcmu_stop_temp_sense(void);
 
-int db5500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off);
-int db5500_prcmu_enable_a9wdog(u8 id);
-int db5500_prcmu_disable_a9wdog(u8 id);
-int db5500_prcmu_kick_a9wdog(u8 id);
-int db5500_prcmu_load_a9wdog(u8 id, u32 timeout);
 
 #else /* !CONFIG_UX500_SOC_DB5500 */
 
@@ -230,31 +220,6 @@ static inline int db5500_prcmu_start_temp_sense(u16 cycles32k)
 	return 0;
 }
 static inline int db5500_prcmu_stop_temp_sense(void)
-{
-	return 0;
-}
-
-static inline int db5500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
-{
-	return 0;
-}
-
-static inline int db5500_prcmu_enable_a9wdog(u8 id)
-{
-	return 0;
-}
-
-static inline int db5500_prcmu_disable_a9wdog(u8 id)
-{
-	return 0;
-}
-
-static inline int db5500_prcmu_kick_a9wdog(u8 id)
-{
-	return 0;
-}
-
-static inline int db5500_prcmu_load_a9wdog(u8 id, u32 timeout)
 {
 	return 0;
 }
