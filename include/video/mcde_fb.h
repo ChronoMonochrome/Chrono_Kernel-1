@@ -28,6 +28,7 @@
 #endif
 
 #define MCDE_GET_BUFFER_NAME_IOC _IO('M', 1)
+#define MCDE_SET_VSCREENINFO_IOC _IOW('D', 2, struct fb_var_screeninfo)
 
 #ifdef __KERNEL__
 #define to_mcde_fb(x) ((struct mcde_fb *)(x)->par)
@@ -56,6 +57,10 @@ int mcde_fb_attach_overlay(struct fb_info *fb_info,
 	struct mcde_overlay *ovl);
 void mcde_fb_destroy(struct mcde_display_device *ddev);
 
+/* +452052 ESD recovery for DSI video */
+int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi);
+int mcde_fb_set_par(struct fb_info *fbi);
+/* -452052 ESD recovery for DSI video */
 /* MCDE fb driver */
 int mcde_fb_init(void);
 void mcde_fb_exit(void);

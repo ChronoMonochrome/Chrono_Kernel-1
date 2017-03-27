@@ -19,9 +19,7 @@
 int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 			u8 channel, bool mode, int *value);
 
-void ux500_ab8500_audio_pwm_vibra(unsigned char speed_left_pos,
-			unsigned char speed_left_neg,
-			unsigned char speed_right_pos,
-			unsigned char speed_right_neg);
+void ux500_ab8500_audio_pwm_vibra(unsigned char pdc1, unsigned char ndc1,
+		unsigned char pdc2, unsigned char ndc2);
 
 #endif

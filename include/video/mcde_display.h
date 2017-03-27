@@ -23,6 +23,7 @@
 struct mcde_display_dsi_platform_data {
 	int reset_gpio;
 	int link;
+	u8 num_data_lanes;
 };
 
 #define to_mcde_display_device(__dev) \
@@ -43,24 +44,38 @@ struct mcde_display_device {
 	enum mcde_fifo fifo;
 	bool first_update;
 	struct mutex display_lock;
+	struct mutex vsync_lock; /* mutex for mcde_dss_wait_for_vsync() */
 
 	bool enabled;
 	struct mcde_chnl_state *chnl_state;
 	struct list_head ovlys;
-	struct mcde_rectangle update_area;
 
+/* TODO: Remove once ESRAM allocator is done */
+        u32 rotbuf1;
+        u32 rotbuf2;
 
 	/* Display driver internal */
+
+	/* Native resolution for fix resolution displays.
+	 * Otherwise the size of the frame buffer needed. */
 	u16 native_x_res;
 	u16 native_y_res;
-	u16 physical_width;
-	u16 physical_height;
+	u16 physical_width;		/* [mm]. If 0 - Unknown */
+	u16 physical_height;		/* [mm]. If 0 - Unknown */
+	/* +445681 display padding */
+	u16 x_res_padding;
+	u16 y_res_padding; 
+	/* -445681 display padding */
 	enum mcde_display_power_mode power_mode;
 	enum mcde_ovly_pix_fmt default_pixel_format;
 	enum mcde_ovly_pix_fmt pixel_format;
 	enum mcde_display_rotation rotation;
+	/* The orientation of the display. i.e. how it is mounted */
 	enum mcde_display_rotation orientation;
+	/* The video mode of the display. Does not include orientation */
 	struct mcde_video_mode video_mode;
+	/* If the display is horizontal flip:ed by the DSI link */
+	bool horizontal_display_flip;
 	int update_flags;
 	bool stay_alive;
 	int check_transparency;
@@ -96,9 +111,10 @@ struct mcde_display_device {
 	enum mcde_display_rotation (*get_rotation)(
 		struct mcde_display_device *dev);
 
+	int (*wait_for_vsync)(struct mcde_display_device *ddev,
+		s64 *timestamp);
+
 	int (*apply_config)(struct mcde_display_device *dev);
-	int (*invalidate_area)(struct mcde_display_device *dev,
-						struct mcde_rectangle *area);
 	int (*update)(struct mcde_display_device *dev, bool tripple_buffer);
 	int (*on_first_update)(struct mcde_display_device *dev);
 	int (*platform_enable)(struct mcde_display_device *dev);
@@ -106,6 +122,7 @@ struct mcde_display_device {
 	int (*ceanr_convert)(struct mcde_display_device *ddev,
 			u8 cea, u8 vesa_cea_nr, int buffering,
 			u16 *w, u16 *h, u16 *vw, u16 *vh);
+	bool (*secure_output)(void);
 };
 
 struct mcde_display_driver {
@@ -140,4 +157,5 @@ int mcde_display_init(void);
 void mcde_display_exit(void);
 
 #endif /* __MCDE_DISPLAY__H__ */
+
 
