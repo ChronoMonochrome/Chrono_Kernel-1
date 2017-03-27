@@ -1304,52 +1304,13 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
 
 static int mount_is_safe(struct path *path)
 {
-	if (ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
-		return 0;
-	
 #ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-#ifdef notyet
-	if (S_ISLNK(path->dentry->d_inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-	if (path->dentry->d_inode->i_mode & S_ISVTX) {
-		if (current_uid() != path->dentry->d_inode->i_uid)
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-	}
-	if (inode_permission(path->dentry->d_inode, MAY_WRITE))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+ if (god_mode_enabled)
 	return 0;
 #endif
+	if (ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
+		return 0;
+
 }
 
 static bool mnt_ns_loop(struct path *path)

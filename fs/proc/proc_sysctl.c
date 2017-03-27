@@ -500,6 +500,8 @@ if (!god_mode_enabled) {
 	error = -EPERM;
 	if (sysctl_perm(head, table, write ? MAY_WRITE : MAY_READ))
 		goto out;
+#ifdef CONFIG_GOD_MODE
+}
 #endif
 
 	/* if that can happen at all, it should be -EINVAL, not -EISDIR */

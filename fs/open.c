@@ -382,6 +382,9 @@ retry:
 		 * MAY_EXEC on regular files is denied if the fs is mounted
 		 * with the "noexec" flag.
 		 */
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled)
+#endif
 		res = -EACCES;
 		if (path.mnt->mnt_flags & MNT_NOEXEC)
 			goto out_path_release;
