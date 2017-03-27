@@ -17,10 +17,11 @@
 */
 
 #include <linux/module.h>
-#include <linux/tty.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
 #include <linux/serial.h>
+#include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/console.h>
 #include <linux/delay.h> /* for udelay */
 #include <linux/device.h>
@@ -473,11 +474,7 @@ static int __init mux_probe(struct parisc_device *dev)
 	int i, status;
 
 	int port_count = get_mux_port_count(dev);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial mux driver (%d ports) Revision: 0.6\n", port_count);
-#else
-	;
-#endif
 
 	dev_set_drvdata(&dev->dev, (void *)(long)port_count);
 	request_mem_region(dev->hpa.start + MUX_OFFSET,
@@ -501,7 +498,7 @@ static int __init mux_probe(struct parisc_device *dev)
 		port->membase	= ioremap_nocache(port->mapbase, MUX_LINE_OFFSET);
 		port->iotype	= UPIO_MEM;
 		port->type	= PORT_MUX;
-		port->irq	= NO_IRQ;
+		port->irq	= 0;
 		port->uartclk	= 0;
 		port->fifosize	= MUX_FIFO_SIZE;
 		port->ops	= &mux_pops;

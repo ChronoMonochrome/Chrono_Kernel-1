@@ -24,7 +24,7 @@
  *
  *
  ***********************************************************************/
-#include <linux/moduleparam.h>
+#include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/slab.h>
 
@@ -107,12 +107,8 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
 
 	brd->irq = pdev->irq;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev,
 		"jsm_found_board - NEO adapter\n");
-#else
-	jsm_;
-#endif
 
 	/* get the PCI Base Address Registers */
 	brd->membase	= pci_resource_start(pdev, 0);
@@ -141,11 +137,7 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
 	rc = request_irq(brd->irq, brd->bd_ops->intr,
 			IRQF_SHARED, "JSM", brd);
 	if (rc) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to hook IRQ %d\n",brd->irq);
-#else
-		;
-#endif
 		goto out_iounmap;
 	}
 
@@ -168,27 +160,10 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
 	dev_info(&pdev->dev, "board %d: Digi Neo (rev %d), irq %d\n",
 			adapter_count, brd->rev, brd->irq);
 
-	/*
-	 * allocate flip buffer for board.
-	 *
-	 * Okay to malloc with GFP_KERNEL, we are not at interrupt
-	 * context, and there are no locks held.
-	 */
-	brd->flipbuf = kzalloc(MYFLIPLEN, GFP_KERNEL);
-	if (!brd->flipbuf) {
-		/* XXX: leaking all resources from jsm_tty_init and
-		 	jsm_uart_port_init here! */
-		dev_err(&pdev->dev, "memory allocation for flipbuf failed\n");
-		rc = -ENOMEM;
-		goto out_free_uart;
-	}
-
 	pci_set_drvdata(pdev, brd);
 	pci_save_state(pdev);
 
 	return 0;
- out_free_uart:
-	jsm_remove_uart_port(brd);
  out_free_irq:
 	jsm_remove_uart_port(brd);
 	free_irq(brd->irq, brd);
@@ -225,7 +200,6 @@ static void __devexit jsm_remove_one(struct pci_dev *pdev)
 
 	pci_release_regions(pdev);
 	pci_disable_device(pdev);
-	kfree(brd->flipbuf);
 	kfree(brd);
 }
 

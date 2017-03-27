@@ -16,6 +16,7 @@
 
 #include <linux/module.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
 #include <linux/serial.h>
@@ -571,16 +572,12 @@ static int __devinit apbuart_probe(struct platform_device *op)
 
 	apbuart_flush_fifo((struct uart_port *) port);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "grlib-apbuart at 0x%llx, irq %d\n",
 	       (unsigned long long) port->mapbase, port->irq);
-#else
-	;
-#endif
 	return 0;
 }
 
-static struct of_device_id __initdata apbuart_match[] = {
+static struct of_device_id apbuart_match[] = {
 	{
 	 .name = "GAISLER_APBUART",
 	 },
@@ -600,7 +597,7 @@ static struct platform_driver grlib_apbuart_of_driver = {
 };
 
 
-static int grlib_apbuart_configure(void)
+static int __init grlib_apbuart_configure(void)
 {
 	struct device_node *np;
 	int line = 0;
@@ -657,11 +654,7 @@ static int __init grlib_apbuart_init(void)
 	if (ret)
 		return ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
-#else
-	;
-#endif
 
 	ret = uart_register_driver(&grlib_apbuart_driver);
 

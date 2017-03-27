@@ -39,7 +39,6 @@
 
 #include <asm/io.h>
 #include <asm/irq.h>
-#include <asm/system.h>
 #include <asm/delay.h>
 #include <asm/uaccess.h>
 
@@ -126,19 +125,11 @@ static inline int serial_paranoia_check(struct m68k_serial *info,
 		"Warning: null m68k_serial for %s in %s\n";
 
 	if (!info) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(badinfo, name, routine);
-#else
-		;
-#endif
 		return 1;
 	}
 	if (info->magic != SERIAL_MAGIC) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(badmagic, name, routine);
-#else
-		;
-#endif
 		return 1;
 	}
 #endif
@@ -243,22 +234,6 @@ static void batten_down_hatches(void)
 
 static void status_handle(struct m68k_serial *info, unsigned short status)
 {
-#if 0
-	if(status & DCD) {
-		if((info->port.tty->termios->c_cflag & CRTSCTS) &&
-		   ((info->curregs[3] & AUTO_ENAB)==0)) {
-			info->curregs[3] |= AUTO_ENAB;
-			info->pendregs[3] |= AUTO_ENAB;
-			write_zsreg(info->m68k_channel, 3, info->curregs[3]);
-		}
-	} else {
-		if((info->curregs[3] & AUTO_ENAB)) {
-			info->curregs[3] &= ~AUTO_ENAB;
-			info->pendregs[3] &= ~AUTO_ENAB;
-			write_zsreg(info->m68k_channel, 3, info->curregs[3]);
-		}
-	}
-#endif
 	/* If this is console input and this is a
 	 * 'break asserted' status change interrupt
 	 * see if we can drop into the debugger
@@ -348,9 +323,6 @@ static void transmit_chars(struct m68k_serial *info)
 	info->xmit_tail = info->xmit_tail & (SERIAL_XMIT_SIZE-1);
 	info->xmit_cnt--;
 
-	if (info->xmit_cnt < WAKEUP_CHARS)
-		schedule_work(&info->tqueue);
-
 	if(info->xmit_cnt <= 0) {
 		/* All done for now... TX ints off */
 		uart->ustcnt &= ~USTCNT_TX_INTR_MASK;
@@ -384,21 +356,6 @@ irqreturn_t rs_interrupt(int irq, void *dev_id)
 	receive_chars(info, rx);		
 #endif
 	return IRQ_HANDLED;
-}
-
-static void do_softint(struct work_struct *work)
-{
-	struct m68k_serial	*info = container_of(work, struct m68k_serial, tqueue);
-	struct tty_struct	*tty;
-	
-	tty = info->tty;
-	if (!tty)
-		return;
-#if 0
-	if (clear_bit(RS_EVENT_WRITE_WAKEUP, &info->event)) {
-		tty_wakeup(tty);
-	}
-#endif   
 }
 
 static int startup(struct m68k_serial * info)
@@ -646,11 +603,7 @@ static void rs_set_ldisc(struct tty_struct *tty)
 
 	info->is_cons = (tty->termios->c_line == N_TTY);
 	
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("ttyS%d console mode %s\n", info->line, info->is_cons ? "on" : "off");
-#else
-	;
-#endif
 }
 
 static void rs_flush_chars(struct tty_struct *tty)
@@ -1056,21 +1009,13 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count; tty->count is 1, "
-#else
-		;
-#endif
 		       "info->count is %d\n", info->count);
 		info->count = 1;
 	}
 	if (--info->count < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count for ttyS%d: %d\n",
 		       info->line, info->count);
-#else
-		;
-#endif
 		info->count = 0;
 	}
 	if (info->count) {
@@ -1244,14 +1189,9 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
 int rs_open(struct tty_struct *tty, struct file * filp)
 {
 	struct m68k_serial	*info;
-	int 			retval, line;
+	int retval;
 
-	line = tty->index;
-	
-	if (line >= NR_PORTS || line < 0) /* we have exactly one */
-		return -ENODEV;
-
-	info = &m68k_soft[line];
+	info = &m68k_soft[tty->index];
 
 	if (serial_paranoia_check(info, tty->name, "rs_open"))
 		return -ENODEV;
@@ -1274,11 +1214,7 @@ int rs_open(struct tty_struct *tty, struct file * filp)
 
 static void show_serial_version(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("MC68328 serial driver version 1.00\n");
-#else
-	;
-#endif
 }
 
 static const struct tty_operations rs_ops = {
@@ -1348,23 +1284,14 @@ rs68328_init(void)
 	    info->event = 0;
 	    info->count = 0;
 	    info->blocked_open = 0;
-	    INIT_WORK(&info->tqueue, do_softint);
 	    init_waitqueue_head(&info->open_wait);
 	    init_waitqueue_head(&info->close_wait);
 	    info->line = i;
 	    info->is_cons = 1; /* Means shortcuts work */
 	    
-#ifdef CONFIG_DEBUG_PRINTK
 	    printk("%s%d at 0x%08x (irq = %d)", serial_driver->name, info->line, 
 		   info->port, info->irq);
-#else
-	    ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" is a builtin MC68328 UART\n");
-#else
-	    ;
-#endif
 	    
 #ifdef CONFIG_M68VZ328
 		if (i > 0 )
@@ -1373,7 +1300,7 @@ rs68328_init(void)
 
 	    if (request_irq(uart_irqs[i],
 			    rs_interrupt,
-			    IRQF_DISABLED,
+			    0,
 			    "M68328_UART", info))
                 panic("Unable to attach 68328 serial interrupt\n");
 	}

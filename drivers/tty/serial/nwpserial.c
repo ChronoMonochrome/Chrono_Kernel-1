@@ -10,11 +10,13 @@
  *
  */
 #include <linux/init.h>
+#include <linux/export.h>
 #include <linux/console.h>
 #include <linux/serial.h>
 #include <linux/serial_reg.h>
 #include <linux/serial_core.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/irqreturn.h>
 #include <linux/mutex.h>
 #include <linux/of_platform.h>
@@ -467,11 +469,7 @@ static int __init nwpserial_console_init(void)
 
 	up->dcr_host = dcr_map(dn, dcr_base, dcr_len);
 	if (!DCR_MAP_OK(up->dcr_host)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Cannot map DCR resources for SERIAL");
-#else
-		;
-#endif
 		return -1;
 	}
 	register_console(&nwpserial_console);

@@ -380,7 +380,7 @@ static void mcf_config_port(struct uart_port *port, int flags)
 	/* Clear mask, so no surprise interrupts. */
 	writeb(0, port->membase + MCFUART_UIMR);
 
-	if (request_irq(port->irq, mcf_interrupt, IRQF_DISABLED, "UART", port))
+	if (request_irq(port->irq, mcf_interrupt, 0, "UART", port))
 		printk(KERN_ERR "MCF: unable to attach ColdFire UART %d "
 			"interrupt vector=%d\n", port->line, port->irq);
 }
@@ -630,11 +630,7 @@ static int __init mcf_init(void)
 {
 	int rc;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("ColdFire internal UART serial driver\n");
-#else
-	;
-#endif
 
 	rc = uart_register_driver(&mcf_driver);
 	if (rc)

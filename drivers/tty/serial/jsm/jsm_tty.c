@@ -43,11 +43,7 @@ static inline int jsm_get_mstat(struct jsm_channel *ch)
 	unsigned char mstat;
 	unsigned result;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	mstat = (ch->ch_mostat | ch->ch_mistat);
 
@@ -66,11 +62,7 @@ static inline int jsm_get_mstat(struct jsm_channel *ch)
 	if (mstat & UART_MSR_DCD)
 		result |= TIOCM_CD;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	return result;
 }
 
@@ -87,22 +79,14 @@ static unsigned int jsm_tty_get_mctrl(struct uart_port *port)
 	int result;
 	struct jsm_channel *channel = (struct jsm_channel *)port;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	result = jsm_get_mstat(channel);
 
 	if (result < 0)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 
 	return result;
 }
@@ -116,11 +100,7 @@ static void jsm_tty_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
 	struct jsm_channel *channel = (struct jsm_channel *)port;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	if (mctrl & TIOCM_RTS)
 		channel->ch_mostat |= UART_MCR_RTS;
@@ -134,11 +114,7 @@ static void jsm_tty_set_mctrl(struct uart_port *port, unsigned int mctrl)
 
 	channel->ch_bd->bd_ops->assert_modem_signals(channel);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	udelay(10);
 }
 
@@ -159,39 +135,23 @@ static void jsm_tty_start_tx(struct uart_port *port)
 {
 	struct jsm_channel *channel = (struct jsm_channel *)port;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	channel->ch_flags &= ~(CH_STOP);
 	jsm_tty_write(port);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 }
 
 static void jsm_tty_stop_tx(struct uart_port *port)
 {
 	struct jsm_channel *channel = (struct jsm_channel *)port;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	channel->ch_flags |= (CH_STOP);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 }
 
 static void jsm_tty_send_xchar(struct uart_port *port, char ch)
@@ -256,24 +216,16 @@ static int jsm_tty_open(struct uart_port *port)
 	if (!channel->ch_rqueue) {
 		channel->ch_rqueue = kzalloc(RQUEUESIZE, GFP_KERNEL);
 		if (!channel->ch_rqueue) {
-#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(INIT, ERR, &channel->ch_bd->pci_dev,
 				"unable to allocate read queue buf");
-#else
-			jsm_;
-#endif
 			return -ENOMEM;
 		}
 	}
 	if (!channel->ch_equeue) {
 		channel->ch_equeue = kzalloc(EQUEUESIZE, GFP_KERNEL);
 		if (!channel->ch_equeue) {
-#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(INIT, ERR, &channel->ch_bd->pci_dev,
 				"unable to allocate error queue buf");
-#else
-			jsm_;
-#endif
 			return -ENOMEM;
 		}
 	}
@@ -282,12 +234,8 @@ static int jsm_tty_open(struct uart_port *port)
 	/*
 	 * Initialize if neither terminal is open.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(OPEN, INFO, &channel->ch_bd->pci_dev,
 		"jsm_open: initializing channel in open...\n");
-#else
-	jsm_;
-#endif
 
 	/*
 	 * Flush input queues.
@@ -322,11 +270,7 @@ static int jsm_tty_open(struct uart_port *port)
 
 	channel->ch_open_count++;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(OPEN, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	return 0;
 }
 
@@ -336,11 +280,7 @@ static void jsm_tty_close(struct uart_port *port)
 	struct ktermios *ts;
 	struct jsm_channel *channel = (struct jsm_channel *)port;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(CLOSE, INFO, &channel->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	bd = channel->ch_bd;
 	ts = port->state->port.tty->termios;
@@ -353,12 +293,8 @@ static void jsm_tty_close(struct uart_port *port)
 	 * If we have HUPCL set, lower DTR and RTS
 	 */
 	if (channel->ch_c_cflag & HUPCL) {
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(CLOSE, INFO, &channel->ch_bd->pci_dev,
 			"Close. HUPCL set, dropping DTR/RTS\n");
-#else
-		jsm_;
-#endif
 
 		/* Drop RTS/DTR */
 		channel->ch_mostat &= ~(UART_MCR_DTR | UART_MCR_RTS);
@@ -368,11 +304,7 @@ static void jsm_tty_close(struct uart_port *port)
 	/* Turn off UART interrupts for this port */
 	channel->ch_bd->bd_ops->uart_off(channel);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(CLOSE, INFO, &channel->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 }
 
 static void jsm_tty_set_termios(struct uart_port *port,
@@ -448,11 +380,7 @@ int __devinit jsm_tty_init(struct jsm_board *brd)
 	if (!brd)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	/*
 	 * Initialize board structure elements.
@@ -473,13 +401,9 @@ int __devinit jsm_tty_init(struct jsm_board *brd)
 			 */
 			brd->channels[i] = kzalloc(sizeof(struct jsm_channel), GFP_KERNEL);
 			if (!brd->channels[i]) {
-#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(CORE, ERR, &brd->pci_dev,
 					"%s:%d Unable to allocate memory for channel struct\n",
 							 __FILE__, __LINE__);
-#else
-				jsm_;
-#endif
 			}
 		}
 	}
@@ -507,11 +431,7 @@ int __devinit jsm_tty_init(struct jsm_board *brd)
 		init_waitqueue_head(&ch->ch_flags_wait);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	return 0;
 }
 
@@ -524,11 +444,7 @@ int jsm_uart_port_init(struct jsm_board *brd)
 	if (!brd)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	/*
 	 * Initialize board structure elements.
@@ -551,37 +467,21 @@ int jsm_uart_port_init(struct jsm_board *brd)
 		brd->channels[i]->uart_port.ops = &jsm_ops;
 		line = find_first_zero_bit(linemap, MAXLINES);
 		if (line >= MAXLINES) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "jsm: linemap is full, added device failed\n");
-#else
-			;
-#endif
 			continue;
 		} else
 			set_bit(line, linemap);
 		brd->channels[i]->uart_port.line = line;
 		rc = uart_add_one_port (&jsm_uart_driver, &brd->channels[i]->uart_port);
 		if (rc){
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "jsm: Port %d failed. Aborting...\n", i);
-#else
-			;
-#endif
 			return rc;
 		}
 		else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "jsm: Port %d added\n", i);
-#else
-			;
-#endif
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	return 0;
 }
 
@@ -593,11 +493,7 @@ int jsm_remove_uart_port(struct jsm_board *brd)
 	if (!brd)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	/*
 	 * Initialize board structure elements.
@@ -617,11 +513,7 @@ int jsm_remove_uart_port(struct jsm_board *brd)
 		uart_remove_one_port(&jsm_uart_driver, &brd->channels[i]->uart_port);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INIT, INFO, &brd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 	return 0;
 }
 
@@ -639,11 +531,7 @@ void jsm_input(struct jsm_channel *ch)
 	int s = 0;
 	int i = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(READ, INFO, &ch->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	if (!ch)
 		return;
@@ -672,11 +560,7 @@ void jsm_input(struct jsm_channel *ch)
 		return;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(READ, INFO, &ch->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 
 	/*
 	 *If the device is not open, or CREAD is off, flush
@@ -685,12 +569,8 @@ void jsm_input(struct jsm_channel *ch)
 	if (!tp ||
 		!(tp->termios->c_cflag & CREAD) ) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 			"input. dropping %d bytes on port %d...\n", data_len, ch->ch_portnum);
-#else
-		jsm_;
-#endif
 		ch->ch_r_head = tail;
 
 		/* Force queue flow control to be released, if needed */
@@ -705,29 +585,17 @@ void jsm_input(struct jsm_channel *ch)
 	 */
 	if (ch->ch_flags & CH_STOPI) {
 		spin_unlock_irqrestore(&ch->ch_lock, lock_flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 			"Port %d throttled, not reading any data. head: %x tail: %x\n",
 			ch->ch_portnum, head, tail);
-#else
-		jsm_;
-#endif
 		return;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(READ, INFO, &ch->ch_bd->pci_dev, "start 2\n");
-#else
-	jsm_;
-#endif
 
 	if (data_len <= 0) {
 		spin_unlock_irqrestore(&ch->ch_lock, lock_flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(READ, INFO, &ch->ch_bd->pci_dev, "jsm_input 1\n");
-#else
-		jsm_;
-#endif
 		return;
 	}
 
@@ -785,11 +653,7 @@ void jsm_input(struct jsm_channel *ch)
 	/* Tell the tty layer its okay to "eat" the data now */
 	tty_flip_buffer_push(tp);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev, "finish\n");
-#else
-	jsm_;
-#endif
 }
 
 static void jsm_carrier(struct jsm_channel *ch)
@@ -799,11 +663,7 @@ static void jsm_carrier(struct jsm_channel *ch)
 	int virt_carrier = 0;
 	int phys_carrier = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(CARR, INFO, &ch->ch_bd->pci_dev, "start\n");
-#else
-	jsm_;
-#endif
 	if (!ch)
 		return;
 
@@ -813,24 +673,16 @@ static void jsm_carrier(struct jsm_channel *ch)
 		return;
 
 	if (ch->ch_mistat & UART_MSR_DCD) {
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(CARR, INFO, &ch->ch_bd->pci_dev,
 			"mistat: %x D_CD: %x\n", ch->ch_mistat, ch->ch_mistat & UART_MSR_DCD);
-#else
-		jsm_;
-#endif
 		phys_carrier = 1;
 	}
 
 	if (ch->ch_c_cflag & CLOCAL)
 		virt_carrier = 1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(CARR, INFO, &ch->ch_bd->pci_dev,
 		"DCD: physical: %d virt: %d\n", phys_carrier, virt_carrier);
-#else
-	jsm_;
-#endif
 
 	/*
 	 * Test for a VIRTUAL carrier transition to HIGH.
@@ -842,12 +694,8 @@ static void jsm_carrier(struct jsm_channel *ch)
 		 * for carrier in the open routine.
 		 */
 
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(CARR, INFO, &ch->ch_bd->pci_dev,
 			"carrier: virt DCD rose\n");
-#else
-		jsm_;
-#endif
 
 		if (waitqueue_active(&(ch->ch_flags_wait)))
 			wake_up_interruptible(&ch->ch_flags_wait);
@@ -863,12 +711,8 @@ static void jsm_carrier(struct jsm_channel *ch)
 		 * for carrier in the open routine.
 		 */
 
-#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(CARR, INFO, &ch->ch_bd->pci_dev,
 			"carrier: physical DCD rose\n");
-#else
-		jsm_;
-#endif
 
 		if (waitqueue_active(&(ch->ch_flags_wait)))
 			wake_up_interruptible(&ch->ch_flags_wait);
@@ -946,13 +790,9 @@ void jsm_check_queue_flow_control(struct jsm_channel *ch)
 			if(!(ch->ch_flags & CH_RECEIVER_OFF)) {
 				bd_ops->disable_receiver(ch);
 				ch->ch_flags |= (CH_RECEIVER_OFF);
-#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 					"Internal queue hit hilevel mark (%d)! Turning off interrupts.\n",
 					qleft);
-#else
-				jsm_;
-#endif
 			}
 		}
 		/* SWFLOW */
@@ -960,12 +800,8 @@ void jsm_check_queue_flow_control(struct jsm_channel *ch)
 			if (ch->ch_stops_sent <= MAX_STOPS_SENT) {
 				bd_ops->send_stop_character(ch);
 				ch->ch_stops_sent++;
-#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 					"Sending stop char! Times sent: %x\n", ch->ch_stops_sent);
-#else
-				jsm_;
-#endif
 			}
 		}
 	}
@@ -991,24 +827,16 @@ void jsm_check_queue_flow_control(struct jsm_channel *ch)
 			if (ch->ch_flags & CH_RECEIVER_OFF) {
 				bd_ops->enable_receiver(ch);
 				ch->ch_flags &= ~(CH_RECEIVER_OFF);
-#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 					"Internal queue hit lowlevel mark (%d)! Turning on interrupts.\n",
 					qleft);
-#else
-				jsm_;
-#endif
 			}
 		}
 		/* SWFLOW */
 		else if (ch->ch_c_iflag & IXOFF && ch->ch_stops_sent) {
 			ch->ch_stops_sent = 0;
 			bd_ops->send_start_character(ch);
-#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(READ, INFO, &ch->ch_bd->pci_dev, "Sending start char!\n");
-#else
-			jsm_;
-#endif
 		}
 	}
 }

@@ -38,6 +38,7 @@
 
 #include <asm/irq.h>
 #include <mach/hardware.h>
+#include <mach/irqs.h>
 #include <asm/mach/serial_sa1100.h>
 
 /* We've been assigned a range on the "Low-density serial ports" major */
@@ -887,11 +888,7 @@ static int __init sa1100_serial_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: SA11x0 driver\n");
-#else
-	;
-#endif
 
 	sa1100_init_ports();
 

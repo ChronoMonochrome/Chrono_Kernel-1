@@ -82,15 +82,11 @@ void __iomem *cpm_uart_map_pram(struct uart_cpm_port *port,
 		return pram;
 
 	if (len != 2) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpm_uart[%d]: device tree references "
 			"SMC pram, using boot loader/wrapper pram mapping. "
 			"Please fix your device tree to reference the pram "
 			"base register instead.\n",
 			port->port.line);
-#else
-		;
-#endif
 		return pram;
 	}
 
