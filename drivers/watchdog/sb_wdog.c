@@ -125,9 +125,13 @@ static int sbwdog_release(struct inode *inode, struct file *file)
 		__raw_writeb(0, user_dog);
 		module_put(THIS_MODULE);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT
 			"%s: Unexpected close, not stopping watchdog!\n",
 						ident.identity);
+#else
+		;
+#endif
 		sbwdog_pet(user_dog);
 	}
 	clear_bit(0, &sbwdog_gate);
@@ -269,10 +273,14 @@ irqreturn_t sbwdog_interrupt(int irq, void *addr)
 	 * if it's the second watchdog timer, it's for those users
 	 */
 	if (wd_cfg_reg == user_dog)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s in danger of initiating system reset "
 			"in %ld.%01ld seconds\n",
 			ident.identity,
 			wd_init / 1000000, (wd_init / 100000) % 10);
+#else
+		;
+#endif
 	else
 		cfg |= 1;
 
@@ -310,9 +318,13 @@ static int __init sbwdog_init(void)
 
 	ret = misc_register(&sbwdog_miscdev);
 	if (ret == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: timeout is %ld.%ld secs\n",
 				ident.identity,
 				timeout / 1000000, (timeout / 100000) % 10);
+#else
+		;
+#endif
 		return 0;
 	}
 	free_irq(1, (void *)user_dog);
@@ -353,8 +365,12 @@ void platform_wd_setup(void)
 	ret = request_irq(1, sbwdog_interrupt, IRQF_DISABLED | IRQF_SHARED,
 		"Kernel Watchdog", IOADDR(A_SCD_WDOG_CFG_0));
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT
 		  "Watchdog IRQ zero(0) failed to be requested - %d\n", ret);
+#else
+		;
+#endif
 	}
 }
 

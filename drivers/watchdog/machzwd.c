@@ -141,6 +141,7 @@ static unsigned long next_heartbeat;
 #define ZF_CTIMEOUT 0xffff
 
 #ifndef ZF_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #	define dprintk(format, args...)
 #else
 #	define dprintk(format, args...) printk(KERN_DEBUG PFX \
@@ -151,6 +152,9 @@ static unsigned long next_heartbeat;
 static inline void zf_set_status(unsigned char new)
 {
 	zf_writeb(STATUS, new);
+#else
+#	define d;
+#endif
 }
 
 
@@ -203,7 +207,11 @@ static void zf_timer_off(void)
 	zf_set_control(ctrl_reg);
 	spin_unlock_irqrestore(&zf_port_lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX ": Watchdog timer is now disabled\n");
+#else
+	;
+#endif
 }
 
 
@@ -233,7 +241,11 @@ static void zf_timer_on(void)
 	zf_set_control(ctrl_reg);
 	spin_unlock_irqrestore(&zf_port_lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX ": Watchdog timer is now enabled\n");
+#else
+	;
+#endif
 }
 
 
@@ -245,7 +257,11 @@ static void zf_ping(unsigned long data)
 	zf_writeb(COUNTER_2, 0xff);
 
 	if (time_before(jiffies, next_heartbeat)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("time_before: %ld\n", next_heartbeat - jiffies);
+#else
+		d;
+#endif
 		/*
 		 * reset event is activated by transition from 0 to 1 on
 		 * RESET_WD1 bit and we assume that it is already zero...
@@ -263,7 +279,11 @@ static void zf_ping(unsigned long data)
 
 		mod_timer(&zf_timer, jiffies + ZF_HW_TIMEO);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX ": I will reset your machine\n");
+#else
+		;
+#endif
 }
 
 static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
@@ -290,7 +310,11 @@ static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
 					return -EFAULT;
 				if (c == 'V') {
 					zf_expect_close = 42;
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("zf_expect_close = 42\n");
+#else
+					d;
+#endif
 				}
 			}
 		}
@@ -300,7 +324,11 @@ static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
 		 * we should return that favour
 		 */
 		next_heartbeat = jiffies + ZF_USER_TIMEO;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("user ping at %ld\n", jiffies);
+#else
+		d;
+#endif
 	}
 	return count;
 }
@@ -390,19 +418,31 @@ static void __init zf_show_action(int act)
 {
 	static const char * const str[] = { "RESET", "SMI", "NMI", "SCI" };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX ": Watchdog using action = %s\n", str[act]);
+#else
+	;
+#endif
 }
 
 static int __init zf_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		": MachZ ZF-Logic Watchdog driver initializing.\n");
+#else
+	;
+#endif
 
 	ret = zf_get_ZFL_version();
 	if (!ret || ret == 0xffff) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX ": no ZF-Logic found\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

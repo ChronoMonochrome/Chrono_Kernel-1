@@ -76,7 +76,11 @@ static void pnx833x_wdt_start(void)
 	PNX833X_REG(PNX833X_CONFIG +
 				PNX833X_CONFIG_CPU_COUNTERS_CONTROL) |= 0x1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Started watchdog timer.\n");
+#else
+	;
+#endif
 }
 
 static void pnx833x_wdt_stop(void)
@@ -87,7 +91,11 @@ static void pnx833x_wdt_stop(void)
 	PNX833X_REG(PNX833X_CONFIG +
 			PNX833X_CONFIG_CPU_COUNTERS_CONTROL) &= 0xFFFFFFFE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+#else
+	;
+#endif
 }
 
 static void pnx833x_wdt_ping(void)
@@ -113,7 +121,11 @@ static int pnx833x_wdt_open(struct inode *inode, struct file *file)
 
 	pnx833x_wdt_ping();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Started watchdog timer.\n");
+#else
+	;
+#endif
 
 	return nonseekable_open(inode, file);
 }
@@ -243,8 +255,12 @@ static int __init watchdog_init(void)
 	cause = PNX833X_REG(PNX833X_RESET);
 	/*If bit 31 is set then watchdog was cause of reset.*/
 	if (cause & 0x80000000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "The system was previously reset due to "
 			"the watchdog firing - please investigate...\n");
+#else
+		;
+#endif
 	}
 
 	ret = register_reboot_notifier(&pnx833x_wdt_notifier);
@@ -263,7 +279,11 @@ static int __init watchdog_init(void)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 	if (start_enabled)
 		pnx833x_wdt_start();
 

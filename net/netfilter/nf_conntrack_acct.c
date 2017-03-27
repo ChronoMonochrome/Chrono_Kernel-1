@@ -72,7 +72,7 @@ static int nf_conntrack_acct_init_sysctl(struct net *net)
 	net->ct.acct_sysctl_header = register_net_sysctl_table(net,
 			nf_net_netfilter_sysctl_path, table);
 	if (!net->ct.acct_sysctl_header) {
-		printk(KERN_ERR "nf_conntrack_acct: can't register to sysctl.\n");
+;
 		goto out_register;
 	}
 	return 0;
@@ -111,7 +111,7 @@ int nf_conntrack_acct_init(struct net *net)
 	if (net_eq(net, &init_net)) {
 		ret = nf_ct_extend_register(&acct_extend);
 		if (ret < 0) {
-			printk(KERN_ERR "nf_conntrack_acct: Unable to register extension\n");
+;
 			goto out_extend_register;
 		}
 	}

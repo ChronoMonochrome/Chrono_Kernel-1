@@ -763,13 +763,13 @@ static void ipxitf_discover_netnum(struct ipx_interface *intrfc,
 			intrfc->if_netnum = cb->ipx_source_net;
 			ipxitf_add_local_route(intrfc);
 		} else {
-			printk(KERN_WARNING "IPX: Network number collision "
-				"%lx\n        %s %s and %s %s\n",
-				(unsigned long) ntohl(cb->ipx_source_net),
-				ipx_device_name(i),
-				ipx_frame_name(i->if_dlink_type),
-				ipx_device_name(intrfc),
-				ipx_frame_name(intrfc->if_dlink_type));
+//			printk(KERN_WARNING "IPX: Network number collision "
+//				"%lx\n        %s %s and %s %s\n",
+//				(unsigned long) ntohl(cb->ipx_source_net),
+//				ipx_device_name(i),
+//				ipx_frame_name(i->if_dlink_type),
+//				ipx_device_name(intrfc),
+;
 			ipxitf_put(i);
 		}
 	}
@@ -984,8 +984,8 @@ static int ipxitf_create(struct ipx_interface_definition *idef)
 
 	switch (idef->ipx_dlink_type) {
 	case IPX_FRAME_TR_8022:
-		printk(KERN_WARNING "IPX frame type 802.2TR is "
-			"obsolete Use 802.2 instead.\n");
+//		printk(KERN_WARNING "IPX frame type 802.2TR is "
+;
 		/* fall through */
 	case IPX_FRAME_8022:
 		dlink_type 	= htons(ETH_P_802_2);
@@ -997,9 +997,9 @@ static int ipxitf_create(struct ipx_interface_definition *idef)
 			datalink 	= pEII_datalink;
 			break;
 		} else
-			printk(KERN_WARNING "IPX frame type EtherII over "
-					"token-ring is obsolete. Use SNAP "
-					"instead.\n");
+//			printk(KERN_WARNING "IPX frame type EtherII over "
+//					"token-ring is obsolete. Use SNAP "
+;
 		/* fall through */
 	case IPX_FRAME_SNAP:
 		dlink_type 	= htons(ETH_P_SNAP);
@@ -2028,21 +2028,21 @@ static int __init ipx_init(void)
 	if (pEII_datalink)
 		dev_add_pack(&ipx_dix_packet_type);
 	else
-		printk(ipx_EII_err_msg);
+;
 
 	p8023_datalink = make_8023_client();
 	if (p8023_datalink)
 		dev_add_pack(&ipx_8023_packet_type);
 	else
-		printk(ipx_8023_err_msg);
+;
 
 	p8022_datalink = register_8022_client(ipx_8022_type, ipx_rcv);
 	if (!p8022_datalink)
-		printk(ipx_llc_err_msg);
+;
 
 	pSNAP_datalink = register_snap_client(ipx_snap_id, ipx_rcv);
 	if (!pSNAP_datalink)
-		printk(ipx_snap_err_msg);
+;
 
 	register_netdevice_notifier(&ipx_dev_notifier);
 	ipx_register_sysctl();

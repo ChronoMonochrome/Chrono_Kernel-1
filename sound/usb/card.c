@@ -250,7 +250,11 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
 		struct uac1_ac_header_descriptor *h1 = control_header;
 
 		if (!h1->bInCollection) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "skipping empty audio interface (v1)\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 
@@ -747,7 +751,11 @@ static struct usb_driver usb_audio_driver = {
 static int __init snd_usb_audio_init(void)
 {
 	if (nrpacks < 1 || nrpacks > MAX_PACKS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "invalid nrpacks value.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

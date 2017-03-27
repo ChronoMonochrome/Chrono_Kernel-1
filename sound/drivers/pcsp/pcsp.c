@@ -63,8 +63,12 @@ static int __devinit snd_pcsp_create(struct snd_card *card)
 	else
 		min_div = MAX_DIV;
 #if PCSP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "PCSP: lpj=%li, min_div=%i, res=%li\n",
 	       loops_per_jiffy, min_div, tp.tv_nsec);
+#else
+	;
+#endif
 #endif
 
 	div = MAX_DIV / min_div;
@@ -154,8 +158,12 @@ static int __devinit alsa_card_pcsp_init(struct device *dev)
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "PCSP: CONFIG_DEBUG_PAGEALLOC is enabled, "
 	       "which may make the sound noisy.\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;

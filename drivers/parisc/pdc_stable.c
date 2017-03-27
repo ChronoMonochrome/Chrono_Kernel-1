@@ -49,6 +49,7 @@
 
 #undef PDCS_DEBUG
 #ifdef PDCS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(fmt, args...)	printk(KERN_DEBUG fmt, ## args)
 #else
 #define DPRINTK(fmt, args...)
@@ -85,6 +86,9 @@
 #define PDCS_ADDR_OSD2	0xE0
 
 MODULE_AUTHOR("Thibaut VARENE <varenet@parisc-linux.org>");
+#else
+#define DPRINTK(fmt, args...)	;
+#endif
 MODULE_DESCRIPTION("sysfs interface to HP PDC Stable Storage data");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(PDCS_VERSION);
@@ -319,8 +323,12 @@ pdcspath_hwpath_write(struct pdcspath_entry *entry, const char *buf, size_t coun
 	
 	/* Now we check that the user isn't trying to lure us */
 	if (!(dev = hwpath_to_device((struct hardware_path *)&hwpath))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: attempt to set invalid \"%s\" "
 			"hardware path: %s\n", __func__, entry->name, buf);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	
@@ -339,8 +347,12 @@ pdcspath_hwpath_write(struct pdcspath_entry *entry, const char *buf, size_t coun
 
 	write_unlock(&entry->rw_lock);
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" path to \"%s\"\n",
 		entry->name, buf);
+#else
+	;
+#endif
 	
 	return count;
 }
@@ -432,8 +444,12 @@ pdcspath_layer_write(struct pdcspath_entry *entry, const char *buf, size_t count
 	pdcspath_store(entry);
 	write_unlock(&entry->rw_lock);
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" layers to \"%s\"\n",
 		entry->name, buf);
+#else
+	;
+#endif
 	
 	return count;
 }
@@ -802,14 +818,22 @@ static ssize_t pdcs_auto_write(struct kobject *kobj,
 	pdcspath_store(pathentry);
 	write_unlock(&pathentry->rw_lock);
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" to \"%s\"\n",
 		(knob & PF_AUTOBOOT) ? "autoboot" : "autosearch",
 		(flags & knob) ? "On" : "Off");
+#else
+	;
+#endif
 	
 	return count;
 
 parse_error:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: Parse error: expect \"n\" (n == 0 or 1)\n", __func__);
+#else
+	;
+#endif
 	return -EINVAL;
 }
 
@@ -1046,7 +1070,11 @@ pdc_stable_init(void)
 	if (pdcs_size < 96)
 		return -ENODATA;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PDCS_PREFIX " facility v%s\n", PDCS_VERSION);
+#else
+	;
+#endif
 
 	/* get OSID */
 	if (pdc_stable_read(PDCS_ADDR_OSID, &result, sizeof(result)) != PDC_OK)
@@ -1086,7 +1114,11 @@ fail_ksetreg:
 	kobject_put(stable_kobj);
 	
 fail_firmreg:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PDCS_PREFIX " bailing out\n");
+#else
+	;
+#endif
 	return rc;
 }
 

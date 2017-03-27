@@ -27,7 +27,11 @@ static int buggy_sfn_workaround;
 module_param(buggy_sfn_workaround, int, 0644);
 MODULE_PARM_DESC(buggy_sfn_workaround, "Enable work-around for buggy SFNs (default: 0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) do { if (debug) { printk(KERN_DEBUG "DiB3000MC/P:"); printk(args); printk("\n"); } } while (0)
+#else
+#define d;
+#endif
 
 struct dib3000mc_state {
 	struct dvb_frontend demod;
@@ -57,7 +61,11 @@ static u16 dib3000mc_read_word(struct dib3000mc_state *state, u16 reg)
 	};
 
 	if (i2c_transfer(state->i2c_adap, msg, 2) != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("i2c read error on %d\n",reg);
+#else
+		d;
+#endif
 
 	return (rb[0] << 8) | rb[1];
 }
@@ -78,18 +86,30 @@ static int dib3000mc_identify(struct dib3000mc_state *state)
 {
 	u16 value;
 	if ((value = dib3000mc_read_word(state, 1025)) != 0x01b3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("-E-  DiB3000MC/P: wrong Vendor ID (read=0x%x)\n",value);
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
 	value = dib3000mc_read_word(state, 1026);
 	if (value != 0x3001 && value != 0x3002) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("-E-  DiB3000MC/P: wrong Device ID (%x)\n",value);
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 	state->dev_id = value;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("-I-  found DiB3000MC/P: %x\n",state->dev_id);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -120,7 +140,11 @@ static int dib3000mc_set_timing(struct dib3000mc_state *state, s16 nfft, u32 bw,
 		state->timf = timf / (bw / 1000);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("timf: %d\n", timf);
+#else
+	d;
+#endif
 
 	dib3000mc_write_word(state, 23, (u16) (timf >> 16));
 	dib3000mc_write_word(state, 24, (u16) (timf      ) & 0xffff);
@@ -159,8 +183,12 @@ static int dib3000mc_set_output_mode(struct dib3000mc_state *state, int mode)
 	u16 elecout = 1;
 	u16 smo_reg = dib3000mc_read_word(state, 206) & 0x0010; /* keep the pid_parse bit */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("-I-  Setting output mode for demod %p to %d\n",
 			&state->demod, mode);
+#else
+	d;
+#endif
 
 	switch (mode) {
 		case OUTMODE_HIGH_Z:  // disable
@@ -194,7 +222,11 @@ static int dib3000mc_set_output_mode(struct dib3000mc_state *state, int mode)
 			elecout = 1;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("Unhandled output_mode passed to be set for demod %p\n",&state->demod);
+#else
+			d;
+#endif
 			outmode = 0;
 			break;
 	}
@@ -595,7 +627,11 @@ static int dib3000mc_tune(struct dvb_frontend *demod, struct dvb_frontend_parame
 
 	// activates isi
 	if (state->sfn_workaround_active) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("SFN workaround is active\n");
+#else
+		d;
+#endif
 		dib3000mc_write_word(state, 29, 0x1273);
 		dib3000mc_write_word(state, 108, 0x4000); // P_pha3_force_pha_shift
 	} else {
@@ -712,7 +748,11 @@ static int dib3000mc_set_frontend(struct dvb_frontend* fe,
 			found = dib3000mc_autosearch_is_irq(fe);
 		} while (found == 0 && i--);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("autosearch returns: %d\n",found);
+#else
+		d;
+#endif
 		if (found == 0 || found == 1)
 			return 0; // no channel found
 
@@ -835,7 +875,11 @@ int dib3000mc_i2c_enumeration(struct i2c_adapter *i2c, int no_of_demods, u8 defa
 		if (dib3000mc_identify(dmcst) != 0) {
 			dmcst->i2c_addr = default_addr;
 			if (dib3000mc_identify(dmcst) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("-E-  DiB3000P/MC #%d: not identified\n", k);
+#else
+				d;
+#endif
 				kfree(dmcst);
 				return -ENODEV;
 			}

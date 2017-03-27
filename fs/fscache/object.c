@@ -238,14 +238,14 @@ static void fscache_object_state_machine(struct fscache_object *object)
 		/* complain about the object being woken up once it is
 		 * deceased */
 	case FSCACHE_OBJECT_DEAD:
-		printk(KERN_ERR "FS-Cache:"
-		       " Unexpected event in dead state %lx\n",
-		       object->events & object->event_mask);
+//		printk(KERN_ERR "FS-Cache:"
+//		       " Unexpected event in dead state %lx\n",
+;
 		BUG();
 
 	default:
-		printk(KERN_ERR "FS-Cache: Unknown object state %u\n",
-		       object->state);
+//		printk(KERN_ERR "FS-Cache: Unknown object state %u\n",
+;
 		BUG();
 	}
 
@@ -319,10 +319,10 @@ done:
 	return;
 
 unsupported_event:
-	printk(KERN_ERR "FS-Cache:"
-	       " Unsupported event %lx [mask %lx] in state %s\n",
-	       object->events, object->event_mask,
-	       fscache_object_states[object->state]);
+//	printk(KERN_ERR "FS-Cache:"
+//	       " Unsupported event %lx [mask %lx] in state %s\n",
+//	       object->events, object->event_mask,
+;
 	BUG();
 }
 

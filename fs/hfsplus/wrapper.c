@@ -156,7 +156,7 @@ static int hfsplus_get_last_session(struct super_block *sb,
 			*start = (sector_t)te.cdte_addr.lba << 2;
 			return 0;
 		}
-		printk(KERN_ERR "hfs: invalid session number or type of track\n");
+;
 		return -EINVAL;
 	}
 	ms_info.addr_format = CDROM_LBA;
@@ -234,8 +234,8 @@ reread:
 
 	error = -EINVAL;
 	if (sbi->s_backup_vhdr->signature != sbi->s_vhdr->signature) {
-		printk(KERN_WARNING
-			"hfs: invalid secondary volume header\n");
+//		printk(KERN_WARNING
+;
 		goto out_free_backup_vhdr;
 	}
 
@@ -259,8 +259,8 @@ reread:
 		blocksize >>= 1;
 
 	if (sb_set_blocksize(sb, blocksize) != blocksize) {
-		printk(KERN_ERR "hfs: unable to set blocksize to %u!\n",
-			blocksize);
+//		printk(KERN_ERR "hfs: unable to set blocksize to %u!\n",
+;
 		goto out_free_backup_vhdr;
 	}
 

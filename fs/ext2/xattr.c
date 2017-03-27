@@ -71,18 +71,18 @@
 
 #ifdef EXT2_XATTR_DEBUG
 # define ea_idebug(inode, f...) do { \
-		printk(KERN_DEBUG "inode %s:%ld: ", \
-			inode->i_sb->s_id, inode->i_ino); \
-		printk(f); \
-		printk("\n"); \
+//		printk(KERN_DEBUG "inode %s:%ld: ", \
+;
+;
+;
 	} while (0)
 # define ea_bdebug(bh, f...) do { \
 		char b[BDEVNAME_SIZE]; \
-		printk(KERN_DEBUG "block %s:%lu: ", \
-			bdevname(bh->b_bdev, b), \
-			(unsigned long) bh->b_blocknr); \
-		printk(f); \
-		printk("\n"); \
+//		printk(KERN_DEBUG "block %s:%lu: ", \
+//			bdevname(bh->b_bdev, b), \
+;
+;
+;
 	} while (0)
 #else
 # define ea_idebug(f...)

@@ -551,7 +551,11 @@ static int __init tomoyo_init(void)
 	if (register_security(&tomoyo_security_ops) ||
 	    init_srcu_struct(&tomoyo_ss))
 		panic("Failure registering TOMOYO Linux");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TOMOYO Linux initialized\n");
+#else
+	;
+#endif
 	cred->security = &tomoyo_kernel_domain;
 	tomoyo_mm_init();
 	return 0;

@@ -257,7 +257,11 @@ pmu_init(void)
 	/* Enable backlight */
 	pmu_enable_backlight(1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb: PMU 68K driver v0.5 for Unified ADB.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -573,15 +577,23 @@ pmu_interrupt(int irq, void *dev_id)
 	int timeout, bite = 0;	/* to prevent compiler warning */
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("pmu_interrupt: irq %d state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
 		irq, pmu_state, (uint) via1[ACR], (uint) via2[B], data_index, data_len, adb_int_pending);
+#else
+	;
+#endif
 #endif
 
 	if (irq == IRQ_MAC_ADB_CL) {		/* CB1 interrupt */
 		adb_int_pending = 1;
 	} else if (irq == IRQ_MAC_ADB_SR) {	/* SR interrupt  */
 		if (via2[B] & TACK) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "PMU: SR_INT but ack still high! (%x)\n", via2[B]);
+#else
+			;
+#endif
 		}
 
 		/* if reading grab the byte */
@@ -679,8 +691,12 @@ finish:
 	}
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("pmu_interrupt: exit state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
 		pmu_state, (uint) via1[ACR], (uint) via2[B], data_index, data_len, adb_int_pending);
+#else
+	;
+#endif
 #endif
 	return IRQ_HANDLED;
 }
@@ -730,10 +746,22 @@ pmu_handle_data(unsigned char *data, int len)
 		} else if (show_pmu_ints
 			   && !(data[0] == PMU_INT_TICK && len == 1)) {
 			int i;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "pmu intr");
+#else
+			;
+#endif
 			for (i = 0; i < len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %.2x", data[i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 		}
 	}
 }
@@ -757,7 +785,11 @@ pmu_enable_backlight(int on)
 			pmu_request(&req, NULL, 3, PMU_READ_NVRAM, 0x14, 0xe);
 			while (!req.complete)
 				pmu_poll();
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "pmu: nvram returned bright: %d\n", (int)req.reply[1]);
+#else
+			;
+#endif
 			backlight_level = req.reply[1];
 			break;
 		    default:

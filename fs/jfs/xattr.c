@@ -570,7 +570,7 @@ static int ea_get(struct inode *inode, struct ea_buffer *ea_buf, int min_size)
 
       size_check:
 	if (EALIST_SIZE(ea_buf->xattr) != ea_size) {
-		printk(KERN_ERR "ea_get: invalid extended attribute\n");
+;
 		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 1,
 				     ea_buf->xattr, ea_size, 1);
 		ea_release(inode, ea_buf);
@@ -688,17 +688,17 @@ static int can_set_system_xattr(struct inode *inode, const char *name,
 		acl = posix_acl_from_xattr(value, value_len);
 		if (IS_ERR(acl)) {
 			rc = PTR_ERR(acl);
-			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
-			       rc);
+//			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
+;
 			return rc;
 		}
 		if (acl) {
 			rc = posix_acl_equiv_mode(acl, &inode->i_mode);
 			posix_acl_release(acl);
 			if (rc < 0) {
-				printk(KERN_ERR
-				       "posix_acl_equiv_mode returned %d\n",
-				       rc);
+//				printk(KERN_ERR
+//				       "posix_acl_equiv_mode returned %d\n",
+;
 				return rc;
 			}
 			mark_inode_dirty(inode);
@@ -713,8 +713,8 @@ static int can_set_system_xattr(struct inode *inode, const char *name,
 		acl = posix_acl_from_xattr(value, value_len);
 		if (IS_ERR(acl)) {
 			rc = PTR_ERR(acl);
-			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
-			       rc);
+//			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
+;
 			return rc;
 		}
 		posix_acl_release(acl);
@@ -873,9 +873,9 @@ int __jfs_setxattr(tid_t tid, struct inode *inode, const char *name,
 
 	/* DEBUG - If we did this right, these number match */
 	if (xattr_size != new_size) {
-		printk(KERN_ERR
-		       "jfs_xsetattr: xattr_size = %d, new_size = %d\n",
-		       xattr_size, new_size);
+//		printk(KERN_ERR
+//		       "jfs_xsetattr: xattr_size = %d, new_size = %d\n",
+;
 
 		rc = -EINVAL;
 		goto release;

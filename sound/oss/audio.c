@@ -100,7 +100,11 @@ int audio_open(int dev, struct file *file)
 			goto error_2;
 
 		if ((ret = coprocessor->open(coprocessor->devc, COPR_PCM)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sound: Can't access coprocessor device\n");
+#else
+			;
+#endif
 			goto error_3;
 		}
 	}
@@ -378,7 +382,11 @@ int audio_ioctl(int dev, struct file *file, unsigned int cmd, void __user *arg)
 		if (audio_devs[dev]->coproc)	/* Coprocessor ioctl */
 			return audio_devs[dev]->coproc->ioctl(audio_devs[dev]->coproc->devc, cmd, arg, 0);
 		/* else
+#ifdef CONFIG_DEBUG_PRINTK
 		        printk(KERN_DEBUG"/dev/dsp%d: No coprocessor for this device\n", dev); */
+#else
+		        ;
+#endif
 		return -ENXIO;
 	}
 	else switch (cmd) 
@@ -557,7 +565,11 @@ void reorganize_buffers(int dev, struct dma_buffparms *dmap, int recording)
 
 	if (sr < 1 || nc < 1 || sz < 1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk(KERN_DEBUG "Warning: Invalid PCM parameters[%d] sr=%d, nc=%d, sz=%d\n", dev, sr, nc, sz);*/
+#else
+/*		;
+#endif
 		sr = DSP_DEFAULT_SPEED;
 		nc = 1;
 		sz = 8;

@@ -153,7 +153,7 @@ static int __devinit madgemc_probe(struct device *device)
 	int ret = 0;
 
 	if (versionprinted++ == 0)
-		printk("%s", version);
+;
 
 	if(mca_device_claimed(mdev))
 		return -EBUSY;
@@ -161,7 +161,7 @@ static int __devinit madgemc_probe(struct device *device)
 
 	dev = alloc_trdev(sizeof(struct net_local));
 	if (!dev) {
-		printk("madgemc: unable to allocate dev space\n");
+;
 		mca_device_set_claim(mdev, 0);
 		ret = -ENOMEM;
 		goto getout;
@@ -171,7 +171,7 @@ static int __devinit madgemc_probe(struct device *device)
 
 	card = kmalloc(sizeof(struct card_info), GFP_KERNEL);
 	if (card==NULL) {
-		printk("madgemc: unable to allocate card struct\n");
+;
 		ret = -ENOMEM;
 		goto getout1;
 	}
@@ -201,14 +201,14 @@ static int __devinit madgemc_probe(struct device *device)
 	}
 
 	if (dev->irq == 0) {
-		printk("%s: invalid IRQ\n", dev->name);
+;
 		ret = -EBUSY;
 		goto getout2;
 	}
 
 	if (!request_region(dev->base_addr, MADGEMC_IO_EXTENT, 
 			   "madgemc")) {
-		printk(KERN_INFO "madgemc: unable to setup Smart MC in slot %d because of I/O base conflict at 0x%04lx\n", mdev->slot, dev->base_addr);
+;
 		dev->base_addr += MADGEMC_SIF_OFFSET;
 		ret = -EBUSY;
 		goto getout2;
@@ -253,12 +253,12 @@ static int __devinit madgemc_probe(struct device *device)
 	madgemc_read_rom(dev, card);
 		
 	if (card->manid != 0x4d) { /* something went wrong */
-		printk(KERN_INFO "%s: Madge MC ROM read failed (unknown manufacturer ID %02x)\n", dev->name, card->manid);
+;
 		goto getout3;
 	}
 		
 	if ((card->cardtype != 0x08) && (card->cardtype != 0x0d)) {
-		printk(KERN_INFO "%s: Madge MC ROM read failed (unknown card ID %02x)\n", dev->name, card->cardtype);
+;
 		ret = -EIO;
 		goto getout3;
 	}
@@ -269,36 +269,36 @@ static int __devinit madgemc_probe(struct device *device)
 	else
 		card->ramsize = 256;
 
-	printk("%s: %s Rev %d at 0x%04lx IRQ %d\n", 
-	       dev->name, 
-	       (card->cardtype == 0x08)?MADGEMC16_CARDNAME:
-	       MADGEMC32_CARDNAME, card->cardrev, 
-	       dev->base_addr, dev->irq);
+//	printk("%s: %s Rev %d at 0x%04lx IRQ %d\n", 
+//	       dev->name, 
+//	       (card->cardtype == 0x08)?MADGEMC16_CARDNAME:
+//	       MADGEMC32_CARDNAME, card->cardrev, 
+;
 
 	if (card->cardtype == 0x0d)
-		printk("%s:     Warning: MC32 support is experimental and highly untested\n", dev->name);
+;
 	
 	if (card->ringspeed==2) { /* Unknown */
-		printk("%s:     Warning: Ring speed not set in POS -- Please run the reference disk and set it!\n", dev->name);
+;
 		card->ringspeed = 1; /* default to 16mb */
 	}
 		
-	printk("%s:     RAM Size: %dKB\n", dev->name, card->ramsize);
+;
 
-	printk("%s:     Ring Speed: %dMb/sec on %s\n", dev->name, 
-	       (card->ringspeed)?16:4, 
-	       card->cabletype?"STP/DB9":"UTP/RJ-45");
-	printk("%s:     Arbitration Level: %d\n", dev->name, 
-	       card->arblevel);
+//	printk("%s:     Ring Speed: %dMb/sec on %s\n", dev->name, 
+//	       (card->ringspeed)?16:4, 
+;
+//	printk("%s:     Arbitration Level: %d\n", dev->name, 
+;
 
-	printk("%s:     Burst Mode: ", dev->name);
+;
 	switch(card->burstmode) {
-		case 0: printk("Cycle steal"); break;
-		case 1: printk("Limited burst"); break;
-		case 2: printk("Delayed release"); break;
-		case 3: printk("Immediate release"); break;
+;
+;
+;
+;
 	}
-	printk(" (%s)\n", (card->fairness)?"Unfair":"Fair");
+;
 
 
 	/* 
@@ -321,12 +321,12 @@ static int __devinit madgemc_probe(struct device *device)
 	mca_device_set_name(mdev, (card->cardtype == 0x08)?MADGEMC16_CARDNAME:MADGEMC32_CARDNAME);
 	mca_set_adapter_procfn(mdev->slot, madgemc_mcaproc, dev);
 
-	printk("%s:     Ring Station Address: %pM\n",
-	       dev->name, dev->dev_addr);
+//	printk("%s:     Ring Station Address: %pM\n",
+;
 
 	if (tmsdev_init(dev, device)) {
-		printk("%s: unable to get memory for dev->priv.\n", 
-		       dev->name);
+//		printk("%s: unable to get memory for dev->priv.\n", 
+;
 		ret = -ENOMEM;
 		goto getout4;
 	}
@@ -414,7 +414,7 @@ static irqreturn_t madgemc_interrupt(int irq, void *dev_id)
 	struct net_device *dev;
 
 	if (!dev_id) {
-		printk("madgemc_interrupt: was not passed a dev_id!\n");
+;
 		return IRQ_NONE;
 	}
 

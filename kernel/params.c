@@ -199,8 +199,12 @@ int parse_args(const char *name,
 		ret = parse_one(param, val, params, num,
 				min_level, max_level, unknown);
 		if (irq_was_disabled && !irqs_disabled()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "parse_args(): option '%s' enabled "
 					"irq's!\n", param);
+#else
+			;
+#endif
 		}
 		switch (ret) {
 		case -ENOENT:
@@ -926,8 +930,12 @@ static int __init param_sysfs_init(void)
 {
 	module_kset = kset_create_and_add("module", &module_uevent_ops, NULL);
 	if (!module_kset) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s (%d): error creating kset\n",
 			__FILE__, __LINE__);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	module_sysfs_initialized = 1;

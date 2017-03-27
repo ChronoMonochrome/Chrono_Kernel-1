@@ -64,10 +64,10 @@ print_ports(const struct sk_buff *skb, uint8_t protocol, int offset)
 		pptr = skb_header_pointer(skb, offset,
 					  sizeof(_ports), &_ports);
 		if (pptr == NULL) {
-			printk(" INCOMPLETE TCP/UDP header");
+;
 			return;
 		}
-		printk(" SPT=%u DPT=%u", ntohs(pptr->src), ntohs(pptr->dst));
+;
 	}
 }
 
@@ -80,11 +80,11 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
 	unsigned int bitmask;
 
 	spin_lock_bh(&ebt_log_lock);
-	printk("<%c>%s IN=%s OUT=%s MAC source = %pM MAC dest = %pM proto = 0x%04x",
-	       '0' + loginfo->u.log.level, prefix,
-	       in ? in->name : "", out ? out->name : "",
-	       eth_hdr(skb)->h_source, eth_hdr(skb)->h_dest,
-	       ntohs(eth_hdr(skb)->h_proto));
+//	printk("<%c>%s IN=%s OUT=%s MAC source = %pM MAC dest = %pM proto = 0x%04x",
+//	       '0' + loginfo->u.log.level, prefix,
+//	       in ? in->name : "", out ? out->name : "",
+//	       eth_hdr(skb)->h_source, eth_hdr(skb)->h_dest,
+;
 
 	if (loginfo->type == NF_LOG_TYPE_LOG)
 		bitmask = loginfo->u.log.logflags;
@@ -98,11 +98,11 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
 
 		ih = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
 		if (ih == NULL) {
-			printk(" INCOMPLETE IP header");
+;
 			goto out;
 		}
-		printk(" IP SRC=%pI4 IP DST=%pI4, IP tos=0x%02X, IP proto=%d",
-		       &ih->saddr, &ih->daddr, ih->tos, ih->protocol);
+//		printk(" IP SRC=%pI4 IP DST=%pI4, IP tos=0x%02X, IP proto=%d",
+;
 		print_ports(skb, ih->protocol, ih->ihl*4);
 		goto out;
 	}
@@ -118,11 +118,11 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
 
 		ih = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
 		if (ih == NULL) {
-			printk(" INCOMPLETE IPv6 header");
+;
 			goto out;
 		}
-		printk(" IPv6 SRC=%pI6 IPv6 DST=%pI6, IPv6 priority=0x%01X, Next Header=%d",
-		       &ih->saddr, &ih->daddr, ih->priority, ih->nexthdr);
+//		printk(" IPv6 SRC=%pI6 IPv6 DST=%pI6, IPv6 priority=0x%01X, Next Header=%d",
+;
 		nexthdr = ih->nexthdr;
 		offset_ph = ipv6_skip_exthdr(skb, sizeof(_iph), &nexthdr, &frag_off);
 		if (offset_ph == -1)
@@ -140,12 +140,12 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
 
 		ah = skb_header_pointer(skb, 0, sizeof(_arph), &_arph);
 		if (ah == NULL) {
-			printk(" INCOMPLETE ARP header");
+;
 			goto out;
 		}
-		printk(" ARP HTYPE=%d, PTYPE=0x%04x, OPCODE=%d",
-		       ntohs(ah->ar_hrd), ntohs(ah->ar_pro),
-		       ntohs(ah->ar_op));
+//		printk(" ARP HTYPE=%d, PTYPE=0x%04x, OPCODE=%d",
+//		       ntohs(ah->ar_hrd), ntohs(ah->ar_pro),
+;
 
 		/* If it's for Ethernet and the lengths are OK,
 		 * then log the ARP payload */
@@ -158,15 +158,15 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
 			ap = skb_header_pointer(skb, sizeof(_arph),
 						sizeof(_arpp), &_arpp);
 			if (ap == NULL) {
-				printk(" INCOMPLETE ARP payload");
+;
 				goto out;
 			}
-			printk(" ARP MAC SRC=%pM ARP IP SRC=%pI4 ARP MAC DST=%pM ARP IP DST=%pI4",
-					ap->mac_src, ap->ip_src, ap->mac_dst, ap->ip_dst);
+//			printk(" ARP MAC SRC=%pM ARP IP SRC=%pI4 ARP MAC DST=%pM ARP IP DST=%pI4",
+;
 		}
 	}
 out:
-	printk("\n");
+;
 	spin_unlock_bh(&ebt_log_lock);
 
 }

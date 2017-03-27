@@ -263,9 +263,9 @@ static int multiq3_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 
 	iobase = it->options[0];
-	printk(KERN_INFO "comedi%d: multiq3: 0x%04lx ", dev->minor, iobase);
+;
 	if (!request_region(iobase, MULTIQ3_SIZE, "multiq3")) {
-		printk(KERN_ERR "comedi%d: I/O port conflict\n", dev->minor);
+;
 		return -EIO;
 	}
 
@@ -273,10 +273,10 @@ static int multiq3_attach(struct comedi_device *dev,
 
 	irq = it->options[1];
 	if (irq)
-		printk(KERN_WARNING "comedi%d: irq = %u ignored\n",
-			dev->minor, irq);
+//		printk(KERN_WARNING "comedi%d: irq = %u ignored\n",
+;
 	else
-		printk(KERN_WARNING "comedi%d: no irq\n", dev->minor);
+;
 	dev->board_name = "multiq3";
 	result = alloc_subdevices(dev, 5);
 	if (result < 0)
@@ -340,7 +340,7 @@ static int multiq3_attach(struct comedi_device *dev,
 
 static int multiq3_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: multiq3: remove\n", dev->minor);
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, MULTIQ3_SIZE);

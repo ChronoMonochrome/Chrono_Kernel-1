@@ -47,7 +47,11 @@ static int __init init_atags_procfs(void)
 	size_t size;
 
 	if (tag->hdr.tag != ATAG_CORE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "No ATAGs?");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

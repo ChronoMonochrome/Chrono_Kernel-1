@@ -222,8 +222,8 @@ void cx25821_stop_upstream_audio(struct cx25821_dev *dev)
 	u32 tmp = 0;
 
 	if (!dev->_audio_is_running) {
-		printk(KERN_DEBUG
-		       pr_fmt("No audio file is currently running so return!\n"));
+//		printk(KERN_DEBUG
+;
 		return;
 	}
 	/* Disable RISC interrupts */
@@ -455,8 +455,8 @@ static int cx25821_audio_upstream_buffer_prepare(struct cx25821_dev *dev,
 	dev->_audiorisc_size = dev->audio_upstream_riscbuf_size;
 
 	if (!dev->_risc_virt_addr) {
-		printk(KERN_DEBUG
-		       pr_fmt("ERROR: pci_alloc_consistent() FAILED to allocate memory for RISC program! Returning\n"));
+//		printk(KERN_DEBUG
+;
 		return -ENOMEM;
 	}
 	/* Clear out memory at address */
@@ -470,8 +470,8 @@ static int cx25821_audio_upstream_buffer_prepare(struct cx25821_dev *dev,
 	dev->_audiodata_buf_size = dev->audio_upstream_databuf_size;
 
 	if (!dev->_audiodata_buf_virt_addr) {
-		printk(KERN_DEBUG
-		       pr_fmt("ERROR: pci_alloc_consistent() FAILED to allocate memory for data buffer! Returning\n"));
+//		printk(KERN_DEBUG
+;
 		return -ENOMEM;
 	}
 	/* Clear out memory at address */
@@ -486,8 +486,8 @@ static int cx25821_audio_upstream_buffer_prepare(struct cx25821_dev *dev,
 	    cx25821_risc_buffer_upstream_audio(dev, dev->pci, bpl,
 					       dev->_audio_lines_count);
 	if (ret < 0) {
-		printk(KERN_DEBUG
-		       pr_fmt("ERROR creating audio upstream RISC programs!\n"));
+//		printk(KERN_DEBUG
+;
 		goto error;
 	}
 
@@ -735,8 +735,8 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
 	    create_singlethread_workqueue("cx25821_audioworkqueue");
 
 	if (!dev->_irq_audio_queues) {
-		printk(KERN_DEBUG
-		       pr_fmt("ERROR: create_singlethread_workqueue() for Audio FAILED!\n"));
+//		printk(KERN_DEBUG
+;
 		return -ENOMEM;
 	}
 

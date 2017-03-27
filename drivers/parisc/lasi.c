@@ -179,8 +179,12 @@ static int __init lasi_init_chip(struct parisc_device *dev)
 
 	/* Check the 4-bit (yes, only 4) version register */
 	lasi->version = gsc_readl(lasi->hpa + LASI_VER) & 0xf;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s version %d at 0x%lx found.\n",
 		lasi->name, lasi->version, lasi->hpa);
+#else
+	;
+#endif
 
 	/* initialize the chassis LEDs really early */ 
 	lasi_led_init(lasi->hpa);

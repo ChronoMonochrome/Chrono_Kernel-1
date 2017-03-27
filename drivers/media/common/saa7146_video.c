@@ -319,7 +319,11 @@ static int saa7146_pgtable_build(struct saa7146_dev *dev, struct saa7146_buf *bu
 /*
 		ptr1 = pt1->cpu;
 		for(j=0;j<40;j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ptr1 %d: 0x%08x\n",j,ptr1[j]);
+#else
+			;
+#endif
 		}
 */
 
@@ -358,13 +362,25 @@ static int saa7146_pgtable_build(struct saa7146_dev *dev, struct saa7146_buf *bu
 		ptr2 = pt2->cpu;
 		ptr3 = pt3->cpu;
 		for(j=0;j<40;j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ptr1 %d: 0x%08x\n",j,ptr1[j]);
+#else
+			;
+#endif
 		}
 		for(j=0;j<40;j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ptr2 %d: 0x%08x\n",j,ptr2[j]);
+#else
+			;
+#endif
 		}
 		for(j=0;j<40;j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ptr3 %d: 0x%08x\n",j,ptr3[j]);
+#else
+			;
+#endif
 		}
 */
 	} else {

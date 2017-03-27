@@ -145,7 +145,11 @@ static int __init i2o_bus_init(void)
 {
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO OSM_DESCRIPTION " v" OSM_VERSION "\n");
+#else
+	;
+#endif
 
 	/* Register Bus Adapter OSM into I2O core */
 	rc = i2o_driver_register(&i2o_bus_driver);

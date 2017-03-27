@@ -959,22 +959,38 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
 	if (debug_locks != expected) {
 		if (expected_failure) {
 			expected_testcase_failures++;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("failed|");
+#else
+			;
+#endif
 		} else {
 			unexpected_testcase_failures++;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("FAILED|");
+#else
+			;
+#endif
 			dump_stack();
 		}
 	} else {
 		testcase_successes++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  ok  |");
+#else
+		;
+#endif
 	}
 	testcase_total++;
 
 	if (debug_locks_verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" lockclass mask: %x, debug_locks: %d, expected: %d\n",
 			lockclass_mask, debug_locks, expected);
+#else
+		;
+#endif
 	/*
 	 * Some tests (e.g. double-unlock) might corrupt the preemption
 	 * count, so restore it:
@@ -992,32 +1008,52 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
 
 static inline void print_testname(const char *testname)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%33s:", testname);
+#else
+	;
+#endif
 }
 
 #define DO_TESTCASE_1(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_##nr, SUCCESS, LOCKTYPE_RWLOCK);		\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_1B(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_##nr, FAILURE, LOCKTYPE_RWLOCK);		\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_3(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_spin_##nr, FAILURE, LOCKTYPE_SPIN);	\
 	dotest(name##_wlock_##nr, FAILURE, LOCKTYPE_RWLOCK);	\
 	dotest(name##_rlock_##nr, SUCCESS, LOCKTYPE_RWLOCK);	\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_3RW(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_spin_##nr, FAILURE, LOCKTYPE_SPIN|LOCKTYPE_RWLOCK);\
 	dotest(name##_wlock_##nr, FAILURE, LOCKTYPE_RWLOCK);	\
 	dotest(name##_rlock_##nr, SUCCESS, LOCKTYPE_RWLOCK);	\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_6(desc, name)				\
 	print_testname(desc);					\
@@ -1027,7 +1063,11 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_6_SUCCESS(desc, name)			\
 	print_testname(desc);					\
@@ -1037,7 +1077,11 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, SUCCESS, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, SUCCESS, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, SUCCESS, LOCKTYPE_RWSEM);		\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 /*
  * 'read' variant: rlocks must not trigger.
@@ -1050,7 +1094,11 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 #define DO_TESTCASE_2I(desc, name, nr)				\
 	DO_TESTCASE_1("hard-"desc, name##_hard, nr);		\
@@ -1115,20 +1163,52 @@ void locking_selftest(void)
 	 * Got a locking failure before the selftest ran?
 	 */
 	if (!debug_locks) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("----------------------------------\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("| Locking API testsuite disabled |\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("----------------------------------\n");
+#else
+		;
+#endif
 		return;
 	}
 
 	/*
 	 * Run the testsuite:
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("------------------------\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("| Locking API testsuite:\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("----------------------------------------------------------------------------\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("                                 | spin |wlock |rlock |mutex | wsem | rsem |\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  --------------------------------------------------------------------------\n");
+#else
+	;
+#endif
 
 	init_shared_classes();
 	debug_locks_silent = !debug_locks_verbose;
@@ -1144,36 +1224,92 @@ void locking_selftest(void)
 	DO_TESTCASE_6("initialize held", init_held);
 	DO_TESTCASE_6_SUCCESS("bad unlock order", bad_unlock_order);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  --------------------------------------------------------------------------\n");
+#else
+	;
+#endif
 	print_testname("recursive read-lock");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rlock_AA1, SUCCESS, LOCKTYPE_RWLOCK);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rsem_AA1, FAILURE, LOCKTYPE_RWSEM);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	print_testname("recursive read-lock #2");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rlock_AA1B, SUCCESS, LOCKTYPE_RWLOCK);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rsem_AA1B, FAILURE, LOCKTYPE_RWSEM);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	print_testname("mixed read-write-lock");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rlock_AA2, FAILURE, LOCKTYPE_RWLOCK);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rsem_AA2, FAILURE, LOCKTYPE_RWSEM);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	print_testname("mixed write-read-lock");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rlock_AA3, FAILURE, LOCKTYPE_RWLOCK);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("             |");
+#else
+	;
+#endif
 	dotest(rsem_AA3, FAILURE, LOCKTYPE_RWSEM);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  --------------------------------------------------------------------------\n");
+#else
+	;
+#endif
 
 	/*
 	 * irq-context testcases:
@@ -1189,28 +1325,76 @@ void locking_selftest(void)
 //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
 
 	if (unexpected_testcase_failures) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("-----------------------------------------------------------------\n");
+#else
+		;
+#endif
 		debug_locks = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("BUG: %3d unexpected failures (out of %3d) - debugging disabled! |\n",
 			unexpected_testcase_failures, testcase_total);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("-----------------------------------------------------------------\n");
+#else
+		;
+#endif
 	} else if (expected_testcase_failures && testcase_successes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("--------------------------------------------------------\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%3d out of %3d testcases failed, as expected. |\n",
 			expected_testcase_failures, testcase_total);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("----------------------------------------------------\n");
+#else
+		;
+#endif
 		debug_locks = 1;
 	} else if (expected_testcase_failures && !testcase_successes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("--------------------------------------------------------\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("All %3d testcases failed, as expected. |\n",
 			expected_testcase_failures);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("----------------------------------------\n");
+#else
+		;
+#endif
 		debug_locks = 1;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("-------------------------------------------------------\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Good, all %3d testcases passed! |\n",
 			testcase_successes);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("---------------------------------\n");
+#else
+		;
+#endif
 		debug_locks = 1;
 	}
 	debug_locks_silent = 0;

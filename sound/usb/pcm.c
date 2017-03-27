@@ -302,12 +302,20 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 	snd_usb_set_format_quirk(subs, fmt);
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "setting done: format = %d, rate = %d..%d, channels = %d\n",
 	       fmt->format, fmt->rate_min, fmt->rate_max, fmt->channels);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  datapipe = 0x%0x, syncpipe = 0x%0x\n",
 	       subs->datapipe, subs->syncpipe);
+#else
+	;
+#endif
 #endif
 
 	return 0;

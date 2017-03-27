@@ -454,7 +454,11 @@ static int __init au1xxx_nand_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	au1550_mtd = kzalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!au1550_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate NAND MTD dev structure.\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -493,7 +497,11 @@ static int __init au1xxx_nand_init(void)
 		nand_width = 1;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Pb1550 NAND: bad boot:swap\n");
+#else
+		;
+#endif
 		retval = -EINVAL;
 		goto outmem;
 	}
@@ -535,7 +543,11 @@ static int __init au1xxx_nand_init(void)
 		mem_staddr = au_readl(MEM_STADDR3);
 
 	if (mem_staddr == 0x00000000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Au1xxx NAND: ERROR WITH NAND CHIP-SELECT\n");
+#else
+		;
+#endif
 		kfree(au1550_mtd);
 		return 1;
 	}

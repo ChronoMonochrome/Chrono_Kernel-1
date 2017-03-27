@@ -190,25 +190,41 @@ static int __init init_oct5066(void)
 
 	// Do an autoprobe sequence
 	if (!request_region(PAGE_IO,1,"Octagon SSD")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "5066: Page Register in Use\n");
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 	iomapadr = (unsigned long)ioremap(WINDOW_START, WINDOW_LENGTH);
 	if (!iomapadr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Failed to ioremap memory region\n");
+#else
+		;
+#endif
 		ret = -EIO;
 		goto out_rel;
 	}
 	if (OctProbe() != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "5066: Octagon Probe Failed, is this an Octagon 5066 SBC?\n");
+#else
+		;
+#endif
 		iounmap((void *)iomapadr);
 		ret = -EAGAIN;
 		goto out_unmap;
 	}
 
 	// Print out our little header..
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Octagon 5066 SSD IO:0x%x MEM:0x%x-0x%x\n",PAGE_IO,WINDOW_START,
 	       WINDOW_START+WINDOW_LENGTH);
+#else
+	;
+#endif
 
 	for (i=0; i<2; i++) {
 		oct5066_mtd[i] = do_map_probe("cfi_probe", &oct5066_map[i]);

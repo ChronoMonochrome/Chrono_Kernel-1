@@ -578,23 +578,23 @@ static void tulip_tx_timeout(struct net_device *dev)
 		for (i = 0; i < RX_RING_SIZE; i++) {
 			u8 *buf = (u8 *)(tp->rx_ring[i].buffer1);
 			int j;
-			printk(KERN_DEBUG
-			       "%2d: %08x %08x %08x %08x  %02x %02x %02x\n",
-			       i,
-			       (unsigned int)tp->rx_ring[i].status,
-			       (unsigned int)tp->rx_ring[i].length,
-			       (unsigned int)tp->rx_ring[i].buffer1,
-			       (unsigned int)tp->rx_ring[i].buffer2,
-			       buf[0], buf[1], buf[2]);
+//			printk(KERN_DEBUG
+//			       "%2d: %08x %08x %08x %08x  %02x %02x %02x\n",
+//			       i,
+//			       (unsigned int)tp->rx_ring[i].status,
+//			       (unsigned int)tp->rx_ring[i].length,
+//			       (unsigned int)tp->rx_ring[i].buffer1,
+//			       (unsigned int)tp->rx_ring[i].buffer2,
+;
 			for (j = 0; buf[j] != 0xee && j < 1600; j++)
 				if (j < 100)
 					pr_cont(" %02x", buf[j]);
 			pr_cont(" j=%d\n", j);
 		}
-		printk(KERN_DEBUG "  Rx ring %p: ", tp->rx_ring);
+;
 		for (i = 0; i < RX_RING_SIZE; i++)
 			pr_cont(" %08x", (unsigned int)tp->rx_ring[i].status);
-		printk(KERN_DEBUG "  Tx ring %p: ", tp->tx_ring);
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
 			pr_cont(" %08x", (unsigned int)tp->tx_ring[i].status);
 		pr_cont("\n");

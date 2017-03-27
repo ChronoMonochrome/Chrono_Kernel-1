@@ -198,20 +198,20 @@ static inline int serial_paranoia_check(struct cyclades_port *info, char *name,
 {
 #ifdef SERIAL_PARANOIA_CHECK
 	if (!info) {
-		printk("Warning: null cyclades_port for (%s) in %s\n", name,
-				routine);
+//		printk("Warning: null cyclades_port for (%s) in %s\n", name,
+;
 		return 1;
 	}
 
 	if (info < &cy_port[0] || info >= &cy_port[NR_PORTS]) {
-		printk("Warning: cyclades_port out of range for (%s) in %s\n",
-				name, routine);
+//		printk("Warning: cyclades_port out of range for (%s) in %s\n",
+;
 		return 1;
 	}
 
 	if (info->magic != CYCLADES_MAGIC) {
-		printk("Warning: bad magic number for serial struct (%s) in "
-				"%s\n", name, routine);
+//		printk("Warning: bad magic number for serial struct (%s) in "
+;
 		return 1;
 	}
 #endif
@@ -226,7 +226,7 @@ void SP(char *data)
 {
 	unsigned long flags;
 	local_irq_save(flags);
-	printk(KERN_EMERG "%s", data);
+;
 	local_irq_restore(flags);
 }
 
@@ -236,7 +236,7 @@ void CP(char data)
 	unsigned long flags;
 	local_irq_save(flags);
 	scrn[0] = data;
-	printk(KERN_EMERG "%c", scrn);
+;
 	local_irq_restore(flags);
 }				/* CP */
 
@@ -672,7 +672,7 @@ static int startup(struct cyclades_port *info)
 	channel = info->line;
 
 #ifdef SERIAL_DEBUG_OPEN
-	printk("startup channel %d\n", channel);
+;
 #endif
 
 	local_irq_save(flags);
@@ -685,9 +685,9 @@ static int startup(struct cyclades_port *info)
 	base_addr[CyMSVR2] = CyDTR;
 
 #ifdef SERIAL_DEBUG_DTR
-	printk("cyc: %d: raising DTR\n", __LINE__);
-	printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-	       base_addr[CyMSVR2]);
+;
+//	printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 
 	base_addr[CyIER] |= CyRxData;
@@ -701,7 +701,7 @@ static int startup(struct cyclades_port *info)
 	local_irq_restore(flags);
 
 #ifdef SERIAL_DEBUG_OPEN
-	printk(" done\n");
+;
 #endif
 	return 0;
 }				/* startup */
@@ -737,7 +737,7 @@ static void shutdown(struct cyclades_port *info)
 	channel = info->line;
 
 #ifdef SERIAL_DEBUG_OPEN
-	printk("shutdown channel %d\n", channel);
+;
 #endif
 
 	/* !!! REALLY MUST WAIT FOR LAST CHARACTER TO BE
@@ -758,9 +758,9 @@ static void shutdown(struct cyclades_port *info)
 /* CP('C');CP('1'); */
 		base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: dropping DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 	}
 	write_cy_cmd(base_addr, CyDIS_RCVR);
@@ -774,7 +774,7 @@ static void shutdown(struct cyclades_port *info)
 	local_irq_restore(flags);
 
 #ifdef SERIAL_DEBUG_OPEN
-	printk(" done\n");
+;
 #endif
 }				/* shutdown */
 
@@ -1003,17 +1003,17 @@ static void config_setup(struct cyclades_port *info)
 		if ((base_addr[CyMSVR2] & CyDTR) == CyDTR)
 			base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: dropping DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 	} else {
 		if ((base_addr[CyMSVR2] & CyDTR) != CyDTR)
 			base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: raising DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 	}
 
@@ -1031,7 +1031,7 @@ static int cy_put_char(struct tty_struct *tty, unsigned char ch)
 	unsigned long flags;
 
 #ifdef SERIAL_DEBUG_IO
-	printk("cy_put_char %s(0x%02x)\n", tty->name, ch);
+;
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_put_char"))
@@ -1191,9 +1191,9 @@ static void cy_throttle(struct tty_struct *tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char buf[64];
 
-	printk("throttle %s: %d....\n", tty_name(tty, buf),
-	       tty->ldisc.chars_in_buffer(tty));
-	printk("cy_throttle %s\n", tty->name);
+//	printk("throttle %s: %d....\n", tty_name(tty, buf),
+;
+;
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_nthrottle")) {
@@ -1223,9 +1223,9 @@ static void cy_unthrottle(struct tty_struct *tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char buf[64];
 
-	printk("throttle %s: %d....\n", tty_name(tty, buf),
-	       tty->ldisc.chars_in_buffer(tty));
-	printk("cy_unthrottle %s\n", tty->name);
+//	printk("throttle %s: %d....\n", tty_name(tty, buf),
+;
+;
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_nthrottle")) {
@@ -1352,9 +1352,9 @@ cy_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
 /* CP('S');CP('2'); */
 		base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: raising DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 		local_irq_restore(flags);
 	}
@@ -1371,9 +1371,9 @@ cy_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
 /* CP('C');CP('2'); */
 		base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: dropping DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 		local_irq_restore(flags);
 	}
@@ -1562,7 +1562,7 @@ cy_ioctl(struct tty_struct *tty,
 	tty_unlock();
 
 #ifdef SERIAL_DEBUG_OTHER
-	printk("cy_ioctl done\n");
+;
 #endif
 
 	return ret_val;
@@ -1573,7 +1573,7 @@ static void cy_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef SERIAL_DEBUG_OTHER
-	printk("cy_set_termios %s\n", tty->name);
+;
 #endif
 
 	if (tty->termios->c_cflag == old_termios->c_cflag)
@@ -1598,14 +1598,14 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 
 /* CP('C'); */
 #ifdef SERIAL_DEBUG_OTHER
-	printk("cy_close %s\n", tty->name);
+;
 #endif
 
 	if (!info || serial_paranoia_check(info, tty->name, "cy_close")) {
 		return;
 	}
 #ifdef SERIAL_DEBUG_OPEN
-	printk("cy_close %s, count = %d\n", tty->name, info->count);
+;
 #endif
 
 	if ((tty->count == 1) && (info->count != 1)) {
@@ -1616,19 +1616,19 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
-		printk("cy_close: bad serial port count; tty->count is 1, "
+;
 		       "info->count is %d\n", info->count);
 		info->count = 1;
 	}
 #ifdef SERIAL_DEBUG_COUNT
-	printk("cyc: %d: decrementing count to %d\n", __LINE__,
-	       info->count - 1);
+//	printk("cyc: %d: decrementing count to %d\n", __LINE__,
+;
 #endif
 	if (--info->count < 0) {
-		printk("cy_close: bad serial port count for ttys%d: %d\n",
-		       info->line, info->count);
+//		printk("cy_close: bad serial port count for ttys%d: %d\n",
+;
 #ifdef SERIAL_DEBUG_COUNT
-		printk("cyc: %d: setting count to 0\n", __LINE__);
+;
 #endif
 		info->count = 0;
 	}
@@ -1652,7 +1652,7 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 	wake_up_interruptible(&info->close_wait);
 
 #ifdef SERIAL_DEBUG_OTHER
-	printk("cy_close done\n");
+;
 #endif
 }				/* cy_close */
 
@@ -1675,7 +1675,7 @@ void cy_hangup(struct tty_struct *tty)
 	info->event = 0;
 	info->count = 0;
 #ifdef SERIAL_DEBUG_COUNT
-	printk("cyc: %d: setting count to 0\n", __LINE__);
+;
 #endif
 	info->tty = 0;
 #endif
@@ -1731,13 +1731,13 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 	retval = 0;
 	add_wait_queue(&info->open_wait, &wait);
 #ifdef SERIAL_DEBUG_OPEN
-	printk("block_til_ready before block: %s, count = %d\n",
-	       tty->name, info->count);
+//	printk("block_til_ready before block: %s, count = %d\n",
+;
 	/**/
 #endif
 	    info->count--;
 #ifdef SERIAL_DEBUG_COUNT
-	printk("cyc: %d: decrementing count to %d\n", __LINE__, info->count);
+;
 #endif
 	info->blocked_open++;
 
@@ -1750,9 +1750,9 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 /* CP('S');CP('4'); */
 		base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
-		printk("cyc: %d: raising DTR\n", __LINE__);
-		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
-		       base_addr[CyMSVR2]);
+;
+//		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
+;
 #endif
 		local_irq_restore(flags);
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -1780,8 +1780,8 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 			break;
 		}
 #ifdef SERIAL_DEBUG_OPEN
-		printk("block_til_ready blocking: %s, count = %d\n",
-		       tty->name, info->count);
+//		printk("block_til_ready blocking: %s, count = %d\n",
+;
 		/**/
 #endif
 		tty_unlock();
@@ -1793,14 +1793,14 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 	if (!tty_hung_up_p(filp)) {
 		info->count++;
 #ifdef SERIAL_DEBUG_COUNT
-		printk("cyc: %d: incrementing count to %d\n", __LINE__,
-		       info->count);
+//		printk("cyc: %d: incrementing count to %d\n", __LINE__,
+;
 #endif
 	}
 	info->blocked_open--;
 #ifdef SERIAL_DEBUG_OPEN
-	printk("block_til_ready after blocking: %s, count = %d\n",
-	       tty->name, info->count);
+//	printk("block_til_ready after blocking: %s, count = %d\n",
+;
 	/**/
 #endif
 	    if (retval)
@@ -1834,12 +1834,12 @@ int cy_open(struct tty_struct *tty, struct file *filp)
 		return -ENODEV;
 	}
 #ifdef SERIAL_DEBUG_OPEN
-	printk("cy_open %s, count = %d\n", tty->name, info->count);
+;
 	/**/
 #endif
 	    info->count++;
 #ifdef SERIAL_DEBUG_COUNT
-	printk("cyc: %d: incrementing count to %d\n", __LINE__, info->count);
+;
 #endif
 	tty->driver_data = info;
 	info->tty = tty;
@@ -1855,13 +1855,13 @@ int cy_open(struct tty_struct *tty, struct file *filp)
 	retval = block_til_ready(tty, filp, info);
 	if (retval) {
 #ifdef SERIAL_DEBUG_OPEN
-		printk("cy_open returning after block_til_ready with %d\n",
-		       retval);
+//		printk("cy_open returning after block_til_ready with %d\n",
+;
 #endif
 		return retval;
 	}
 #ifdef SERIAL_DEBUG_OPEN
-	printk("cy_open done\n");
+;
 	/**/
 #endif
 	    return 0;
@@ -1882,7 +1882,7 @@ int cy_open(struct tty_struct *tty, struct file *filp)
  */
 static void show_version(void)
 {
-	printk("MVME166/167 cd2401 driver\n");
+;
 }				/* show_version */
 
 /* initialize chips on card -- return number of valid
@@ -2002,7 +2002,7 @@ void mvme167_serial_console_setup(int cflag)
 
 	my_udelay(20000L);	/* Let it all settle down */
 
-	printk("CD2401 initialised,  chip is rev 0x%02x\n", base_addr[CyGFRCR]);
+;
 	if (badspeed)
 		printk
 		    ("  WARNING:  Failed to identify line speed, rcor=%02x,rbpr=%02x\n",
@@ -2098,7 +2098,7 @@ static int __init serial167_init(void)
 
 	ret = tty_register_driver(cy_serial_driver);
 	if (ret) {
-		printk(KERN_ERR "Couldn't register MVME166/7 serial driver\n");
+;
 		put_tty_driver(cy_serial_driver);
 		return ret;
 	}
@@ -2134,8 +2134,8 @@ static int __init serial167_init(void)
 				info->x_char = 0;
 				info->count = 0;
 #ifdef SERIAL_DEBUG_COUNT
-				printk("cyc: %d: setting count to 0\n",
-				       __LINE__);
+//				printk("cyc: %d: setting count to 0\n",
+;
 #endif
 				info->blocked_open = 0;
 				info->default_threshold = 0;
@@ -2150,15 +2150,15 @@ static int __init serial167_init(void)
 				    CyFRAME | CyOVERRUN;
 				/* info->timeout */
 
-				printk("ttyS%d ", info->line);
+;
 				port_num++;
 				info++;
 				if (!(port_num & 7)) {
-					printk("\n               ");
+;
 				}
 			}
 		}
-		printk("\n");
+;
 	}
 	while (port_num < NR_PORTS) {
 		info->line = -1;
@@ -2169,28 +2169,28 @@ static int __init serial167_init(void)
 	ret = request_irq(MVME167_IRQ_SER_ERR, cd2401_rxerr_interrupt, 0,
 			  "cd2401_errors", cd2401_rxerr_interrupt);
 	if (ret) {
-		printk(KERN_ERR "Could't get cd2401_errors IRQ");
+;
 		goto cleanup_serial_driver;
 	}
 
 	ret = request_irq(MVME167_IRQ_SER_MODEM, cd2401_modem_interrupt, 0,
 			  "cd2401_modem", cd2401_modem_interrupt);
 	if (ret) {
-		printk(KERN_ERR "Could't get cd2401_modem IRQ");
+;
 		goto cleanup_irq_cd2401_errors;
 	}
 
 	ret = request_irq(MVME167_IRQ_SER_TX, cd2401_tx_interrupt, 0,
 			  "cd2401_txints", cd2401_tx_interrupt);
 	if (ret) {
-		printk(KERN_ERR "Could't get cd2401_txints IRQ");
+;
 		goto cleanup_irq_cd2401_modem;
 	}
 
 	ret = request_irq(MVME167_IRQ_SER_RX, cd2401_rx_interrupt, 0,
 			  "cd2401_rxints", cd2401_rx_interrupt);
 	if (ret) {
-		printk(KERN_ERR "Could't get cd2401_rxints IRQ");
+;
 		goto cleanup_irq_cd2401_txints;
 	}
 
@@ -2211,8 +2211,8 @@ cleanup_irq_cd2401_errors:
 	free_irq(MVME167_IRQ_SER_ERR, cd2401_rxerr_interrupt);
 cleanup_serial_driver:
 	if (tty_unregister_driver(cy_serial_driver))
-		printk(KERN_ERR
-		       "Couldn't unregister MVME166/7 serial driver\n");
+//		printk(KERN_ERR
+;
 	put_tty_driver(cy_serial_driver);
 	return ret;
 }				/* serial167_init */
@@ -2229,82 +2229,82 @@ static void show_status(int line_num)
 
 	info = &cy_port[line_num];
 	channel = info->line;
-	printk("  channel %d\n", channel);
+;
 	/**/ printk(" cy_port\n");
-	printk("  card line flags = %d %d %x\n",
-	       info->card, info->line, info->flags);
+//	printk("  card line flags = %d %d %x\n",
+;
 	printk
 	    ("  *tty read_status_mask timeout xmit_fifo_size = %lx %x %x %x\n",
 	     (long)info->tty, info->read_status_mask, info->timeout,
 	     info->xmit_fifo_size);
-	printk("  cor1,cor2,cor3,cor4,cor5,cor6,cor7 = %x %x %x %x %x %x %x\n",
-	       info->cor1, info->cor2, info->cor3, info->cor4, info->cor5,
-	       info->cor6, info->cor7);
-	printk("  tbpr,tco,rbpr,rco = %d %d %d %d\n", info->tbpr, info->tco,
-	       info->rbpr, info->rco);
-	printk("  close_delay event count = %d %d %d\n", info->close_delay,
-	       info->event, info->count);
-	printk("  x_char blocked_open = %x %x\n", info->x_char,
-	       info->blocked_open);
-	printk("  open_wait = %lx %lx %lx\n", (long)info->open_wait);
+//	printk("  cor1,cor2,cor3,cor4,cor5,cor6,cor7 = %x %x %x %x %x %x %x\n",
+//	       info->cor1, info->cor2, info->cor3, info->cor4, info->cor5,
+;
+//	printk("  tbpr,tco,rbpr,rco = %d %d %d %d\n", info->tbpr, info->tco,
+;
+//	printk("  close_delay event count = %d %d %d\n", info->close_delay,
+;
+//	printk("  x_char blocked_open = %x %x\n", info->x_char,
+;
+;
 
 	local_irq_save(flags);
 
 /* Global Registers */
 
-	printk(" CyGFRCR %x\n", base_addr[CyGFRCR]);
-	printk(" CyCAR %x\n", base_addr[CyCAR]);
-	printk(" CyRISR %x\n", base_addr[CyRISR]);
-	printk(" CyTISR %x\n", base_addr[CyTISR]);
-	printk(" CyMISR %x\n", base_addr[CyMISR]);
-	printk(" CyRIR %x\n", base_addr[CyRIR]);
-	printk(" CyTIR %x\n", base_addr[CyTIR]);
-	printk(" CyMIR %x\n", base_addr[CyMIR]);
-	printk(" CyTPR %x\n", base_addr[CyTPR]);
+;
+;
+;
+;
+;
+;
+;
+;
+;
 
 	base_addr[CyCAR] = (u_char) channel;
 
 /* Virtual Registers */
 
 #if 0
-	printk(" CyRIVR %x\n", base_addr[CyRIVR]);
-	printk(" CyTIVR %x\n", base_addr[CyTIVR]);
-	printk(" CyMIVR %x\n", base_addr[CyMIVR]);
-	printk(" CyMISR %x\n", base_addr[CyMISR]);
+;
+;
+;
+;
 #endif
 
 /* Channel Registers */
 
-	printk(" CyCCR %x\n", base_addr[CyCCR]);
-	printk(" CyIER %x\n", base_addr[CyIER]);
-	printk(" CyCOR1 %x\n", base_addr[CyCOR1]);
-	printk(" CyCOR2 %x\n", base_addr[CyCOR2]);
-	printk(" CyCOR3 %x\n", base_addr[CyCOR3]);
-	printk(" CyCOR4 %x\n", base_addr[CyCOR4]);
-	printk(" CyCOR5 %x\n", base_addr[CyCOR5]);
+;
+;
+;
+;
+;
+;
+;
 #if 0
-	printk(" CyCCSR %x\n", base_addr[CyCCSR]);
-	printk(" CyRDCR %x\n", base_addr[CyRDCR]);
+;
+;
 #endif
-	printk(" CySCHR1 %x\n", base_addr[CySCHR1]);
-	printk(" CySCHR2 %x\n", base_addr[CySCHR2]);
+;
+;
 #if 0
-	printk(" CySCHR3 %x\n", base_addr[CySCHR3]);
-	printk(" CySCHR4 %x\n", base_addr[CySCHR4]);
-	printk(" CySCRL %x\n", base_addr[CySCRL]);
-	printk(" CySCRH %x\n", base_addr[CySCRH]);
-	printk(" CyLNC %x\n", base_addr[CyLNC]);
-	printk(" CyMCOR1 %x\n", base_addr[CyMCOR1]);
-	printk(" CyMCOR2 %x\n", base_addr[CyMCOR2]);
+;
+;
+;
+;
+;
+;
+;
 #endif
-	printk(" CyRTPRL %x\n", base_addr[CyRTPRL]);
-	printk(" CyRTPRH %x\n", base_addr[CyRTPRH]);
-	printk(" CyMSVR1 %x\n", base_addr[CyMSVR1]);
-	printk(" CyMSVR2 %x\n", base_addr[CyMSVR2]);
-	printk(" CyRBPR %x\n", base_addr[CyRBPR]);
-	printk(" CyRCOR %x\n", base_addr[CyRCOR]);
-	printk(" CyTBPR %x\n", base_addr[CyTBPR]);
-	printk(" CyTCOR %x\n", base_addr[CyTCOR]);
+;
+;
+;
+;
+;
+;
+;
+;
 
 	local_irq_restore(flags);
 }				/* show_status */

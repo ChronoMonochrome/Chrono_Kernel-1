@@ -767,7 +767,7 @@ static int stli_parsebrd(struct stlconf *confp, char **argp)
 			break;
 	}
 	if (i == ARRAY_SIZE(stli_brdstr)) {
-		printk(KERN_WARNING "istallion: unknown board name, %s?\n", argp[0]);
+;
 		return 0;
 	}
 
@@ -1133,7 +1133,7 @@ static void stli_dtr_rts(struct tty_port *port, int on)
 	stli_mkasysigs(&portp->asig, on, on);
 	if (stli_cmdwait(brdp, portp, A_SETSIGNALS, &portp->asig,
 		sizeof(asysigs_t), 0) < 0)
-			printk(KERN_WARNING "istallion: dtr set failed.\n");
+;
 }
 
 
@@ -1976,8 +1976,8 @@ static void __stli_sendcmd(struct stlibrd *brdp, struct stliport *portp, unsigne
 	unsigned char __iomem *bits;
 
 	if (test_bit(ST_CMDING, &portp->state)) {
-		printk(KERN_ERR "istallion: command already busy, cmd=%x!\n",
-				(int) cmd);
+//		printk(KERN_ERR "istallion: command already busy, cmd=%x!\n",
+;
 		return;
 	}
 
@@ -2536,7 +2536,7 @@ static int stli_initports(struct stlibrd *brdp)
 	for (i = 0, panelnr = 0, panelport = 0; (i < brdp->nrports); i++) {
 		portp = kzalloc(sizeof(struct stliport), GFP_KERNEL);
 		if (!portp) {
-			printk(KERN_WARNING "istallion: failed to allocate port structure\n");
+;
 			continue;
 		}
 		tty_port_init(&portp->port);
@@ -2603,9 +2603,9 @@ static void __iomem *stli_ecpgetmemptr(struct stlibrd *brdp, unsigned long offse
 	unsigned char val;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), brd=%d\n",
-			(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), brd=%d\n",
+;
 		ptr = NULL;
 		val = 0;
 	} else {
@@ -2677,9 +2677,9 @@ static void __iomem *stli_ecpeigetmemptr(struct stlibrd *brdp, unsigned long off
 	unsigned char	val;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), brd=%d\n",
-			(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), brd=%d\n",
+;
 		ptr = NULL;
 		val = 0;
 	} else {
@@ -2729,9 +2729,9 @@ static void __iomem *stli_ecpmcgetmemptr(struct stlibrd *brdp, unsigned long off
 	unsigned char val;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), brd=%d\n",
-			(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), brd=%d\n",
+;
 		ptr = NULL;
 		val = 0;
 	} else {
@@ -2774,9 +2774,9 @@ static void __iomem *stli_ecppcigetmemptr(struct stlibrd *brdp, unsigned long of
 	unsigned char	val;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), board=%d\n",
-				(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), board=%d\n",
+;
 		ptr = NULL;
 		val = 0;
 	} else {
@@ -2839,9 +2839,9 @@ static void __iomem *stli_onbgetmemptr(struct stlibrd *brdp, unsigned long offse
 	void __iomem *ptr;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), brd=%d\n",
-				(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), brd=%d\n",
+;
 		ptr = NULL;
 	} else {
 		ptr = brdp->membase + (offset % ONB_ATPAGESIZE);
@@ -2905,9 +2905,9 @@ static void __iomem *stli_onbegetmemptr(struct stlibrd *brdp, unsigned long offs
 	unsigned char val;
 
 	if (offset > brdp->memsize) {
-		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
-				"range at line=%d(%d), brd=%d\n",
-			(int) offset, line, __LINE__, brdp->brdnr);
+//		printk(KERN_ERR "istallion: shared memory pointer=%x out of "
+//				"range at line=%d(%d), brd=%d\n",
+;
 		ptr = NULL;
 		val = 0;
 	} else {
@@ -3336,16 +3336,16 @@ static int stli_startbrd(struct stlibrd *brdp)
 	nrdevs = hdrp->nrdevs;
 
 #if 0
-	printk("%s(%d): CDK version %d.%d.%d --> "
-		"nrdevs=%d memp=%x hostp=%x slavep=%x\n",
-		 __FILE__, __LINE__, readb(&hdrp->ver_release), readb(&hdrp->ver_modification),
-		 readb(&hdrp->ver_fix), nrdevs, (int) readl(&hdrp->memp), readl(&hdrp->hostp),
-		 readl(&hdrp->slavep));
+//	printk("%s(%d): CDK version %d.%d.%d --> "
+//		"nrdevs=%d memp=%x hostp=%x slavep=%x\n",
+//		 __FILE__, __LINE__, readb(&hdrp->ver_release), readb(&hdrp->ver_modification),
+//		 readb(&hdrp->ver_fix), nrdevs, (int) readl(&hdrp->memp), readl(&hdrp->hostp),
+;
 #endif
 
 	if (nrdevs < (brdp->nrports + 1)) {
-		printk(KERN_ERR "istallion: slave failed to allocate memory for "
-				"all devices, devices=%d\n", nrdevs);
+//		printk(KERN_ERR "istallion: slave failed to allocate memory for "
+;
 		brdp->nrports = nrdevs - 1;
 	}
 	brdp->nrdevs = nrdevs;
@@ -3354,13 +3354,13 @@ static int stli_startbrd(struct stlibrd *brdp)
 	brdp->bitsize = (nrdevs + 7) / 8;
 	memoff = readl(&hdrp->memp);
 	if (memoff > brdp->memsize) {
-		printk(KERN_ERR "istallion: corrupted shared memory region?\n");
+;
 		rc = -EIO;
 		goto stli_donestartup;
 	}
 	memp = (cdkmem_t __iomem *) EBRDGETMEMPTR(brdp, memoff);
 	if (readw(&memp->dtype) != TYP_ASYNCTRL) {
-		printk(KERN_ERR "istallion: no slave control device found\n");
+;
 		goto stli_donestartup;
 	}
 	memp++;
@@ -3445,8 +3445,8 @@ static int __devinit stli_brdinit(struct stlibrd *brdp)
 		retval = stli_initonb(brdp);
 		break;
 	default:
-		printk(KERN_ERR "istallion: board=%d is unknown board "
-				"type=%d\n", brdp->brdnr, brdp->brdtype);
+//		printk(KERN_ERR "istallion: board=%d is unknown board "
+;
 		retval = -ENODEV;
 	}
 
@@ -3454,10 +3454,10 @@ static int __devinit stli_brdinit(struct stlibrd *brdp)
 		return retval;
 
 	stli_initports(brdp);
-	printk(KERN_INFO "istallion: %s found, board=%d io=%x mem=%x "
-		"nrpanels=%d nrports=%d\n", stli_brdnames[brdp->brdtype],
-		brdp->brdnr, brdp->iobase, (int) brdp->memaddr,
-		brdp->nrpanels, brdp->nrports);
+//	printk(KERN_INFO "istallion: %s found, board=%d io=%x mem=%x "
+//		"nrpanels=%d nrports=%d\n", stli_brdnames[brdp->brdtype],
+//		brdp->brdnr, brdp->iobase, (int) brdp->memaddr,
+;
 	return 0;
 }
 
@@ -3548,9 +3548,9 @@ static int stli_eisamemprobe(struct stlibrd *brdp)
 	if (! foundit) {
 		brdp->memaddr = 0;
 		brdp->membase = NULL;
-		printk(KERN_ERR "istallion: failed to probe shared memory "
-				"region for %s in EISA slot=%d\n",
-			stli_brdnames[brdp->brdtype], (brdp->iobase >> 12));
+//		printk(KERN_ERR "istallion: failed to probe shared memory "
+//				"region for %s in EISA slot=%d\n",
+;
 		return -ENODEV;
 	}
 	return 0;
@@ -3693,8 +3693,8 @@ static int __devinit stli_pciprobe(struct pci_dev *pdev,
 	mutex_lock(&stli_brdslock);
 	brdnr = stli_getbrdnr();
 	if (brdnr < 0) {
-		printk(KERN_INFO "istallion: too many boards found, "
-			"maximum supported %d\n", STL_MAXBRDS);
+//		printk(KERN_INFO "istallion: too many boards found, "
+;
 		mutex_unlock(&stli_brdslock);
 		retval = -EIO;
 		goto err_fr;
@@ -3765,8 +3765,8 @@ static struct stlibrd *stli_allocbrd(void)
 
 	brdp = kzalloc(sizeof(struct stlibrd), GFP_KERNEL);
 	if (!brdp) {
-		printk(KERN_ERR "istallion: failed to allocate memory "
-				"(size=%Zd)\n", sizeof(struct stlibrd));
+//		printk(KERN_ERR "istallion: failed to allocate memory "
+;
 		return NULL;
 	}
 	brdp->magic = STLI_BOARDMAGIC;
@@ -3854,8 +3854,8 @@ static int __init stli_initbrds(void)
 
 	retval = pci_register_driver(&stli_pcidriver);
 	if (retval && found == 0) {
-		printk(KERN_ERR "Neither isa nor eisa cards found nor pci "
-				"driver can be registered!\n");
+//		printk(KERN_ERR "Neither isa nor eisa cards found nor pci "
+;
 		goto err;
 	}
 
@@ -4404,15 +4404,15 @@ static int __init istallion_module_init(void)
 	unsigned int i;
 	int retval;
 
-	printk(KERN_INFO "%s: version %s\n", stli_drvtitle, stli_drvversion);
+;
 
 	spin_lock_init(&stli_lock);
 	spin_lock_init(&brd_lock);
 
 	stli_txcookbuf = kmalloc(STLI_TXBUFSIZE, GFP_KERNEL);
 	if (!stli_txcookbuf) {
-		printk(KERN_ERR "istallion: failed to allocate memory "
-				"(size=%d)\n", STLI_TXBUFSIZE);
+//		printk(KERN_ERR "istallion: failed to allocate memory "
+;
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -4436,7 +4436,7 @@ static int __init istallion_module_init(void)
 
 	retval = tty_register_driver(stli_serial);
 	if (retval) {
-		printk(KERN_ERR "istallion: failed to register serial driver\n");
+;
 		goto err_ttyput;
 	}
 
@@ -4450,8 +4450,8 @@ static int __init istallion_module_init(void)
  */
 	retval = register_chrdev(STL_SIOMEMMAJOR, "staliomem", &stli_fsiomem);
 	if (retval) {
-		printk(KERN_ERR "istallion: failed to register serial memory "
-				"device\n");
+//		printk(KERN_ERR "istallion: failed to register serial memory "
+;
 		goto err_deinit;
 	}
 
@@ -4480,8 +4480,8 @@ static void __exit istallion_module_exit(void)
 {
 	unsigned int j;
 
-	printk(KERN_INFO "Unloading %s: version %s\n", stli_drvtitle,
-		stli_drvversion);
+//	printk(KERN_INFO "Unloading %s: version %s\n", stli_drvtitle,
+;
 
 	if (stli_timeron) {
 		stli_timeron = 0;

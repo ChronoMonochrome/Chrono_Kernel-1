@@ -555,7 +555,7 @@ static unsigned long __init lance_probe1( struct net_device *dev,
 		/* PAMs card and Riebl on ST use level 5 autovector */
 		if (request_irq(IRQ_AUTO_5, lance_interrupt, IRQ_TYPE_PRIO,
 		            "PAM,Riebl-ST Ethernet", dev)) {
-			printk( "Lance: request for irq %d failed\n", IRQ_AUTO_5 );
+;
 			return 0;
 		}
 		dev->irq = (unsigned short)IRQ_AUTO_5;
@@ -567,23 +567,23 @@ static unsigned long __init lance_probe1( struct net_device *dev,
 		 */
 		unsigned long irq = atari_register_vme_int();
 		if (!irq) {
-			printk( "Lance: request for VME interrupt failed\n" );
+;
 			return 0;
 		}
 		if (request_irq(irq, lance_interrupt, IRQ_TYPE_PRIO,
 		            "Riebl-VME Ethernet", dev)) {
-			printk( "Lance: request for irq %ld failed\n", irq );
+;
 			return 0;
 		}
 		dev->irq = irq;
 	}
 
-	printk("%s: %s at io %#lx, mem %#lx, irq %d%s, hwaddr ",
-		   dev->name, lance_names[lp->cardtype],
-		   (unsigned long)ioaddr,
-		   (unsigned long)memaddr,
-		   dev->irq,
-		   init_rec->slow_flag ? " (slow memcpy)" : "" );
+//	printk("%s: %s at io %#lx, mem %#lx, irq %d%s, hwaddr ",
+//		   dev->name, lance_names[lp->cardtype],
+//		   (unsigned long)ioaddr,
+//		   (unsigned long)memaddr,
+//		   dev->irq,
+;
 
 	/* Get the ethernet address */
 	switch( lp->cardtype ) {
@@ -603,11 +603,11 @@ static unsigned long __init lance_probe1( struct net_device *dev,
 		i = IO->mem;
 		break;
 	}
-	printk("%pM\n", dev->dev_addr);
+;
 	if (lp->cardtype == OLD_RIEBL) {
-		printk( "%s: Warning: This is a default ethernet address!\n",
-				dev->name );
-		printk( "      Use \"ifconfig hw ether ...\" to set the address.\n" );
+//		printk( "%s: Warning: This is a default ethernet address!\n",
+;
+;
 	}
 
 	spin_lock_init(&lp->devlock);
@@ -802,11 +802,11 @@ static int lance_start_xmit( struct sk_buff *skb, struct net_device *dev )
 
 	/* Fill in a Tx ring entry */
 	if (lance_debug >= 3) {
-		printk( "%s: TX pkt type 0x%04x from %pM to %pM"
-				" data at 0x%08x len %d\n",
-				dev->name, ((u_short *)skb->data)[6],
-				&skb->data[6], skb->data,
-				(int)skb->data, (int)skb->len );
+//		printk( "%s: TX pkt type 0x%04x from %pM to %pM"
+//				" data at 0x%08x len %d\n",
+//				dev->name, ((u_short *)skb->data)[6],
+//				&skb->data[6], skb->data,
+;
 	}
 
 	/* We're not prepared for the int until the last flags are set/reset. And
@@ -993,7 +993,7 @@ static int lance_rx( struct net_device *dev )
 			struct sk_buff *skb;
 
 			if (pkt_len < 60) {
-				printk( "%s: Runt packet!\n", dev->name );
+;
 				dev->stats.rx_errors++;
 			}
 			else {
@@ -1017,14 +1017,14 @@ static int lance_rx( struct net_device *dev )
 				if (lance_debug >= 3) {
 					u_char *data = PKTBUF_ADDR(head);
 
-					printk(KERN_DEBUG "%s: RX pkt type 0x%04x from %pM to %pM "
-						   "data %02x %02x %02x %02x %02x %02x %02x %02x "
-						   "len %d\n",
-						   dev->name, ((u_short *)data)[6],
-						   &data[6], data,
-						   data[15], data[16], data[17], data[18],
-						   data[19], data[20], data[21], data[22],
-						   pkt_len);
+//					printk(KERN_DEBUG "%s: RX pkt type 0x%04x from %pM to %pM "
+//						   "data %02x %02x %02x %02x %02x %02x %02x %02x "
+//						   "len %d\n",
+//						   dev->name, ((u_short *)data)[6],
+//						   &data[6], data,
+//						   data[15], data[16], data[17], data[18],
+//						   data[19], data[20], data[21], data[22],
+;
 				}
 
 				skb_reserve( skb, 2 );	/* 16 byte align */

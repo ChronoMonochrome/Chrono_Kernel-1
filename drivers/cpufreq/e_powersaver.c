@@ -155,11 +155,19 @@ postchange:
 	/* Print voltage and multiplier */
 	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
 	current_voltage = lo & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Current voltage = %dmV\n",
 		current_voltage * 16 + 700);
+#else
+	;
+#endif
 	current_multiplier = (lo >> 8) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Current multiplier = %d\n",
 		current_multiplier);
+#else
+	;
+#endif
 	}
 #endif
 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
@@ -226,36 +234,68 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 		return -ENODEV;
 
 	/* Check brand */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Detected VIA ");
+#else
+	;
+#endif
 
 	switch (c->x86_model) {
 	case 10:
 		rdmsr(0x1153, lo, hi);
 		brand = (((lo >> 2) ^ lo) >> 18) & 3;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Model A ");
+#else
+		;
+#endif
 		break;
 	case 13:
 		rdmsr(0x1154, lo, hi);
 		brand = (((lo >> 4) ^ (lo >> 2))) & 0x000000ff;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Model D ");
+#else
+		;
+#endif
 		break;
 	}
 
 	switch (brand) {
 	case EPS_BRAND_C7M:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "C7-M\n");
+#else
+		;
+#endif
 		break;
 	case EPS_BRAND_C7:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "C7\n");
+#else
+		;
+#endif
 		break;
 	case EPS_BRAND_EDEN:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Eden\n");
+#else
+		;
+#endif
 		break;
 	case EPS_BRAND_C7D:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "C7-D\n");
+#else
+		;
+#endif
 		break;
 	case EPS_BRAND_C3:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "C3\n");
+#else
+		;
+#endif
 		return -ENODEV;
 		break;
 	}
@@ -267,7 +307,11 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 		/* Can be locked at 0 */
 		rdmsrl(MSR_IA32_MISC_ENABLE, val);
 		if (!(val & MSR_IA32_MISC_ENABLE_ENHANCED_SPEEDSTEP)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "eps: Can't enable Enhanced PowerSaver\n");
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 	}
@@ -275,22 +319,46 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 	/* Print voltage and multiplier */
 	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
 	current_voltage = lo & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Current voltage = %dmV\n",
 			current_voltage * 16 + 700);
+#else
+	;
+#endif
 	current_multiplier = (lo >> 8) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Current multiplier = %d\n", current_multiplier);
+#else
+	;
+#endif
 
 	/* Print limits */
 	max_voltage = hi & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Highest voltage = %dmV\n",
 			max_voltage * 16 + 700);
+#else
+	;
+#endif
 	max_multiplier = (hi >> 8) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Highest multiplier = %d\n", max_multiplier);
+#else
+	;
+#endif
 	min_voltage = (hi >> 16) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Lowest voltage = %dmV\n",
 			min_voltage * 16 + 700);
+#else
+	;
+#endif
 	min_multiplier = (hi >> 24) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "eps: Lowest multiplier = %d\n", min_multiplier);
+#else
+	;
+#endif
 
 	/* Sanity checks */
 	if (current_multiplier == 0 || max_multiplier == 0

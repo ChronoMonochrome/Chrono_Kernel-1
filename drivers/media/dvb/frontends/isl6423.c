@@ -39,19 +39,39 @@ MODULE_PARM_DESC(verbose, "Set Verbosity level");
 #define FE_DEBUG				3
 #define FE_DEBUGREG				4
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(__y, __z, format, arg...) do {						\
 	if (__z) {									\
 		if	((verbose > FE_ERROR) && (verbose > __y))			\
 			printk(KERN_ERR "%s: " format "\n", __func__ , ##arg);		\
+#else
+#define d;
+#endif
 		else if	((verbose > FE_NOTICE) && (verbose > __y))			\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: " format "\n", __func__ , ##arg);	\
+#else
+			;
+#endif
 		else if ((verbose > FE_INFO) && (verbose > __y))			\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: " format "\n", __func__ , ##arg);		\
+#else
+			;
+#endif
 		else if ((verbose > FE_DEBUG) && (verbose > __y))			\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: " format "\n", __func__ , ##arg);	\
+#else
+			;
+#endif
 	} else {									\
 		if (verbose > __y)							\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(format, ##arg);						\
+#else
+			;
+#endif
 	}										\
 } while (0)
 
@@ -73,14 +93,22 @@ static int isl6423_write(struct isl6423_dev *isl6423, u8 reg)
 
 	struct i2c_msg msg = { .addr = addr, .flags = 0, .buf = &reg, .len = 1 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_DEBUG, 1, "write reg %02X", reg);
+#else
+	d;
+#endif
 	err = i2c_transfer(i2c, &msg, 1);
 	if (err < 0)
 		goto exit;
 	return 0;
 
 exit:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_ERROR, 1, "I/O error <%d>", err);
+#else
+	d;
+#endif
 	return err;
 }
 
@@ -104,7 +132,11 @@ static int isl6423_set_modulation(struct dvb_frontend *fe)
 	return 0;
 
 exit:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_ERROR, 1, "I/O error <%d>", err);
+#else
+	d;
+#endif
 	return err;
 }
 
@@ -139,7 +171,11 @@ static int isl6423_voltage_boost(struct dvb_frontend *fe, long arg)
 
 	return 0;
 exit:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_ERROR, 1, "I/O error <%d>", err);
+#else
+	d;
+#endif
 	return err;
 }
 
@@ -189,7 +225,11 @@ static int isl6423_set_voltage(struct dvb_frontend *fe,
 
 	return 0;
 exit:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_ERROR, 1, "I/O error <%d>", err);
+#else
+	d;
+#endif
 	return err;
 }
 
@@ -252,7 +292,11 @@ static int isl6423_set_current(struct dvb_frontend *fe)
 
 	return 0;
 exit:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(FE_ERROR, 1, "I/O error <%d>", err);
+#else
+	d;
+#endif
 	return err;
 }
 

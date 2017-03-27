@@ -307,37 +307,37 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
 	if (unlikely
 	    ((skb_end_pointer(skb) - fpa_head) < CVMX_FPA_PACKET_POOL_SIZE)) {
 		/*
-		   printk("TX buffer isn't large enough for the FPA\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_shared(skb))) {
 		/*
-		   printk("TX buffer sharing data with someone else\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_cloned(skb))) {
 		/*
-		   printk("TX buffer has been cloned\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_header_cloned(skb))) {
 		/*
-		   printk("TX buffer header has been cloned\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb->destructor)) {
 		/*
-		   printk("TX buffer has a destructor\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_shinfo(skb)->nr_frags)) {
 		/*
-		   printk("TX buffer has fragments\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
@@ -345,7 +345,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
 	    (skb->truesize !=
 	     sizeof(*skb) + skb_end_pointer(skb) - skb->head)) {
 		/*
-		   printk("TX buffer truesize has been changed\n");
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}

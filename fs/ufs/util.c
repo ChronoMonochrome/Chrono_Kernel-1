@@ -251,9 +251,9 @@ struct page *ufs_get_locked_page(struct address_space *mapping,
 		page = read_mapping_page(mapping, index, NULL);
 
 		if (IS_ERR(page)) {
-			printk(KERN_ERR "ufs_change_blocknr: "
-			       "read_mapping_page error: ino %lu, index: %lu\n",
-			       mapping->host->i_ino, index);
+//			printk(KERN_ERR "ufs_change_blocknr: "
+//			       "read_mapping_page error: ino %lu, index: %lu\n",
+;
 			goto out;
 		}
 
@@ -271,9 +271,9 @@ struct page *ufs_get_locked_page(struct address_space *mapping,
 			unlock_page(page);
 			page_cache_release(page);
 
-			printk(KERN_ERR "ufs_change_blocknr: "
-			       "can not read page: ino %lu, index: %lu\n",
-			       mapping->host->i_ino, index);
+//			printk(KERN_ERR "ufs_change_blocknr: "
+//			       "can not read page: ino %lu, index: %lu\n",
+;
 
 			page = ERR_PTR(-EIO);
 		}

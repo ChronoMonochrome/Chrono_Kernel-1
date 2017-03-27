@@ -58,7 +58,7 @@ static int afs_inode_map_status(struct afs_vnode *vnode, struct key *key)
 		inode->i_op	= &page_symlink_inode_operations;
 		break;
 	default:
-		printk("kAFS: AFS vnode with undefined type\n");
+;
 		return -EBADMSG;
 	}
 

@@ -265,9 +265,9 @@ static int __init sja1000_isa_init(void)
 	int err = isa_register_driver(&sja1000_isa_driver, MAXDEV);
 
 	if (!err)
-		printk(KERN_INFO
-		       "Legacy %s driver for max. %d devices registered\n",
-		       DRV_NAME, MAXDEV);
+//		printk(KERN_INFO
+//		       "Legacy %s driver for max. %d devices registered\n",
+;
 	return err;
 }
 

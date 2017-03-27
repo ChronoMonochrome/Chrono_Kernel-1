@@ -61,10 +61,14 @@
 
 #include <pcmcia/ss.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define pcmcia_info(args...) printk(KERN_INFO "m8xx_pcmcia: "args)
 #define pcmcia_error(args...) printk(KERN_ERR "m8xx_pcmcia: "args)
 
 static const char *version = "Version 0.06, Aug 2005";
+#else
+#define pcmcia_info(args...) ;
+#endif
 MODULE_LICENSE("Dual MPL/GPL");
 
 #if !defined(CONFIG_PCMCIA_SLOT_A) && !defined(CONFIG_PCMCIA_SLOT_B)
@@ -595,9 +599,13 @@ static irqreturn_t m8xx_interrupt(int irq, void *dev)
 		      (M8XX_PCMCIA_CD2(i) | M8XX_PCMCIA_CD1(i))) == 0) &&
 		    (s->state.Vcc | s->state.Vpp)) {
 			events &= ~SS_DETECT;
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk( "CD glitch workaround - CD = 0x%08x!\n",
 			   (pipr & (M8XX_PCMCIA_CD2(i)
 			   | M8XX_PCMCIA_CD1(i)))); */
+#else
+			/*;
+#endif
 		}
 #endif
 
@@ -680,7 +688,11 @@ static u32 m8xx_get_speed(u32 ns, u32 is_io, u32 bus_freq)
 	clocks = ((bus_freq / 1000) * ns) / 1000;
 	clocks = (clocks * ADJ) / (100 * 1000);
 	if (clocks >= PCMCIA_BMT_LIMIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Max access time limit reached\n");
+#else
+		;
+#endif
 		clocks = PCMCIA_BMT_LIMIT - 1;
 	}
 
@@ -1057,7 +1069,11 @@ static int m8xx_set_mem_map(struct pcmcia_socket *sock,
 		return -EINVAL;
 
 	if ((reg = m8xx_get_graycode(PCMCIA_MEM_WIN_SIZE)) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Cannot set size to 0x%08x.\n", PCMCIA_MEM_WIN_SIZE);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	reg <<= 27;

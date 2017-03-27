@@ -232,9 +232,13 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
 			if (PageReserved(page + j))
 				continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "section number %ld page number %d "
 				"not reserved, was it already online?\n",
 				pfn_to_section_nr(pfn), j);
+#else
+			;
+#endif
 
 			return false;
 		}

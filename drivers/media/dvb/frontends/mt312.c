@@ -49,10 +49,14 @@ struct mt312_state {
 };
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_DEBUG "mt312: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 #define MT312_PLL_CLK		10000000UL	/* 10 MHz */
@@ -77,16 +81,32 @@ static int mt312_read(struct mt312_state *state, const enum mt312_reg_addr reg,
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: ret == %d\n", __func__, ret);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 
 	if (debug) {
 		int i;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("R(%d):", reg & 0x7f);
+#else
+		d;
+#endif
 		for (i = 0; i < count; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " %02x", buf[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -101,10 +121,22 @@ static int mt312_write(struct mt312_state *state, const enum mt312_reg_addr reg,
 
 	if (debug) {
 		int i;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("W(%d):", reg & 0x7f);
+#else
+		d;
+#endif
 		for (i = 0; i < count; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " %02x", src[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	buf[0] = reg;
@@ -118,7 +150,11 @@ static int mt312_write(struct mt312_state *state, const enum mt312_reg_addr reg,
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: ret == %d\n", __func__, ret);
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -188,8 +224,12 @@ static int mt312_get_symbol_rate(struct mt312_state *state, u32 *sr)
 
 		monitor = (buf[0] << 8) | buf[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("sr(auto) = %u\n",
 		       mt312_div(monitor * 15625, 4));
+#else
+		d;
+#endif
 	} else {
 		ret = mt312_writereg(state, MON_CTRL, 0x05);
 		if (ret < 0)
@@ -207,11 +247,19 @@ static int mt312_get_symbol_rate(struct mt312_state *state, u32 *sr)
 
 		sym_rat_op = (buf[0] << 8) | buf[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("sym_rat_op=%d dec_ratio=%d\n",
 		       sym_rat_op, dec_ratio);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("*sr(manual) = %lu\n",
 		       (((state->xtal * 8192) / (sym_rat_op + 8192)) *
 			2) - dec_ratio);
+#else
+		d;
+#endif
 	}
 
 	return 0;
@@ -446,8 +494,12 @@ static int mt312_read_status(struct dvb_frontend *fe, fe_status_t *s)
 	if (ret < 0)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("QPSK_STAT_H: 0x%02x, QPSK_STAT_L: 0x%02x,"
 		" FEC_STATUS: 0x%02x\n", status[0], status[1], status[2]);
+#else
+	d;
+#endif
 
 	if (status[0] & 0xc0)
 		*s |= FE_HAS_SIGNAL;	/* signal noise ratio */
@@ -496,7 +548,11 @@ static int mt312_read_signal_strength(struct dvb_frontend *fe,
 
 	*signal_strength = agc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("agc=%08x err_db=%hd\n", agc, err_db);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -543,7 +599,11 @@ static int mt312_set_frontend(struct dvb_frontend *fe,
 	    { 0x00, 0x01, 0x02, 0x04, 0x3f, 0x08, 0x10, 0x20, 0x3f, 0x3f };
 	const u8 inv_tab[3] = { 0x00, 0x40, 0x80 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Freq %d\n", __func__, p->frequency);
+#else
+	d;
+#endif
 
 	if ((p->frequency < fe->ops.info.frequency_min)
 	    || (p->frequency > fe->ops.info.frequency_max))
@@ -817,8 +877,12 @@ struct dvb_frontend *mt312_attach(const struct mt312_config *config,
 		state->freq_mult = 9;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Only Zarlink VP310/MT312/ZL10313"
 			" are supported chips.\n");
+#else
+		;
+#endif
 		goto error;
 	}
 

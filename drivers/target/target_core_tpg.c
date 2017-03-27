@@ -187,12 +187,16 @@ void core_tpg_add_node_to_devs(
 				lun_access = TRANSPORT_LUNFLAGS_READ_WRITE;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "TARGET_CORE[%s]->TPG[%u]_LUN[%u] - Adding %s"
 			" access for LUN in Demo Mode\n",
 			TPG_TFO(tpg)->get_fabric_name(),
 			TPG_TFO(tpg)->tpg_get_tag(tpg), lun->unpacked_lun,
 			(lun_access == TRANSPORT_LUNFLAGS_READ_WRITE) ?
 			"READ-WRITE" : "READ-ONLY");
+#else
+		;
+#endif
 
 		core_update_device_list_for_node(lun, NULL, lun->unpacked_lun,
 				lun_access, acl, tpg, 1);
@@ -301,10 +305,14 @@ struct se_node_acl *core_tpg_check_initiator_node_acl(
 	tpg->num_node_acls++;
 	spin_unlock_bh(&tpg->acl_node_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s_TPG[%u] - Added DYNAMIC ACL with TCQ Depth: %d for %s"
 		" Initiator Node: %s\n", TPG_TFO(tpg)->get_fabric_name(),
 		TPG_TFO(tpg)->tpg_get_tag(tpg), acl->queue_depth,
 		TPG_TFO(tpg)->get_fabric_name(), initiatorname);
+#else
+	;
+#endif
 
 	return acl;
 }
@@ -354,9 +362,13 @@ struct se_node_acl *core_tpg_add_initiator_node_acl(
 	if ((acl)) {
 		if (acl->dynamic_node_acl) {
 			acl->dynamic_node_acl = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s_TPG[%u] - Replacing dynamic ACL"
 				" for %s\n", TPG_TFO(tpg)->get_fabric_name(),
 				TPG_TFO(tpg)->tpg_get_tag(tpg), initiatorname);
+#else
+			;
+#endif
 			spin_unlock_bh(&tpg->acl_node_lock);
 			/*
 			 * Release the locally allocated struct se_node_acl
@@ -379,7 +391,11 @@ struct se_node_acl *core_tpg_add_initiator_node_acl(
 	spin_unlock_bh(&tpg->acl_node_lock);
 
 	if (!(se_nacl)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("struct se_node_acl pointer is NULL\n");
+#else
+		;
+#endif
 		return ERR_PTR(-EINVAL);
 	}
 	/*
@@ -419,10 +435,14 @@ struct se_node_acl *core_tpg_add_initiator_node_acl(
 	spin_unlock_bh(&tpg->acl_node_lock);
 
 done:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s_TPG[%hu] - Added ACL with TCQ Depth: %d for %s"
 		" Initiator Node: %s\n", TPG_TFO(tpg)->get_fabric_name(),
 		TPG_TFO(tpg)->tpg_get_tag(tpg), acl->queue_depth,
 		TPG_TFO(tpg)->get_fabric_name(), initiatorname);
+#else
+	;
+#endif
 
 	return acl;
 }
@@ -475,10 +495,14 @@ int core_tpg_del_initiator_node_acl(
 	core_clear_initiator_node_from_tpg(acl, tpg);
 	core_free_device_list_for_node(acl, tpg);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s_TPG[%hu] - Deleted ACL with TCQ Depth: %d for %s"
 		" Initiator Node: %s\n", TPG_TFO(tpg)->get_fabric_name(),
 		TPG_TFO(tpg)->tpg_get_tag(tpg), acl->queue_depth,
 		TPG_TFO(tpg)->get_fabric_name(), acl->initiatorname);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -580,10 +604,14 @@ int core_tpg_set_initiator_node_queue_depth(
 	if (init_sess)
 		TPG_TFO(tpg)->close_session(init_sess);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Successfuly changed queue depth to: %d for Initiator"
 		" Node: %s on %s Target Portal Group: %u\n", queue_depth,
 		initiatorname, TPG_TFO(tpg)->get_fabric_name(),
 		TPG_TFO(tpg)->tpg_get_tag(tpg));
+#else
+	;
+#endif
 
 	spin_lock_bh(&tpg->acl_node_lock);
 	if (dynamic_acl)
@@ -680,11 +708,15 @@ int core_tpg_register(
 	list_add_tail(&se_tpg->se_tpg_list, &se_global->g_se_tpg_list);
 	spin_unlock_bh(&se_global->se_tpg_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[%s]: Allocated %s struct se_portal_group for"
 		" endpoint: %s, Portal Tag: %u\n", tfo->get_fabric_name(),
 		(se_tpg->se_tpg_type == TRANSPORT_TPG_TYPE_NORMAL) ?
 		"Normal" : "Discovery", (tfo->tpg_get_wwn(se_tpg) == NULL) ?
 		"None" : tfo->tpg_get_wwn(se_tpg), tfo->tpg_get_tag(se_tpg));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -694,12 +726,16 @@ int core_tpg_deregister(struct se_portal_group *se_tpg)
 {
 	struct se_node_acl *nacl, *nacl_tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[%s]: Deallocating %s struct se_portal_group"
 		" for endpoint: %s Portal Tag %u\n",
 		(se_tpg->se_tpg_type == TRANSPORT_TPG_TYPE_NORMAL) ?
 		"Normal" : "Discovery", TPG_TFO(se_tpg)->get_fabric_name(),
 		TPG_TFO(se_tpg)->tpg_get_wwn(se_tpg),
 		TPG_TFO(se_tpg)->tpg_get_tag(se_tpg));
+#else
+	;
+#endif
 
 	spin_lock_bh(&se_global->se_tpg_lock);
 	list_del(&se_tpg->se_tpg_list);

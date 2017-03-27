@@ -5,7 +5,11 @@
 #include <linux/isdn/capilli.h>
 
 #define DBG(format, arg...) do { \
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_DEBUG "%s: " format "\n" , __func__ , ## arg); \
+#else
+;
+#endif
 } while (0)
 
 struct capilib_msgidqueue {
@@ -83,7 +87,11 @@ void capilib_new_ncci(struct list_head *head, u16 applid, u32 ncci, u32 winsize)
 
 	np = kmalloc(sizeof(*np), GFP_ATOMIC);
 	if (!np) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capilib_new_ncci: no memory.\n");
+#else
+		;
+#endif
 		return;
 	}
 	if (winsize > CAPI_MAXDATAWINDOW) {
@@ -112,7 +120,11 @@ void capilib_free_ncci(struct list_head *head, u16 applid, u32 ncci)
 			continue;
 		if (np->ncci != ncci)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kcapi: appl %d ncci 0x%x down\n", applid, ncci);
+#else
+		;
+#endif
 		list_del(&np->list);
 		kfree(np);
 		return;
@@ -131,7 +143,11 @@ void capilib_release_appl(struct list_head *head, u16 applid)
 		np = list_entry(l, struct capilib_ncci, list);
 		if (np->applid != applid)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kcapi: appl %d ncci 0x%x forced down\n", applid, np->ncci);
+#else
+		;
+#endif
 		list_del(&np->list);
 		kfree(np);
 	}
@@ -146,7 +162,11 @@ void capilib_release(struct list_head *head)
 
 	list_for_each_safe(l, n, head) {
 		np = list_entry(l, struct capilib_ncci, list);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kcapi: appl %d ncci 0x%x forced down\n", np->applid, np->ncci);
+#else
+		;
+#endif
 		list_del(&np->list);
 		kfree(np);
 	}

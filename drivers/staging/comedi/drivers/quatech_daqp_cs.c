@@ -193,7 +193,7 @@ static struct comedi_driver driver_daqp = {
 
 static void daqp_dump(struct comedi_device *dev)
 {
-	printk(KERN_INFO "DAQP: status %02x; aux status %02x\n",
+;
 	       inb(dev->iobase + DAQP_STATUS), inb(dev->iobase + DAQP_AUX));
 }
 
@@ -202,15 +202,15 @@ static void hex_dump(char *str, void *ptr, int len)
 	unsigned char *cptr = ptr;
 	int i;
 
-	printk(str);
+;
 
 	for (i = 0; i < len; i++) {
 		if (i % 16 == 0)
-			printk("\n%p:", cptr);
+;
 
 		printk(" %02x", *(cptr++));
 	}
-	printk("\n");
+;
 }
 
 #endif
@@ -253,33 +253,33 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
 	int status;
 
 	if (local == NULL) {
-		printk(KERN_WARNING
-		       "daqp_interrupt(): irq %d for unknown device.\n", irq);
+//		printk(KERN_WARNING
+;
 		return IRQ_NONE;
 	}
 
 	dev = local->dev;
 	if (dev == NULL) {
-		printk(KERN_WARNING "daqp_interrupt(): NULL comedi_device.\n");
+;
 		return IRQ_NONE;
 	}
 
 	if (!dev->attached) {
-		printk(KERN_WARNING
-		       "daqp_interrupt(): struct comedi_device not yet attached.\n");
+//		printk(KERN_WARNING
+;
 		return IRQ_NONE;
 	}
 
 	s = local->s;
 	if (s == NULL) {
-		printk(KERN_WARNING
-		       "daqp_interrupt(): NULL comedi_subdevice.\n");
+//		printk(KERN_WARNING
+;
 		return IRQ_NONE;
 	}
 
 	if ((struct local_info_t *)s->private != local) {
-		printk(KERN_WARNING
-		       "daqp_interrupt(): invalid comedi_subdevice.\n");
+//		printk(KERN_WARNING
+;
 		return IRQ_NONE;
 	}
 
@@ -300,7 +300,7 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
 			if (status & DAQP_STATUS_DATA_LOST) {
 				s->async->events |=
 				    COMEDI_CB_EOA | COMEDI_CB_OVERFLOW;
-				printk("daqp: data lost\n");
+;
 				daqp_ai_cancel(dev, s);
 				break;
 			}
@@ -329,8 +329,8 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
 		}
 
 		if (loop_limit <= 0) {
-			printk(KERN_WARNING
-			       "loop_limit reached in daqp_interrupt()\n");
+//			printk(KERN_WARNING
+;
 			daqp_ai_cancel(dev, s);
 			s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
 		}
@@ -397,7 +397,7 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
 	while (--counter
 	       && (inb(dev->iobase + DAQP_STATUS) & DAQP_STATUS_EVENTS)) ;
 	if (!counter) {
-		printk("daqp: couldn't clear interrupts in status register\n");
+;
 		return -1;
 	}
 
@@ -759,8 +759,8 @@ static int daqp_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	while (--counter
 	       && (inb(dev->iobase + DAQP_STATUS) & DAQP_STATUS_EVENTS)) ;
 	if (!counter) {
-		printk(KERN_ERR
-		       "daqp: couldn't clear interrupts in status register\n");
+//		printk(KERN_ERR
+;
 		return -1;
 	}
 
@@ -847,8 +847,8 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct comedi_subdevice *s;
 
 	if (it->options[0] < 0 || it->options[0] >= MAX_DEV || !local) {
-		printk("comedi%d: No such daqp device %d\n",
-		       dev->minor, it->options[0]);
+//		printk("comedi%d: No such daqp device %d\n",
+;
 		return -EIO;
 	}
 
@@ -875,8 +875,8 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (ret < 0)
 		return ret;
 
-	printk(KERN_INFO "comedi%d: attaching daqp%d (io 0x%04lx)\n",
-	       dev->minor, it->options[0], dev->iobase);
+//	printk(KERN_INFO "comedi%d: attaching daqp%d (io 0x%04lx)\n",
+;
 
 	s = dev->subdevices + 0;
 	dev->read_subdev = s;
@@ -928,7 +928,7 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int daqp_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: detaching daqp\n", dev->minor);
+;
 
 	return 0;
 }
@@ -987,7 +987,7 @@ static int daqp_cs_attach(struct pcmcia_device *link)
 		if (dev_table[i] == NULL)
 			break;
 	if (i == MAX_DEV) {
-		printk(KERN_NOTICE "daqp_cs: no devices available\n");
+;
 		return -ENODEV;
 	}
 

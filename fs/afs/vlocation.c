@@ -152,9 +152,9 @@ static int afs_vlocation_access_vl_by_id(struct afs_vlocation *vl,
 
 out:
 	if (ret < 0 && vl->upd_rej_cnt > 0) {
-		printk(KERN_NOTICE "kAFS:"
-		       " Active volume no longer valid '%s'\n",
-		       vl->vldb.name);
+//		printk(KERN_NOTICE "kAFS:"
+//		       " Active volume no longer valid '%s'\n",
+;
 		vl->valid = 0;
 		ret = -ENOMEDIUM;
 	}
@@ -239,9 +239,9 @@ static int afs_vlocation_update_record(struct afs_vlocation *vl,
 	switch (ret) {
 		/* net error */
 	default:
-		printk(KERN_WARNING "kAFS:"
-		       " failed to update volume '%s' (%x) up in '%s': %d\n",
-		       vl->vldb.name, vid, vl->cell->name, ret);
+//		printk(KERN_WARNING "kAFS:"
+//		       " failed to update volume '%s' (%x) up in '%s': %d\n",
+;
 		_leave(" = %d", ret);
 		return ret;
 
@@ -252,9 +252,9 @@ static int afs_vlocation_update_record(struct afs_vlocation *vl,
 
 		/* uh oh... looks like the volume got deleted */
 	case -ENOMEDIUM:
-		printk(KERN_ERR "kAFS:"
-		       " volume '%s' (%x) does not exist '%s'\n",
-		       vl->vldb.name, vid, vl->cell->name);
+//		printk(KERN_ERR "kAFS:"
+//		       " volume '%s' (%x) does not exist '%s'\n",
+;
 
 		/* TODO: make existing record unavailable */
 		_leave(" = %d", ret);
@@ -278,9 +278,9 @@ static void afs_vlocation_apply_update(struct afs_vlocation *vl,
 	       vldb->vid[0], vldb->vid[1], vldb->vid[2]);
 
 	if (strcmp(vldb->name, vl->vldb.name) != 0)
-		printk(KERN_NOTICE "kAFS:"
-		       " name of volume '%s' changed to '%s' on server\n",
-		       vl->vldb.name, vldb->name);
+//		printk(KERN_NOTICE "kAFS:"
+//		       " name of volume '%s' changed to '%s' on server\n",
+;
 
 	vl->vldb = *vldb;
 
@@ -321,8 +321,8 @@ static int afs_vlocation_fill_in_record(struct afs_vlocation *vl,
 		 * name */
 		ret = afs_vlocation_access_vl_by_name(vl, key, &vldb);
 		if (ret < 0) {
-			printk("kAFS: failed to locate '%s' in cell '%s'\n",
-			       vl->vldb.name, vl->cell->name);
+//			printk("kAFS: failed to locate '%s' in cell '%s'\n",
+;
 			return ret;
 		}
 	}

@@ -162,14 +162,14 @@ static int l2tp_ip_recv(struct sk_buff *skb)
 		if (!pskb_may_pull(skb, length))
 			goto discard;
 
-		printk(KERN_DEBUG "%s: ip recv: ", tunnel->name);
+;
 
 		offset = 0;
 		do {
-			printk(" %02X", ptr[offset]);
+;
 		} while (++offset < length);
 
-		printk("\n");
+;
 	}
 
 	l2tp_recv_common(session, skb, ptr, optr, 0, skb->len, tunnel->recv_payload_hook);
@@ -678,7 +678,7 @@ static int __init l2tp_ip_init(void)
 {
 	int err;
 
-	printk(KERN_INFO "L2TP IP encapsulation support (L2TPv3)\n");
+;
 
 	err = proto_register(&l2tp_ip_prot, 1);
 	if (err != 0)

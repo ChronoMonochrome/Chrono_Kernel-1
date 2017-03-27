@@ -803,7 +803,11 @@ static int __devinit onedram_probe(struct platform_device *pdev)
 	struct onedram_platform_data *pdata;
 	struct resource *res;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[%s]\n",__func__);
+#else
+	;
+#endif
 	pdata = pdev->dev.platform_data;
 	if (!pdata || !pdata->cfg_gpio) {
 		dev_err(&pdev->dev, "No platform data\n");
@@ -925,7 +929,11 @@ static struct platform_driver onedram_driver = {
 
 static int __init onedram_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[%s]\n",__func__);
+#else
+	;
+#endif
 	return platform_driver_register(&onedram_driver);
 }
 

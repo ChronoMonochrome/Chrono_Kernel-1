@@ -1269,8 +1269,8 @@ int mdp_ppp_blit(struct fb_info *info, struct mdp_blit_req *req,
 		get_img(&req->src, info, &src_start, &src_len, &p_src_file);
 	}
 	if (src_len == 0) {
-		printk(KERN_ERR "mdp_ppp: could not retrieve image from "
-		       "memory\n");
+//		printk(KERN_ERR "mdp_ppp: could not retrieve image from "
+;
 		return -1;
 	}
 
@@ -1281,14 +1281,14 @@ int mdp_ppp_blit(struct fb_info *info, struct mdp_blit_req *req,
 		get_img(&req->dst, info, &dst_start, &dst_len, &p_dst_file);
 	}
 	if (dst_len == 0) {
-		printk(KERN_ERR "mdp_ppp: could not retrieve image from "
-		       "memory\n");
+//		printk(KERN_ERR "mdp_ppp: could not retrieve image from "
+;
 		return -1;
 	}
 	*pp_src_file = p_src_file;
 	*pp_dst_file = p_dst_file;
 	if (mdp_ppp_verify_req(req)) {
-		printk(KERN_ERR "mdp_ppp: invalid image!\n");
+;
 		return -1;
 	}
 
@@ -1374,8 +1374,8 @@ int mdp_ppp_blit(struct fb_info *info, struct mdp_blit_req *req,
 	if (req->flags & MDP_BLUR) {
 #ifdef CONFIG_FB_MSM_MDP31
 		if (req->flags & MDP_SHARPENING)
-			printk(KERN_WARNING
-				"mdp: MDP_SHARPENING is set with MDP_BLUR!\n");
+//			printk(KERN_WARNING
+;
 		req->flags |= MDP_SHARPENING;
 		req->sharpening_strength = -127;
 #else
@@ -1388,9 +1388,9 @@ int mdp_ppp_blit(struct fb_info *info, struct mdp_blit_req *req,
 #ifdef CONFIG_FB_MSM_MDP31
 		if ((req->sharpening_strength > 127) ||
 			(req->sharpening_strength < -127)) {
-			printk(KERN_ERR
-				"%s: sharpening strength out of range\n",
-				__func__);
+//			printk(KERN_ERR
+//				"%s: sharpening strength out of range\n",
+;
 			return -EINVAL;
 		}
 

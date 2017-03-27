@@ -45,12 +45,16 @@ struct tda10021_state {
 
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...) printk(x)
 #else
 #define dprintk(x...)
 #endif
 
 static int verbose;
+#else
+#define d;
+#endif
 
 #define XIN 57840000UL
 
@@ -77,9 +81,13 @@ static int _tda10021_writereg (struct tda10021_state* state, u8 reg, u8 data)
 
 	ret = i2c_transfer (state->i2c, &msg, 1);
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DVB: TDA10021(%d): %s, writereg error "
 			"(reg == 0x%02x, val == 0x%02x, ret == %i)\n",
 			state->frontend.dvb->num, __func__, reg, data, ret);
+#else
+		;
+#endif
 
 	msleep(10);
 	return (ret != 1) ? -EREMOTEIO : 0;
@@ -96,8 +104,12 @@ static u8 tda10021_readreg (struct tda10021_state* state, u8 reg)
 	ret = i2c_transfer (state->i2c, msg, 2);
 	// Don't print an error message if the id is read.
 	if (ret != 2 && reg != 0x1a)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DVB: TDA10021: %s: readreg error (ret == %i)\n",
 				__func__, ret);
+#else
+		;
+#endif
 	return b1[0];
 }
 
@@ -109,7 +121,11 @@ static int lock_tuner(struct tda10021_state* state)
 
 	if(i2c_transfer(state->i2c, &msg, 1) != 1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda10021: lock tuner fails\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -123,7 +139,11 @@ static int unlock_tuner(struct tda10021_state* state)
 
 	if(i2c_transfer(state->i2c, &msg_post, 1) != 1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda10021: unlock tuner fails\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -204,7 +224,11 @@ static int tda10021_init (struct dvb_frontend *fe)
 	struct tda10021_state* state = fe->demodulator_priv;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("DVB: TDA10021(%d): init chip\n", fe->adapter->num);
+#else
+	d;
+#endif
 
 	//_tda10021_writereg (fe, 0, 0);
 
@@ -249,7 +273,11 @@ static int tda10021_set_parameters (struct dvb_frontend *fe,
 	if (p->inversion != INVERSION_ON && p->inversion != INVERSION_OFF)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("tda10021: set frequency to %d qam=%d symrate=%d\n", p->frequency,qam,p->u.qam.symbol_rate);
+#else
+	//;
+#endif
 
 	if (fe->ops.tuner_ops.set_params) {
 		fe->ops.tuner_ops.set_params(fe, p);
@@ -357,10 +385,14 @@ static int tda10021_get_frontend(struct dvb_frontend* fe, struct dvb_frontend_pa
 	afc = tda10021_readreg(state, 0x19);
 	if (verbose) {
 		/* AFC only valid when carrier has been recovered */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(sync & 2 ? "DVB: TDA10021(%d): AFC (%d) %dHz\n" :
 				  "DVB: TDA10021(%d): [AFC (%d) %dHz]\n",
 			state->frontend.dvb->num, afc,
 		       -((s32)p->u.qam.symbol_rate * afc) >> 10);
+#else
+		;
+#endif
 	}
 
 	p->inversion = ((state->reg0 & 0x20) == 0x20) ^ (state->config->invert != 0) ? INVERSION_ON : INVERSION_OFF;
@@ -430,8 +462,12 @@ struct dvb_frontend* tda10021_attach(const struct tda1002x_config* config,
 	if (id == 0x7d)
 		goto error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("TDA10021: i2c-addr = 0x%02x, id = 0x%02x\n",
 	       state->config->demod_address, id);
+#else
+	;
+#endif
 
 	/* create dvb_frontend */
 	memcpy(&state->frontend.ops, &tda10021_ops, sizeof(struct dvb_frontend_ops));

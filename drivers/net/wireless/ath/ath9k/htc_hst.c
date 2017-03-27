@@ -432,8 +432,8 @@ struct htc_target *ath9k_htc_hw_alloc(void *hif_handle,
 
 	target = kzalloc(sizeof(struct htc_target), GFP_KERNEL);
 	if (!target) {
-		printk(KERN_ERR "Unable to allocate memory for"
-			"target device\n");
+//		printk(KERN_ERR "Unable to allocate memory for"
+;
 		return NULL;
 	}
 
@@ -464,7 +464,7 @@ int ath9k_htc_hw_init(struct htc_target *target,
 		      char *product, u32 drv_info)
 {
 	if (ath9k_htc_probe_device(target, dev, devid, product, drv_info)) {
-		printk(KERN_ERR "Failed to initialize the device\n");
+;
 		return -ENODEV;
 	}
 

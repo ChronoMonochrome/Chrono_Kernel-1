@@ -65,6 +65,7 @@ MODULE_PARM_DESC(use_pci_fixup, "Enable PCI fixup to seek for hidden devices");
 /*
  * Debug macros
  */
+#ifdef CONFIG_DEBUG_PRINTK
 #define i7core_printk(level, fmt, arg...)			\
 	edac_printk(level, "i7core", fmt, ##arg)
 
@@ -190,6 +191,9 @@ MODULE_PARM_DESC(use_pci_fixup, "Enable PCI fixup to seek for hidden devices");
 
 struct i7core_info {
 	u32	mc_control;
+#else
+#define i7core_;
+#endif
 	u32	mc_status;
 	u32	max_dod;
 	u32	ch_map;
@@ -1336,10 +1340,14 @@ static int i7core_get_onedevice(struct pci_dev **prev,
 		if (devno == 0)
 			return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		i7core_printk(KERN_INFO,
 			"Device not found: dev %02x.%d PCI ID %04x:%04x\n",
 			dev_descr->dev, dev_descr->func,
 			PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
+#else
+		i7core_;
+#endif
 
 		/* End of list, leave */
 		return -ENODEV;
@@ -2060,7 +2068,11 @@ static int __devinit i7core_probe(struct pci_dev *pdev,
 			goto fail1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	i7core_printk(KERN_INFO, "Driver loaded.\n");
+#else
+	i7core_;
+#endif
 
 	mutex_unlock(&i7core_edac_lock);
 	return 0;

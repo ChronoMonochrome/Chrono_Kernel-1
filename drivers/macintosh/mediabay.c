@@ -384,10 +384,18 @@ static void poll_media_bay(struct media_bay_info* bay)
 		set_mb_power(bay, id != MB_NO);
 		bay->content_id = id;
 		if (id >= MB_NO || id < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "mediabay%d: Bay is now empty\n", bay->index);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "mediabay%d: Bay contains %s\n",
 			       bay->index, mb_content_types[id]);
+#else
+			;
+#endif
 	}
 }
 
@@ -594,7 +602,11 @@ static int __devinit media_bay_attach(struct macio_dev *mdev, const struct of_de
 	if (bay->ops->init)
 		bay->ops->init(bay);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mediabay%d: Registered %s media-bay\n", i, bay->ops->name);
+#else
+	;
+#endif
 
 	/* Force an immediate detect */
 	set_mb_power(bay, 0);
@@ -647,7 +659,11 @@ static int media_bay_resume(struct macio_dev *mdev)
 	       	set_mb_power(bay, 0);
 		msleep(MB_POWER_DELAY);
 	       	if (bay->ops->content(bay) != bay->content_id) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("mediabay%d: Content changed during sleep...\n", bay->index);
+#else
+			;
+#endif
 			mutex_unlock(&bay->lock);
 	       		return 0;
 		}

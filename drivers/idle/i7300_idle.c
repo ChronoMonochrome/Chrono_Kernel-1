@@ -46,8 +46,12 @@ static int forceload;
 module_param_named(forceload, forceload, uint, 0644);
 MODULE_PARM_DESC(debug, "Enable driver testing on unvalidated i5000");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(fmt, arg...) \
 	do { if (debug) printk(KERN_INFO I7300_PRINT fmt, ##arg); } while (0)
+#else
+#define d;
+#endif
 
 /*
  * Value to set THRTLOW to when initiating throttling
@@ -135,8 +139,12 @@ static void i7300_idle_ioat_stop(void)
 	}
 
 	if (i == MAX_STOP_RETRIES) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("failed to stop I/O AT after %d retries\n",
 			MAX_STOP_RETRIES);
+#else
+		d;
+#endif
 	}
 }
 
@@ -172,10 +180,14 @@ static int __init i7300_idle_ioat_selftest(u8 *ctl,
 
 	if (*(u32 *) ((u8 *) desc + 3068) != 0xabababab ||
 	    *(u32 *) ((u8 *) desc + 2044) != 0xabababab) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Data values src 0x%x, dest 0x%x, memset 0x%x\n",
 			*(u32 *) ((u8 *) desc + 2048),
 			*(u32 *) ((u8 *) desc + 1024),
 			*(u32 *) ((u8 *) desc + 3072));
+#else
+		d;
+#endif
 		return -1;
 	}
 	return 0;
@@ -365,18 +377,30 @@ static int i7300_idle_thrt_save(void)
 	 * Global Activation Throttle Limit is zero).
 	 */
 	pci_read_config_byte(fbd_dev, DIMM_GBLACT, &gblactlm);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("thrtctl_saved = 0x%02x, thrtlow_saved = 0x%02x\n",
 		i7300_idle_thrtctl_saved,
 		i7300_idle_thrtlow_saved);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("mc_saved = 0x%08x, gblactlm = 0x%02x\n",
 		i7300_idle_mc_saved,
 		gblactlm);
+#else
+	d;
+#endif
 	if (gblactlm == 0) {
 		new_mc_val = i7300_idle_mc_saved | DIMM_GTW_MODE;
 		pci_write_config_dword(fbd_dev, DIMM_MC, new_mc_val);
 		return 0;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not set GTW_MODE = 1 (OLTT enabled)\n");
+#else
+		d;
+#endif
 		return -ENODEV;
 	}
 }
@@ -580,7 +604,11 @@ static int __init i7300_idle_init(void)
 
 	idle_notifier_register(&i7300_idle_nb);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "i7300_idle: loaded v%s\n", I7300_IDLE_DRIVER_VERSION);
+#else
+	;
+#endif
 	return 0;
 }
 

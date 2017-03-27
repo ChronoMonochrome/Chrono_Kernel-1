@@ -994,8 +994,8 @@ int phy_driver_register(struct phy_driver *new_driver)
 	retval = driver_register(&new_driver->driver);
 
 	if (retval) {
-		printk(KERN_ERR "%s: Error %d in registering driver\n",
-				new_driver->name, retval);
+//		printk(KERN_ERR "%s: Error %d in registering driver\n",
+;
 
 		return retval;
 	}

@@ -193,19 +193,31 @@ static int init_chipset_pdc202xx(struct pci_dev *dev)
 	udma_speed_flag	= inb(dmabase | 0x1f);
 	primary_mode	= inb(dmabase | 0x1a);
 	secondary_mode	= inb(dmabase | 0x1b);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: (U)DMA Burst Bit %sABLED " \
 		"Primary %s Mode " \
 		"Secondary %s Mode.\n", pci_name(dev),
 		(udma_speed_flag & 1) ? "EN" : "DIS",
 		(primary_mode & 1) ? "MASTER" : "PCI",
 		(secondary_mode & 1) ? "MASTER" : "PCI" );
+#else
+	;
+#endif
 
 	if (!(udma_speed_flag & 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: FORCING BURST BIT 0x%02x->0x%02x ",
 			pci_name(dev), udma_speed_flag,
 			(udma_speed_flag|1));
+#else
+		;
+#endif
 		outb(udma_speed_flag | 1, dmabase | 0x1f);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%sACTIVE\n", (inb(dmabase | 0x1f) & 1) ? "" : "IN");
+#else
+		;
+#endif
 	}
 out:
 	return 0;
@@ -222,8 +234,12 @@ static void __devinit pdc202ata4_fixup_irq(struct pci_dev *dev,
 		if (irq != irq2) {
 			pci_write_config_byte(dev,
 				(PCI_INTERRUPT_LINE)|0x80, irq);     /* 0xbc */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: PCI config space interrupt "
 				"mirror fixed\n", name, pci_name(dev));
+#else
+			;
+#endif
 		}
 	}
 }
@@ -314,9 +330,13 @@ static int __devinit pdc202xx_init_one(struct pci_dev *dev, const struct pci_dev
 		    bridge->vendor == PCI_VENDOR_ID_INTEL &&
 		    (bridge->device == PCI_DEVICE_ID_INTEL_I960 ||
 		     bridge->device == PCI_DEVICE_ID_INTEL_I960RM)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO DRV_NAME " %s: skipping Promise "
 				"PDC20265 attached to I2O RAID controller\n",
 				pci_name(dev));
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 	}

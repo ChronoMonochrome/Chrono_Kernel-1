@@ -316,7 +316,7 @@ de620_write_block(struct net_device *dev, byte *buffer, int count, int pad)
 	de620_send_command(dev,W_DUMMY);
 #ifdef COUNT_LOOPS
 	/* trial debug output: loops per byte in de620_ready() */
-	printk("WRITE(%d)\n", tot_cnt/((bytes?bytes:1)));
+;
 #endif /* COUNT_LOOPS */
 #else /* not LOWSPEED */
 	for ( ; count > 0; count -=2) {
@@ -481,7 +481,7 @@ static void de620_set_multicast_list(struct net_device *dev)
 
 static void de620_timeout(struct net_device *dev)
 {
-	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name, "network cable problem");
+;
 	/* Restart the adapter. */
 	if (!adapter_init(dev)) /* maybe close it */
 		netif_wake_queue(dev);
@@ -529,7 +529,7 @@ static int de620_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		break;
 
 	case (TXBF0 | TXBF1): /* NONE!!! */
-		printk(KERN_WARNING "%s: No tx-buffer available!\n", dev->name);
+;
 		spin_unlock_irqrestore(&de620_lock, flags);
 		return NETDEV_TX_BUSY;
 	}
@@ -616,7 +616,7 @@ static int de620_rx_intr(struct net_device *dev)
 	pagelink = header_buf.Rx_NextPage;
 	if ((pagelink < first_rx_page) || (last_rx_page < pagelink)) {
 		/* Ouch... Forget it! Skip all and start afresh... */
-		printk(KERN_WARNING "%s: Ring overrun? Restoring...\n", dev->name);
+;
 		/* You win some, you lose some. And sometimes plenty... */
 		adapter_init(dev);
 		netif_wake_queue(dev);
@@ -636,7 +636,7 @@ static int de620_rx_intr(struct net_device *dev)
 	/* Is the _computed_ next page number equal to what the adapter says? */
 	if (pagelink != header_buf.Rx_NextPage) {
 		/* Naah, we'll skip this packet. Probably bogus data as well */
-		printk(KERN_WARNING "%s: Page link out of sync! Restoring...\n", dev->name);
+;
 		next_rx_page = header_buf.Rx_NextPage; /* at least a try... */
 		de620_send_command(dev, W_DUMMY);
 		de620_set_register(dev, W_NPRF, next_rx_page);
@@ -647,12 +647,12 @@ static int de620_rx_intr(struct net_device *dev)
 
 	size = header_buf.Rx_ByteCount - 4;
 	if ((size < RUNT) || (GIANT < size)) {
-		printk(KERN_WARNING "%s: Illegal packet size: %d!\n", dev->name, size);
+;
 	}
 	else { /* Good packet? */
 		skb = dev_alloc_skb(size+2);
 		if (skb == NULL) { /* Yeah, but no place to put it... */
-			printk(KERN_WARNING "%s: Couldn't allocate a sk_buff of size %d.\n", dev->name, size);
+;
 			dev->stats.rx_dropped++;
 		}
 		else { /* Yep! Go get it! */
@@ -738,11 +738,11 @@ static int adapter_init(struct net_device *dev)
         /* ignore:   EEDI                RXGOOD                   COLS  LNKS*/
 
 	if (((i = de620_get_register(dev, R_STS)) & CHECK_MASK) != CHECK_OK) {
-		printk(KERN_ERR "%s: Something has happened to the DE-620!  Please check it"
-#ifdef SHUTDOWN_WHEN_LOST
-			" and do a new ifconfig"
-#endif
-			"! (%02x)\n", dev->name, i);
+//		printk(KERN_ERR "%s: Something has happened to the DE-620!  Please check it"
+//#ifdef SHUTDOWN_WHEN_LOST
+//			" and do a new ifconfig"
+//#endif
+;
 #ifdef SHUTDOWN_WHEN_LOST
 		/* Goodbye, cruel world... */
 		dev->flags &= ~IFF_UP;
@@ -752,7 +752,7 @@ static int adapter_init(struct net_device *dev)
 		return 1; /* failed */
 	}
 	if (was_down) {
-		printk(KERN_WARNING "%s: Thanks, I feel much better now!\n", dev->name);
+;
 		was_down = 0;
 	}
 
@@ -810,10 +810,10 @@ struct net_device * __init de620_probe(int unit)
 
 	pr_debug("%s", version);
 
-	printk(KERN_INFO "D-Link DE-620 pocket adapter");
+;
 
 	if (!request_region(dev->base_addr, 3, "de620")) {
-		printk(" io 0x%3lX, which is busy.\n", dev->base_addr);
+;
 		err = -EBUSY;
 		goto out1;
 	}
@@ -827,7 +827,7 @@ struct net_device * __init de620_probe(int unit)
 	checkbyte = de620_get_register(dev, R_CPR);
 
 	if ((checkbyte != 0xa5) || (read_eeprom(dev) != 0)) {
-		printk(" not identified in the printer port\n");
+;
 		err = -ENODEV;
 		goto out2;
 	}
@@ -839,15 +839,15 @@ struct net_device * __init de620_probe(int unit)
 		dev->broadcast[i] = 0xff;
 	}
 
-	printk(", Ethernet Address: %pM", dev->dev_addr);
+;
 
-	printk(" (%dk RAM,",
-		(nic_data.RAM_Size) ? (nic_data.RAM_Size >> 2) : 64);
+//	printk(" (%dk RAM,",
+;
 
 	if (nic_data.Media == 1)
-		printk(" BNC)\n");
+;
 	else
-		printk(" UTP)\n");
+;
 
 	dev->netdev_ops = &de620_netdev_ops;
 	dev->watchdog_timeo	= HZ*2;

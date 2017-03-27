@@ -872,8 +872,12 @@ static struct platform_driver bf5xx_nand_driver = {
 
 static int __init bf5xx_nand_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s, Version %s (c) 2007 Analog Devices, Inc.\n",
 		DRV_DESC, DRV_VERSION);
+#else
+	;
+#endif
 
 	return platform_driver_register(&bf5xx_nand_driver);
 }

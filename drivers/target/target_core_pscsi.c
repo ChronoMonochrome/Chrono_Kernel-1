@@ -96,12 +96,20 @@ static int pscsi_attach_hba(struct se_hba *hba, u32 host_id)
 
 	hba->hba_ptr = (void *)phv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - TCM SCSI HBA Driver %s on"
 		" Generic Target Core Stack %s\n", hba->hba_id,
 		PSCSI_VERSION, TARGET_CORE_MOD_VERSION);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Attached SCSI HBA to Generic"
 		" Target Core with TCQ Depth: %d\n", hba->hba_id,
 		atomic_read(&hba->max_queue_depth));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -114,13 +122,21 @@ static void pscsi_detach_hba(struct se_hba *hba)
 	if (scsi_host) {
 		scsi_host_put(scsi_host);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CORE_HBA[%d] - Detached SCSI HBA: %s from"
 			" Generic Target Core\n", hba->hba_id,
 			(scsi_host->hostt->name) ? (scsi_host->hostt->name) :
 			"Unknown");
+#else
+		;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CORE_HBA[%d] - Detached Virtual SCSI HBA"
 			" from Generic Target Core\n", hba->hba_id);
+#else
+		;
+#endif
 
 	kfree(phv);
 	hba->hba_ptr = NULL;
@@ -143,9 +159,13 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
 		atomic_set(&hba->left_queue_depth, hba_depth);
 		atomic_set(&hba->max_queue_depth, hba_depth);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CORE_HBA[%d] - Disabled pSCSI HBA Passthrough"
 			" %s\n", hba->hba_id, (sh->hostt->name) ?
 			(sh->hostt->name) : "Unknown");
+#else
+		;
+#endif
 
 		scsi_host_put(sh);
 		return 0;
@@ -174,8 +194,12 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
 	phv->phv_lld_host = sh;
 	phv->phv_mode = PHV_LLD_SCSI_HOST_NO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Enabled pSCSI HBA Passthrough %s\n",
 		hba->hba_id, (sh->hostt->name) ? (sh->hostt->name) : "Unknown");
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -297,7 +321,11 @@ pscsi_get_inquiry_vpd_device_ident(struct scsi_device *sdev,
 					" length zero!\n");
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "T10 VPD Identifer Length: %d\n", ident_len);
+#else
+		;
+#endif
 
 		vpd = kzalloc(sizeof(struct t10_vpd), GFP_KERNEL);
 		if (!vpd) {
@@ -429,7 +457,11 @@ static void *pscsi_allocate_virtdevice(struct se_hba *hba, const char *name)
 	}
 	pdv->pdv_se_hba = hba;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PSCSI: Allocated pdv: %p for %s\n", pdv, name);
+#else
+	;
+#endif
 	return (void *)pdv;
 }
 
@@ -475,8 +507,12 @@ static struct se_device *pscsi_create_type_disk(
 		scsi_device_put(sd);
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_PSCSI[%d] - Added TYPE_DISK for %d:%d:%d:%d\n",
 		phv->phv_host_id, sh->host_no, sd->channel, sd->id, sd->lun);
+#else
+	;
+#endif
 
 	return dev;
 }
@@ -509,9 +545,13 @@ static struct se_device *pscsi_create_type_rom(
 		scsi_device_put(sd);
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
 		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
 		sd->channel, sd->id, sd->lun);
+#else
+	;
+#endif
 
 	return dev;
 }
@@ -536,9 +576,13 @@ static struct se_device *pscsi_create_type_other(
 	if (!(dev))
 		return NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
 		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
 		sd->channel, sd->id, sd->lun);
+#else
+	;
+#endif
 
 	return dev;
 }
@@ -982,31 +1026,47 @@ static ssize_t pscsi_set_configfs_dev_params(struct se_hba *hba,
 			}
 			match_int(args, &arg);
 			pdv->pdv_host_id = arg;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Host ID:"
 				" %d\n", phv->phv_host_id, pdv->pdv_host_id);
+#else
+			;
+#endif
 			pdv->pdv_flags |= PDF_HAS_VIRT_HOST_ID;
 			break;
 		case Opt_scsi_channel_id:
 			match_int(args, &arg);
 			pdv->pdv_channel_id = arg;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Channel"
 				" ID: %d\n",  phv->phv_host_id,
 				pdv->pdv_channel_id);
+#else
+			;
+#endif
 			pdv->pdv_flags |= PDF_HAS_CHANNEL_ID;
 			break;
 		case Opt_scsi_target_id:
 			match_int(args, &arg);
 			pdv->pdv_target_id = arg;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Target"
 				" ID: %d\n", phv->phv_host_id,
 				pdv->pdv_target_id);
+#else
+			;
+#endif
 			pdv->pdv_flags |= PDF_HAS_TARGET_ID;
 			break;
 		case Opt_scsi_lun_id:
 			match_int(args, &arg);
 			pdv->pdv_lun_id = arg;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI LUN ID:"
 				" %d\n", phv->phv_host_id, pdv->pdv_lun_id);
+#else
+			;
+#endif
 			pdv->pdv_flags |= PDF_HAS_LUN_ID;
 			break;
 		default:
@@ -1108,6 +1168,7 @@ static inline struct bio *pscsi_get_bio(struct pscsi_dev_virt *pdv, int sg_num)
 }
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_PSCSI(x...) printk(x)
 #else
 #define DEBUG_PSCSI(x...)
@@ -1120,6 +1181,9 @@ static int __pscsi_map_task_SG(
 	int bidi_read)
 {
 	struct pscsi_plugin_task *pt = PSCSI_TASK(task);
+#else
+#define DEBUG_PSCSI(x...) ;
+#endif
 	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
 	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
 	struct page *page;
@@ -1385,9 +1449,13 @@ static inline void pscsi_process_SAM_status(
 	task->task_scsi_status = status_byte(pt->pscsi_result);
 	if ((task->task_scsi_status)) {
 		task->task_scsi_status <<= 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSCSI Status Byte exception at task: %p CDB:"
 			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
 			pt->pscsi_result);
+#else
+		;
+#endif
 	}
 
 	switch (host_byte(pt->pscsi_result)) {
@@ -1395,9 +1463,13 @@ static inline void pscsi_process_SAM_status(
 		transport_complete_task(task, (!task->task_scsi_status));
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PSCSI Host Byte exception at task: %p CDB:"
 			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
 			pt->pscsi_result);
+#else
+		;
+#endif
 		task->task_scsi_status = SAM_STAT_CHECK_CONDITION;
 		task->task_error_status = PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
 		TASK_CMD(task)->transport_error_status =

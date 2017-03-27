@@ -256,10 +256,10 @@ static ssize_t write_file_beacon(struct file *file,
 
 	if (strncmp(buf, "disable", 7) == 0) {
 		AR5K_REG_DISABLE_BITS(ah, AR5K_BEACON, AR5K_BEACON_ENABLE);
-		printk(KERN_INFO "debugfs disable beacons\n");
+;
 	} else if (strncmp(buf, "enable", 6) == 0) {
 		AR5K_REG_ENABLE_BITS(ah, AR5K_BEACON, AR5K_BEACON_ENABLE);
-		printk(KERN_INFO "debugfs enable beacons\n");
+;
 	}
 	return count;
 }
@@ -459,19 +459,19 @@ static ssize_t write_file_antenna(struct file *file,
 
 	if (strncmp(buf, "diversity", 9) == 0) {
 		ath5k_hw_set_antenna_mode(sc->ah, AR5K_ANTMODE_DEFAULT);
-		printk(KERN_INFO "ath5k debug: enable diversity\n");
+;
 	} else if (strncmp(buf, "fixed-a", 7) == 0) {
 		ath5k_hw_set_antenna_mode(sc->ah, AR5K_ANTMODE_FIXED_A);
-		printk(KERN_INFO "ath5k debugfs: fixed antenna A\n");
+;
 	} else if (strncmp(buf, "fixed-b", 7) == 0) {
 		ath5k_hw_set_antenna_mode(sc->ah, AR5K_ANTMODE_FIXED_B);
-		printk(KERN_INFO "ath5k debug: fixed antenna B\n");
+;
 	} else if (strncmp(buf, "clear", 5) == 0) {
 		for (i = 0; i < ARRAY_SIZE(sc->stats.antenna_rx); i++) {
 			sc->stats.antenna_rx[i] = 0;
 			sc->stats.antenna_tx[i] = 0;
 		}
-		printk(KERN_INFO "ath5k debug: cleared antenna stats\n");
+;
 	}
 	return count;
 }
@@ -641,7 +641,7 @@ static ssize_t write_file_frameerrors(struct file *file,
 		st->txerr_fifo = 0;
 		st->txerr_filt = 0;
 		st->tx_all_count = 0;
-		printk(KERN_INFO "ath5k debug: cleared frameerrors stats\n");
+;
 	}
 	return count;
 }
@@ -943,27 +943,27 @@ ath5k_debug_dump_bands(struct ath5k_softc *sc)
 			strcpy(bname, "5 GHz");
 			break;
 		default:
-			printk(KERN_DEBUG "Band not supported: %d\n",
-				band->band);
+//			printk(KERN_DEBUG "Band not supported: %d\n",
+;
 			return;
 		}
-		printk(KERN_DEBUG "Band %s: channels %d, rates %d\n", bname,
-				band->n_channels, band->n_bitrates);
-		printk(KERN_DEBUG " channels:\n");
+//		printk(KERN_DEBUG "Band %s: channels %d, rates %d\n", bname,
+;
+;
 		for (i = 0; i < band->n_channels; i++)
-			printk(KERN_DEBUG "  %3d %d %.4x %.4x\n",
-					ieee80211_frequency_to_channel(
-						band->channels[i].center_freq),
-					band->channels[i].center_freq,
-					band->channels[i].hw_value,
-					band->channels[i].flags);
-		printk(KERN_DEBUG " rates:\n");
+//			printk(KERN_DEBUG "  %3d %d %.4x %.4x\n",
+//					ieee80211_frequency_to_channel(
+//						band->channels[i].center_freq),
+//					band->channels[i].center_freq,
+//					band->channels[i].hw_value,
+;
+;
 		for (i = 0; i < band->n_bitrates; i++)
-			printk(KERN_DEBUG "  %4d %.4x %.4x %.4x\n",
-					band->bitrates[i].bitrate,
-					band->bitrates[i].hw_value,
-					band->bitrates[i].flags,
-					band->bitrates[i].hw_value_short);
+//			printk(KERN_DEBUG "  %4d %.4x %.4x %.4x\n",
+//					band->bitrates[i].bitrate,
+//					band->bitrates[i].hw_value,
+//					band->bitrates[i].flags,
+;
 	}
 }
 
@@ -974,12 +974,12 @@ ath5k_debug_printrxbuf(struct ath5k_buf *bf, int done,
 	struct ath5k_desc *ds = bf->desc;
 	struct ath5k_hw_all_rx_desc *rd = &ds->ud.ds_rx;
 
-	printk(KERN_DEBUG "R (%p %llx) %08x %08x %08x %08x %08x %08x %c\n",
-		ds, (unsigned long long)bf->daddr,
-		ds->ds_link, ds->ds_data,
-		rd->rx_ctl.rx_control_0, rd->rx_ctl.rx_control_1,
-		rd->rx_stat.rx_status_0, rd->rx_stat.rx_status_1,
-		!done ? ' ' : (rs->rs_status == 0) ? '*' : '!');
+//	printk(KERN_DEBUG "R (%p %llx) %08x %08x %08x %08x %08x %08x %c\n",
+//		ds, (unsigned long long)bf->daddr,
+//		ds->ds_link, ds->ds_data,
+//		rd->rx_ctl.rx_control_0, rd->rx_ctl.rx_control_1,
+//		rd->rx_stat.rx_status_0, rd->rx_stat.rx_status_1,
+;
 }
 
 void
@@ -993,8 +993,8 @@ ath5k_debug_printrxbuffs(struct ath5k_softc *sc, struct ath5k_hw *ah)
 	if (likely(!(sc->debug.level & ATH5K_DEBUG_DESC)))
 		return;
 
-	printk(KERN_DEBUG "rxdp %x, rxlink %p\n",
-		ath5k_hw_get_rxdp(ah), sc->rxlink);
+//	printk(KERN_DEBUG "rxdp %x, rxlink %p\n",
+;
 
 	spin_lock_bh(&sc->rxbuflock);
 	list_for_each_entry(bf, &sc->rxbuf, list) {
@@ -1019,12 +1019,12 @@ ath5k_debug_printtxbuf(struct ath5k_softc *sc, struct ath5k_buf *bf)
 
 	done = sc->ah->ah_proc_tx_desc(sc->ah, bf->desc, &ts);
 
-	printk(KERN_DEBUG "T (%p %llx) %08x %08x %08x %08x %08x %08x %08x "
-		"%08x %c\n", ds, (unsigned long long)bf->daddr, ds->ds_link,
-		ds->ds_data, td->tx_ctl.tx_control_0, td->tx_ctl.tx_control_1,
-		td->tx_ctl.tx_control_2, td->tx_ctl.tx_control_3,
-		td->tx_stat.tx_status_0, td->tx_stat.tx_status_1,
-		done ? ' ' : (ts.ts_status == 0) ? '*' : '!');
+//	printk(KERN_DEBUG "T (%p %llx) %08x %08x %08x %08x %08x %08x %08x "
+//		"%08x %c\n", ds, (unsigned long long)bf->daddr, ds->ds_link,
+//		ds->ds_data, td->tx_ctl.tx_control_0, td->tx_ctl.tx_control_1,
+//		td->tx_ctl.tx_control_2, td->tx_ctl.tx_control_3,
+//		td->tx_stat.tx_status_0, td->tx_stat.tx_status_1,
+;
 }
 
 #endif /* ifdef CONFIG_ATH5K_DEBUG */

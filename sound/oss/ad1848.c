@@ -269,7 +269,11 @@ static void wait_for_calibration(ad1848_info * devc)
 	while (timeout > 0 && inb(devc->base) == 0x80)
 		timeout--;
 	if (inb(devc->base) & 0x80)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ad1848: Auto calibration timed out(1).\n");
+#else
+		;
+#endif
 
 	timeout = 100;
 	while (timeout > 0 && !(ad_read(devc, 11) & 0x20))
@@ -282,7 +286,11 @@ static void wait_for_calibration(ad1848_info * devc)
 		timeout--;
 	if (ad_read(devc, 11) & 0x20)
 		if ((devc->model != MD_1845) && (devc->model != MD_1845_SSCAPE))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ad1848: Auto calibration timed out(3).\n");
+#else
+			;
+#endif
 }
 
 static void ad_mute(ad1848_info * devc)
@@ -844,7 +852,11 @@ static int ad1848_set_speed(int dev, int arg)
 	}
 	if (selected == -1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ad1848: Can't find speed???\n");
+#else
+		;
+#endif
 		selected = 3;
 	}
 	portc->speed = speed_table[selected].speed;
@@ -1016,7 +1028,11 @@ static void ad1848_close(int dev)
 	ad1848_info    *devc = (ad1848_info *) audio_devs[dev]->devc;
 	ad1848_port_info *portc = (ad1848_port_info *) audio_devs[dev]->portc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("ad1848_close(void)\n"));
+#else
+	DEB(;
+#endif
 
 	devc->intr_active = 0;
 	ad1848_halt(dev);
@@ -1548,7 +1564,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect(%x)\n", io_base));
+#else
+	DDB(;
+#endif
 
 	if (ad_flags)
 	{
@@ -1599,14 +1619,22 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 
 	if (inb(devc->base) == 0xff)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("ad1848_detect: The base I/O address appears to be dead\n"));
+#else
+		DDB(;
+#endif
 	}
 
 	/*
 	 * Wait for the device to stop initialization
 	 */
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step 0\n"));
+#else
+	DDB(;
+#endif
 
 	for (i = 0; i < 10000000; i++)
 	{
@@ -1616,14 +1644,22 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step A\n"));
+#else
+	DDB(;
+#endif
 
 	if (inb(devc->base) == 0x80)	/* Not ready. Let's wait */
 		ad_leave_MCE(devc);
 
 	if ((inb(devc->base) & 0x80) != 0x00)	/* Not a AD1848 */
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("ad1848 detect error - step A (%02x)\n", (int) inb(devc->base)));
+#else
+		DDB(;
+#endif
 		return 0;
 	}
 	
@@ -1633,7 +1669,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 	 * so try to avoid using it.
 	 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step B\n"));
+#else
+	DDB(;
+#endif
 	ad_write(devc, 0, 0xaa);
 	ad_write(devc, 1, 0x45);	/* 0x55 with bit 0x10 clear */
 
@@ -1643,11 +1683,19 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			ad1847_flag = 1;
 		else
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("ad1848 detect error - step B (%x/%x)\n", tmp1, tmp2));
+#else
+			DDB(;
+#endif
 			return 0;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step C\n"));
+#else
+	DDB(;
+#endif
 	ad_write(devc, 0, 0x45);
 	ad_write(devc, 1, 0xaa);
 
@@ -1657,7 +1705,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			ad1847_flag = 1;
 		else
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("ad1848 detect error - step C (%x/%x)\n", tmp1, tmp2));
+#else
+			DDB(;
+#endif
 			return 0;
 		}
 	}
@@ -1667,13 +1719,21 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 	 * try to change them.
 	 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step D\n"));
+#else
+	DDB(;
+#endif
 	tmp = ad_read(devc, 12);
 	ad_write(devc, 12, (~tmp) & 0x0f);
 
 	if ((tmp & 0x0f) != ((tmp1 = ad_read(devc, 12)) & 0x0f))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("ad1848 detect error - step D (%x)\n", tmp1));
+#else
+		DDB(;
+#endif
 		return 0;
 	}
 	
@@ -1696,14 +1756,22 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 	 * with it. Accept this situation as a possible indication of this chip.
 	 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step F\n"));
+#else
+	DDB(;
+#endif
 	ad_write(devc, 12, 0);	/* Mode2=disabled */
 
 	for (i = 0; i < 16; i++)
 	{
 		if ((tmp1 = ad_read(devc, i)) != (tmp2 = ad_read(devc, i + 16)))
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("ad1848 detect step F(%d/%x/%x) - OPTi chip???\n", i, tmp1, tmp2));
+#else
+			DDB(;
+#endif
 			if (!ad1847_flag)
 				optiC930 = 1;
 			break;
@@ -1715,7 +1783,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 	 * The bit 0x80 is always 1 in CS4248 and CS4231.
 	 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step G\n"));
+#else
+	DDB(;
+#endif
 
 	if (ad_flags && *ad_flags == 400)
 		*ad_flags = 0;
@@ -1742,7 +1814,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 		 *      Verify that setting I0 doesn't change I16.
 		 */
 		
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("ad1848_detect() - step H\n"));
+#else
+		DDB(;
+#endif
 		ad_write(devc, 16, 0);	/* Set I16 to known value */
 
 		ad_write(devc, 0, 0x45);
@@ -1751,7 +1827,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			ad_write(devc, 0, 0xaa);
 			if ((tmp1 = ad_read(devc, 16)) == 0xaa)	/* Rotten bits? */
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				DDB(printk("ad1848 detect error - step H(%x)\n", tmp1));
+#else
+				DDB(;
+#endif
 				return 0;
 			}
 			
@@ -1759,7 +1839,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			 * Verify that some bits of I25 are read only.
 			 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("ad1848_detect() - step I\n"));
+#else
+			DDB(;
+#endif
 			tmp1 = ad_read(devc, 25);	/* Original bits */
 			ad_write(devc, 25, ~tmp1);	/* Invert all bits */
 			if ((ad_read(devc, 25) & 0xe7) == (tmp1 & 0xe7))
@@ -1784,7 +1868,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 					id = ad_read(devc, 25);
 				if ((id & 0xe7) == 0x80)	/* Device still busy??? */
 					id = ad_read(devc, 25);
+#ifdef CONFIG_DEBUG_PRINTK
 				DDB(printk("ad1848_detect() - step J (%02x/%02x)\n", id, ad_read(devc, 25)));
+#else
+				DDB(;
+#endif
 
                                 if ((id & 0xe7) == 0x80) {
 					/* 
@@ -1859,7 +1947,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 									devc->model = MD_4239;
 									break;
 								default:
+#ifdef CONFIG_DEBUG_PRINTK
 									printk("Chip ident is %X.\n", xid&0x1F);
+#else
+									;
+#endif
 									devc->chip_name = "CS42xx";
 									devc->model = MD_4232;
 									break;
@@ -1886,7 +1978,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 						break;
 
 					default: /* maybe */
+#ifdef CONFIG_DEBUG_PRINTK
 						DDB(printk("ad1848: I25 = %02x/%02x\n", ad_read(devc, 25), ad_read(devc, 25) & 0xe7));
+#else
+						DDB(;
+#endif
                                                 if (optiC930)
                                                 {
                                                         devc->chip_name = "82C930";
@@ -1902,7 +1998,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 			}
 			ad_write(devc, 25, tmp1);	/* Restore bits */
 
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("ad1848_detect() - step K\n"));
+#else
+			DDB(;
+#endif
 		}
 	} else if (tmp1 == 0x0a) {
 		/*
@@ -1917,7 +2017,11 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 		 */
 		for (i = 0; i < 16; i++) {
 			if ((tmp1 = ad_read(devc, i)) != (tmp2 = ad_read(devc, i + 16))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				DDB(printk("ad1848 detect step H(%d/%x/%x) - SoundPro chip?\n", i, tmp1, tmp2));
+#else
+				DDB(;
+#endif
 				soundpro = 1;
 				devc->chip_name = "SoundPro CMI 8330";
 				break;
@@ -1925,13 +2029,21 @@ int ad1848_detect(struct resource *ports, int *ad_flags, int *osp)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - step L\n"));
+#else
+	DDB(;
+#endif
 	if (ad_flags)
 	{
 		  if (devc->model != MD_1848)
 			  *ad_flags |= AD_F_CS4231;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("ad1848_detect() - Detected OK\n"));
+#else
+	DDB(;
+#endif
 
 	if (devc->model == MD_1848 && ad1847_flag)
 		devc->chip_name = "AD1847";
@@ -2030,7 +2142,11 @@ int ad1848_init (char *name, struct resource *ports, int irq, int dma_playback,
 		if (request_irq(devc->irq, adintr, 0, devc->name,
 				(void *)(long)my_dev) < 0)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ad1848: Unable to allocate IRQ\n");
+#else
+			;
+#endif
 			/* Don't free it either then.. */
 			devc->irq = 0;
 		}
@@ -2051,10 +2167,18 @@ int ad1848_init (char *name, struct resource *ports, int irq, int dma_playback,
 			ad_write(devc, 16, tmp & ~0x40);	/* Disable timer */
 
 			if (devc->timer_ticks == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "ad1848: Interrupt test failed (IRQ%d)\n", irq);
+#else
+				;
+#endif
 			else
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				DDB(printk("Interrupt test OK\n"));
+#else
+				DDB(;
+#endif
 				devc->irq_ok = 1;
 			}
 #else
@@ -2075,11 +2199,19 @@ int ad1848_init (char *name, struct resource *ports, int irq, int dma_playback,
 	if (!share_dma)
 	{
 		if (sound_alloc_dma(dma_playback, devc->name))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ad1848.c: Can't allocate DMA%d\n", dma_playback);
+#else
+			;
+#endif
 
 		if (dma_capture != dma_playback)
 			if (sound_alloc_dma(dma_capture, devc->name))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "ad1848.c: Can't allocate DMA%d\n", dma_capture);
+#else
+				;
+#endif
 	}
 
 	if ((e = sound_install_mixer(MIXER_DRIVER_VERSION,
@@ -2214,7 +2346,11 @@ interrupt_again:		/* Jump back here if int status doesn't reset */
 	status = inb(io_Status(devc));
 
 	if (status == 0x80)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "adintr: Why?\n");
+#else
+		;
+#endif
 	if (devc->model == MD_1848)
 		outb((0), io_Status(devc));	/* Clear interrupt status */
 
@@ -2286,7 +2422,11 @@ static int init_deskpro_m(struct address_info *hw_config)
 
 	if ((tmp = inb(0xc44)) == 0xff)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("init_deskpro_m: Dead port 0xc44\n"));
+#else
+		DDB(;
+#endif
 		return 0;
 	}
 
@@ -2314,13 +2454,21 @@ static int init_deskpro(struct address_info *hw_config)
 
 	if ((tmp = inb(0xc44)) == 0xff)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("init_deskpro: Dead port 0xc44\n"));
+#else
+		DDB(;
+#endif
 		return 0;
 	}
 	outb((tmp | 0x04), 0xc44);	/* Select bank 1 */
 	if (inb(0xc44) != 0x04)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("init_deskpro: Invalid bank1 signature in port 0xc44\n"));
+#else
+		DDB(;
+#endif
 		return 0;
 	}
 	/*
@@ -2356,11 +2504,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc44 (before): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc44));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc44));
+#else
+	;
+#endif
 #endif
 
 	/* Set bank 1 of the register */
@@ -2381,18 +2541,34 @@ static int init_deskpro(struct address_info *hw_config)
 			tmp |= 0x03;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("init_deskpro: Invalid MSS port %x\n", hw_config->io_base));
+#else
+			DDB(;
+#endif
 			return 0;
 	}
 	outb((tmp & ~0x04), 0xc44);	/* Write to bank=0 */
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc44 (after): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc44));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc44));
+#else
+	;
+#endif
 #endif
 
 	/*
@@ -2407,11 +2583,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc45 (before): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc45));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc45));
+#else
+	;
+#endif
 #endif
 
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
@@ -2421,11 +2609,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc45 (after): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc45));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc45));
+#else
+	;
+#endif
 #endif
 
 
@@ -2438,11 +2638,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc46 (before): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc46));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc46));
+#else
+	;
+#endif
 #endif
 
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
@@ -2452,11 +2664,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc46 (after): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc46));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc46));
+#else
+	;
+#endif
 #endif
 
 	/*
@@ -2468,11 +2692,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc47 (before): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc47));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc47));
+#else
+	;
+#endif
 #endif
 
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
@@ -2482,11 +2718,23 @@ static int init_deskpro(struct address_info *hw_config)
 
 #ifdef DEBUGXL
 	/* Debug printing */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc47 (after): ");
+#else
+	;
+#endif
 	outb((tmp & ~0x04), 0xc44);	/* Select bank=0 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x ", inb(0xc47));
+#else
+	;
+#endif
 	outb((tmp | 0x04), 0xc44);	/* Select bank=1 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x\n", inb(0xc47));
+#else
+	;
+#endif
 #endif
 
 	/*
@@ -2494,13 +2742,21 @@ static int init_deskpro(struct address_info *hw_config)
 	 */
 
 #ifdef DEBUGXL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc6f (before) = %02x\n", inb(0xc6f));
+#else
+	;
+#endif
 #endif
 
 	outb((0x80), 0xc6f);
 
 #ifdef DEBUGXL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Port 0xc6f (after) = %02x\n", inb(0xc6f));
+#else
+	;
+#endif
 #endif
 
 	return 1;
@@ -2510,7 +2766,11 @@ int probe_ms_sound(struct address_info *hw_config, struct resource *ports)
 {
 	unsigned char   tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("Entered probe_ms_sound(%x, %d)\n", hw_config->io_base, hw_config->card_subtype));
+#else
+	DDB(;
+#endif
 
 	if (hw_config->card_subtype == 1)	/* Has no IRQ/DMA registers */
 	{
@@ -2540,12 +2800,20 @@ int probe_ms_sound(struct address_info *hw_config, struct resource *ports)
 	{
 		  int             ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		  DDB(printk("I/O address is inactive (%x)\n", tmp));
+#else
+		  DDB(;
+#endif
 		  if (!(ret = ad1848_detect(ports, NULL, hw_config->osp)))
 			  return 0;
 		  return 1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("MSS signature = %x\n", tmp & 0x3f));
+#else
+	DDB(;
+#endif
 	if ((tmp & 0x3f) != 0x04 &&
 	    (tmp & 0x3f) != 0x0f &&
 	    (tmp & 0x3f) != 0x00)
@@ -2660,7 +2928,11 @@ void attach_ms_sound(struct address_info *hw_config, struct resource *ports, str
 		}
 		else
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MSS: Invalid capture DMA\n");
+#else
+			;
+#endif
 			dma2 = dma;
 		}
 	}
@@ -2935,10 +3207,14 @@ static int __init ad1848_isapnp_init(struct address_info *hw_config, struct pnp_
 	if(ad1848_init_generic(bus, hw_config, slot)) {
 		/* We got it. */
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "ad1848: PnP reports '%s' at i/o %#x, irq %d, dma %d, %d\n",
 		       busname,
 		       hw_config->io_base, hw_config->irq, hw_config->dma,
 		       hw_config->dma2);
+#else
+		;
+#endif
 		return 1;
 	}
 	return 0;
@@ -2985,11 +3261,19 @@ static int __init ad1848_isapnp_probe(struct address_info *hw_config)
 
 static int __init init_ad1848(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ad1848/cs4248 codec driver Copyright (C) by Hannu Savolainen 1993-1996\n");
+#else
+	;
+#endif
 
 #ifdef CONFIG_PNP
 	if(isapnp && (ad1848_isapnp_probe(&cfg) < 0) ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "ad1848: No ISAPnP cards found, trying standard ones...\n");
+#else
+		;
+#endif
 		isapnp = 0;
 	}
 #endif
@@ -2999,7 +3283,11 @@ static int __init init_ad1848(void)
 	        if( isapnp == 0 )
 	        {
 			if(irq == -1 || dma == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "ad1848: must give I/O , IRQ and DMA.\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 

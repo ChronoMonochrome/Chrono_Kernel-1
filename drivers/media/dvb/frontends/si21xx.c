@@ -105,10 +105,14 @@
 #define STATUS_UCBLOCKS		1
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_DEBUG "si21xx: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 enum {
@@ -242,8 +246,12 @@ static int si21_writeregs(struct si21xx_state *state, u8 reg1,
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: writereg error (reg1 == 0x%02x, data == 0x%02x, "
 			"ret == %i)\n", __func__, reg1, data[0], ret);
+#else
+		d;
+#endif
 
 	return (ret != 1) ? -EREMOTEIO : 0;
 }
@@ -262,8 +270,12 @@ static int si21_writereg(struct si21xx_state *state, u8 reg, u8 data)
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: writereg error (reg == 0x%02x, data == 0x%02x, "
 			"ret == %i)\n", __func__, reg, data, ret);
+#else
+		d;
+#endif
 
 	return (ret != 1) ? -EREMOTEIO : 0;
 }
@@ -300,8 +312,12 @@ static u8 si21_readreg(struct si21xx_state *state, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: readreg error (reg == 0x%02x, ret == %i)\n",
 			__func__, reg, ret);
+#else
+		d;
+#endif
 
 	return b1[0];
 }
@@ -326,7 +342,11 @@ static int si21_readregs(struct si21xx_state *state, u8 reg1, u8 *b, u8 len)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: readreg error (ret == %i)\n", __func__, ret);
+#else
+		d;
+#endif
 
 	return ret == 2 ? 0 : -1;
 }
@@ -335,11 +355,19 @@ static int si21xx_wait_diseqc_idle(struct si21xx_state *state, int timeout)
 {
 	unsigned long start = jiffies;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	while ((si21_readreg(state, LNB_CTRL_REG_1) & 0x8) == 8) {
 		if (jiffies - start > timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: timeout!!\n", __func__);
+#else
+			d;
+#endif
 			return -ETIMEDOUT;
 		}
 		msleep(10);
@@ -355,7 +383,11 @@ static int si21xx_set_symbolrate(struct dvb_frontend *fe, u32 srate)
 	int i;
 	u8 sym_rate_bytes[3];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s : srate = %i\n", __func__ , srate);
+#else
+	d;
+#endif
 
 	if ((srate < 1000000) || (srate > 45000000))
 		return -EINVAL;
@@ -385,7 +417,11 @@ static int si21xx_send_diseqc_msg(struct dvb_frontend *fe,
 	u8 LNB_CTRL_1;
 	int status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	status = PASS;
 	LNB_CTRL_1 = 0;
@@ -412,7 +448,11 @@ static int si21xx_send_diseqc_burst(struct dvb_frontend *fe,
 	struct si21xx_state *state = fe->demodulator_priv;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (si21xx_wait_diseqc_idle(state, 100) < 0)
 		return -ETIMEDOUT;
@@ -436,7 +476,11 @@ static int si21xx_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t tone)
 	struct si21xx_state *state = fe->demodulator_priv;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 	val = (0x80 | si21_readreg(state, LNB_CTRL_REG_1));
 
 	switch (tone) {
@@ -456,9 +500,13 @@ static int si21xx_set_voltage(struct dvb_frontend *fe, fe_sec_voltage_t volt)
 	struct si21xx_state *state = fe->demodulator_priv;
 
 	u8 val;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: %s\n", __func__,
 		volt == SEC_VOLTAGE_13 ? "SEC_VOLTAGE_13" :
 		volt == SEC_VOLTAGE_18 ? "SEC_VOLTAGE_18" : "??");
+#else
+	d;
+#endif
 
 
 	val = (0x80 | si21_readreg(state, LNB_CTRL_REG_1));
@@ -484,7 +532,11 @@ static int si21xx_init(struct dvb_frontend *fe)
 	u8 val;
 	u8 reg2[2];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	for (i = 0; ; i += 2) {
 		reg1 = serit_sp1511lhb_inittab[i];
@@ -527,7 +579,11 @@ static int si21xx_init(struct dvb_frontend *fe)
 	*/
 	status |= si21_writeregs(state, TS_CTRL_REG_1, reg2, 0x02);
 	if (status != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(" %s : TS Set Error\n", __func__);
+#else
+		d;
+#endif
 
 	return 0;
 
@@ -550,7 +606,11 @@ static int si21_read_status(struct dvb_frontend *fe, fe_status_t *status)
 
 	lock = ((reg_read & 0x7f) | (regs_read[1] & 0x80));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s : FE_READ_STATUS : VSTATUS: 0x%02x\n", __func__, lock);
+#else
+	d;
+#endif
 	*status = 0;
 
 	if (signal > 10)
@@ -581,9 +641,13 @@ static int si21_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 	u16 signal = (3 * si21_readreg(state, 0x27) *
 					si21_readreg(state, 0x28));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s : AGCPWR: 0x%02x%02x, signal=0x%04x\n", __func__,
 		si21_readreg(state, 0x27),
 		si21_readreg(state, 0x28), (int) signal);
+#else
+	d;
+#endif
 
 	signal  <<= 4;
 	*strength = signal;
@@ -595,7 +659,11 @@ static int si21_read_ber(struct dvb_frontend *fe, u32 *ber)
 {
 	struct si21xx_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (state->errmode != STATUS_BER)
 		return 0;
@@ -615,7 +683,11 @@ static int si21_read_snr(struct dvb_frontend *fe, u16 *snr)
 	xsnr = 3 * (xsnr - 0xa100);
 	*snr = (xsnr > 0xffff) ? 0xffff : (xsnr < 0) ? 0 : xsnr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -624,7 +696,11 @@ static int si21_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
 	struct si21xx_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (state->errmode != STATUS_UCBLOCKS)
 		*ucblocks = 0;
@@ -652,7 +728,11 @@ static int si21xx_setacquire(struct dvb_frontend *fe, int symbrate,
 	u8 start_acq = 0x80;
 	u8 reg, regs[3];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	status = PASS;
 	coderate_ptr = coderates[crate];
@@ -692,13 +772,21 @@ static int si21xx_setacquire(struct dvb_frontend *fe, int symbrate,
 
 static int si21xx_set_property(struct dvb_frontend *fe, struct dtv_property *p)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
 static int si21xx_get_property(struct dvb_frontend *fe, struct dtv_property *p)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -744,11 +832,19 @@ static int si21xx_set_frontend(struct dvb_frontend *fe,
 	int data_rate;
 	unsigned char regs[4];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s : FE_SET_FRONTEND\n", __func__);
+#else
+	d;
+#endif
 
 	if (c->delivery_system != SYS_DVBS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported delivery system selected (%d)\n",
 				__func__, c->delivery_system);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 	}
 
@@ -857,7 +953,11 @@ static int si21xx_sleep(struct dvb_frontend *fe)
 	struct si21xx_state *state = fe->demodulator_priv;
 	u8 regdata;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	si21_readregs(state, SYSTEM_MODE_REG, &regdata, 0x01);
 	regdata |= 1 << 6;
@@ -871,7 +971,11 @@ static void si21xx_release(struct dvb_frontend *fe)
 {
 	struct si21xx_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	kfree(state);
 }
@@ -919,7 +1023,11 @@ struct dvb_frontend *si21xx_attach(const struct si21xx_config *config,
 	struct si21xx_state *state = NULL;
 	int id;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* allocate memory for the internal state */
 	state = kzalloc(sizeof(struct si21xx_state), GFP_KERNEL);

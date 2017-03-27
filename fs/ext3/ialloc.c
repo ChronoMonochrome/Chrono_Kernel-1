@@ -101,7 +101,7 @@ void ext3_free_inode (handle_t *handle, struct inode * inode)
 		return;
 	}
 	if (!sb) {
-		printk("ext3_free_inode: inode on nonexistent device\n");
+;
 		return;
 	}
 	sbi = EXT3_SB(sb);
@@ -638,17 +638,17 @@ iget_failed:
 bad_orphan:
 	ext3_warning(sb, __func__,
 		     "bad orphan inode %lu!  e2fsck was run?", ino);
-	printk(KERN_NOTICE "ext3_test_bit(bit=%d, block=%llu) = %d\n",
-	       bit, (unsigned long long)bitmap_bh->b_blocknr,
-	       ext3_test_bit(bit, bitmap_bh->b_data));
-	printk(KERN_NOTICE "inode=%p\n", inode);
+//	printk(KERN_NOTICE "ext3_test_bit(bit=%d, block=%llu) = %d\n",
+//	       bit, (unsigned long long)bitmap_bh->b_blocknr,
+;
+;
 	if (inode) {
-		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
-		       is_bad_inode(inode));
-		printk(KERN_NOTICE "NEXT_ORPHAN(inode)=%u\n",
-		       NEXT_ORPHAN(inode));
-		printk(KERN_NOTICE "max_ino=%lu\n", max_ino);
-		printk(KERN_NOTICE "i_nlink=%u\n", inode->i_nlink);
+//		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
+;
+//		printk(KERN_NOTICE "NEXT_ORPHAN(inode)=%u\n",
+;
+;
+;
 		/* Avoid freeing blocks if we got a bad deleted inode */
 		if (inode->i_nlink == 0)
 			inode->i_blocks = 0;
@@ -684,13 +684,13 @@ unsigned long ext3_count_free_inodes (struct super_block * sb)
 			continue;
 
 		x = ext3_count_free(bitmap_bh, EXT3_INODES_PER_GROUP(sb) / 8);
-		printk("group %d: stored = %d, counted = %lu\n",
-			i, le16_to_cpu(gdp->bg_free_inodes_count), x);
+//		printk("group %d: stored = %d, counted = %lu\n",
+;
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);
-	printk("ext3_count_free_inodes: stored = %u, computed = %lu, %lu\n",
-		le32_to_cpu(es->s_free_inodes_count), desc_count, bitmap_count);
+//	printk("ext3_count_free_inodes: stored = %u, computed = %lu, %lu\n",
+;
 	return desc_count;
 #else
 	desc_count = 0;

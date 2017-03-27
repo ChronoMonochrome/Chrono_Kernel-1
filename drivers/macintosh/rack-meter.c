@@ -303,7 +303,11 @@ static int __devinit rackmeter_setup(struct rackmeter *rm)
 	pr_debug("rackmeter: start CPU measurements..\n");
 	rackmeter_init_cpu_sniffer(rm);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "RackMeter initialized\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -340,8 +344,12 @@ static irqreturn_t rackmeter_irq(int irq, void *arg)
 	/* Read mark */
 	mark = db->mark;
 	if (mark != 1 && mark != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "rackmeter: Incorrect DMA mark 0x%08x\n",
 		       mark);
+#else
+		;
+#endif
 		/* We allow for 3 errors like that (stale DBDMA irqs) */
 		if (++rm->stale_irq > 3) {
 			printk(KERN_ERR "rackmeter: Too many errors,"

@@ -63,7 +63,7 @@ int compat_printk(const char *fmt, ...)
 	if (!compat_log)
 		return 0;
 	va_start(ap, fmt);
-	ret = vprintk(fmt, ap);
+;
 	va_end(ap);
 	return ret;
 }

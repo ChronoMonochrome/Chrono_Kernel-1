@@ -166,14 +166,14 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	ret =  pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (ret) {
-		printk(KERN_ERR "ath9k: 32-bit DMA not available\n");
+;
 		goto err_dma;
 	}
 
 	ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (ret) {
-		printk(KERN_ERR "ath9k: 32-bit DMA consistent "
-			"DMA enable failed\n");
+//		printk(KERN_ERR "ath9k: 32-bit DMA consistent "
+;
 		goto err_dma;
 	}
 
@@ -219,7 +219,7 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	mem = pci_iomap(pdev, 0, 0);
 	if (!mem) {
-		printk(KERN_ERR "PCI memory map error\n") ;
+;
 		ret = -EIO;
 		goto err_iomap;
 	}

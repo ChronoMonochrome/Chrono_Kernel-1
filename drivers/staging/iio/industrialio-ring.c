@@ -131,14 +131,14 @@ __iio_request_ring_buffer_chrdev(struct iio_ring_buffer *buf,
 		     id);
 	ret = device_add(&buf->dev);
 	if (ret < 0) {
-		printk(KERN_ERR "failed to add the ring dev\n");
+;
 		goto error_device_put;
 	}
 	cdev_init(&buf->access_handler.chrdev, &iio_ring_fileops);
 	buf->access_handler.chrdev.owner = owner;
 	ret = cdev_add(&buf->access_handler.chrdev, buf->dev.devt, 1);
 	if (ret) {
-		printk(KERN_ERR "failed to allocate ring chrdev\n");
+;
 		goto error_device_unregister;
 	}
 	return 0;
@@ -479,25 +479,25 @@ ssize_t iio_store_ring_enable(struct device *dev,
 	requested_state = !(buf[0] == '0');
 	current_state = !!(previous_mode & INDIO_ALL_RING_MODES);
 	if (current_state == requested_state) {
-		printk(KERN_INFO "iio-ring, current state requested again\n");
+;
 		goto done;
 	}
 	if (requested_state) {
 		if (ring->setup_ops->preenable) {
 			ret = ring->setup_ops->preenable(dev_info);
 			if (ret) {
-				printk(KERN_ERR
-				       "Buffer not started:"
-				       "ring preenable failed\n");
+//				printk(KERN_ERR
+//				       "Buffer not started:"
+;
 				goto error_ret;
 			}
 		}
 		if (ring->access->request_update) {
 			ret = ring->access->request_update(ring);
 			if (ret) {
-				printk(KERN_INFO
-				       "Buffer not started:"
-				       "ring parameter update failed\n");
+//				printk(KERN_INFO
+//				       "Buffer not started:"
+;
 				goto error_ret;
 			}
 		}
@@ -506,8 +506,8 @@ ssize_t iio_store_ring_enable(struct device *dev,
 		/* Definitely possible for devices to support both of these.*/
 		if (dev_info->modes & INDIO_RING_TRIGGERED) {
 			if (!dev_info->trig) {
-				printk(KERN_INFO
-				       "Buffer not started: no trigger\n");
+//				printk(KERN_INFO
+;
 				ret = -EINVAL;
 				if (ring->access->unmark_in_use)
 					ring->access->unmark_in_use(ring);
@@ -524,9 +524,9 @@ ssize_t iio_store_ring_enable(struct device *dev,
 		if (ring->setup_ops->postenable) {
 			ret = ring->setup_ops->postenable(dev_info);
 			if (ret) {
-				printk(KERN_INFO
-				       "Buffer not started:"
-				       "postenable failed\n");
+//				printk(KERN_INFO
+//				       "Buffer not started:"
+;
 				if (ring->access->unmark_in_use)
 					ring->access->unmark_in_use(ring);
 				dev_info->currentmode = previous_mode;

@@ -497,7 +497,7 @@ int lmc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd) /*fold00*/
 
                     data = kmalloc(xc.len, GFP_KERNEL);
                     if (!data) {
-                            printk(KERN_WARNING "%s: Failed to allocate memory for copy\n", dev->name);
+;
                             ret = -ENOMEM;
                             break;
                     }
@@ -509,7 +509,7 @@ int lmc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd) /*fold00*/
                     	break;
                     }
 
-                    printk("%s: Starting load of data Len: %d at 0x%p == 0x%p\n", dev->name, xc.len, xc.data, data);
+;
 
 		    spin_lock_irqsave(&sc->lmc_lock, flags);
                     lmc_gpio_mkinput(sc, 0xff);
@@ -566,7 +566,7 @@ int lmc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd) /*fold00*/
                            (timeout-- > 0))
                         cpu_relax();
 
-                    printk(KERN_DEBUG "%s: Waited %d for the Xilinx to clear it's memory\n", dev->name, 500000-timeout);
+;
 
                     for(pos = 0; pos < xc.len; pos++){
                         switch(data[pos]){
@@ -577,7 +577,7 @@ int lmc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd) /*fold00*/
                             sc->lmc_gpio |= LMC_GEP_DATA; /* Data is 1 */
                             break;
                         default:
-                            printk(KERN_WARNING "%s Bad data in xilinx programming data at %d, got %d wanted 0 or 1\n", dev->name, pos, data[pos]);
+;
                             sc->lmc_gpio |= LMC_GEP_DATA; /* Assume it's 1 */
                         }
                         sc->lmc_gpio &= ~LMC_GEP_CLK; /* Clock to zero */
@@ -591,13 +591,13 @@ int lmc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd) /*fold00*/
                         udelay(1);
                     }
                     if((LMC_CSR_READ(sc, csr_gp) & LMC_GEP_INIT) == 0){
-                        printk(KERN_WARNING "%s: Reprogramming FAILED. Needs to be reprogrammed. (corrupted data)\n", dev->name);
+;
                     }
                     else if((LMC_CSR_READ(sc, csr_gp) & LMC_GEP_DP) == 0){
-                        printk(KERN_WARNING "%s: Reprogramming FAILED. Needs to be reprogrammed. (done)\n", dev->name);
+;
                     }
                     else {
-                        printk(KERN_DEBUG "%s: Done reprogramming Xilinx, %d bits, good luck!\n", dev->name, pos);
+;
                     }
 
                     lmc_gpio_mkinput(sc, 0xff);
@@ -651,7 +651,7 @@ static void lmc_watchdog (unsigned long data) /*fold00*/
     spin_lock_irqsave(&sc->lmc_lock, flags);
 
     if(sc->check != 0xBEAFCAFE){
-        printk("LMC: Corrupt net_device struct, breaking out\n");
+;
 	spin_unlock_irqrestore(&sc->lmc_lock, flags);
         return;
     }
@@ -726,7 +726,7 @@ static void lmc_watchdog (unsigned long data) /*fold00*/
      * Mark it as down.
      */
     if ((link_status == 0) && (sc->last_link_status != 0)) {
-        printk(KERN_WARNING "%s: hardware/physical link down\n", dev->name);
+;
         sc->last_link_status = 0;
         /* lmc_reset (sc); Why reset??? The link can go down ok */
 
@@ -739,7 +739,7 @@ static void lmc_watchdog (unsigned long data) /*fold00*/
      * Bring it back up again.
      */
      if (link_status != 0 && sc->last_link_status == 0) {
-         printk(KERN_WARNING "%s: hardware/physical link up\n", dev->name);
+;
          sc->last_link_status = 1;
          /* lmc_reset (sc); Again why reset??? */
 
@@ -831,13 +831,13 @@ static int __devinit lmc_init_one(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "lmc: pci enable failed: %d\n", err);
+;
 		return err;
 	}
 
 	err = pci_request_regions(pdev, "lmc");
 	if (err) {
-		printk(KERN_ERR "lmc: pci_request_region failed\n");
+;
 		goto err_req_io;
 	}
 
@@ -852,7 +852,7 @@ static int __devinit lmc_init_one(struct pci_dev *pdev,
 
 	dev = alloc_hdlcdev(sc);
 	if (!dev) {
-		printk(KERN_ERR "lmc:alloc_netdev for device failed\n");
+;
 		goto err_hdlcdev;
 	}
 
@@ -883,12 +883,12 @@ static int __devinit lmc_init_one(struct pci_dev *pdev,
 	spin_lock_init(&sc->lmc_lock);
 	pci_set_master(pdev);
 
-	printk(KERN_INFO "%s: detected at %lx, irq %d\n", dev->name,
-	       dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: detected at %lx, irq %d\n", dev->name,
+;
 
 	err = register_hdlc_device(dev);
 	if (err) {
-		printk(KERN_ERR "%s: register_netdev failed.\n", dev->name);
+;
 		free_netdev(dev);
 		goto err_hdlcdev;
 	}
@@ -907,27 +907,27 @@ static int __devinit lmc_init_one(struct pci_dev *pdev,
 
     switch (subdevice) {
     case PCI_DEVICE_ID_LMC_HSSI:
-	printk(KERN_INFO "%s: LMC HSSI\n", dev->name);
+;
         sc->lmc_cardtype = LMC_CARDTYPE_HSSI;
         sc->lmc_media = &lmc_hssi_media;
         break;
     case PCI_DEVICE_ID_LMC_DS3:
-	printk(KERN_INFO "%s: LMC DS3\n", dev->name);
+;
         sc->lmc_cardtype = LMC_CARDTYPE_DS3;
         sc->lmc_media = &lmc_ds3_media;
         break;
     case PCI_DEVICE_ID_LMC_SSI:
-	printk(KERN_INFO "%s: LMC SSI\n", dev->name);
+;
         sc->lmc_cardtype = LMC_CARDTYPE_SSI;
         sc->lmc_media = &lmc_ssi_media;
         break;
     case PCI_DEVICE_ID_LMC_T1:
-	printk(KERN_INFO "%s: LMC T1\n", dev->name);
+;
         sc->lmc_cardtype = LMC_CARDTYPE_T1;
         sc->lmc_media = &lmc_t1_media;
         break;
     default:
-	printk(KERN_WARNING "%s: LMC UNKNOWN CARD!\n", dev->name);
+;
         break;
     }
 
@@ -953,9 +953,9 @@ static int __devinit lmc_init_one(struct pci_dev *pdev,
 	 subdevice != PCI_DEVICE_ID_LMC_DS3) &&
 	(AdapModelNum != LMC_ADAP_HSSI || /* detect LMC5200 */
 	 subdevice != PCI_DEVICE_ID_LMC_HSSI))
-	    printk(KERN_WARNING "%s: Model number (%d) miscompare for PCI"
-		   " Subsystem ID = 0x%04x\n",
-		   dev->name, AdapModelNum, subdevice);
+//	    printk(KERN_WARNING "%s: Model number (%d) miscompare for PCI"
+//		   " Subsystem ID = 0x%04x\n",
+;
 
     /*
      * reset clock
@@ -992,7 +992,7 @@ static void __devexit lmc_remove_one(struct pci_dev *pdev)
 	struct net_device *dev = pci_get_drvdata(pdev);
 
 	if (dev) {
-		printk(KERN_DEBUG "%s: removing...\n", dev->name);
+;
 		unregister_hdlc_device(dev);
 		free_netdev(dev);
 		pci_release_regions(pdev);
@@ -1029,7 +1029,7 @@ static int lmc_open(struct net_device *dev)
 
     /* Since we have to use PCI bus, this should work on x86,alpha,ppc */
     if (request_irq (dev->irq, lmc_interrupt, IRQF_SHARED, dev->name, dev)){
-        printk(KERN_WARNING "%s: could not get irq: %d\n", dev->name, dev->irq);
+;
         lmc_trace(dev, "lmc_open irq failed out");
         return -EAGAIN;
     }
@@ -1384,16 +1384,16 @@ static irqreturn_t lmc_interrupt (int irq, void *dev_instance) /*fold00*/
             error = csr>>23 & 0x7;
             switch(error){
             case 0x000:
-                printk(KERN_WARNING "%s: Parity Fault (bad)\n", dev->name);
+;
                 break;
             case 0x001:
-                printk(KERN_WARNING "%s: Master Abort (naughty)\n", dev->name);
+;
                 break;
             case 0x010:
-                printk(KERN_WARNING "%s: Target Abort (not so naughty)\n", dev->name);
+;
                 break;
             default:
-                printk(KERN_WARNING "%s: This bus error code was supposed to be reserved!\n", dev->name);
+;
             }
             lmc_dec_reset (sc);
             lmc_reset (sc);
@@ -1573,7 +1573,7 @@ static int lmc_rx(struct net_device *dev)
 	}
 
         if(stat & 0x00004000){
-            printk(KERN_WARNING "%s: Receiver descriptor error, receiver out of sync?\n", dev->name);
+;
         }
 
         len -= sc->lmc_crcSize;
@@ -1862,7 +1862,7 @@ static void lmc_softreset (lmc_softc_t * const sc) /*fold00*/
         {
             skb = dev_alloc_skb (LMC_PKT_BUF_SZ + 2);
             if(skb == NULL){
-                printk(KERN_WARNING "%s: Failed to allocate receiver ring, will try again\n", sc->name);
+;
                 sc->failed_ring = 1;
                 break;
             }
@@ -2098,7 +2098,7 @@ static void lmc_driver_timeout(struct net_device *dev)
 
     spin_lock_irqsave(&sc->lmc_lock, flags);
 
-    printk("%s: Xmitter busy|\n", dev->name);
+;
 
     sc->extra_stats.tx_tbusy_calls++;
     if (jiffies - dev_trans_start(dev) < TX_TIMEOUT)

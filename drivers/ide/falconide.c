@@ -143,7 +143,11 @@ static int __init falconide_init(void)
 	if (!MACH_IS_ATARI || !ATARIHW_PRESENT(IDE))
 		return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ide: Falcon IDE controller\n");
+#else
+	;
+#endif
 
 	if (!request_mem_region(ATA_HD_BASE, 0x40, DRV_NAME)) {
 		printk(KERN_ERR "%s: resources busy\n", DRV_NAME);

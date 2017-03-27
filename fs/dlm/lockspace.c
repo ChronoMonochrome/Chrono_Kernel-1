@@ -213,7 +213,7 @@ int __init dlm_lockspace_init(void)
 
 	dlm_kset = kset_create_and_add("dlm", &dlm_uevent_ops, kernel_kobj);
 	if (!dlm_kset) {
-		printk(KERN_WARNING "%s: can not create kset\n", __func__);
+;
 		return -ENOMEM;
 	}
 	return 0;

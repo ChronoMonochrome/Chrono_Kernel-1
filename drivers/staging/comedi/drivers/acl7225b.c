@@ -105,11 +105,11 @@ static int acl7225b_attach(struct comedi_device *dev,
 
 	iobase = it->options[0];
 	iorange = this_board->io_range;
-	printk(KERN_INFO "comedi%d: acl7225b: board=%s 0x%04x\n", dev->minor,
-	       this_board->name, iobase);
+//	printk(KERN_INFO "comedi%d: acl7225b: board=%s 0x%04x\n", dev->minor,
+;
 	if (!request_region(iobase, iorange, "acl7225b")) {
-		printk(KERN_ERR "comedi%d: request_region failed - I/O port conflict\n",
-			dev->minor);
+//		printk(KERN_ERR "comedi%d: request_region failed - I/O port conflict\n",
+;
 		return -EIO;
 	}
 	dev->board_name = this_board->name;
@@ -154,7 +154,7 @@ static int acl7225b_attach(struct comedi_device *dev,
 
 static int acl7225b_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: acl7225b: remove\n", dev->minor);
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, this_board->io_range);

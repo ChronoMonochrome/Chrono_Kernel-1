@@ -76,8 +76,12 @@ netjet_s_interrupt(int intno, void *dev_id)
 	if (s0val != cs->hw.njet.last_is0) /* we have a DMA interrupt */
 	{
 		if (test_and_set_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "nj LOCK_ATOMIC s0val %x->%x\n",
 				cs->hw.njet.last_is0, s0val);
+#else
+			;
+#endif
 			spin_unlock_irqrestore(&cs->lock, flags);
 			return IRQ_HANDLED;
 		}
@@ -158,12 +162,20 @@ static int __devinit njs_pci_probe(struct pci_dev *dev_netjet,
 	pci_set_master(dev_netjet);
 	cs->irq = dev_netjet->irq;
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NETjet-S: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	cs->hw.njet.base = pci_resource_start(dev_netjet, 0);
 	if (!cs->hw.njet.base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NETjet-S: No IO-Adr for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	/* the TJ300 and TJ320 must be detected, the IRQ handling is different
@@ -178,8 +190,16 @@ static int __devinit njs_pci_probe(struct pci_dev *dev_netjet,
 	/* 2001/10/04 Christoph Ersfeld, Formula-n Europe AG www.formula-n.com */
 	if ((dev_netjet->subsystem_vendor == 0x55) &&
 		(dev_netjet->subsystem_device == 0x02)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Netjet: You tried to load this driver with an incompatible TigerJet-card\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Use type=41 for Formula-n enter:now ISDN PCI and compatible\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	/* end new code */
@@ -215,11 +235,19 @@ static int __devinit njs_cs_init(struct IsdnCard *card,
 			return 1;	/* end loop */
 
 		case 3 :
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( KERN_WARNING "NETjet-S: NETspider-U PCI card found\n" );
+#else
+			;
+#endif
 			return -1;	/* continue looping */
 
 		default :
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( KERN_WARNING "NETjet-S: No PCI card found\n" );
+#else
+			;
+#endif
 			return 0;	/* end loop & function */
 	}
 	return 1;			/* end loop */
@@ -230,14 +258,22 @@ static int __devinit njs_cs_init_rest(struct IsdnCard *card,
 {
 	const int bytecnt = 256;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"NETjet-S: %s card configured at %#lx IRQ %d\n",
 		cs->subtyp ? "TJ320" : "TJ300", cs->hw.njet.base, cs->irq);
+#else
+	;
+#endif
 	if (!request_region(cs->hw.njet.base, bytecnt, "netjet-s isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: NETjet-S config port %#lx-%#lx already in use\n",
 		       cs->hw.njet.base,
 		       cs->hw.njet.base + bytecnt);
+#else
+		;
+#endif
 		return (0);
 	}
 	cs->readisac  = &NETjet_ReadIC;
@@ -269,7 +305,11 @@ setup_netjet_s(struct IsdnCard *card)
 #error "not running on big endian machines now"
 #endif
 	strcpy(tmp, NETjet_S_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Traverse Tech. NETjet-S driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_NETJET_S)
 		return(0);
 	test_and_clear_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags);
@@ -282,7 +322,11 @@ setup_netjet_s(struct IsdnCard *card)
 			if (!ret)
 				return(0);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "NETjet-S: No PCI card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 

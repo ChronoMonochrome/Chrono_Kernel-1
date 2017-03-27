@@ -1279,7 +1279,11 @@ static void gp2a_work_func_light(struct work_struct *work)
 				lightsensor_onoff(0, data);
 				mdelay(10);
 				lightsensor_onoff(1, data);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Lightsensor OFF->ON\n");
+#else
+				;
+#endif
 			} else
 				data->reset_cnt = LIMIT_RESET_COUNT + 1;
 		}

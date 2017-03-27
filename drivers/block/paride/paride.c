@@ -185,9 +185,13 @@ static int default_test_proto(PIA * pi, char *scratch, int verbose)
 	pi->proto->disconnect(pi);
 
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: port 0x%x, mode  %d, test=(%d,%d)\n",
 		       pi->device, pi->proto->name, pi->port,
 		       pi->mode, e[0], e[1]);
+#else
+		;
+#endif
 
 	return (e[0] && e[1]);	/* not here if both > 0 */
 }
@@ -212,20 +216,32 @@ int paride_register(PIP * pr)
 
 	for (k = 0; k < MAX_PROTOS; k++)
 		if (protocols[k] && !strcmp(pr->name, protocols[k]->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("paride: %s protocol already registered\n",
 			       pr->name);
+#else
+			;
+#endif
 			return -1;
 		}
 	k = 0;
 	while ((k < MAX_PROTOS) && (protocols[k]))
 		k++;
 	if (k == MAX_PROTOS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("paride: protocol table full\n");
+#else
+		;
+#endif
 		return -1;
 	}
 	protocols[k] = pr;
 	pr->index = k;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("paride: %s registered as protocol %d\n", pr->name, k);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -236,7 +252,11 @@ void paride_unregister(PIP * pr)
 	if (!pr)
 		return;
 	if (protocols[pr->index] != pr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("paride: %s not registered\n", pr->name);
+#else
+		;
+#endif
 		return;
 	}
 	protocols[pr->index] = NULL;
@@ -262,7 +282,11 @@ static int pi_register_parport(PIA * pi, int verbose)
 	init_waitqueue_head(&pi->parq);
 
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: 0x%x is %s\n", pi->device, pi->port, port->name);
+#else
+		;
+#endif
 
 	pi->parname = (char *) port->name;
 
@@ -363,7 +387,11 @@ int pi_init(PIA * pi, int autoprobe, int port, int mode,
 	} else if ((s < 0) || (s >= MAX_PROTOS) || (port <= 0) ||
 		   (!protocols[s]) || (unit < 0) ||
 		   (unit >= protocols[s]->max_units)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Invalid parameters\n", device);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -416,15 +444,27 @@ int pi_init(PIA * pi, int autoprobe, int port, int mode,
 
 	if (!pi->port) {
 		if (autoprobe)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Autoprobe failed\n", device);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Adapter not found\n", device);
+#else
+			;
+#endif
 		return 0;
 	}
 
 	if (pi->parname)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Sharing %s at 0x%x\n", pi->device,
 		       pi->parname, pi->port);
+#else
+		;
+#endif
 
 	pi->proto->log_adapter(pi, scratch, verbose);
 

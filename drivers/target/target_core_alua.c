@@ -198,8 +198,12 @@ int core_emulate_set_target_port_groups(struct se_cmd *cmd)
 	spin_unlock(&l_tg_pt_gp_mem->tg_pt_gp_mem_lock);
 
 	if (!(rc)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unable to process SET_TARGET_PORT_GROUPS"
 				" while TPGS_EXPLICT_ALUA is disabled\n");
+#else
+		;
+#endif
 		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
 	}
 
@@ -497,8 +501,12 @@ static int core_alua_state_check(
 	 */
 	if (atomic_read(&port->sep_tg_pt_secondary_offline)) {
 		*alua_ascq = ASCQ_04H_ALUA_OFFLINE;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ALUA: Got secondary offline status for local"
 				" target port\n");
+#else
+		;
+#endif
 		*alua_ascq = ASCQ_04H_ALUA_OFFLINE;
 		return 1;
 	}
@@ -811,11 +819,15 @@ static int core_alua_do_transition_tg_pt(
 	 */
 	atomic_set(&tg_pt_gp->tg_pt_gp_alua_access_state, new_state);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Successful %s ALUA transition TG PT Group: %s ID: %hu"
 		" from primary access state %s to %s\n", (explict) ? "explict" :
 		"implict", config_item_name(&tg_pt_gp->tg_pt_gp_group.cg_item),
 		tg_pt_gp->tg_pt_gp_id, core_alua_dump_state(old_state),
 		core_alua_dump_state(new_state));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -843,7 +855,11 @@ int core_alua_do_port_transition(
 
 	md_buf = kzalloc(l_tg_pt_gp->tg_pt_gp_md_buf_len, GFP_KERNEL);
 	if (!(md_buf)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate buf for ALUA metadata\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -932,11 +948,15 @@ int core_alua_do_port_transition(
 	}
 	spin_unlock(&lu_gp->lu_gp_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Successfully processed LU Group: %s all ALUA TG PT"
 		" Group IDs: %hu %s transition to primary state: %s\n",
 		config_item_name(&lu_gp->lu_gp_group.cg_item),
 		l_tg_pt_gp->tg_pt_gp_id, (explict) ? "explict" : "implict",
 		core_alua_dump_state(new_state));
+#else
+	;
+#endif
 
 	atomic_dec(&lu_gp->lu_gp_ref_cnt);
 	smp_mb__after_atomic_dec();
@@ -1013,10 +1033,14 @@ static int core_alua_set_tg_pt_secondary_state(
 			ALUA_STATUS_ALTERED_BY_EXPLICT_STPG :
 			ALUA_STATUS_ALTERED_BY_IMPLICT_ALUA;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Successful %s ALUA transition TG PT Group: %s ID: %hu"
 		" to secondary access state: %s\n", (explict) ? "explict" :
 		"implict", config_item_name(&tg_pt_gp->tg_pt_gp_group.cg_item),
 		tg_pt_gp->tg_pt_gp_id, (offline) ? "OFFLINE" : "ONLINE");
+#else
+	;
+#endif
 
 	spin_unlock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
 	/*
@@ -1079,8 +1103,12 @@ int core_alua_set_lu_gp_id(struct t10_alua_lu_gp *lu_gp, u16 lu_gp_id)
 	 * The lu_gp->lu_gp_id may only be set once..
 	 */
 	if (lu_gp->lu_gp_valid_id) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ALUA LU Group already has a valid ID,"
 			" ignoring request\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1101,9 +1129,13 @@ again:
 			if (!(lu_gp_id))
 				goto again;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ALUA Logical Unit Group ID: %hu"
 				" already exists, ignoring request\n",
 				lu_gp_id);
+#else
+			;
+#endif
 			spin_unlock(&se_global->lu_gps_lock);
 			return -1;
 		}
@@ -1347,8 +1379,12 @@ int core_alua_set_tg_pt_gp_id(
 	 * The tg_pt_gp->tg_pt_gp_id may only be set once..
 	 */
 	if (tg_pt_gp->tg_pt_gp_valid_id) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ALUA TG PT Group already has a valid ID,"
 			" ignoring request\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1625,10 +1661,14 @@ ssize_t core_alua_store_tg_pt_gp_info(
 	lun = port->sep_lun;
 
 	if (T10_ALUA(su_dev)->alua_type != SPC3_ALUA_EMULATED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SPC3_ALUA_EMULATED not enabled for"
 			" %s/tpgt_%hu/%s\n", TPG_TFO(tpg)->tpg_get_wwn(tpg),
 			TPG_TFO(tpg)->tpg_get_tag(tpg),
 			config_item_name(&lun->lun_group.cg_item));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1669,6 +1709,7 @@ ssize_t core_alua_store_tg_pt_gp_info(
 		 * with the default_tg_pt_gp.
 		 */
 		if (!(tg_pt_gp_new)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Target_Core_ConfigFS: Moving"
 				" %s/tpgt_%hu/%s from ALUA Target Port Group:"
 				" alua/%s, ID: %hu back to"
@@ -1679,6 +1720,9 @@ ssize_t core_alua_store_tg_pt_gp_info(
 				config_item_name(
 					&tg_pt_gp->tg_pt_gp_group.cg_item),
 				tg_pt_gp->tg_pt_gp_id);
+#else
+			;
+#endif
 
 			__core_alua_drop_tg_pt_gp_mem(tg_pt_gp_mem, tg_pt_gp);
 			__core_alua_attach_tg_pt_gp_mem(tg_pt_gp_mem,
@@ -1698,6 +1742,7 @@ ssize_t core_alua_store_tg_pt_gp_info(
 	 */
 	__core_alua_attach_tg_pt_gp_mem(tg_pt_gp_mem, tg_pt_gp_new);
 	spin_unlock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: %s %s/tpgt_%hu/%s to ALUA"
 		" Target Port Group: alua/%s, ID: %hu\n", (move) ?
 		"Moving" : "Adding", TPG_TFO(tpg)->tpg_get_wwn(tpg),
@@ -1705,6 +1750,9 @@ ssize_t core_alua_store_tg_pt_gp_info(
 		config_item_name(&lun->lun_group.cg_item),
 		config_item_name(&tg_pt_gp_new->tg_pt_gp_group.cg_item),
 		tg_pt_gp_new->tg_pt_gp_id);
+#else
+	;
+#endif
 
 	core_alua_put_tg_pt_gp_from_name(tg_pt_gp_new);
 	return count;
@@ -1970,8 +2018,12 @@ int core_setup_alua(struct se_device *dev, int force_pt)
 	    !(DEV_ATTRIB(dev)->emulate_alua)) || force_pt) {
 		alua->alua_type = SPC_ALUA_PASSTHROUGH;
 		alua->alua_state_check = &core_alua_state_check_nop;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Using SPC_ALUA_PASSTHROUGH, no ALUA"
 			" emulation\n", TRANSPORT(dev)->name);
+#else
+		;
+#endif
 		return 0;
 	}
 	/*
@@ -1979,8 +2031,12 @@ int core_setup_alua(struct se_device *dev, int force_pt)
 	 * use emulated ALUA.
 	 */
 	if (TRANSPORT(dev)->get_device_rev(dev) >= SCSI_3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Enabling ALUA Emulation for SPC-3"
 			" device\n", TRANSPORT(dev)->name);
+#else
+		;
+#endif
 		/*
 		 * Associate this struct se_device with the default ALUA
 		 * LUN Group.
@@ -1996,14 +2052,22 @@ int core_setup_alua(struct se_device *dev, int force_pt)
 				se_global->default_lu_gp);
 		spin_unlock(&lu_gp_mem->lu_gp_mem_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Adding to default ALUA LU Group:"
 			" core/alua/lu_gps/default_lu_gp\n",
 			TRANSPORT(dev)->name);
+#else
+		;
+#endif
 	} else {
 		alua->alua_type = SPC2_ALUA_DISABLED;
 		alua->alua_state_check = &core_alua_state_check_nop;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Disabling ALUA Emulation for SPC-2"
 			" device\n", TRANSPORT(dev)->name);
+#else
+		;
+#endif
 	}
 
 	return 0;

@@ -23,7 +23,11 @@ waitforCEC(struct IsdnCardState *cs, int hscx)
 		to--;
 	}
 	if (!to)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforCEC timeout\n");
+#else
+		;
+#endif
 }
 
 
@@ -37,7 +41,11 @@ waitforXFW(struct IsdnCardState *cs, int hscx)
 		to--;
 	}
 	if (!to)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforXFW timeout\n");
+#else
+		;
+#endif
 }
 
 static inline void
@@ -167,7 +175,11 @@ hscx_interrupt(struct IsdnCardState *cs, u_char val, u_char hscx)
 				if (cs->debug & L1_DEB_HSCX_FIFO)
 					debugl1(cs, "HX Frame %d", count);
 				if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HSCX: receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), bcs->hw.hscx.rcvbuf, count);
 					skb_queue_tail(&bcs->rqueue, skb);
@@ -182,7 +194,11 @@ hscx_interrupt(struct IsdnCardState *cs, u_char val, u_char hscx)
 		if (bcs->mode == L1_MODE_TRANS) {
 			/* receive audio data */
 			if (!(skb = dev_alloc_skb(fifo_size)))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: receive out of memory\n");
+#else
+				;
+#endif
 			else {
 				memcpy(skb_put(skb, fifo_size), bcs->hw.hscx.rcvbuf, fifo_size);
 				skb_queue_tail(&bcs->rqueue, skb);

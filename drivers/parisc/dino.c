@@ -64,6 +64,7 @@
 #undef DINO_DEBUG
 
 #ifdef DINO_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(x...) printk(x)
 #else
 #define DBG(x...)
@@ -144,6 +145,9 @@
 struct dino_device
 {
 	struct pci_hba_data	hba;	/* 'C' inheritance - must be first */
+#else
+#define DBG(x...) ;
+#endif
 	spinlock_t		dinosaur_pen;
 	unsigned long		txn_addr; /* EIR addr to generate interrupt */ 
 	u32			txn_data; /* EIR data assign to each dino */ 
@@ -434,8 +438,12 @@ static void dino_choose_irq(struct parisc_device *dev, void *ctrl)
 static void __devinit quirk_cirrus_cardbus(struct pci_dev *dev)
 {
 	u8 new_irq = dev->irq - 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PCI: Cirrus Cardbus IRQ fixup for %s, from %d to %d\n",
 			pci_name(dev), dev->irq, new_irq);
+#else
+	;
+#endif
 	dev->irq = new_irq;
 }
 DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_6832, quirk_cirrus_cardbus );
@@ -661,14 +669,22 @@ dino_fixup_bus(struct pci_bus *bus)
 			dino_cfg_read(dev->bus, dev->devfn, 
 				      PCI_INTERRUPT_PIN, 1, &irq_pin);
 			irq_pin = pci_swizzle_interrupt_pin(dev, irq_pin) - 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Device %s has undefined IRQ, "
 					"setting to %d\n", pci_name(dev), irq_pin);
+#else
+			;
+#endif
 			dino_cfg_write(dev->bus, dev->devfn, 
 				       PCI_INTERRUPT_LINE, 1, irq_pin);
 			dino_assign_irq(dino_dev, irq_pin, &dev->irq);
 #else
 			dev->irq = 65535;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Device %s has unassigned IRQ\n", pci_name(dev));
+#else
+			;
+#endif
 #endif
 		} else {
 			/* Adjust INT_LINE for that busses region */
@@ -762,7 +778,11 @@ dino_bridge_init(struct dino_device *dino_dev, const char *name)
 
 	io_addr = __raw_readl(dino_dev->hba.base_addr + DINO_IO_ADDR_EN);
 	if (io_addr == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No PCI devices enabled.\n", name);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -846,14 +866,22 @@ static int __init dino_common_init(struct parisc_device *dev,
 	** arch/parisc/kernel/irq.c returns an EIRR bit.
 	*/
 	if (dev->irq < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: gsc_alloc_irq() failed\n", name);
+#else
+		;
+#endif
 		return 1;
 	}
 
 	status = request_irq(dev->irq, dino_isr, 0, name, dino_dev);
 	if (status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: request_irq() failed with %d\n", 
 			name, status);
+#else
+		;
+#endif
 		return 1;
 	}
 
@@ -947,7 +975,11 @@ static int __init dino_probe(struct parisc_device *dev)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s version %s found at 0x%lx\n", name, version, hpa);
+#else
+	;
+#endif
 
 	if (!request_mem_region(hpa, PAGE_SIZE, name)) {
 		printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
@@ -958,23 +990,35 @@ static int __init dino_probe(struct parisc_device *dev)
 	/* Check for bugs */
 	if (is_cujo && dev->id.hversion_rev == 1) {
 #ifdef CONFIG_IOMMU_CCIO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Enabling Cujo 2.0 bug workaround\n");
+#else
+		;
+#endif
 		if (hpa == (unsigned long)CUJO_RAVEN_ADDR) {
 			ccio_cujo20_fixup(dev, CUJO_RAVEN_BADPAGE);
 		} else if (hpa == (unsigned long)CUJO_FIREHAWK_ADDR) {
 			ccio_cujo20_fixup(dev, CUJO_FIREHAWK_BADPAGE);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Don't recognise Cujo at address 0x%lx, not enabling workaround\n", hpa);
+#else
+			;
+#endif
 		}
 #endif
 	} else if (!is_cujo && !is_card_dino(&dev->id) &&
 			dev->id.hversion_rev < 3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 "The GSCtoPCI (Dino hrev %d) bus converter found may exhibit\n"
 "data corruption.  See Service Note Numbers: A4190A-01, A4191A-01.\n"
 "Systems shipped after Aug 20, 1997 will not exhibit this problem.\n"
 "Models affected: C180, C160, C160L, B160L, and B132L workstations.\n\n",
 			dev->id.hversion_rev);
+#else
+		;
+#endif
 /* REVISIT: why are C200/C240 listed in the README table but not
 **   "Models affected"? Could be an omission in the original literature.
 */
@@ -982,7 +1026,11 @@ static int __init dino_probe(struct parisc_device *dev)
 
 	dino_dev = kzalloc(sizeof(struct dino_device), GFP_KERNEL);
 	if (!dino_dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dino_init_chip - couldn't alloc dino_device\n");
+#else
+		;
+#endif
 		return 1;
 	}
 

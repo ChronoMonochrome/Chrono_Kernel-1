@@ -507,9 +507,9 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
 
 		/* warn if it tries to conflict with the root inode */
 		if (unlikely(i == 1))
-			printk(KERN_WARNING "%s: %s passed in a files array"
-				"with an index of 1!\n", __func__,
-				s->s_type->name);
+//			printk(KERN_WARNING "%s: %s passed in a files array"
+//				"with an index of 1!\n", __func__,
+;
 
 		dentry = d_alloc_name(root, files->name);
 		if (!dentry)

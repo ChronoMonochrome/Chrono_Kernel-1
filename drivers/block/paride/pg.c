@@ -306,8 +306,12 @@ static int pg_wait(struct pg *dev, int go, int stop, unsigned long tmo, char *ms
 		e = read_reg(dev, 1);
 		p = read_reg(dev, 2);
 		if (verbose > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s: stat=0x%x err=0x%x phase=%d%s\n",
 			       dev->name, msg, s, e, p, to ? " timeout" : "");
+#else
+			;
+#endif
 		if (to)
 			e |= 0x100;
 		dev->status = (e >> 4) & 0xff;
@@ -335,17 +339,33 @@ static int pg_command(struct pg *dev, char *cmd, int dlen, unsigned long tmo)
 		goto fail;
 
 	if (read_reg(dev, 2) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: command phase error\n", dev->name);
+#else
+		;
+#endif
 		goto fail;
 	}
 
 	pi_write_block(dev->pi, cmd, 12);
 
 	if (verbose > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Command sent, dlen=%d packet= ", dev->name, dlen);
+#else
+		;
+#endif
 		for (k = 0; k < 12; k++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", cmd[k] & 0xff);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	return 0;
 fail:
@@ -371,8 +391,12 @@ static int pg_completion(struct pg *dev, char *buf, unsigned long tmo)
 		if (p == 2)
 			pi_read_block(dev->pi, buf, n);
 		if (verbose > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s %d bytes\n", dev->name,
 			       p ? "Read" : "Write", n);
+#else
+			;
+#endif
 		dev->dlen += (1 - p) * d;
 		buf += d;
 		r = pg_wait(dev, STAT_BUSY, STAT_DRQ | STAT_READY | STAT_ERR,
@@ -406,12 +430,28 @@ static int pg_reset(struct pg *dev)
 	err = memcmp(expect, got, sizeof(got)) ? -1 : 0;
 
 	if (verbose) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Reset (%d) signature = ", dev->name, k);
+#else
+		;
+#endif
 		for (i = 0; i < 5; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%3x", got[i]);
+#else
+			;
+#endif
 		if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (incorrect)");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	pi_disconnect(dev->pi);
@@ -451,7 +491,11 @@ static int pg_identify(struct pg *dev, int log)
 	if (log) {
 		xs(buf + 8, mf, 8);
 		xs(buf + 16, id, 16);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s %s, %s\n", dev->name, mf, id, ms[dev->drive]);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -479,7 +523,11 @@ static int pg_detect(void)
 	struct pg *dev = &devices[0];
 	int k, unit;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s version %s, major %d\n", name, name, PG_VERSION, major);
+#else
+	;
+#endif
 
 	k = 0;
 	if (pg_drive_count == 0) {
@@ -511,7 +559,11 @@ static int pg_detect(void)
 	if (k)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: No ATAPI device detected\n", name);
+#else
+	;
+#endif
 	return -1;
 }
 
@@ -542,7 +594,11 @@ static int pg_open(struct inode *inode, struct file *file)
 	dev->bufptr = kmalloc(PG_MAX_DATA, GFP_KERNEL);
 	if (dev->bufptr == NULL) {
 		clear_bit(0, &dev->access);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: buffer allocation failed\n", dev->name);
+#else
+		;
+#endif
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -672,7 +728,11 @@ static int __init pg_init(void)
 
 	err = register_chrdev(major, name, &pg_fops);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pg_init: unable to get major number %d\n", major);
+#else
+		;
+#endif
 		for (unit = 0; unit < PG_UNITS; unit++) {
 			struct pg *dev = &devices[unit];
 			if (dev->present)

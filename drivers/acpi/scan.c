@@ -109,8 +109,12 @@ static void acpi_bus_hot_remove_device(void *context)
 	/* power off device */
 	status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 				"Power-off device failed\n");
+#else
+		;
+#endif
 
 	if (device->flags.lockable) {
 		arg_list.count = 1;
@@ -130,8 +134,12 @@ static void acpi_bus_hot_remove_device(void *context)
 	 */
 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
 	if (ACPI_FAILURE(status))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 				"Eject device failed\n");
+#else
+		;
+#endif
 
 	return;
 }

@@ -160,18 +160,18 @@ static const int __quecvt_compat_matrix[8][8] = {
 
 void dlm_print_lkb(struct dlm_lkb *lkb)
 {
-	printk(KERN_ERR "lkb: nodeid %d id %x remid %x exflags %x flags %x\n"
-	       "     status %d rqmode %d grmode %d wait_type %d\n",
-	       lkb->lkb_nodeid, lkb->lkb_id, lkb->lkb_remid, lkb->lkb_exflags,
-	       lkb->lkb_flags, lkb->lkb_status, lkb->lkb_rqmode,
-	       lkb->lkb_grmode, lkb->lkb_wait_type);
+//	printk(KERN_ERR "lkb: nodeid %d id %x remid %x exflags %x flags %x\n"
+//	       "     status %d rqmode %d grmode %d wait_type %d\n",
+//	       lkb->lkb_nodeid, lkb->lkb_id, lkb->lkb_remid, lkb->lkb_exflags,
+//	       lkb->lkb_flags, lkb->lkb_status, lkb->lkb_rqmode,
+;
 }
 
 static void dlm_print_rsb(struct dlm_rsb *r)
 {
-	printk(KERN_ERR "rsb: nodeid %d flags %lx first %x rlc %d name %s\n",
-	       r->res_nodeid, r->res_flags, r->res_first_lkid,
-	       r->res_recover_locks_count, r->res_name);
+//	printk(KERN_ERR "rsb: nodeid %d flags %lx first %x rlc %d name %s\n",
+//	       r->res_nodeid, r->res_flags, r->res_first_lkid,
+;
 }
 
 void dlm_dump_rsb(struct dlm_rsb *r)
@@ -180,18 +180,18 @@ void dlm_dump_rsb(struct dlm_rsb *r)
 
 	dlm_print_rsb(r);
 
-	printk(KERN_ERR "rsb: root_list empty %d recover_list empty %d\n",
-	       list_empty(&r->res_root_list), list_empty(&r->res_recover_list));
-	printk(KERN_ERR "rsb lookup list\n");
+//	printk(KERN_ERR "rsb: root_list empty %d recover_list empty %d\n",
+;
+;
 	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup)
 		dlm_print_lkb(lkb);
-	printk(KERN_ERR "rsb grant queue:\n");
+;
 	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue)
 		dlm_print_lkb(lkb);
-	printk(KERN_ERR "rsb convert queue:\n");
+;
 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue)
 		dlm_print_lkb(lkb);
-	printk(KERN_ERR "rsb wait queue:\n");
+;
 	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue)
 		dlm_print_lkb(lkb);
 }
@@ -840,7 +840,7 @@ static void add_lkb(struct dlm_rsb *r, struct dlm_lkb *lkb, int status)
 				      &r->res_convertqueue);
 		break;
 	default:
-		DLM_ASSERT(0, dlm_print_lkb(lkb); printk("sts=%d\n", status););
+;
 	}
 }
 
@@ -985,7 +985,7 @@ static int add_to_waiters(struct dlm_lkb *lkb, int mstype, int to_nodeid)
 
 	DLM_ASSERT(!lkb->lkb_wait_count,
 		   dlm_print_lkb(lkb);
-		   printk("wait_count %d\n", lkb->lkb_wait_count););
+;
 
 	lkb->lkb_wait_count++;
 	lkb->lkb_wait_type = mstype;

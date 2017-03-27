@@ -772,7 +772,11 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
 		device->cap._BQC = 1;
 	else if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCQ",
 				&h_dummy1))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING FW_BUG "_BCQ is used instead of _BQC\n");
+#else
+		;
+#endif
 		device->cap._BCQ = 1;
 	}
 
@@ -913,9 +917,13 @@ static int acpi_video_bus_check(struct acpi_video_bus *video)
 	/* Does this device support video switching? */
 	if (video->cap._DOS || video->cap._DOD) {
 		if (!video->cap._DOS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING FW_BUG
 				"ACPI(%s) defines _DOD but not _DOS\n",
 				acpi_device_bid(video->device));
+#else
+			;
+#endif
 		}
 		video->flags.multihead = 1;
 		status = 0;
@@ -1353,8 +1361,12 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
 
 		status = acpi_video_bus_get_one_device(dev, video);
 		if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 					"Can't attach device\n");
+#else
+			;
+#endif
 			continue;
 		}
 	}
@@ -1372,8 +1384,12 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
 					    ACPI_DEVICE_NOTIFY,
 					    acpi_video_device_notify);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 		       "Can't remove video notify handler\n");
+#else
+		;
+#endif
 	}
 	if (device->backlight) {
 		backlight_device_unregister(device->backlight);
@@ -1402,8 +1418,12 @@ static int acpi_video_bus_put_devices(struct acpi_video_bus *video)
 
 		status = acpi_video_bus_put_one_device(dev);
 		if (ACPI_FAILURE(status))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 			       "hhuuhhuu bug in acpi video driver.\n");
+#else
+			;
+#endif
 
 		if (dev->brightness) {
 			kfree(dev->brightness->levels);
@@ -1613,11 +1633,15 @@ static int acpi_video_bus_add(struct acpi_device *device)
 				acpi_video_bus_match, NULL,
 				device, NULL);
 	if (status == AE_ALREADY_EXISTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING FW_BUG
 			"Duplicate ACPI video bus devices for the"
 			" same VGA controller, please try module "
 			"parameter \"video.allow_duplicates=1\""
 			"if the current driver doesn't work.\n");
+#else
+		;
+#endif
 		if (!allow_duplicates)
 			return -ENODEV;
 	}
@@ -1683,11 +1707,15 @@ static int acpi_video_bus_add(struct acpi_device *device)
 	if (error)
 		goto err_free_input_dev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
 	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
 	       video->flags.multihead ? "yes" : "no",
 	       video->flags.rom ? "yes" : "no",
 	       video->flags.post ? "yes" : "no");
+#else
+	;
+#endif
 
 	video->pm_nb.notifier_call = acpi_video_resume;
 	video->pm_nb.priority = 0;

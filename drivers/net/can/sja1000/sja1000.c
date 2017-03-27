@@ -102,8 +102,8 @@ static int sja1000_probe_chip(struct net_device *dev)
 	struct sja1000_priv *priv = netdev_priv(dev);
 
 	if (priv->reg_base && (priv->read_reg(priv, 0) == 0xFF)) {
-		printk(KERN_INFO "%s: probing @0x%lX failed\n",
-		       DRV_NAME, dev->base_addr);
+//		printk(KERN_INFO "%s: probing @0x%lX failed\n",
+;
 		return 0;
 	}
 	return -1;
@@ -644,7 +644,7 @@ EXPORT_SYMBOL_GPL(unregister_sja1000dev);
 
 static __init int sja1000_init(void)
 {
-	printk(KERN_INFO "%s CAN netdevice driver\n", DRV_NAME);
+;
 
 	return 0;
 }
@@ -653,7 +653,7 @@ module_init(sja1000_init);
 
 static __exit void sja1000_exit(void)
 {
-	printk(KERN_INFO "%s: driver removed\n", DRV_NAME);
+;
 }
 
 module_exit(sja1000_exit);

@@ -459,8 +459,12 @@ static ssize_t mci_sdram_scrub_rate_store(struct mem_ctl_info *mci,
 
 	new_bw = mci->set_sdram_scrub_rate(mci, bandwidth);
 	if (new_bw < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_printk(KERN_WARNING, EDAC_MC,
 			    "Error setting scrub rate to: %lu\n", bandwidth);
+#else
+		edac_;
+#endif
 		return -EINVAL;
 	}
 
@@ -479,7 +483,11 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
 
 	bandwidth = mci->get_sdram_scrub_rate(mci);
 	if (bandwidth < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_printk(KERN_DEBUG, EDAC_MC, "Error reading scrub rate\n");
+#else
+		edac_;
+#endif
 		return bandwidth;
 	}
 

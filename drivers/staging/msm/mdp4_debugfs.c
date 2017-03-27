@@ -91,7 +91,7 @@ static ssize_t mdp4_debugfs_write(
 
 	cnt = sscanf(mdp4_debug_buf, "%x", &data);
 	if (cnt < 1) {
-		printk(KERN_ERR "%s: sscanf failed cnt=%d" , __func__, cnt);
+;
 		return -EINVAL;
 	}
 
@@ -126,7 +126,7 @@ static ssize_t mdp4_debugfs_read(
 			return -EFAULT;
 	}
 
-	printk(KERN_INFO "%s: len=%d\n", __func__, len);
+;
 
 	if (len < 0)
 		return 0;
@@ -149,22 +149,22 @@ int mdp4_debugfs_init(void)
 	struct dentry *dent = debugfs_create_dir("mdp4", NULL);
 
 	if (IS_ERR(dent)) {
-		printk(KERN_ERR "%s(%d): debugfs_create_dir fail, error %ld\n",
-			__FILE__, __LINE__, PTR_ERR(dent));
+//		printk(KERN_ERR "%s(%d): debugfs_create_dir fail, error %ld\n",
+;
 		return -1;
 	}
 
 	if (debugfs_create_file("offset", 0644, dent, 0, &mdp4_offset_fops)
 			== NULL) {
-		printk(KERN_ERR "%s(%d): debugfs_create_file: offset fail\n",
-			__FILE__, __LINE__);
+//		printk(KERN_ERR "%s(%d): debugfs_create_file: offset fail\n",
+;
 		return -1;
 	}
 
 	if (debugfs_create_file("regs", 0644, dent, 0, &mdp4_debugfs_fops)
 			== NULL) {
-		printk(KERN_ERR "%s(%d): debugfs_create_file: regs fail\n",
-			__FILE__, __LINE__);
+//		printk(KERN_ERR "%s(%d): debugfs_create_file: regs fail\n",
+;
 		return -1;
 	}
 

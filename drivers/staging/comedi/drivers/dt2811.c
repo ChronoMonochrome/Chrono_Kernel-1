@@ -350,10 +350,10 @@ static int dt2811_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	iobase = it->options[0];
 
-	printk(KERN_INFO "comedi%d: dt2811:base=0x%04lx\n", dev->minor, iobase);
+;
 
 	if (!request_region(iobase, DT2811_SIZE, driver_name)) {
-		printk(KERN_ERR "I/O port conflict\n");
+;
 		return -EIO;
 	}
 
@@ -387,21 +387,21 @@ static int dt2811_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			dev->iobase+DT2811_ADCSR);*/
 
 		if (inb(dev->iobase + DT2811_ADCSR) & DT2811_ADERROR)
-			printk(KERN_ERR "error probing irq (bad)\n");
+;
 		dev->irq = 0;
 		if (irq > 0) {
 			i = inb(dev->iobase + DT2811_ADDATLO);
 			i = inb(dev->iobase + DT2811_ADDATHI);
-			printk(KERN_INFO "(irq = %d)\n", irq);
+;
 			ret = request_irq(irq, dt2811_interrupt, 0,
 					  driver_name, dev);
 			if (ret < 0)
 				return -EIO;
 			dev->irq = irq;
 		} else if (irq == 0) {
-			printk(KERN_INFO "(no irq)\n");
+;
 		} else {
-			printk(KERN_ERR "( multiple irq's -- this is bad! )\n");
+;
 		}
 	}
 #endif
@@ -513,7 +513,7 @@ static int dt2811_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int dt2811_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: dt2811: remove\n", dev->minor);
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);

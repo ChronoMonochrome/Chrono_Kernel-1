@@ -67,8 +67,12 @@ int sun_partition(struct parsed_partitions *state)
 
 	p = label->partitions;
 	if (be16_to_cpu(label->magic) != SUN_LABEL_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk(KERN_INFO "Dev %s Sun disklabel: bad magic %04x\n",
 		       bdevname(bdev, b), be16_to_cpu(label->magic)); */
+#else
+/*		;
+#endif
 		put_dev_sector(sect);
 		return 0;
 	}
@@ -77,8 +81,12 @@ int sun_partition(struct parsed_partitions *state)
 	for (csum = 0; ush >= ((__be16 *) label);)
 		csum ^= *ush--;
 	if (csum) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Dev %s Sun disklabel: Csum bad, label corrupted\n",
 		       bdevname(state->bdev, b));
+#else
+		;
+#endif
 		put_dev_sector(sect);
 		return 0;
 	}

@@ -195,7 +195,11 @@ EXPORT_SYMBOL(ide_dma_off_quietly);
 
 void ide_dma_off(ide_drive_t *drive)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: DMA disabled\n", drive->name);
+#else
+	;
+#endif
 	ide_dma_off_quietly(drive);
 }
 EXPORT_SYMBOL(ide_dma_off);
@@ -221,8 +225,12 @@ int __ide_dma_bad_drive(ide_drive_t *drive)
 
 	int blacklist = ide_in_drive_list(id, drive_blacklist);
 	if (blacklist) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Disabling (U)DMA for %s (blacklisted)\n",
 				    drive->name, (char *)&id[ATA_ID_PROD]);
+#else
+		;
+#endif
 		return blacklist;
 	}
 	return 0;
@@ -343,8 +351,12 @@ u8 ide_find_dma_mode(ide_drive_t *drive, u8 req_mode)
 
 	mode = min(mode, req_mode);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s mode selected\n", drive->name,
 			  mode ? ide_xfer_verbose(mode) : "no DMA");
+#else
+	;
+#endif
 
 	return mode;
 }
@@ -456,14 +468,22 @@ ide_startstop_t ide_dma_timeout_retry(ide_drive_t *drive, int error)
 	 */
 
 	if (error < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: DMA timeout error\n", drive->name);
+#else
+		;
+#endif
 		drive->waiting_for_dma = 0;
 		(void)dma_ops->dma_end(drive);
 		ide_dma_unmap_sg(drive, cmd);
 		ret = ide_error(drive, "dma timeout error",
 				hwif->tp_ops->read_status(hwif));
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: DMA timeout retry\n", drive->name);
+#else
+		;
+#endif
 		if (dma_ops->dma_clear)
 			dma_ops->dma_clear(drive);
 		printk(KERN_ERR "%s: timeout waiting for DMA\n", drive->name);

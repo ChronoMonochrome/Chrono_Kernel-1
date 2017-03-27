@@ -29,7 +29,7 @@ static u16 pm3386_reg_read(int pm, int reg)
 
 	value = *((volatile u16 *)(_reg + (reg << 1)));
 
-//	printk(KERN_INFO "pm3386_reg_read(%d, %.3x) = %.8x\n", pm, reg, value);
+;
 
 	return value;
 }
@@ -43,7 +43,7 @@ static void pm3386_reg_write(int pm, int reg, u16 value)
 	void *_reg;
 	u16 dummy;
 
-//	printk(KERN_INFO "pm3386_reg_write(%d, %.3x, %.8x)\n", pm, reg, value);
+;
 
 	_reg = (void *)ENP2611_PM3386_0_VIRT_BASE;
 	if (pm == 1)

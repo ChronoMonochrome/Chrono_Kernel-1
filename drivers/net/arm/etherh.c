@@ -317,9 +317,9 @@ etherh_block_output (struct net_device *dev, int count, const unsigned char *buf
 	void __iomem *dma_base, *addr;
 
 	if (ei_local->dmaing) {
-		printk(KERN_ERR "%s: DMAing conflict in etherh_block_input: "
-			" DMAstat %d irqlock %d\n", dev->name,
-			ei_local->dmaing, ei_local->irqlock);
+//		printk(KERN_ERR "%s: DMAing conflict in etherh_block_input: "
+//			" DMAstat %d irqlock %d\n", dev->name,
+;
 		return;
 	}
 
@@ -361,8 +361,8 @@ etherh_block_output (struct net_device *dev, int count, const unsigned char *buf
 
 	while ((readb (addr + EN0_ISR) & ENISR_RDC) == 0)
 		if (time_after(jiffies, dma_start + 2*HZ/100)) { /* 20ms */
-			printk(KERN_ERR "%s: timeout waiting for TX RDC\n",
-				dev->name);
+//			printk(KERN_ERR "%s: timeout waiting for TX RDC\n",
+;
 			etherh_reset (dev);
 			__NS8390_init (dev, 1);
 			break;
@@ -383,9 +383,9 @@ etherh_block_input (struct net_device *dev, int count, struct sk_buff *skb, int 
 	void __iomem *dma_base, *addr;
 
 	if (ei_local->dmaing) {
-		printk(KERN_ERR "%s: DMAing conflict in etherh_block_input: "
-			" DMAstat %d irqlock %d\n", dev->name,
-			ei_local->dmaing, ei_local->irqlock);
+//		printk(KERN_ERR "%s: DMAing conflict in etherh_block_input: "
+//			" DMAstat %d irqlock %d\n", dev->name,
+;
 		return;
 	}
 
@@ -423,9 +423,9 @@ etherh_get_header (struct net_device *dev, struct e8390_pkt_hdr *hdr, int ring_p
 	void __iomem *dma_base, *addr;
 
 	if (ei_local->dmaing) {
-		printk(KERN_ERR "%s: DMAing conflict in etherh_get_header: "
-			" DMAstat %d irqlock %d\n", dev->name,
-			ei_local->dmaing, ei_local->irqlock);
+//		printk(KERN_ERR "%s: DMAing conflict in etherh_get_header: "
+//			" DMAstat %d irqlock %d\n", dev->name,
+;
 		return;
 	}
 
@@ -464,8 +464,8 @@ etherh_open(struct net_device *dev)
 	struct ei_device *ei_local = netdev_priv(dev);
 
 	if (!is_valid_ether_addr(dev->dev_addr)) {
-		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
-			dev->name);
+//		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
+;
 		return -EINVAL;
 	}
 
@@ -520,7 +520,7 @@ static void __init etherh_banner(void)
 	static int version_printed;
 
 	if (net_debug && version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 }
 
 /*
@@ -533,8 +533,8 @@ static int __devinit etherh_addr(char *addr, struct expansion_card *ec)
 	char *s;
 	
 	if (!ecard_readchunk(&cd, ec, 0xf5, 0)) {
-		printk(KERN_ERR "%s: unable to read podule description string\n",
-		       dev_name(&ec->dev));
+//		printk(KERN_ERR "%s: unable to read podule description string\n",
+;
 		goto no_addr;
 	}
 
@@ -552,8 +552,8 @@ static int __devinit etherh_addr(char *addr, struct expansion_card *ec)
 			return 0;
 	}
 
-	printk(KERN_ERR "%s: unable to parse MAC address: %s\n",
-	       dev_name(&ec->dev), cd.d.string);
+//	printk(KERN_ERR "%s: unable to parse MAC address: %s\n",
+;
 
  no_addr:
 	return -ENODEV;
@@ -759,8 +759,8 @@ etherh_probe(struct expansion_card *ec, const struct ecard_id *id)
 	if (ret)
 		goto free;
 
-	printk(KERN_INFO "%s: %s in slot %d, %pM\n",
-		dev->name, data->name, ec->slot_no, dev->dev_addr);
+//	printk(KERN_INFO "%s: %s in slot %d, %pM\n",
+;
 
 	ecard_set_drvdata(ec, dev);
 

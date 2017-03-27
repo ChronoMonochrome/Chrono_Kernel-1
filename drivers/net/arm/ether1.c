@@ -640,8 +640,8 @@ static int
 ether1_open (struct net_device *dev)
 {
 	if (!is_valid_ether_addr(dev->dev_addr)) {
-		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
-			dev->name);
+//		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
+;
 		return -EINVAL;
 	}
 
@@ -661,9 +661,9 @@ ether1_open (struct net_device *dev)
 static void
 ether1_timeout(struct net_device *dev)
 {
-	printk(KERN_WARNING "%s: transmit timeout, network cable problem?\n",
-		dev->name);
-	printk(KERN_WARNING "%s: resetting device\n", dev->name);
+//	printk(KERN_WARNING "%s: transmit timeout, network cable problem?\n",
+;
+;
 
 	ether1_reset (dev);
 
@@ -684,12 +684,12 @@ ether1_sendpacket (struct sk_buff *skb, struct net_device *dev)
 	nop_t nop;
 
 	if (priv(dev)->restart) {
-		printk(KERN_WARNING "%s: resetting device\n", dev->name);
+;
 
 		ether1_reset(dev);
 
 		if (ether1_init_for_open(dev))
-			printk(KERN_ERR "%s: unable to restart interface\n", dev->name);
+;
 		else
 			priv(dev)->restart = 0;
 	}
@@ -880,16 +880,16 @@ ether1_recv_done (struct net_device *dev)
 			} else
 				dev->stats.rx_dropped++;
 		} else {
-			printk(KERN_WARNING "%s: %s\n", dev->name,
-				(rbd.rbd_status & RBD_EOF) ? "oversized packet" : "acnt not valid");
+//			printk(KERN_WARNING "%s: %s\n", dev->name,
+;
 			dev->stats.rx_dropped++;
 		}
 
 		nexttail = ether1_readw(dev, priv(dev)->rx_tail, rfd_t, rfd_link, NORMALIRQS);
 		/* nexttail should be rx_head */
 		if (nexttail != priv(dev)->rx_head)
-			printk(KERN_ERR "%s: receiver buffer chaining error (%04X != %04X)\n",
-				dev->name, nexttail, priv(dev)->rx_head);
+//			printk(KERN_ERR "%s: receiver buffer chaining error (%04X != %04X)\n",
+;
 		ether1_writew(dev, RFD_CMDEL | RFD_CMDSUSPEND, nexttail, rfd_t, rfd_command, NORMALIRQS);
 		ether1_writew(dev, 0, priv(dev)->rx_tail, rfd_t, rfd_command, NORMALIRQS);
 		ether1_writew(dev, 0, priv(dev)->rx_tail, rfd_t, rfd_status, NORMALIRQS);
@@ -938,8 +938,8 @@ ether1_interrupt (int irq, void *dev_id)
 				writeb(CTRL_CA, REG_CONTROL);
 				dev->stats.rx_dropped++;	/* we suspended due to lack of buffer space */
 			} else
-				printk(KERN_WARNING "%s: RU went not ready: %04X\n", dev->name,
-					ether1_readw(dev, SCB_ADDR, scb_t, scb_status, NORMALIRQS));
+//				printk(KERN_WARNING "%s: RU went not ready: %04X\n", dev->name,
+;
 			printk (KERN_WARNING "RU ptr = %04X\n", ether1_readw(dev, SCB_ADDR, scb_t, scb_rfa_offset,
 						NORMALIRQS));
 		}
@@ -978,7 +978,7 @@ static void __devinit ether1_banner(void)
 	static unsigned int version_printed = 0;
 
 	if (net_debug && version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 }
 
 static const struct net_device_ops ether1_netdev_ops = {
@@ -1039,8 +1039,8 @@ ether1_probe(struct expansion_card *ec, const struct ecard_id *id)
 	if (ret)
 		goto free;
 
-	printk(KERN_INFO "%s: ether1 in slot %d, %pM\n",
-		dev->name, ec->slot_no, dev->dev_addr);
+//	printk(KERN_INFO "%s: ether1 in slot %d, %pM\n",
+;
     
 	ecard_set_drvdata(ec, dev);
 	return 0;

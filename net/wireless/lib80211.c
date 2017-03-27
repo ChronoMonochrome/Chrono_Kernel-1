@@ -157,8 +157,8 @@ static void lib80211_crypt_deinit_handler(unsigned long data)
 
 	spin_lock_irqsave(info->lock, flags);
 	if (!list_empty(&info->crypt_deinit_list) && !info->crypt_quiesced) {
-		printk(KERN_DEBUG "%s: entries remaining in delayed crypt "
-		       "deletion list\n", info->name);
+//		printk(KERN_DEBUG "%s: entries remaining in delayed crypt "
+;
 		info->crypt_deinit_timer.expires = jiffies + HZ;
 		add_timer(&info->crypt_deinit_timer);
 	}
@@ -208,8 +208,8 @@ int lib80211_register_crypto_ops(struct lib80211_crypto_ops *ops)
 	list_add(&alg->list, &lib80211_crypto_algs);
 	spin_unlock_irqrestore(&lib80211_crypto_lock, flags);
 
-	printk(KERN_DEBUG "lib80211_crypt: registered algorithm '%s'\n",
-	       ops->name);
+//	printk(KERN_DEBUG "lib80211_crypt: registered algorithm '%s'\n",
+;
 
 	return 0;
 }
@@ -229,8 +229,8 @@ int lib80211_unregister_crypto_ops(struct lib80211_crypto_ops *ops)
 	return -EINVAL;
 
       found:
-	printk(KERN_DEBUG "lib80211_crypt: unregistered algorithm '%s'\n",
-	       ops->name);
+//	printk(KERN_DEBUG "lib80211_crypt: unregistered algorithm '%s'\n",
+;
 	list_del(&alg->list);
 	spin_unlock_irqrestore(&lib80211_crypto_lock, flags);
 	kfree(alg);

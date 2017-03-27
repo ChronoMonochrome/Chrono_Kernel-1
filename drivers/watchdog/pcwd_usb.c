@@ -52,7 +52,11 @@
 /* Use our own dbg macro */
 #undef dbg
 #define dbg(format, arg...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	do { if (debug) printk(KERN_DEBUG PFX format "\n" , ## arg); } while (0)
+#else
+	do { if (debug) ;
+#endif
 
 /* Module and Version Information */
 #define DRIVER_VERSION "1.02"
@@ -506,8 +510,12 @@ static int usb_pcwd_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		usb_pcwd_stop(usb_pcwd_device);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		usb_pcwd_keepalive(usb_pcwd_device);
 	}
 	expect_release = 0;
@@ -713,18 +721,26 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	else
 		sprintf(fw_ver_str, "<card no answer>");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found card (Firmware: %s) with temp option\n",
 		fw_ver_str);
+#else
+	;
+#endif
 
 	/* Get switch settings */
 	usb_pcwd_send_command(usb_pcwd, CMD_GET_DIP_SWITCH_SETTINGS, &dummy,
 							&option_switches);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Option switches (0x%02x): "
 		"Temperature Reset Enable=%s, Power On Delay=%s\n",
 		option_switches,
 		((option_switches & 0x10) ? "ON" : "OFF"),
 		((option_switches & 0x08) ? "ON" : "OFF"));
+#else
+	;
+#endif
 
 	/* If heartbeat = 0 then we use the heartbeat from the dip-switches */
 	if (heartbeat == 0)
@@ -734,9 +750,13 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	 * if not reset to the default */
 	if (usb_pcwd_set_heartbeat(usb_pcwd, heartbeat)) {
 		usb_pcwd_set_heartbeat(usb_pcwd, WATCHDOG_HEARTBEAT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"heartbeat value must be 0<heartbeat<65536, using %d\n",
 			WATCHDOG_HEARTBEAT);
+#else
+		;
+#endif
 	}
 
 	retval = register_reboot_notifier(&usb_pcwd_notifier);
@@ -766,8 +786,12 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	/* we can register the device now, as it is ready */
 	usb_set_intfdata(interface, usb_pcwd);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
 		heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -824,7 +848,11 @@ static void usb_pcwd_disconnect(struct usb_interface *interface)
 
 	mutex_unlock(&disconnect_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "USB PC Watchdog disconnected\n");
+#else
+	;
+#endif
 }
 
 
@@ -844,7 +872,11 @@ static int __init usb_pcwd_init(void)
 		return result;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX DRIVER_DESC " v" DRIVER_VERSION "\n");
+#else
+	;
+#endif
 	return 0;
 }
 

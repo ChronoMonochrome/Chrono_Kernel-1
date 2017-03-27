@@ -102,21 +102,37 @@ static int __init init_sbc82xx_flash(void)
 		int8_t flashcs[3] = { 0, 6, 1 };
 		int nr_parts;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "PowerQUICC II %s (%ld MiB on CS%d",
 		       sbc82xx_flash_map[i].name,
 		       (sbc82xx_flash_map[i].size >> 20),
 		       flashcs[i]);
+#else
+		;
+#endif
 		if (!sbc82xx_flash_map[i].phys) {
 			/* We know it can't be at zero. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("): disabled by bootloader.\n");
+#else
+			;
+#endif
 			continue;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" at %08lx)\n",  sbc82xx_flash_map[i].phys);
+#else
+		;
+#endif
 
 		sbc82xx_flash_map[i].virt = ioremap(sbc82xx_flash_map[i].phys, sbc82xx_flash_map[i].size);
 
 		if (!sbc82xx_flash_map[i].virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Failed to ioremap\n");
+#else
+			;
+#endif
 			continue;
 		}
 

@@ -226,7 +226,7 @@ static void prism2_pci_cor_sreset(local_info_t *local)
 	u16 reg;
 
 	reg = HFA384X_INB(HFA384X_PCICOR_OFF);
-	printk(KERN_DEBUG "%s: Original COR value: 0x%0x\n", dev->name, reg);
+;
 
 	/* linux-wlan-ng uses extremely long hold and settle times for
 	 * COR sreset. A comment in the driver code mentions that the long
@@ -260,7 +260,7 @@ static void prism2_pci_cor_sreset(local_info_t *local)
 #endif /* PRISM2_PCI_USE_LONG_DELAYS */
 
 	if (HFA384X_INW(HFA384X_CMD_OFF) & HFA384X_CMD_BUSY) {
-		printk(KERN_DEBUG "%s: COR sreset timeout\n", dev->name);
+;
 	}
 }
 
@@ -309,13 +309,13 @@ static int prism2_pci_probe(struct pci_dev *pdev,
 	phymem = pci_resource_start(pdev, 0);
 
 	if (!request_mem_region(phymem, pci_resource_len(pdev, 0), "Prism2")) {
-		printk(KERN_ERR "prism2: Cannot reserve PCI memory region\n");
+;
 		goto err_out_disable;
 	}
 
 	mem = pci_ioremap_bar(pdev, 0);
 	if (mem == NULL) {
-		printk(KERN_ERR "prism2: Cannot remap PCI memory region\n") ;
+;
 		goto fail;
 	}
 
@@ -338,19 +338,19 @@ static int prism2_pci_probe(struct pci_dev *pdev,
 
 	if (request_irq(dev->irq, prism2_interrupt, IRQF_SHARED, dev->name,
 			dev)) {
-		printk(KERN_WARNING "%s: request_irq failed\n", dev->name);
+;
 		goto fail;
 	} else
 		irq_registered = 1;
 
 	if (!local->pri_only && prism2_hw_config(dev, 1)) {
-		printk(KERN_DEBUG "%s: hardware initialization failed\n",
-		       dev_info);
+//		printk(KERN_DEBUG "%s: hardware initialization failed\n",
+;
 		goto fail;
 	}
 
-	printk(KERN_INFO "%s: Intersil Prism2.5 PCI: "
-	       "mem=0x%lx, irq=%d\n", dev->name, phymem, dev->irq);
+//	printk(KERN_INFO "%s: Intersil Prism2.5 PCI: "
+;
 
 	return hostap_hw_ready(dev);
 
@@ -428,8 +428,8 @@ static int prism2_pci_resume(struct pci_dev *pdev)
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+;
 		return err;
 	}
 	pci_restore_state(pdev);

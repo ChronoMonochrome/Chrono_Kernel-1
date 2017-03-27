@@ -29,11 +29,15 @@
 #include <media/rc-core.h>
 
 #define DRIVER_NAME	"rc-loopback"
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...)	if (debug) printk(KERN_INFO DRIVER_NAME ": " x)
 #define RXMASK_REGULAR	0x1
 #define RXMASK_LEARNING	0x2
 
 static bool debug;
+#else
+#define d;
+#endif
 
 struct loopback_dev {
 	struct rc_dev *dev;
@@ -54,11 +58,19 @@ static int loop_set_tx_mask(struct rc_dev *dev, u32 mask)
 	struct loopback_dev *lodev = dev->priv;
 
 	if ((mask & (RXMASK_REGULAR | RXMASK_LEARNING)) != mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("invalid tx mask: %u\n", mask);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("setting tx mask: %u\n", mask);
+#else
+	d;
+#endif
 	lodev->txmask = mask;
 	return 0;
 }
@@ -67,7 +79,11 @@ static int loop_set_tx_carrier(struct rc_dev *dev, u32 carrier)
 {
 	struct loopback_dev *lodev = dev->priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("setting tx carrier: %u\n", carrier);
+#else
+	d;
+#endif
 	lodev->txcarrier = carrier;
 	return 0;
 }
@@ -77,11 +93,19 @@ static int loop_set_tx_duty_cycle(struct rc_dev *dev, u32 duty_cycle)
 	struct loopback_dev *lodev = dev->priv;
 
 	if (duty_cycle < 1 || duty_cycle > 99) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("invalid duty cycle: %u\n", duty_cycle);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("setting duty cycle: %u\n", duty_cycle);
+#else
+	d;
+#endif
 	lodev->txduty = duty_cycle;
 	return 0;
 }
@@ -91,11 +115,19 @@ static int loop_set_rx_carrier_range(struct rc_dev *dev, u32 min, u32 max)
 	struct loopback_dev *lodev = dev->priv;
 
 	if (min < 1 || min > max) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("invalid rx carrier range %u to %u\n", min, max);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("setting rx carrier range %u to %u\n", min, max);
+#else
+	d;
+#endif
 	lodev->rxcarriermin = min;
 	lodev->rxcarriermax = max;
 	return 0;
@@ -111,7 +143,11 @@ static int loop_tx_ir(struct rc_dev *dev, int *txbuf, u32 n)
 	DEFINE_IR_RAW_EVENT(rawir);
 
 	if (n == 0 || n % sizeof(int)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("invalid tx buffer size\n");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -120,13 +156,21 @@ static int loop_tx_ir(struct rc_dev *dev, int *txbuf, u32 n)
 		total_duration += abs(txbuf[i]);
 
 	if (total_duration == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("invalid tx data, total duration zero\n");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
 	if (lodev->txcarrier < lodev->rxcarriermin ||
 	    lodev->txcarrier > lodev->rxcarriermax) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("ignoring tx, carrier out of range\n");
+#else
+		d;
+#endif
 		goto out;
 	}
 
@@ -136,7 +180,11 @@ static int loop_tx_ir(struct rc_dev *dev, int *txbuf, u32 n)
 		rxmask = RXMASK_REGULAR;
 
 	if (!(rxmask & lodev->txmask)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("ignoring tx, rx mask mismatch\n");
+#else
+		d;
+#endif
 		goto out;
 	}
 
@@ -166,7 +214,11 @@ static void loop_set_idle(struct rc_dev *dev, bool enable)
 	struct loopback_dev *lodev = dev->priv;
 
 	if (lodev->idle != enable) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%sing idle mode\n", enable ? "enter" : "exit");
+#else
+		d;
+#endif
 		lodev->idle = enable;
 	}
 }
@@ -176,7 +228,11 @@ static int loop_set_learning_mode(struct rc_dev *dev, int enable)
 	struct loopback_dev *lodev = dev->priv;
 
 	if (lodev->learning != enable) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%sing learning mode\n", enable ? "enter" : "exit");
+#else
+		d;
+#endif
 		lodev->learning = !!enable;
 	}
 
@@ -188,7 +244,11 @@ static int loop_set_carrier_report(struct rc_dev *dev, int enable)
 	struct loopback_dev *lodev = dev->priv;
 
 	if (lodev->carrierreport != enable) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%sabling carrier reports\n", enable ? "en" : "dis");
+#else
+		d;
+#endif
 		lodev->carrierreport = !!enable;
 	}
 

@@ -219,26 +219,26 @@ restart:
 	bad = 0;
 	prev = NULL;
 
-	printk("Block Allocation Reservation Windows Map (%s):\n", fn);
+;
 	while (n) {
 		rsv = rb_entry(n, struct ext2_reserve_window_node, rsv_node);
 		if (verbose)
-			printk("reservation window 0x%p "
-				"start: %lu, end: %lu\n",
-				rsv, rsv->rsv_start, rsv->rsv_end);
+//			printk("reservation window 0x%p "
+//				"start: %lu, end: %lu\n",
+;
 		if (rsv->rsv_start && rsv->rsv_start >= rsv->rsv_end) {
-			printk("Bad reservation %p (start >= end)\n",
-			       rsv);
+//			printk("Bad reservation %p (start >= end)\n",
+;
 			bad = 1;
 		}
 		if (prev && prev->rsv_end >= rsv->rsv_start) {
-			printk("Bad reservation %p (prev->end >= start)\n",
-			       rsv);
+//			printk("Bad reservation %p (prev->end >= start)\n",
+;
 			bad = 1;
 		}
 		if (bad) {
 			if (!verbose) {
-				printk("Restarting reservation walk in verbose mode\n");
+;
 				verbose = 1;
 				goto restart;
 			}
@@ -246,7 +246,7 @@ restart:
 		n = rb_next(n);
 		prev = rsv;
 	}
-	printk("Window map complete.\n");
+;
 	BUG_ON(bad);
 }
 #define rsv_window_dump(root, verbose) \
@@ -1241,7 +1241,7 @@ ext2_fsblk_t ext2_new_blocks(struct inode *inode, ext2_fsblk_t goal,
 	*errp = -ENOSPC;
 	sb = inode->i_sb;
 	if (!sb) {
-		printk("ext2_new_blocks: nonexistent device");
+;
 		return 0;
 	}
 
@@ -1491,9 +1491,9 @@ unsigned long ext2_count_free_blocks (struct super_block * sb)
 		bitmap_count += x;
 		brelse(bitmap_bh);
 	}
-	printk("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
-		(long)le32_to_cpu(es->s_free_blocks_count),
-		desc_count, bitmap_count);
+//	printk("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
+//		(long)le32_to_cpu(es->s_free_blocks_count),
+;
 	return bitmap_count;
 #else
         for (i = 0; i < EXT2_SB(sb)->s_groups_count; i++) {

@@ -35,6 +35,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(fmt, args...) printk("%s: " fmt, __func__, ## args)
 #else
 #define DBG(fmt, args...)
@@ -43,6 +44,9 @@
 static u8 max_dma_rate(struct pci_dev *pdev)
 {
 	u8 mode;
+#else
+#define DBG(fmt, args...) ;
+#endif
 
 	switch(pdev->device) {
 		case PCI_DEVICE_ID_PROMISE_20277:
@@ -193,8 +197,12 @@ static void pdcnew_reset(ide_drive_t *drive)
 	/*
 	 * Deleted this because it is redundant from the caller.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "pdc202xx_new: %s channel reset.\n",
 		drive->hwif->channel ? "Secondary" : "Primary");
+#else
+	;
+#endif
 }
 
 /**
@@ -335,8 +343,12 @@ static int init_chipset_pdcnew(struct pci_dev *dev)
 	 * registers setting.
 	 */
 	pll_input = detect_pll_input_clock(dma_base);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s: PLL input clock is %ld kHz\n",
 		name, pci_name(dev), pll_input / 1000);
+#else
+	;
+#endif
 
 	/* Sanity check */
 	if (unlikely(pll_input < 5000000L || pll_input > 70000000L)) {
@@ -435,8 +447,12 @@ static struct pci_dev * __devinit pdc20270_get_dev2(struct pci_dev *dev)
 
 		if (dev2->irq != dev->irq) {
 			dev2->irq = dev->irq;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO DRV_NAME " %s: PCI config space "
 				"interrupt fixed\n", pci_name(dev));
+#else
+			;
+#endif
 		}
 
 		return dev2;
@@ -506,8 +522,12 @@ static int __devinit pdc202new_init_one(struct pci_dev *dev, const struct pci_de
 	    bridge->vendor == PCI_VENDOR_ID_INTEL &&
 	    (bridge->device == PCI_DEVICE_ID_INTEL_I960 ||
 	     bridge->device == PCI_DEVICE_ID_INTEL_I960RM)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME " %s: attached to I2O RAID controller,"
 			" skipping\n", pci_name(dev));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

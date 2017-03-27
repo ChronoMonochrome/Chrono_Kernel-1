@@ -62,10 +62,14 @@ static int probe_st5481(struct usb_interface *intf,
 	struct hisax_b_if *b_if[2];
 	int retval, i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "st541: found adapter VendorId %04x, ProductId %04x, LEDs %d\n",
 	     le16_to_cpu(dev->descriptor.idVendor),
 	     le16_to_cpu(dev->descriptor.idProduct),
 	     number_of_leds);
+#else
+	;
+#endif
 
 	adapter = kzalloc(sizeof(struct st5481_adapter), GFP_KERNEL);
 	if (!adapter)
@@ -192,7 +196,11 @@ static int __init st5481_usb_init(void)
 	st5481_debug = debug;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_st5481: ST5481 USB ISDN driver $Revision: 2.4.2.3 $\n");
+#else
+	;
+#endif
 
 	retval = st5481_d_init();
 	if (retval < 0)

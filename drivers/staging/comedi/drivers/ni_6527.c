@@ -377,7 +377,7 @@ static int ni6527_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct comedi_subdevice *s;
 	int ret;
 
-	printk(KERN_INFO "comedi%d: ni6527\n", dev->minor);
+;
 
 	ret = alloc_private(dev, sizeof(struct ni6527_private));
 	if (ret < 0)
@@ -389,13 +389,13 @@ static int ni6527_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = mite_setup(devpriv->mite);
 	if (ret < 0) {
-		printk(KERN_ERR "comedi: error setting up mite\n");
+;
 		return ret;
 	}
 
 	dev->board_name = this_board->name;
-	printk(KERN_INFO "comedi board: %s, ID=0x%02x\n", dev->board_name,
-		readb(devpriv->mite->daq_io_addr + ID_Register));
+//	printk(KERN_INFO "comedi board: %s, ID=0x%02x\n", dev->board_name,
+;
 
 	ret = alloc_subdevices(dev, 3);
 	if (ret < 0)
@@ -442,7 +442,7 @@ static int ni6527_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	ret = request_irq(mite_irq(devpriv->mite), ni6527_interrupt,
 			  IRQF_SHARED, "ni6527", dev);
 	if (ret < 0)
-		printk(KERN_WARNING "comedi i6527 irq not available\n");
+;
 	else
 		dev->irq = mite_irq(devpriv->mite);
 
@@ -485,7 +485,7 @@ static int ni6527_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-	printk(KERN_ERR "comedi 6527: no device found\n");
+;
 	mite_list_devices();
 	return -EIO;
 }

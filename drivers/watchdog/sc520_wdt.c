@@ -151,8 +151,12 @@ static void wdt_timer_ping(unsigned long data)
 		/* Re-set the timer interval */
 		mod_timer(&timer, jiffies + WDT_INTERVAL);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Heartbeat lost! Will not ping the watchdog\n");
+#else
+		;
+#endif
 }
 
 /*
@@ -187,7 +191,11 @@ static int wdt_startup(void)
 	/* Start the watchdog */
 	wdt_config(WDT_ENB | WDT_WRST_ENB | WDT_EXP_SEL_04);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now enabled.\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -199,7 +207,11 @@ static int wdt_turnoff(void)
 	/* Stop the watchdog */
 	wdt_config(0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now disabled...\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -270,8 +282,12 @@ static int fop_close(struct inode *inode, struct file *file)
 	if (wdt_expect_close == 42)
 		wdt_turnoff();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		wdt_keepalive();
 	}
 	clear_bit(0, &wdt_is_open);
@@ -393,9 +409,13 @@ static int __init sc520_wdt_init(void)
 	   if not reset to the default */
 	if (wdt_set_heartbeat(timeout)) {
 		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		    "timeout value must be 1 <= timeout <= 3600, using %d\n",
 							WATCHDOG_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	wdtmrctl = ioremap((unsigned long)(MMCR_BASE + OFFS_WDTMRCTL), 2);
@@ -420,9 +440,13 @@ static int __init sc520_wdt_init(void)
 		goto err_out_notifier;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 	   "WDT driver for SC520 initialised. timeout=%d sec (nowayout=%d)\n",
 							timeout, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 

@@ -47,21 +47,21 @@ void minix_free_block(struct inode *inode, unsigned long block)
 	unsigned long bit, zone;
 
 	if (block < sbi->s_firstdatazone || block >= sbi->s_nzones) {
-		printk("Trying to free block not in datazone\n");
+;
 		return;
 	}
 	zone = block - sbi->s_firstdatazone + 1;
 	bit = zone & ((1<<k) - 1);
 	zone >>= k;
 	if (zone >= sbi->s_zmap_blocks) {
-		printk("minix_free_block: nonexistent bitmap buffer\n");
+;
 		return;
 	}
 	bh = sbi->s_zmap[zone];
 	spin_lock(&bitmap_lock);
 	if (!minix_test_and_clear_bit(bit, bh->b_data))
-		printk("minix_free_block (%s:%lu): bit already cleared\n",
-		       sb->s_id, block);
+//		printk("minix_free_block (%s:%lu): bit already cleared\n",
+;
 	spin_unlock(&bitmap_lock);
 	mark_buffer_dirty(bh);
 	return;
@@ -110,8 +110,8 @@ minix_V1_raw_inode(struct super_block *sb, ino_t ino, struct buffer_head **bh)
 	struct minix_inode *p;
 
 	if (!ino || ino > sbi->s_ninodes) {
-		printk("Bad inode number on dev %s: %ld is out of range\n",
-		       sb->s_id, (long)ino);
+//		printk("Bad inode number on dev %s: %ld is out of range\n",
+;
 		return NULL;
 	}
 	ino--;
@@ -119,7 +119,7 @@ minix_V1_raw_inode(struct super_block *sb, ino_t ino, struct buffer_head **bh)
 		 ino / MINIX_INODES_PER_BLOCK;
 	*bh = sb_bread(sb, block);
 	if (!*bh) {
-		printk("Unable to read inode block\n");
+;
 		return NULL;
 	}
 	p = (void *)(*bh)->b_data;
@@ -136,8 +136,8 @@ minix_V2_raw_inode(struct super_block *sb, ino_t ino, struct buffer_head **bh)
 
 	*bh = NULL;
 	if (!ino || ino > sbi->s_ninodes) {
-		printk("Bad inode number on dev %s: %ld is out of range\n",
-		       sb->s_id, (long)ino);
+//		printk("Bad inode number on dev %s: %ld is out of range\n",
+;
 		return NULL;
 	}
 	ino--;
@@ -145,7 +145,7 @@ minix_V2_raw_inode(struct super_block *sb, ino_t ino, struct buffer_head **bh)
 		 ino / minix2_inodes_per_block;
 	*bh = sb_bread(sb, block);
 	if (!*bh) {
-		printk("Unable to read inode block\n");
+;
 		return NULL;
 	}
 	p = (void *)(*bh)->b_data;
@@ -189,13 +189,13 @@ void minix_free_inode(struct inode * inode)
 
 	ino = inode->i_ino;
 	if (ino < 1 || ino > sbi->s_ninodes) {
-		printk("minix_free_inode: inode 0 or nonexistent inode\n");
+;
 		return;
 	}
 	bit = ino & ((1<<k) - 1);
 	ino >>= k;
 	if (ino >= sbi->s_imap_blocks) {
-		printk("minix_free_inode: nonexistent imap in superblock\n");
+;
 		return;
 	}
 
@@ -204,7 +204,7 @@ void minix_free_inode(struct inode * inode)
 	bh = sbi->s_imap[ino];
 	spin_lock(&bitmap_lock);
 	if (!minix_test_and_clear_bit(bit, bh->b_data))
-		printk("minix_free_inode: bit %lu already cleared\n", bit);
+;
 	spin_unlock(&bitmap_lock);
 	mark_buffer_dirty(bh);
 }
@@ -240,7 +240,7 @@ struct inode *minix_new_inode(const struct inode *dir, umode_t mode, int *error)
 	}
 	if (minix_test_and_set_bit(j, bh->b_data)) {	/* shouldn't happen */
 		spin_unlock(&bitmap_lock);
-		printk("minix_new_inode: bit already set\n");
+;
 		iput(inode);
 		return NULL;
 	}

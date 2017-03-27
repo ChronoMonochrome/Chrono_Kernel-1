@@ -269,8 +269,8 @@ static void prism2_plx_cor_sreset(local_info_t *local)
 	unsigned char corsave;
 	struct hostap_plx_priv *hw_priv = local->hw_priv;
 
-	printk(KERN_DEBUG "%s: Doing reset via direct COR access.\n",
-	       dev_info);
+//	printk(KERN_DEBUG "%s: Doing reset via direct COR access.\n",
+;
 
 	/* Set sreset bit of COR and clear it after hold time */
 
@@ -352,8 +352,8 @@ static int prism2_plx_check_cis(void __iomem *attr_mem, int attr_len,
 	/* read CIS; it is in even offsets in the beginning of attr_mem */
 	for (i = 0; i < CIS_MAX_LEN; i++)
 		cis[i] = readb(attr_mem + 2 * i);
-	printk(KERN_DEBUG "%s: CIS: %02x %02x %02x %02x %02x %02x ...\n",
-	       dev_info, cis[0], cis[1], cis[2], cis[3], cis[4], cis[5]);
+//	printk(KERN_DEBUG "%s: CIS: %02x %02x %02x %02x %02x %02x ...\n",
+;
 
 	/* set reasonable defaults for Prism2 cards just in case CIS parsing
 	 * fails */
@@ -378,12 +378,12 @@ static int prism2_plx_check_cis(void __iomem *attr_mem, int attr_len,
 			*cor_offset = 0;
 			for (i = 0; i <= rasz; i++)
 				*cor_offset += cis[pos + 4 + i] << (8 * i);
-			printk(KERN_DEBUG "%s: cor_index=0x%x "
-			       "cor_offset=0x%x\n", dev_info,
-			       *cor_index, *cor_offset);
+//			printk(KERN_DEBUG "%s: cor_index=0x%x "
+//			       "cor_offset=0x%x\n", dev_info,
+;
 			if (*cor_offset > attr_len) {
-				printk(KERN_ERR "%s: COR offset not within "
-				       "attr_mem\n", dev_info);
+//				printk(KERN_ERR "%s: COR offset not within "
+;
 				kfree(cis);
 				return -1;
 			}
@@ -394,8 +394,8 @@ static int prism2_plx_check_cis(void __iomem *attr_mem, int attr_len,
 				goto cis_error;
 			manfid1 = cis[pos + 2] + (cis[pos + 3] << 8);
 			manfid2 = cis[pos + 4] + (cis[pos + 5] << 8);
-			printk(KERN_DEBUG "%s: manfid=0x%04x, 0x%04x\n",
-			       dev_info, manfid1, manfid2);
+//			printk(KERN_DEBUG "%s: manfid=0x%04x, 0x%04x\n",
+;
 			break;
 		}
 
@@ -411,18 +411,18 @@ static int prism2_plx_check_cis(void __iomem *attr_mem, int attr_len,
 			return 0;
 		}
 
-	printk(KERN_INFO "%s: unknown manfid 0x%04x, 0x%04x - assuming this is"
-	       " not supported card\n", dev_info, manfid1, manfid2);
+//	printk(KERN_INFO "%s: unknown manfid 0x%04x, 0x%04x - assuming this is"
+;
 	goto fail;
 
  cis_error:
-	printk(KERN_WARNING "%s: invalid CIS data\n", dev_info);
+;
 
  fail:
 	kfree(cis);
 	if (ignore_cis) {
-		printk(KERN_INFO "%s: ignore_cis parameter set - ignoring "
-		       "errors during CIS verification\n", dev_info);
+//		printk(KERN_INFO "%s: ignore_cis parameter set - ignoring "
+;
 		return 0;
 	}
 	return -1;
@@ -463,9 +463,9 @@ static int prism2_plx_probe(struct pci_dev *pdev,
 		/* TMD7160 */
 		attr_mem = NULL; /* no access to PC Card attribute memory */
 
-		printk(KERN_INFO "TMD7160 PCI/PCMCIA adapter: io=0x%x, "
-		       "irq=%d, pccard_io=0x%x\n",
-		       plx_ioaddr, pdev->irq, pccard_ioaddr);
+//		printk(KERN_INFO "TMD7160 PCI/PCMCIA adapter: io=0x%x, "
+//		       "irq=%d, pccard_io=0x%x\n",
+;
 
 		cor_offset = plx_ioaddr;
 		cor_index = 0x04;
@@ -474,9 +474,9 @@ static int prism2_plx_probe(struct pci_dev *pdev,
 		mdelay(1);
 		reg = inb(plx_ioaddr);
 		if (reg != (cor_index | COR_LEVLREQ | COR_ENABLE_FUNC)) {
-			printk(KERN_ERR "%s: Error setting COR (expected="
-			       "0x%02x, was=0x%02x)\n", dev_info,
-			       cor_index | COR_LEVLREQ | COR_ENABLE_FUNC, reg);
+//			printk(KERN_ERR "%s: Error setting COR (expected="
+//			       "0x%02x, was=0x%02x)\n", dev_info,
+;
 			goto fail;
 		}
 	} else {
@@ -489,24 +489,24 @@ static int prism2_plx_probe(struct pci_dev *pdev,
 
 		attr_mem = ioremap(pccard_attr_mem, pccard_attr_len);
 		if (attr_mem == NULL) {
-			printk(KERN_ERR "%s: cannot remap attr_mem\n",
-			       dev_info);
+//			printk(KERN_ERR "%s: cannot remap attr_mem\n",
+;
 			goto fail;
 		}
 
-		printk(KERN_INFO "PLX9052 PCI/PCMCIA adapter: "
-		       "mem=0x%lx, plx_io=0x%x, irq=%d, pccard_io=0x%x\n",
-		       pccard_attr_mem, plx_ioaddr, pdev->irq, pccard_ioaddr);
+//		printk(KERN_INFO "PLX9052 PCI/PCMCIA adapter: "
+//		       "mem=0x%lx, plx_io=0x%x, irq=%d, pccard_io=0x%x\n",
+;
 
 		if (prism2_plx_check_cis(attr_mem, pccard_attr_len,
 					 &cor_offset, &cor_index)) {
-			printk(KERN_INFO "Unknown PC Card CIS - not a "
-			       "Prism2/2.5 card?\n");
+//			printk(KERN_INFO "Unknown PC Card CIS - not a "
+;
 			goto fail;
 		}
 
-		printk(KERN_DEBUG "Prism2/2.5 PC Card detected in PLX9052 "
-		       "adapter\n");
+//		printk(KERN_DEBUG "Prism2/2.5 PC Card detected in PLX9052 "
+;
 
 		/* Write COR to enable PC Card */
 		writeb(cor_index | COR_LEVLREQ | COR_ENABLE_FUNC,
@@ -514,22 +514,22 @@ static int prism2_plx_probe(struct pci_dev *pdev,
 
 		/* Enable PCI interrupts if they are not already enabled */
 		reg = inl(plx_ioaddr + PLX_INTCSR);
-		printk(KERN_DEBUG "PLX_INTCSR=0x%x\n", reg);
+;
 		if (!(reg & PLX_INTCSR_PCI_INTEN)) {
 			outl(reg | PLX_INTCSR_PCI_INTEN,
 			     plx_ioaddr + PLX_INTCSR);
 			if (!(inl(plx_ioaddr + PLX_INTCSR) &
 			      PLX_INTCSR_PCI_INTEN)) {
-				printk(KERN_WARNING "%s: Could not enable "
-				       "Local Interrupts\n", dev_info);
+//				printk(KERN_WARNING "%s: Could not enable "
+;
 				goto fail;
 			}
 		}
 
 		reg = inl(plx_ioaddr + PLX_CNTRL);
-		printk(KERN_DEBUG "PLX_CNTRL=0x%x (Serial EEPROM "
-		       "present=%d)\n",
-		       reg, (reg & PLX_CNTRL_SERIAL_EEPROM_PRESENT) != 0);
+//		printk(KERN_DEBUG "PLX_CNTRL=0x%x (Serial EEPROM "
+//		       "present=%d)\n",
+;
 		/* should set PLX_PCIIPR to 0x01 (INTA#) if Serial EEPROM is
 		 * not present; but are there really such cards in use(?) */
 	}
@@ -552,14 +552,14 @@ static int prism2_plx_probe(struct pci_dev *pdev,
 
 	if (request_irq(dev->irq, prism2_interrupt, IRQF_SHARED, dev->name,
 			dev)) {
-		printk(KERN_WARNING "%s: request_irq failed\n", dev->name);
+;
 		goto fail;
 	} else
 		irq_registered = 1;
 
 	if (prism2_hw_config(dev, 1)) {
-		printk(KERN_DEBUG "%s: hardware initialization failed\n",
-		       dev_info);
+//		printk(KERN_DEBUG "%s: hardware initialization failed\n",
+;
 		goto fail;
 	}
 

@@ -227,7 +227,11 @@ static void ring_buffer_producer(void)
 	 * Hammer the buffer for 10 secs (this may
 	 * make the system stall)
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Starting ring buffer hammer\n");
+#else
+	trace_;
+#endif
 	do_gettimeofday(&start_tv);
 	do {
 		struct ring_buffer_event *event;
@@ -266,7 +270,11 @@ static void ring_buffer_producer(void)
 #endif
 
 	} while (end_tv.tv_sec < (start_tv.tv_sec + RUN_TIME) && !kill_test);
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("End ring buffer hammer\n");
+#else
+	trace_;
+#endif
 
 	if (consumer) {
 		/* Init both completions here to avoid races */
@@ -289,71 +297,151 @@ static void ring_buffer_producer(void)
 	overruns = ring_buffer_overruns(buffer);
 
 	if (kill_test)
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("ERROR!\n");
+#else
+		trace_;
+#endif
 
 	if (!disable_reader) {
 		if (consumer_fifo < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			trace_printk("Running Consumer at nice: %d\n",
 				     consumer_nice);
+#else
+			trace_;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			trace_printk("Running Consumer at SCHED_FIFO %d\n",
 				     consumer_fifo);
+#else
+			trace_;
+#endif
 	}
 	if (producer_fifo < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Running Producer at nice: %d\n",
 			     producer_nice);
+#else
+		trace_;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Running Producer at SCHED_FIFO %d\n",
 			     producer_fifo);
+#else
+		trace_;
+#endif
 
 	/* Let the user know that the test is running at low priority */
 	if (producer_fifo < 0 && consumer_fifo < 0 &&
 	    producer_nice == 19 && consumer_nice == 19)
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("WARNING!!! This test is running at lowest priority.\n");
+#else
+		trace_;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Time:     %lld (usecs)\n", time);
+#else
+	trace_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Overruns: %lld\n", overruns);
+#else
+	trace_;
+#endif
 	if (disable_reader)
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Read:     (reader disabled)\n");
+#else
+		trace_;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Read:     %ld  (by %s)\n", read,
 			read_events ? "events" : "pages");
+#else
+		trace_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Entries:  %lld\n", entries);
+#else
+	trace_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Total:    %lld\n", entries + overruns + read);
+#else
+	trace_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Missed:   %ld\n", missed);
+#else
+	trace_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Hit:      %ld\n", hit);
+#else
+	trace_;
+#endif
 
 	/* Convert time from usecs to millisecs */
 	do_div(time, USEC_PER_MSEC);
 	if (time)
 		hit /= (long)time;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("TIME IS ZERO??\n");
+#else
+		trace_;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	trace_printk("Entries per millisec: %ld\n", hit);
+#else
+	trace_;
+#endif
 
 	if (hit) {
 		/* Calculate the average time in nanosecs */
 		avg = NSEC_PER_MSEC / hit;
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("%ld ns per entry\n", avg);
+#else
+		trace_;
+#endif
 	}
 
 	if (missed) {
 		if (time)
 			missed /= (long)time;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Total iterations per millisec: %ld\n",
 			     hit + missed);
+#else
+		trace_;
+#endif
 
 		/* it is possible that hit + missed will overflow and be zero */
 		if (!(hit + missed)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			trace_printk("hit + missed overflowed and totalled zero!\n");
+#else
+			trace_;
+#endif
 			hit--; /* make it non zero */
 		}
 
 		/* Caculate the average time in nanosecs */
 		avg = NSEC_PER_MSEC / (hit + missed);
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("%ld ns per entry\n", avg);
+#else
+		trace_;
+#endif
 	}
 }
 
@@ -404,7 +492,11 @@ static int ring_buffer_producer_thread(void *arg)
 
 		ring_buffer_producer();
 
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_printk("Sleeping for 10 secs\n");
+#else
+		trace_;
+#endif
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule_timeout(HZ * SLEEP_TIME);
 		__set_current_state(TASK_RUNNING);

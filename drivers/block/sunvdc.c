@@ -278,7 +278,11 @@ static void vdc_event(void *arg, int event)
 	}
 
 	if (unlikely(event != LDC_EVENT_DATA_READY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Unexpected LDC event %d\n", event);
+#else
+		;
+#endif
 		spin_unlock_irqrestore(&vio->lock, flags);
 		return;
 	}
@@ -704,9 +708,13 @@ static int probe_disk(struct vdc_port *port)
 
 	set_capacity(g, port->vdisk_size);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
 	       g->disk_name,
 	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
+#else
+	;
+#endif
 
 	add_disk(g);
 
@@ -730,7 +738,11 @@ static void __devinit print_version(void)
 	static int version_printed;
 
 	if (version_printed++ == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s", version);
+#else
+		;
+#endif
 }
 
 static int __devinit vdc_port_probe(struct vio_dev *vdev,

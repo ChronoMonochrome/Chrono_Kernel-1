@@ -426,7 +426,11 @@ module_param(joystick, bool, 0);
 
 static int __init init_trix(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MediaTrix audio driver Copyright (C) by Hannu Savolainen 1993-1996\n");
+#else
+	;
+#endif
 
 	cfg.io_base = io;
 	cfg.irq = irq;
@@ -441,16 +445,28 @@ static int __init init_trix(void)
 	cfg_mpu.irq = mpu_irq;
 
 	if (cfg.io_base == -1 || cfg.dma == -1 || cfg.irq == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "I/O, IRQ, DMA and type are mandatory\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	if (cfg2.io_base != -1 && (cfg2.irq == -1 || cfg2.dma == -1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CONFIG_SB_IRQ and CONFIG_SB_DMA must be specified if SB_IO is set.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (cfg_mpu.io_base != -1 && cfg_mpu.irq == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CONFIG_MPU_IRQ must be specified if MPU_IO is set.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (!trix_boot)

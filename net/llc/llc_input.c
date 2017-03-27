@@ -20,18 +20,18 @@
 #include <net/llc_sap.h>
 
 #if 0
-#define dprintk(args...) printk(KERN_DEBUG args)
-#else
-#define dprintk(args...)
-#endif
-
-/*
- * Packet handler for the station, registerable because in the minimal
- * LLC core that is taking shape only the very minimal subset of LLC that
- * is needed for things like IPX, Appletalk, etc will stay, with all the
- * rest in the llc1 and llc2 modules.
- */
-static void (*llc_station_handler)(struct sk_buff *skb);
+//#define dprintk(args...) printk(KERN_DEBUG args)
+//#else
+//#define dprintk(args...)
+//#endif
+//
+///*
+// * Packet handler for the station, registerable because in the minimal
+// * LLC core that is taking shape only the very minimal subset of LLC that
+// * is needed for things like IPX, Appletalk, etc will stay, with all the
+// * rest in the llc1 and llc2 modules.
+// */
+;
 
 /*
  * Packet handlers for LLC_DEST_SAP and LLC_DEST_CONN.
@@ -159,7 +159,7 @@ int llc_rcv(struct sk_buff *skb, struct net_device *dev,
 	 * receives, do not try to analyse it.
 	 */
 	if (unlikely(skb->pkt_type == PACKET_OTHERHOST)) {
-		dprintk("%s: PACKET_OTHERHOST\n", __func__);
+;
 		goto drop;
 	}
 	skb = skb_share_check(skb, GFP_ATOMIC);
@@ -172,8 +172,8 @@ int llc_rcv(struct sk_buff *skb, struct net_device *dev,
 	       goto handle_station;
 	sap = llc_sap_find(pdu->dsap);
 	if (unlikely(!sap)) {/* unknown SAP */
-		dprintk("%s: llc_sap_find(%02X) failed!\n", __func__,
-			pdu->dsap);
+//		dprintk("%s: llc_sap_find(%02X) failed!\n", __func__,
+;
 		goto drop;
 	}
 	/*

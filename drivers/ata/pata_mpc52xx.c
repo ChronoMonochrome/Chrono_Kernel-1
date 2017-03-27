@@ -905,7 +905,11 @@ static struct platform_driver mpc52xx_ata_of_platform_driver = {
 static int __init
 mpc52xx_ata_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ata: MPC52xx IDE/ATA libata driver\n");
+#else
+	;
+#endif
 	return platform_driver_register(&mpc52xx_ata_of_platform_driver);
 }
 

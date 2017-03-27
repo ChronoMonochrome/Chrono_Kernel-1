@@ -403,8 +403,12 @@ void dsp_tone_copy(struct dsp *dsp, u8 *data, int len)
 			if (count < pat->seq[index])
 				break;
 			if (dsp_debug & DEBUG_DSP_TONE)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "%s: reaching next sequence "
 					"(index=%d)\n", __func__, index);
+#else
+				;
+#endif
 			count -= pat->seq[index];
 			index++;
 		}
@@ -523,12 +527,20 @@ dsp_tone(struct dsp *dsp, int tone)
 		i++;
 	}
 	if (!pat) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "dsp: given tone 0x%x is invalid\n", tone);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (dsp_debug & DEBUG_DSP_TONE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: now starting tone %d (index=%d)\n",
 			__func__, tone, 0);
+#else
+		;
+#endif
 	tonet->tone = tone;
 	tonet->pattern = pat;
 	tonet->index = 0;

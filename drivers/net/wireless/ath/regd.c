@@ -383,23 +383,23 @@ static bool ath_regd_is_eeprom_valid(struct ath_regulatory *reg)
 	if (rd & COUNTRY_ERD_FLAG) {
 		/* EEPROM value is a country code */
 		u16 cc = rd & ~COUNTRY_ERD_FLAG;
-		printk(KERN_DEBUG
-		       "ath: EEPROM indicates we should expect "
-			"a country code\n");
+//		printk(KERN_DEBUG
+//		       "ath: EEPROM indicates we should expect "
+;
 		for (i = 0; i < ARRAY_SIZE(allCountries); i++)
 			if (allCountries[i].countryCode == cc)
 				return true;
 	} else {
 		/* EEPROM value is a regpair value */
 		if (rd != CTRY_DEFAULT)
-			printk(KERN_DEBUG "ath: EEPROM indicates we "
-			       "should expect a direct regpair map\n");
+//			printk(KERN_DEBUG "ath: EEPROM indicates we "
+;
 		for (i = 0; i < ARRAY_SIZE(regDomainPairs); i++)
 			if (regDomainPairs[i].regDmnEnum == rd)
 				return true;
 	}
-	printk(KERN_DEBUG
-		 "ath: invalid regulatory domain/country code 0x%x\n", rd);
+//	printk(KERN_DEBUG
+;
 	return false;
 }
 
@@ -501,7 +501,7 @@ static void ath_regd_sanitize(struct ath_regulatory *reg)
 {
 	if (reg->current_rd != COUNTRY_ERD_FLAG)
 		return;
-	printk(KERN_DEBUG "ath: EEPROM regdomain sanitized\n");
+;
 	reg->current_rd = 0x64;
 }
 
@@ -519,10 +519,10 @@ ath_regd_init(struct ath_regulatory *reg,
 
 	ath_regd_sanitize(reg);
 
-	printk(KERN_DEBUG "ath: EEPROM regdomain: 0x%0x\n", reg->current_rd);
+;
 
 	if (!ath_regd_is_eeprom_valid(reg)) {
-		printk(KERN_ERR "ath: Invalid EEPROM contents\n");
+;
 		return -EINVAL;
 	}
 
@@ -531,36 +531,36 @@ ath_regd_init(struct ath_regulatory *reg,
 
 	if (reg->country_code == CTRY_DEFAULT &&
 	    regdmn == CTRY_DEFAULT) {
-		printk(KERN_DEBUG "ath: EEPROM indicates default "
-		       "country code should be used\n");
+//		printk(KERN_DEBUG "ath: EEPROM indicates default "
+;
 		reg->country_code = CTRY_UNITED_STATES;
 	}
 
 	if (reg->country_code == CTRY_DEFAULT) {
 		country = NULL;
 	} else {
-		printk(KERN_DEBUG "ath: doing EEPROM country->regdmn "
-		       "map search\n");
+//		printk(KERN_DEBUG "ath: doing EEPROM country->regdmn "
+;
 		country = ath_regd_find_country(reg->country_code);
 		if (country == NULL) {
-			printk(KERN_DEBUG
-				"ath: no valid country maps found for "
-				"country code: 0x%0x\n",
-				reg->country_code);
+//			printk(KERN_DEBUG
+//				"ath: no valid country maps found for "
+//				"country code: 0x%0x\n",
+;
 			return -EINVAL;
 		} else {
 			regdmn = country->regDmnEnum;
-			printk(KERN_DEBUG "ath: country maps to "
-			       "regdmn code: 0x%0x\n",
-			       regdmn);
+//			printk(KERN_DEBUG "ath: country maps to "
+//			       "regdmn code: 0x%0x\n",
+;
 		}
 	}
 
 	reg->regpair = ath_get_regpair(regdmn);
 
 	if (!reg->regpair) {
-		printk(KERN_DEBUG "ath: "
-			"No regulatory domain pair found, cannot continue\n");
+//		printk(KERN_DEBUG "ath: "
+;
 		return -EINVAL;
 	}
 
@@ -575,10 +575,10 @@ ath_regd_init(struct ath_regulatory *reg,
 		reg->alpha2[1] = '0';
 	}
 
-	printk(KERN_DEBUG "ath: Country alpha2 being used: %c%c\n",
-		reg->alpha2[0], reg->alpha2[1]);
-	printk(KERN_DEBUG "ath: Regpair used: 0x%0x\n",
-		reg->regpair->regDmnEnum);
+//	printk(KERN_DEBUG "ath: Country alpha2 being used: %c%c\n",
+;
+//	printk(KERN_DEBUG "ath: Regpair used: 0x%0x\n",
+;
 
 	ath_regd_init_wiphy(reg, wiphy, reg_notifier);
 	return 0;

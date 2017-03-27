@@ -14,8 +14,12 @@
 
 /* debug */
 #ifdef CONFIG_DVB_B2C2_FLEXCOP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level,args...) \
 	do { if ((debug & level)) printk(args); } while (0)
+#else
+#define d;
+#endif
 
 #define debug_dump(b, l, method) do {\
 	int i; \
@@ -26,17 +30,22 @@
 
 #define DEBSTATUS ""
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, args...)
 #define debug_dump(b, l, method)
 #define DEBSTATUS " (debugging is not enabled)"
 #endif
 
 static int debug;
+#else
+#define d;
+#endif
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info,ts=2,"
 		"ctrl=4,i2c=8,v8mem=16 (or-able))." DEBSTATUS);
 #undef DEBSTATUS
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...) dprintk(0x01, args)
 #define deb_ts(args...) dprintk(0x02, args)
 #define deb_ctrl(args...) dprintk(0x04, args)
@@ -69,6 +78,9 @@ MODULE_PARM_DESC(debug, "set debugging level (1=info,ts=2,"
 static int flexcop_usb_readwrite_dw(struct flexcop_device *fc, u16 wRegOffsPCI, u32 *val, u8 read)
 {
 	struct flexcop_usb *fc_usb = fc->bus_specific;
+#else
+#define deb_info(args...) d;
+#endif
 	u8 request = read ? B2C2_USB_READ_REG : B2C2_USB_WRITE_REG;
 	u8 request_type = (read ? USB_DIR_IN : USB_DIR_OUT) | USB_TYPE_VENDOR;
 	u8 wAddress = B2C2_FLEX_PCIOFFSET_TO_INTERNALADDR(wRegOffsPCI) |

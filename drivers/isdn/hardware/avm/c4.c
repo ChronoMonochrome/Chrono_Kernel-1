@@ -424,7 +424,11 @@ static void c4_dispatch_tx(avmcard *card)
 	skb = skb_dequeue(&dma->send_queue);
 	if (!skb) {
 #ifdef AVM_C4_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: tx underrun\n", card->name);
+#else
+		;
+#endif
 #endif
 		return;
 	}
@@ -448,17 +452,29 @@ static void c4_dispatch_tx(avmcard *card)
 		}
 		txlen = (u8 *)p - (u8 *)dma->sendbuf.dmabuf;
 #ifdef AVM_C4_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: tx put msg len=%d\n", card->name, txlen);
+#else
+		;
+#endif
 #endif
 	} else {
 		txlen = skb->len-2;
 #ifdef AVM_C4_POLLDEBUG
 		if (skb->data[2] == SEND_POLLACK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: ack to c4\n", card->name);
+#else
+			;
+#endif
 #endif
 #ifdef AVM_C4_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: tx put 0x%x len=%d\n",
 				card->name, skb->data[2], txlen);
+#else
+		;
+#endif
 #endif
 		skb_copy_from_linear_data_offset(skb, 2, dma->sendbuf.dmabuf,
 						 skb->len - 2);
@@ -484,8 +500,12 @@ static void queue_pollack(avmcard *card)
 
 	skb = alloc_skb(3, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost poll ack\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -513,8 +533,12 @@ static void c4_handle_rx(avmcard *card)
 
 
 #ifdef AVM_C4_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: rx 0x%x len=%lu\n", card->name,
 				b1cmd, (unsigned long)dma->recvlen);
+#else
+	;
+#endif
 #endif
 	
 	switch (b1cmd) {
@@ -591,7 +615,11 @@ static void c4_handle_rx(avmcard *card)
 
 	case RECEIVE_START:
 #ifdef AVM_C4_POLLDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: poll from c4\n", card->name);
+#else
+		;
+#endif
 #endif
 		if (!suppress_pollack)
 			queue_pollack(card);
@@ -621,10 +649,14 @@ static void c4_handle_rx(avmcard *card)
 		ctrl = &cinfo->capi_ctrl;
 		cinfo->versionlen = _get_slice(&p, cinfo->versionbuf);
 		b1_parse_version(cinfo);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s-card (%s) now active\n",
 		       card->name,
 		       cinfo->version[VER_CARDTYPE],
 		       cinfo->version[VER_DRIVER]);
+#else
+		;
+#endif
 		capi_ctr_ready(&cinfo->capi_ctrl);
 		break;
 
@@ -638,8 +670,12 @@ static void c4_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
 				card->name, ApplId, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	case RECEIVE_DEBUGMSG:
@@ -651,7 +687,11 @@ static void c4_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	default:
@@ -736,8 +776,12 @@ static void c4_send_init(avmcard *card)
 
 	skb = alloc_skb(15, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -763,8 +807,12 @@ static int queue_sendconfigword(avmcard *card, u32 val)
 
 	skb = alloc_skb(3+4, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, send config\n",
 					card->name);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	p = skb->data;
@@ -789,8 +837,12 @@ static int queue_sendconfig(avmcard *card, char cval[4])
 
 	skb = alloc_skb(3+4, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, send config\n",
 					card->name);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	p = skb->data;
@@ -964,8 +1016,12 @@ static void c4_register_appl(struct capi_ctr *ctrl,
 
 		skb = alloc_skb(23, GFP_ATOMIC);
 		if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "%s: no memory, lost register appl.\n",
 						card->name);
+#else
+			;
+#endif
 			return;
 		}
 		p = skb->data;
@@ -1004,8 +1060,12 @@ static void c4_release_appl(struct capi_ctr *ctrl, u16 appl)
 	if (ctrl->cnr == card->cardnr) {
 		skb = alloc_skb(7, GFP_ATOMIC);
 		if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "%s: no memory, lost release appl.\n",
 						card->name);
+#else
+			;
+#endif
 			return;
 		}
 		p = skb->data;
@@ -1152,13 +1212,21 @@ static int c4_add_card(struct capicardparams *p, struct pci_dev *dev,
 
 	card = b1_alloc_card(nr_controllers);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "c4: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
         card->dma = avmcard_dma_alloc("c4", dev, 2048+128, 2048+128);
 	if (!card->dma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "c4: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err_free;
 	}
@@ -1170,24 +1238,36 @@ static int c4_add_card(struct capicardparams *p, struct pci_dev *dev,
 	card->cardtype = (nr_controllers == 4) ? avm_c4 : avm_c2;
 
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "c4: ports 0x%03x-0x%03x in use.\n",
 		       card->port, card->port + AVMB1_PORTLEN);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_free_dma;
 	}
 
 	card->mbase = ioremap(card->membase, 128);
 	if (card->mbase == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "c4: can't remap memory at 0x%lx\n",
 		       card->membase);
+#else
+		;
+#endif
 		retval = -EIO;
 		goto err_release_region;
 	}
 
 	retval = c4_detect(card);
 	if (retval != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "c4: NO card at 0x%x error(%d)\n",
 		       card->port, retval);
+#else
+		;
+#endif
 		retval = -EIO;
 		goto err_unmap;
 	}
@@ -1227,9 +1307,13 @@ static int c4_add_card(struct capicardparams *p, struct pci_dev *dev,
 			card->cardnr = cinfo->capi_ctrl.cnr;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "c4: AVM C%d at i/o %#x, irq %d, mem %#lx\n",
 	       nr_controllers, card->port, card->irq,
 	       card->membase);
+#else
+	;
+#endif
 	pci_set_drvdata(dev, card);
 	return 0;
 
@@ -1266,8 +1350,12 @@ static int __devinit c4_probe(struct pci_dev *dev,
 	param.irq = dev->irq;
 	param.membase = pci_resource_start(dev, 0);
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "c4: PCI BIOS reports AVM-C%d at i/o %#x, irq %d, mem %#x\n",
 	       nr, param.port, param.irq, param.membase);
+#else
+	;
+#endif
 	
 	retval = c4_add_card(&param, dev, nr);
 	if (retval != 0) {
@@ -1315,7 +1403,11 @@ static int __init c4_init(void)
 		register_capi_driver(&capi_driver_c2);
 		strlcpy(capi_driver_c4.revision, rev, 32);
 		register_capi_driver(&capi_driver_c4);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "c4: revision %s\n", rev);
+#else
+		;
+#endif
 	}
 	return err;
 }

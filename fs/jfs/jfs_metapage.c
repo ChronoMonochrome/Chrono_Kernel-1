@@ -288,7 +288,7 @@ static void metapage_read_end_io(struct bio *bio, int err)
 	struct page *page = bio->bi_private;
 
 	if (!test_bit(BIO_UPTODATE, &bio->bi_flags)) {
-		printk(KERN_ERR "metapage_read_end_io: I/O error\n");
+;
 		SetPageError(page);
 	}
 
@@ -345,7 +345,7 @@ static void metapage_write_end_io(struct bio *bio, int err)
 	BUG_ON(!PagePrivate(page));
 
 	if (! test_bit(BIO_UPTODATE, &bio->bi_flags)) {
-		printk(KERN_ERR "metapage_write_end_io: I/O error\n");
+;
 		SetPageError(page);
 	}
 	dec_io(page, last_write_complete);
@@ -426,7 +426,7 @@ static int metapage_writepage(struct page *page, struct writeback_control *wbc)
 		xlen = (PAGE_CACHE_SIZE - offset) >> inode->i_blkbits;
 		pblock = metapage_get_blocks(inode, lblock, &xlen);
 		if (!pblock) {
-			printk(KERN_ERR "JFS: metapage_get_blocks failed\n");
+;
 			/*
 			 * We already called inc_io(), but can't cancel it
 			 * with dec_io() until we're done with the page
@@ -472,7 +472,7 @@ static int metapage_writepage(struct page *page, struct writeback_control *wbc)
 	return 0;
 add_failed:
 	/* We should never reach here, since we're only adding one vec */
-	printk(KERN_ERR "JFS: bio_add_page failed unexpectedly\n");
+;
 	goto skip;
 dump_bio:
 	print_hex_dump(KERN_ERR, "JFS: dump of bio: ", DUMP_PREFIX_ADDRESS, 16,
@@ -536,7 +536,7 @@ static int metapage_readpage(struct file *fp, struct page *page)
 	return 0;
 
 add_failed:
-	printk(KERN_ERR "JFS: bio_add_page failed unexpectedly\n");
+;
 	bio_put(bio);
 	dec_io(page, last_read_complete);
 	return -EIO;

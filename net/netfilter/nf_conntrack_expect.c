@@ -408,8 +408,8 @@ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
 
 	if (net->ct.expect_count >= nf_ct_expect_max) {
 		if (net_ratelimit())
-			printk(KERN_WARNING
-			       "nf_conntrack: expectation table full\n");
+//			printk(KERN_WARNING
+;
 		ret = -EMFILE;
 	}
 out:

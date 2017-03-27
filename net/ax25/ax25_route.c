@@ -467,7 +467,7 @@ struct sk_buff *ax25_rt_build_path(struct sk_buff *skb, ax25_address *src,
 
 	if (skb_headroom(skb) < len) {
 		if ((skbn = skb_realloc_headroom(skb, len)) == NULL) {
-			printk(KERN_CRIT "AX.25: ax25_dg_build_path - out of memory\n");
+;
 			return NULL;
 		}
 

@@ -1470,8 +1470,12 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	size_limit = (uint64_t) BLOCK_MAX * PAGE_SIZE;
 
 	if (mtd->size > size_limit) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Device too large. Limiting size to "
 			"%llu bytes\n", MTDSWAP_PREFIX, size_limit);
+#else
+		;
+#endif
 		use_size = size_limit;
 	}
 
@@ -1498,9 +1502,13 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	swap_size = (uint64_t)(eavailable - spare_cnt) * mtd->erasesize +
 		(header ? PAGE_SIZE : 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Enabling MTD swap on device %lu, size %llu KB, "
 		"%u spare, %u bad blocks\n",
 		MTDSWAP_PREFIX, part, swap_size / 1024, spare_cnt, bad_blocks);
+#else
+	;
+#endif
 
 	d = kzalloc(sizeof(struct mtdswap_dev), GFP_KERNEL);
 	if (!d)

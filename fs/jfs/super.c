@@ -100,7 +100,7 @@ void jfs_error(struct super_block *sb, const char * function, ...)
 	vsnprintf(error_buf, sizeof(error_buf), function, args);
 	va_end(args);
 
-	printk(KERN_ERR "ERROR: (device %s): %s\n", sb->s_id, error_buf);
+;
 
 	jfs_handle_error(sb);
 }
@@ -255,8 +255,8 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
 			else {
 				nls_map = load_nls(args[0].from);
 				if (!nls_map) {
-					printk(KERN_ERR
-					       "JFS: charset not found\n");
+//					printk(KERN_ERR
+;
 					goto cleanup;
 				}
 			}
@@ -272,8 +272,8 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
 			*newLVSize = sb->s_bdev->bd_inode->i_size >>
 				sb->s_blocksize_bits;
 			if (*newLVSize == 0)
-				printk(KERN_ERR
-				       "JFS: Cannot determine volume size\n");
+//				printk(KERN_ERR
+;
 			break;
 		}
 		case Opt_errors:
@@ -294,9 +294,9 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
 				*flag &= ~JFS_ERR_REMOUNT_RO;
 				*flag |= JFS_ERR_PANIC;
 			} else {
-				printk(KERN_ERR
-				       "JFS: %s is an invalid error handler\n",
-				       errors);
+//				printk(KERN_ERR
+//				       "JFS: %s is an invalid error handler\n",
+;
 				goto cleanup;
 			}
 			break;
@@ -314,8 +314,8 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
 		case Opt_usrquota:
 		case Opt_grpquota:
 		case Opt_quota:
-			printk(KERN_ERR
-			       "JFS: quota operations not supported\n");
+//			printk(KERN_ERR
+;
 			break;
 #endif
 		case Opt_uid:
@@ -335,15 +335,15 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
 			char *umask = args[0].from;
 			sbi->umask = simple_strtoul(umask, &umask, 8);
 			if (sbi->umask & ~0777) {
-				printk(KERN_ERR
-				       "JFS: Invalid value of umask\n");
+//				printk(KERN_ERR
+;
 				goto cleanup;
 			}
 			break;
 		}
 		default:
-			printk("jfs: Unrecognized mount option \"%s\" "
-					" or missing value\n", p);
+//			printk("jfs: Unrecognized mount option \"%s\" "
+;
 			goto cleanup;
 		}
 	}
@@ -374,8 +374,8 @@ static int jfs_remount(struct super_block *sb, int *flags, char *data)
 
 	if (newLVSize) {
 		if (sb->s_flags & MS_RDONLY) {
-			printk(KERN_ERR
-		  "JFS: resize requires volume to be mounted read-write\n");
+//			printk(KERN_ERR
+;
 			return -EROFS;
 		}
 		rc = jfs_extendfs(sb, newLVSize, 0);
@@ -457,7 +457,7 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
 #endif
 
 	if (newLVSize) {
-		printk(KERN_ERR "resize option for remount only\n");
+;
 		goto out_kfree;
 	}
 

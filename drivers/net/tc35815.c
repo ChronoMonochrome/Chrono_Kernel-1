@@ -617,8 +617,8 @@ static int tc_mii_probe(struct net_device *dev)
 	for (phy_addr = 0; phy_addr < PHY_MAX_ADDR; phy_addr++) {
 		if (lp->mii_bus->phy_map[phy_addr]) {
 			if (phydev) {
-				printk(KERN_ERR "%s: multiple PHYs found\n",
-				       dev->name);
+//				printk(KERN_ERR "%s: multiple PHYs found\n",
+;
 				return -EINVAL;
 			}
 			phydev = lp->mii_bus->phy_map[phy_addr];
@@ -627,7 +627,7 @@ static int tc_mii_probe(struct net_device *dev)
 	}
 
 	if (!phydev) {
-		printk(KERN_ERR "%s: no PHY found\n", dev->name);
+;
 		return -ENODEV;
 	}
 
@@ -637,13 +637,13 @@ static int tc_mii_probe(struct net_device *dev)
 			     lp->chiptype == TC35815_TX4939 ?
 			     PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
 	if (IS_ERR(phydev)) {
-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
+;
 		return PTR_ERR(phydev);
 	}
-	printk(KERN_INFO "%s: attached PHY driver [%s] "
-		"(mii_bus:phy_addr=%s, id=%x)\n",
-		dev->name, phydev->drv->name, dev_name(&phydev->dev),
-		phydev->phy_id);
+//	printk(KERN_INFO "%s: attached PHY driver [%s] "
+//		"(mii_bus:phy_addr=%s, id=%x)\n",
+//		dev->name, phydev->drv->name, dev_name(&phydev->dev),
+;
 
 	/* mask with MAC supported features */
 	phydev->supported &= PHY_BASIC_FEATURES;
@@ -795,10 +795,10 @@ static int __devinit tc35815_init_one(struct pci_dev *pdev,
 
 	static int printed_version;
 	if (!printed_version++) {
-		printk(version);
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "speed:%d duplex:%d\n",
-			   options.speed, options.duplex);
+;
+//		dev_printk(KERN_DEBUG, &pdev->dev,
+//			   "speed:%d duplex:%d\n",
+;
 	}
 
 	if (!pdev->irq) {
@@ -858,12 +858,12 @@ static int __devinit tc35815_init_one(struct pci_dev *pdev,
 		goto err_out;
 
 	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
-	printk(KERN_INFO "%s: %s at 0x%lx, %pM, IRQ %d\n",
-		dev->name,
-		chip_info[ent->driver_data].name,
-		dev->base_addr,
-		dev->dev_addr,
-		dev->irq);
+//	printk(KERN_INFO "%s: %s at 0x%lx, %pM, IRQ %d\n",
+//		dev->name,
+//		chip_info[ent->driver_data].name,
+//		dev->base_addr,
+//		dev->dev_addr,
+;
 
 	rc = tc_mii_init(dev);
 	if (rc)
@@ -931,9 +931,9 @@ tc35815_init_queues(struct net_device *dev)
 				return -ENOMEM;
 			}
 		}
-		printk(KERN_DEBUG "%s: FD buf %p DataBuf",
-		       dev->name, lp->fd_buf);
-		printk("\n");
+//		printk(KERN_DEBUG "%s: FD buf %p DataBuf",
+;
+;
 	} else {
 		for (i = 0; i < FD_PAGE_NUM; i++)
 			clear_page((void *)((unsigned long)lp->fd_buf +
@@ -996,8 +996,8 @@ tc35815_init_queues(struct net_device *dev)
 				    RX_BUF_SIZE);
 	}
 
-	printk(KERN_DEBUG "%s: TxFD %p RxFD %p FrFD %p\n",
-	       dev->name, lp->tfd_base, lp->rfd_base, lp->fbl_ptr);
+//	printk(KERN_DEBUG "%s: TxFD %p RxFD %p FrFD %p\n",
+;
 	return 0;
 }
 
@@ -1014,7 +1014,7 @@ tc35815_clear_queues(struct net_device *dev)
 			lp->tx_skbs[fdsystem].skb : NULL;
 #ifdef DEBUG
 		if (lp->tx_skbs[i].skb != skb) {
-			printk("%s: tx_skbs mismatch(%d).\n", dev->name, i);
+;
 			panic_queues(dev);
 		}
 #else
@@ -1046,7 +1046,7 @@ tc35815_free_queues(struct net_device *dev)
 				lp->tx_skbs[fdsystem].skb : NULL;
 #ifdef DEBUG
 			if (lp->tx_skbs[i].skb != skb) {
-				printk("%s: tx_skbs mismatch(%d).\n", dev->name, i);
+;
 				panic_queues(dev);
 			}
 #else
@@ -1084,16 +1084,16 @@ tc35815_free_queues(struct net_device *dev)
 static void
 dump_txfd(struct TxFD *fd)
 {
-	printk("TxFD(%p): %08x %08x %08x %08x\n", fd,
-	       le32_to_cpu(fd->fd.FDNext),
-	       le32_to_cpu(fd->fd.FDSystem),
-	       le32_to_cpu(fd->fd.FDStat),
-	       le32_to_cpu(fd->fd.FDCtl));
-	printk("BD: ");
-	printk(" %08x %08x",
-	       le32_to_cpu(fd->bd.BuffData),
-	       le32_to_cpu(fd->bd.BDCtl));
-	printk("\n");
+//	printk("TxFD(%p): %08x %08x %08x %08x\n", fd,
+//	       le32_to_cpu(fd->fd.FDNext),
+//	       le32_to_cpu(fd->fd.FDSystem),
+//	       le32_to_cpu(fd->fd.FDStat),
+;
+;
+//	printk(" %08x %08x",
+//	       le32_to_cpu(fd->bd.BuffData),
+;
+;
 }
 
 static int
@@ -1102,19 +1102,19 @@ dump_rxfd(struct RxFD *fd)
 	int i, bd_count = (le32_to_cpu(fd->fd.FDCtl) & FD_BDCnt_MASK) >> FD_BDCnt_SHIFT;
 	if (bd_count > 8)
 		bd_count = 8;
-	printk("RxFD(%p): %08x %08x %08x %08x\n", fd,
-	       le32_to_cpu(fd->fd.FDNext),
-	       le32_to_cpu(fd->fd.FDSystem),
-	       le32_to_cpu(fd->fd.FDStat),
-	       le32_to_cpu(fd->fd.FDCtl));
+//	printk("RxFD(%p): %08x %08x %08x %08x\n", fd,
+//	       le32_to_cpu(fd->fd.FDNext),
+//	       le32_to_cpu(fd->fd.FDSystem),
+//	       le32_to_cpu(fd->fd.FDStat),
+;
 	if (le32_to_cpu(fd->fd.FDCtl) & FD_CownsFD)
 		return 0;
-	printk("BD: ");
+;
 	for (i = 0; i < bd_count; i++)
-		printk(" %08x %08x",
-		       le32_to_cpu(fd->bd[i].BuffData),
-		       le32_to_cpu(fd->bd[i].BDCtl));
-	printk("\n");
+//		printk(" %08x %08x",
+//		       le32_to_cpu(fd->bd[i].BuffData),
+;
+;
 	return bd_count;
 }
 
@@ -1123,17 +1123,17 @@ static void
 dump_frfd(struct FrFD *fd)
 {
 	int i;
-	printk("FrFD(%p): %08x %08x %08x %08x\n", fd,
-	       le32_to_cpu(fd->fd.FDNext),
-	       le32_to_cpu(fd->fd.FDSystem),
-	       le32_to_cpu(fd->fd.FDStat),
-	       le32_to_cpu(fd->fd.FDCtl));
-	printk("BD: ");
+//	printk("FrFD(%p): %08x %08x %08x %08x\n", fd,
+//	       le32_to_cpu(fd->fd.FDNext),
+//	       le32_to_cpu(fd->fd.FDSystem),
+//	       le32_to_cpu(fd->fd.FDStat),
+;
+;
 	for (i = 0; i < RX_BUF_NUM; i++)
-		printk(" %08x %08x",
-		       le32_to_cpu(fd->bd[i].BuffData),
-		       le32_to_cpu(fd->bd[i].BDCtl));
-	printk("\n");
+//		printk(" %08x %08x",
+//		       le32_to_cpu(fd->bd[i].BuffData),
+;
+;
 }
 
 static void
@@ -1142,11 +1142,11 @@ panic_queues(struct net_device *dev)
 	struct tc35815_local *lp = netdev_priv(dev);
 	int i;
 
-	printk("TxFD base %p, start %u, end %u\n",
-	       lp->tfd_base, lp->tfd_start, lp->tfd_end);
-	printk("RxFD base %p limit %p cur %p\n",
-	       lp->rfd_base, lp->rfd_limit, lp->rfd_cur);
-	printk("FrFD %p\n", lp->fbl_ptr);
+//	printk("TxFD base %p, start %u, end %u\n",
+;
+//	printk("RxFD base %p limit %p cur %p\n",
+;
+;
 	for (i = 0; i < TX_FD_NUM; i++)
 		dump_txfd(&lp->tfd_base[i]);
 	for (i = 0; i < RX_FD_NUM; i++) {
@@ -1160,9 +1160,9 @@ panic_queues(struct net_device *dev)
 
 static void print_eth(const u8 *add)
 {
-	printk(KERN_DEBUG "print_eth(%p)\n", add);
-	printk(KERN_DEBUG " %pM => %pM : %02x%02x\n",
-		add + 6, add, add[12], add[13]);
+;
+//	printk(KERN_DEBUG " %pM => %pM : %02x%02x\n",
+;
 }
 
 static int tc35815_tx_full(struct net_device *dev)
@@ -1186,7 +1186,7 @@ static void tc35815_restart(struct net_device *dev)
 			udelay(1);
 		}
 		if (!timeout)
-			printk(KERN_ERR "%s: BMCR reset failed.\n", dev->name);
+;
 	}
 
 	spin_lock_bh(&lp->rx_lock);
@@ -1231,8 +1231,8 @@ static void tc35815_tx_timeout(struct net_device *dev)
 	struct tc35815_regs __iomem *tr =
 		(struct tc35815_regs __iomem *)dev->base_addr;
 
-	printk(KERN_WARNING "%s: transmit timed out, status %#x\n",
-	       dev->name, tc_readl(&tr->Tx_Stat));
+//	printk(KERN_WARNING "%s: transmit timed out, status %#x\n",
+;
 
 	/* Try to restart the adaptor. */
 	tc35815_schedule_restart(dev);
@@ -1322,7 +1322,7 @@ static int tc35815_send_packet(struct sk_buff *skb, struct net_device *dev)
 		print_eth(skb->data);
 #ifdef DEBUG
 	if (lp->tx_skbs[lp->tfd_start].skb) {
-		printk("%s: tx_skbs conflict.\n", dev->name);
+;
 		panic_queues(dev);
 	}
 #else
@@ -1345,14 +1345,14 @@ static int tc35815_send_packet(struct sk_buff *skb, struct net_device *dev)
 		txfd->fd.FDNext |= cpu_to_le32(FD_Next_EOL);
 		txfd->fd.FDCtl |= cpu_to_le32(FD_FrmOpt_IntTx);
 		if (netif_msg_tx_queued(lp)) {
-			printk("%s: starting TxFD.\n", dev->name);
+;
 			dump_txfd(txfd);
 		}
 		tc_writel(fd_virt_to_bus(lp, txfd), &tr->TxFrmPtr);
 	} else {
 		txfd->fd.FDNext &= cpu_to_le32(~FD_Next_EOL);
 		if (netif_msg_tx_queued(lp)) {
-			printk("%s: queueing TxFD.\n", dev->name);
+;
 			dump_txfd(txfd);
 		}
 	}
@@ -1364,7 +1364,7 @@ static int tc35815_send_packet(struct sk_buff *skb, struct net_device *dev)
 	 */
 	if (tc35815_tx_full(dev)) {
 		if (netif_msg_tx_queued(lp))
-			printk(KERN_WARNING "%s: TxFD Exhausted.\n", dev->name);
+;
 		netif_stop_queue(dev);
 	}
 
@@ -1381,18 +1381,18 @@ static int tc35815_send_packet(struct sk_buff *skb, struct net_device *dev)
 static void tc35815_fatal_error_interrupt(struct net_device *dev, u32 status)
 {
 	static int count;
-	printk(KERN_WARNING "%s: Fatal Error Intterrupt (%#x):",
-	       dev->name, status);
+//	printk(KERN_WARNING "%s: Fatal Error Intterrupt (%#x):",
+;
 	if (status & Int_IntPCI)
-		printk(" IntPCI");
+;
 	if (status & Int_DmParErr)
-		printk(" DmParErr");
+;
 	if (status & Int_IntNRAbt)
-		printk(" IntNRAbt");
-	printk("\n");
+;
+;
 	if (count++ > 100)
 		panic("%s: Too many fatal errors.", dev->name);
-	printk(KERN_WARNING "%s: Resetting ...\n", dev->name);
+;
 	/* Try to restart the adaptor. */
 	tc35815_schedule_restart(dev);
 }
@@ -1469,8 +1469,8 @@ static irqreturn_t tc35815_interrupt(int irq, void *dev_id)
 		if (napi_schedule_prep(&lp->napi))
 			__napi_schedule(&lp->napi);
 		else {
-			printk(KERN_ERR "%s: interrupt taken in poll\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: interrupt taken in poll\n",
+;
 			BUG();
 		}
 		(void)tc_readl(&tr->Int_Src);	/* flush */
@@ -1522,13 +1522,13 @@ tc35815_rx(struct net_device *dev, int limit)
 				  & BD_RxBDID_MASK) >> BD_RxBDID_SHIFT;
 #ifdef DEBUG
 			if (cur_bd >= RX_BUF_NUM) {
-				printk("%s: invalid BDID.\n", dev->name);
+;
 				panic_queues(dev);
 			}
 			BUG_ON(lp->rx_skbs[cur_bd].skb_dma !=
 			       (le32_to_cpu(lp->rfd_cur->bd[0].BuffData) & ~3));
 			if (!lp->rx_skbs[cur_bd].skb) {
-				printk("%s: NULL skb.\n", dev->name);
+;
 				panic_queues(dev);
 			}
 #else
@@ -1578,7 +1578,7 @@ tc35815_rx(struct net_device *dev, int limit)
 				(bdctl & BD_RxBDID_MASK) >> BD_RxBDID_SHIFT;
 #ifdef DEBUG
 			if (id >= RX_BUF_NUM) {
-				printk("%s: invalid BDID.\n", dev->name);
+;
 				panic_queues(dev);
 			}
 #else
@@ -1594,8 +1594,8 @@ tc35815_rx(struct net_device *dev, int limit)
 #ifdef DEBUG
 				bdctl = le32_to_cpu(bd->BDCtl);
 				if (bdctl & BD_CownsBD) {
-					printk("%s: Freeing invalid BD.\n",
-					       dev->name);
+//					printk("%s: Freeing invalid BD.\n",
+;
 					panic_queues(dev);
 				}
 #endif
@@ -1622,7 +1622,7 @@ tc35815_rx(struct net_device *dev, int limit)
 		next_rfd = fd_bus_to_virt(lp,
 					  le32_to_cpu(lp->rfd_cur->fd.FDNext));
 		if (next_rfd < lp->rfd_base || next_rfd > lp->rfd_limit) {
-			printk("%s: RxFD FDNext invalid.\n", dev->name);
+;
 			panic_queues(dev);
 		}
 #endif
@@ -1640,8 +1640,8 @@ tc35815_rx(struct net_device *dev, int limit)
 			lp->rfd_cur = lp->rfd_base;
 #ifdef DEBUG
 		if (lp->rfd_cur != next_rfd)
-			printk("rfd_cur = %p, next_rfd %p\n",
-			       lp->rfd_cur, next_rfd);
+//			printk("rfd_cur = %p, next_rfd %p\n",
+;
 #endif
 	}
 
@@ -1751,7 +1751,7 @@ tc35815_check_tx_stat(struct net_device *dev, int status)
 		msg = "Signal Quality Error.";
 	}
 	if (msg && netif_msg_tx_err(lp))
-		printk(KERN_WARNING "%s: %s (%#x)\n", dev->name, msg, status);
+;
 }
 
 /* This handles TX complete events posted by the device
@@ -1773,7 +1773,7 @@ tc35815_txdone(struct net_device *dev)
 		u32 fdsystem = le32_to_cpu(txfd->fd.FDSystem);
 
 		if (netif_msg_tx_done(lp)) {
-			printk("%s: complete TxFD.\n", dev->name);
+;
 			dump_txfd(txfd);
 		}
 		tc35815_check_tx_stat(dev, status);
@@ -1782,7 +1782,7 @@ tc35815_txdone(struct net_device *dev)
 			lp->tx_skbs[fdsystem].skb : NULL;
 #ifdef DEBUG
 		if (lp->tx_skbs[lp->tfd_end].skb != skb) {
-			printk("%s: tx_skbs mismatch.\n", dev->name);
+;
 			panic_queues(dev);
 		}
 #else
@@ -1801,7 +1801,7 @@ tc35815_txdone(struct net_device *dev)
 		txfd = &lp->tfd_base[lp->tfd_end];
 #ifdef DEBUG
 		if ((fdnext & ~FD_Next_EOL) != fd_virt_to_bus(lp, txfd)) {
-			printk("%s: TxFD FDNext invalid.\n", dev->name);
+;
 			panic_queues(dev);
 		}
 #endif
@@ -1817,7 +1817,7 @@ tc35815_txdone(struct net_device *dev)
 
 #ifdef DEBUG
 				if (!(le32_to_cpu(txfd->fd.FDCtl) & FD_CownsFD)) {
-					printk("%s: TxFD FDCtl invalid.\n", dev->name);
+;
 					panic_queues(dev);
 				}
 #endif
@@ -1830,8 +1830,8 @@ tc35815_txdone(struct net_device *dev)
 				txhead->fd.FDNext |= cpu_to_le32(FD_Next_EOL);
 				txhead->fd.FDCtl |= cpu_to_le32(FD_FrmOpt_IntTx);
 				if (netif_msg_tx_queued(lp)) {
-					printk("%s: start TxFD on queue.\n",
-					       dev->name);
+//					printk("%s: start TxFD on queue.\n",
+;
 					dump_txfd(txfd);
 				}
 				tc_writel(fd_virt_to_bus(lp, txfd), &tr->TxFrmPtr);
@@ -1897,8 +1897,8 @@ static void tc35815_set_cam_entry(struct net_device *dev, int index, unsigned ch
 	saved_addr = tc_readl(&tr->CAM_Adr);
 
 	if (netif_msg_hw(lp))
-		printk(KERN_DEBUG "%s: CAM %d: %pM\n",
-			dev->name, index, addr);
+//		printk(KERN_DEBUG "%s: CAM %d: %pM\n",
+;
 	if (index & 1) {
 		/* read modify write */
 		tc_writel(cam_index - 2, &tr->CAM_Adr);
@@ -2081,7 +2081,7 @@ static void tc35815_chip_reset(struct net_device *dev)
 	i = 0;
 	while (tc_readl(&tr->MAC_Ctl) & MAC_Reset) {
 		if (i++ > 100) {
-			printk(KERN_ERR "%s: MAC reset failed.\n", dev->name);
+;
 			break;
 		}
 		mdelay(1);

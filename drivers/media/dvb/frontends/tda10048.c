@@ -131,9 +131,13 @@
 
 static unsigned int debug;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, fmt, arg...)\
 	do { if (debug >= level)\
 		printk(KERN_DEBUG "tda10048: " fmt, ## arg);\
+#else
+#define d;
+#endif
 	} while (0)
 
 struct tda10048_state {
@@ -226,12 +230,20 @@ static int tda10048_writereg(struct tda10048_state *state, u8 reg, u8 data)
 		.addr = config->demod_address,
 		.flags = 0, .buf = buf, .len = 2 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "%s(reg = 0x%02x, data = 0x%02x)\n", __func__, reg, data);
+#else
+	d;
+#endif
 
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: writereg error (ret == %i)\n", __func__, ret);
+#else
+		;
+#endif
 
 	return (ret != 1) ? -1 : 0;
 }
@@ -248,7 +260,11 @@ static u8 tda10048_readreg(struct tda10048_state *state, u8 reg)
 		{ .addr = config->demod_address,
 			.flags = I2C_M_RD, .buf = b1, .len = 1 } };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "%s(reg = 0x%02x)\n", __func__, reg);
+#else
+	d;
+#endif
 
 	ret = i2c_transfer(state->i2c, msg, 2);
 
@@ -267,7 +283,11 @@ static int tda10048_writeregbulk(struct tda10048_state *state, u8 reg,
 	struct i2c_msg msg;
 	u8 *buf;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "%s(%d, ?, len = %d)\n", __func__, reg, len);
+#else
+	d;
+#endif
 
 	buf = kmalloc(len + 1, GFP_KERNEL);
 	if (buf == NULL) {
@@ -283,8 +303,12 @@ static int tda10048_writeregbulk(struct tda10048_state *state, u8 reg,
 	msg.buf = buf;
 	msg.len = len + 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "%s():  write len = %d\n",
 		__func__, msg.len);
+#else
+	d;
+#endif
 
 	ret = i2c_transfer(state->i2c, &msg, 1);
 	if (ret != 1) {
@@ -305,7 +329,11 @@ static int tda10048_set_phy2(struct dvb_frontend *fe, u32 sample_freq_hz,
 	struct tda10048_state *state = fe->demodulator_priv;
 	u64 t;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (sample_freq_hz == 0)
 		return -EINVAL;
@@ -342,7 +370,11 @@ static int tda10048_set_wref(struct dvb_frontend *fe, u32 sample_freq_hz,
 	u64 t, z;
 	u32 b = 8000000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (sample_freq_hz == 0)
 		return -EINVAL;
@@ -379,7 +411,11 @@ static int tda10048_set_invwref(struct dvb_frontend *fe, u32 sample_freq_hz,
 	u64 t;
 	u32 b = 8000000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (sample_freq_hz == 0)
 		return -EINVAL;
@@ -409,7 +445,11 @@ static int tda10048_set_bandwidth(struct dvb_frontend *fe,
 	enum fe_bandwidth bw)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(bw=%d)\n", __func__, bw);
+#else
+	d;
+#endif
 
 	/* Bandwidth setting may need to be adjusted */
 	switch (bw) {
@@ -436,7 +476,11 @@ static int tda10048_set_if(struct dvb_frontend *fe, enum fe_bandwidth bw)
 	int i;
 	u32 if_freq_khz;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(bw = %d)\n", __func__, bw);
+#else
+	d;
+#endif
 
 	/* based on target bandwidth and clk we calculate pll factors */
 	switch (bw) {
@@ -472,17 +516,41 @@ static int tda10048_set_if(struct dvb_frontend *fe, enum fe_bandwidth bw)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- freq_if_hz = %d\n", state->freq_if_hz);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- xtal_hz = %d\n", state->xtal_hz);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- pll_mfactor = %d\n", state->pll_mfactor);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- pll_nfactor = %d\n", state->pll_nfactor);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- pll_pfactor = %d\n", state->pll_pfactor);
+#else
+	d;
+#endif
 
 	/* Calculate the sample frequency */
 	state->sample_freq = state->xtal_hz * (state->pll_mfactor + 45);
 	state->sample_freq /= (state->pll_nfactor + 1);
 	state->sample_freq /= (state->pll_pfactor + 4);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "- sample_freq = %d\n", state->sample_freq);
+#else
+	d;
+#endif
 
 	/* Update the I/F */
 	tda10048_set_phy2(fe, state->sample_freq, state->freq_if_hz);
@@ -504,9 +572,13 @@ static int tda10048_firmware_upload(struct dvb_frontend *fe)
 		wlen = TDA10048_BULKWRITE_200;
 
 	/* request the firmware, this will block and timeout */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: waiting for firmware upload (%s)...\n",
 		__func__,
 		TDA10048_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 
 	ret = request_firmware(&fw, TDA10048_DEFAULT_FIRMWARE,
 		state->i2c->dev.parent);
@@ -515,9 +587,13 @@ static int tda10048_firmware_upload(struct dvb_frontend *fe)
 			__func__);
 		return -EIO;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: firmware read %Zu bytes.\n",
 			__func__,
 			fw->size);
+#else
+		;
+#endif
 		ret = 0;
 	}
 
@@ -525,7 +601,11 @@ static int tda10048_firmware_upload(struct dvb_frontend *fe)
 		printk(KERN_ERR "%s: firmware incorrect size\n", __func__);
 		ret = -EIO;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: firmware uploading\n", __func__);
+#else
+		;
+#endif
 
 		/* Soft reset */
 		tda10048_writereg(state, TDA10048_CONF_TRISTATE1,
@@ -577,7 +657,11 @@ static int tda10048_firmware_upload(struct dvb_frontend *fe)
 	release_firmware(fw);
 
 	if (ret == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: firmware uploaded\n", __func__);
+#else
+		;
+#endif
 		state->fwloaded = 1;
 	} else
 		printk(KERN_ERR "%s: firmware upload failed\n", __func__);
@@ -589,7 +673,11 @@ static int tda10048_set_inversion(struct dvb_frontend *fe, int inversion)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%d)\n", __func__, inversion);
+#else
+	d;
+#endif
 
 	if (inversion == TDA10048_INVERSION_ON)
 		tda10048_writereg(state, TDA10048_CONF_C1_1,
@@ -705,7 +793,11 @@ static int tda10048_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
 	struct tda10048_config *config = &state->config;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%d)\n", __func__, enable);
+#else
+	d;
+#endif
 
 	if (config->disable_gate_access)
 		return 0;
@@ -721,7 +813,11 @@ static int tda10048_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
 static int tda10048_output_mode(struct dvb_frontend *fe, int serial)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(%d)\n", __func__, serial);
+#else
+	d;
+#endif
 
 	/* Ensure pins are out of tri-state */
 	tda10048_writereg(state, TDA10048_CONF_TRISTATE1, 0x21);
@@ -745,7 +841,11 @@ static int tda10048_set_frontend(struct dvb_frontend *fe,
 {
 	struct tda10048_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(frequency=%d)\n", __func__, p->frequency);
+#else
+	d;
+#endif
 
 	/* Update the I/F pll's if the bandwidth changes */
 	if (p->u.ofdm.bandwidth != state->bandwidth) {
@@ -779,7 +879,11 @@ static int tda10048_init(struct dvb_frontend *fe)
 	struct tda10048_config *config = &state->config;
 	int ret = 0, i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Apply register defaults */
 	for (i = 0; i < ARRAY_SIZE(init_tab); i++)
@@ -813,7 +917,11 @@ static int tda10048_read_status(struct dvb_frontend *fe, fe_status_t *status)
 
 	reg = tda10048_readreg(state, TDA10048_SYNC_STATUS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() status =0x%02x\n", __func__, reg);
+#else
+	d;
+#endif
 
 	if (reg & 0x02)
 		*status |= FE_HAS_CARRIER;
@@ -837,7 +945,11 @@ static int tda10048_read_ber(struct dvb_frontend *fe, u32 *ber)
 	u32 cber_nmax;
 	u64 cber_tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* update cber on interrupt */
 	if (tda10048_readreg(state, TDA10048_SOFT_IT_C3) & 0x01) {
@@ -864,7 +976,11 @@ static int tda10048_read_signal_strength(struct dvb_frontend *fe,
 	struct tda10048_state *state = fe->demodulator_priv;
 	u8 v;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*signal_strength = 65535;
 
@@ -1011,7 +1127,11 @@ static int tda10048_read_snr(struct dvb_frontend *fe, u16 *snr)
 	u8 v;
 	int i, ret = -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	v = tda10048_readreg(state, TDA10048_NP_OUT);
 	for (i = 0; i < ARRAY_SIZE(snr_tab); i++) {
@@ -1029,7 +1149,11 @@ static int tda10048_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*ucblocks = tda10048_readreg(state, TDA10048_UNCOR_CPT_MSB) << 8 |
 		tda10048_readreg(state, TDA10048_UNCOR_CPT_LSB);
@@ -1045,7 +1169,11 @@ static int tda10048_get_frontend(struct dvb_frontend *fe,
 {
 	struct tda10048_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	p->inversion = tda10048_readreg(state, TDA10048_CONF_C1_1)
 		& 0x20 ? INVERSION_ON : INVERSION_OFF;
@@ -1063,7 +1191,11 @@ static int tda10048_get_tune_settings(struct dvb_frontend *fe,
 static void tda10048_release(struct dvb_frontend *fe)
 {
 	struct tda10048_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	kfree(state);
 }
 
@@ -1075,34 +1207,50 @@ static void tda10048_establish_defaults(struct dvb_frontend *fe)
 	/* Validate/default the config */
 	if (config->dtv6_if_freq_khz == 0) {
 		config->dtv6_if_freq_khz = TDA10048_IF_4300;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s() tda10048_config.dtv6_if_freq_khz "
 			"is not set (defaulting to %d)\n",
 			__func__,
 			config->dtv6_if_freq_khz);
+#else
+		;
+#endif
 	}
 
 	if (config->dtv7_if_freq_khz == 0) {
 		config->dtv7_if_freq_khz = TDA10048_IF_4300;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s() tda10048_config.dtv7_if_freq_khz "
 			"is not set (defaulting to %d)\n",
 			__func__,
 			config->dtv7_if_freq_khz);
+#else
+		;
+#endif
 	}
 
 	if (config->dtv8_if_freq_khz == 0) {
 		config->dtv8_if_freq_khz = TDA10048_IF_4300;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s() tda10048_config.dtv8_if_freq_khz "
 			"is not set (defaulting to %d)\n",
 			__func__,
 			config->dtv8_if_freq_khz);
+#else
+		;
+#endif
 	}
 
 	if (config->clk_freq_khz == 0) {
 		config->clk_freq_khz = TDA10048_CLK_16000;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s() tda10048_config.clk_freq_khz "
 			"is not set (defaulting to %d)\n",
 			__func__,
 			config->clk_freq_khz);
+#else
+		;
+#endif
 	}
 }
 
@@ -1113,7 +1261,11 @@ struct dvb_frontend *tda10048_attach(const struct tda10048_config *config,
 {
 	struct tda10048_state *state = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* allocate memory for the internal state */
 	state = kzalloc(sizeof(struct tda10048_state), GFP_KERNEL);

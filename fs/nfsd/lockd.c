@@ -66,7 +66,7 @@ static struct nlmsvc_binding	nfsd_nlm_ops = {
 void
 nfsd_lockd_init(void)
 {
-	dprintk("nfsd: initializing lockd\n");
+;
 	nlmsvc_ops = &nfsd_nlm_ops;
 }
 

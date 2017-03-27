@@ -63,7 +63,11 @@ MODULE_PARM_DESC(bufsize, "DMA buffer size in KB, default: 188, min: 188, max: 1
 
 static int stop_ts_capture(struct budget *budget)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	saa7146_write(budget->dev, MC1, MASK_20);	// DMA3 off
 	SAA7146_IER_DISABLE(budget->dev, MASK_10);
@@ -74,7 +78,11 @@ static int start_ts_capture(struct budget *budget)
 {
 	struct saa7146_dev *dev = budget->dev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	if (!budget->feeding || !budget->fe_synced)
 		return 0;
@@ -222,8 +230,12 @@ static void vpeirq(unsigned long data)
 		budget->buffer_warnings++;
 
 	if (budget->buffer_warnings && time_after(jiffies, budget->buffer_warning_time)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s %s: used %d times >80%% of buffer (%u bytes now)\n",
 			budget->dev->name, __func__, budget->buffer_warnings, count);
+#else
+		;
+#endif
 		budget->buffer_warning_time = jiffies + BUFFER_WARNING_WAIT;
 		budget->buffer_warnings = 0;
 	}
@@ -316,7 +328,11 @@ static int budget_start_feed(struct dvb_demux_feed *feed)
 	struct budget *budget = (struct budget *) demux->priv;
 	int status = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	if (!demux->dmx.frontend)
 		return -EINVAL;
@@ -335,7 +351,11 @@ static int budget_stop_feed(struct dvb_demux_feed *feed)
 	struct budget *budget = (struct budget *) demux->priv;
 	int status = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	spin_lock(&budget->feedlock);
 	if (--budget->feeding == 0)
@@ -349,7 +369,11 @@ static int budget_register(struct budget *budget)
 	struct dvb_demux *dvbdemux = &budget->demux;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	dvbdemux->priv = (void *) budget;
 
@@ -395,7 +419,11 @@ static void budget_unregister(struct budget *budget)
 {
 	struct dvb_demux *dvbdemux = &budget->demux;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	dvb_net_release(&budget->dvb_net);
 
@@ -418,7 +446,11 @@ int ttpci_budget_init(struct budget *budget, struct saa7146_dev *dev,
 
 	memset(budget, 0, sizeof(struct budget));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "dev: %p, budget: %p\n", dev, budget);
+#else
+	d;
+#endif
 
 	budget->card = bi;
 	budget->dev = (struct saa7146_dev *) dev;
@@ -465,11 +497,19 @@ int ttpci_budget_init(struct budget *budget, struct saa7146_dev *dev,
 	budget->buffer_warnings = 0;
 	budget->buffer_warning_time = jiffies;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "%s: buffer type = %s, width = %d, height = %d\n",
 		budget->dev->name,
 		budget->buffer_size > budget->buffer_width * budget->buffer_height ? "odd/even" : "single",
 		budget->buffer_width, budget->buffer_height);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: dma buffer size %u\n", budget->dev->name, budget->buffer_size);
+#else
+	;
+#endif
 
 	ret = dvb_register_adapter(&budget->dvb_adapter, budget->card->name,
 				   owner, &budget->dev->pci->dev, adapter_nums);
@@ -550,7 +590,11 @@ int ttpci_budget_deinit(struct budget *budget)
 {
 	struct saa7146_dev *dev = budget->dev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "budget: %p\n", budget);
+#else
+	d;
+#endif
 
 	budget_unregister(budget);
 
@@ -569,7 +613,11 @@ void ttpci_budget_irq10_handler(struct saa7146_dev *dev, u32 * isr)
 {
 	struct budget *budget = (struct budget *) dev->ext_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "dev: %p, budget: %p\n", dev, budget);
+#else
+	d;
+#endif
 
 	if (*isr & MASK_10)
 		tasklet_schedule(&budget->vpe_tasklet);

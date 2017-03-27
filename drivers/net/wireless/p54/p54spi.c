@@ -725,7 +725,7 @@ static int __init p54spi_init(void)
 
 	ret = spi_register_driver(&p54spi_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "failed to register SPI driver: %d", ret);
+;
 		goto out;
 	}
 

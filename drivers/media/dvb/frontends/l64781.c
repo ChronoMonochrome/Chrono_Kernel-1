@@ -38,9 +38,13 @@ struct l64781_state {
 	unsigned int first:1;
 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "l64781: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 static int debug;
@@ -262,7 +266,11 @@ static int get_frontend(struct dvb_frontend* fe, struct dvb_frontend_parameters*
 		param->u.ofdm.transmission_mode = TRANSMISSION_MODE_8K;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unexpected value for transmission_mode\n");
+#else
+		;
+#endif
 	}
 
 
@@ -285,7 +293,11 @@ static int get_frontend(struct dvb_frontend* fe, struct dvb_frontend_parameters*
 		param->u.ofdm.code_rate_HP = FEC_7_8;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unexpected value for code_rate_HP\n");
+#else
+		;
+#endif
 	}
 	switch((tmp >> 3) & 7) {
 	case 0:
@@ -304,7 +316,11 @@ static int get_frontend(struct dvb_frontend* fe, struct dvb_frontend_parameters*
 		param->u.ofdm.code_rate_LP = FEC_7_8;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unexpected value for code_rate_LP\n");
+#else
+		;
+#endif
 	}
 
 
@@ -320,7 +336,11 @@ static int get_frontend(struct dvb_frontend* fe, struct dvb_frontend_parameters*
 		param->u.ofdm.constellation = QAM_64;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unexpected value for constellation\n");
+#else
+		;
+#endif
 	}
 	switch((tmp >> 2) & 7) {
 	case 0:
@@ -336,7 +356,11 @@ static int get_frontend(struct dvb_frontend* fe, struct dvb_frontend_parameters*
 		param->u.ofdm.hierarchy_information = HIERARCHY_4;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unexpected value for hierarchy\n");
+#else
+		;
+#endif
 	}
 
 
@@ -514,13 +538,21 @@ struct dvb_frontend* l64781_attach(const struct l64781_config* config,
 	 *  broadcast. If nothing responds there is no L64781 on the bus...
 	 */
 	if (reset_and_configure(state) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("No response to reset and configure broadcast...\n");
+#else
+		d;
+#endif
 		goto error;
 	}
 
 	/* The chip always responds to reads */
 	if (i2c_transfer(state->i2c, msg, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("No response to read on I2C bus\n");
+#else
+		d;
+#endif
 		goto error;
 	}
 
@@ -529,7 +561,11 @@ struct dvb_frontend* l64781_attach(const struct l64781_config* config,
 
 	/* Reading the POWER_DOWN register always returns 0 */
 	if (reg0x3e != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Device doesn't look like L64781\n");
+#else
+		d;
+#endif
 		goto error;
 	}
 
@@ -538,7 +574,11 @@ struct dvb_frontend* l64781_attach(const struct l64781_config* config,
 
 	/* Responds to all reads with 0 */
 	if (l64781_readreg(state, 0x1a) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Read 1 returned unexpcted value\n");
+#else
+		d;
+#endif
 		goto error;
 	}
 
@@ -547,7 +587,11 @@ struct dvb_frontend* l64781_attach(const struct l64781_config* config,
 
 	/* Responds with register default value */
 	if (l64781_readreg(state, 0x1a) != 0xa1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Read 2 returned unexpcted value\n");
+#else
+		d;
+#endif
 		goto error;
 	}
 

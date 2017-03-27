@@ -1626,7 +1626,11 @@ static void amd64_debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
 
 	debugf1("F2x%d80 (DRAM Bank Address Mapping): 0x%08x\n", ctrl, dbam);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_DEBUG, EDAC_MC, "DCT%d chip selects:\n", ctrl);
+#else
+	edac_;
+#endif
 
 	/* Dump memory sizes for DIMM and its CSROWs */
 	for (dimm = 0; dimm < 4; dimm++) {
@@ -2736,7 +2740,11 @@ static int __init amd64_edac_init(void)
 {
 	int err = -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AMD64 EDAC driver v%s\n", EDAC_AMD64_VERSION);
+#else
+	;
+#endif
 
 	opstate_init();
 

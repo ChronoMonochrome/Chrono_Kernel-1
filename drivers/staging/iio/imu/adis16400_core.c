@@ -403,8 +403,8 @@ static int adis16400_initial_setup(struct iio_dev *indio_dev)
 		if ((prod_id & 0xF000) != st->variant->product_id)
 			dev_warn(dev, "incorrect id");
 
-		printk(KERN_INFO DRIVER_NAME ": prod_id 0x%04x at CS%d (irq %d)\n",
-		       prod_id, st->us->chip_select, st->us->irq);
+//		printk(KERN_INFO DRIVER_NAME ": prod_id 0x%04x at CS%d (irq %d)\n",
+;
 	}
 	/* use high spi speed if possible */
 	ret = adis16400_spi_read_reg_16(indio_dev,

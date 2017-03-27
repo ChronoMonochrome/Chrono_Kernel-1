@@ -56,7 +56,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
 		return;
 
 	if (block < sbi->s_firstdatazone || block >= sbi->s_nzones) {
-		printk("sysv_free_block: trying to free block not in datazone\n");
+;
 		return;
 	}
 
@@ -64,7 +64,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
 	count = fs16_to_cpu(sbi, *sbi->s_bcache_count);
 
 	if (count > sbi->s_flc_size) {
-		printk("sysv_free_block: flc_count > flc_size\n");
+;
 		unlock_super(sb);
 		return;
 	}
@@ -76,7 +76,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
 		block += sbi->s_block_base;
 		bh = sb_getblk(sb, block);
 		if (!bh) {
-			printk("sysv_free_block: getblk() failed\n");
+;
 			unlock_super(sb);
 			return;
 		}
@@ -118,8 +118,8 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
 	*sbi->s_bcache_count = cpu_to_fs16(sbi, count);
 
 	if (block < sbi->s_firstdatazone || block >= sbi->s_nzones) {
-		printk("sysv_new_block: new block %d is not in data zone\n",
-			block);
+//		printk("sysv_new_block: new block %d is not in data zone\n",
+;
 		goto Enospc;
 	}
 
@@ -128,14 +128,14 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
 
 		block += sbi->s_block_base;
 		if (!(bh = sb_bread(sb, block))) {
-			printk("sysv_new_block: cannot read free-list block\n");
+;
 			/* retry this same block next time */
 			*sbi->s_bcache_count = cpu_to_fs16(sbi, 1);
 			goto Enospc;
 		}
 		count = fs16_to_cpu(sbi, *(__fs16*)bh->b_data);
 		if (count > sbi->s_flc_size) {
-			printk("sysv_new_block: free-list block with >flc_size entries\n");
+;
 			brelse(bh);
 			goto Enospc;
 		}
@@ -215,22 +215,22 @@ done:
 	return count;
 
 Einval:
-	printk("sysv_count_free_blocks: new block %d is not in data zone\n",
-		block);
+//	printk("sysv_count_free_blocks: new block %d is not in data zone\n",
+;
 	goto trust_sb;
 Eio:
-	printk("sysv_count_free_blocks: cannot read free-list block\n");
+;
 	goto trust_sb;
 E2big:
-	printk("sysv_count_free_blocks: >flc_size entries in free-list block\n");
+;
 	if (bh)
 		brelse(bh);
 trust_sb:
 	count = sb_count;
 	goto done;
 Ecount:
-	printk("sysv_count_free_blocks: free block count was %d, "
-		"correcting to %d\n", sb_count, count);
+//	printk("sysv_count_free_blocks: free block count was %d, "
+;
 	if (!(sb->s_flags & MS_RDONLY)) {
 		*sbi->s_free_blocks = cpu_to_fs32(sbi, count);
 		dirty_sb(sb);

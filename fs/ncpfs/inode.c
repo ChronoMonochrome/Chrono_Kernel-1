@@ -252,7 +252,7 @@ ncp_iget(struct super_block *sb, struct ncp_entry_info *info)
 	struct inode *inode;
 
 	if (info == NULL) {
-		printk(KERN_ERR "ncp_iget: info is NULL\n");
+;
 		return NULL;
 	}
 
@@ -284,7 +284,7 @@ ncp_iget(struct super_block *sb, struct ncp_entry_info *info)
 		}
 		insert_inode_hash(inode);
 	} else
-		printk(KERN_ERR "ncp_iget: iget failed!\n");
+;
 	return inode;
 }
 
@@ -300,7 +300,7 @@ ncp_evict_inode(struct inode *inode)
 
 	if (ncp_make_closed(inode) != 0) {
 		/* We can't do anything but complain. */
-		printk(KERN_ERR "ncp_evict_inode: could not close\n");
+;
 	}
 }
 
@@ -596,7 +596,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
 	   now because of PATH_MAX changes.. */
 	if (server->m.time_out < 1) {
 		server->m.time_out = 10;
-		printk(KERN_INFO "You need to recompile your ncpfs utils..\n");
+;
 	}
 	server->m.time_out = server->m.time_out * HZ / 100;
 	server->m.file_mode = (server->m.file_mode & S_IRWXUGO) | S_IFREG;

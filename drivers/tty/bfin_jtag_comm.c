@@ -27,7 +27,11 @@
 #include <linux/tty_flip.h>
 #include <linux/atomic.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; printk(__fmt, ## args); })
+#else
+#define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; ;
+#endif
 
 /* See the Debug/Emulation chapter in the HRM */
 #define EMUDOF   0x00000001	/* EMUDAT_OUT full & valid */

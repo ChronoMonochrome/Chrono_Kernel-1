@@ -198,8 +198,8 @@ struct inode *sysv_iget(struct super_block *sb, unsigned int ino)
 	unsigned int block;
 
 	if (!ino || ino > sbi->s_ninodes) {
-		printk("Bad inode number on dev %s: %d is out of range\n",
-		       sb->s_id, ino);
+//		printk("Bad inode number on dev %s: %d is out of range\n",
+;
 		return ERR_PTR(-EIO);
 	}
 
@@ -211,8 +211,8 @@ struct inode *sysv_iget(struct super_block *sb, unsigned int ino)
 
 	raw_inode = sysv_raw_inode(sb, ino, &bh);
 	if (!raw_inode) {
-		printk("Major problem: unable to read inode from dev %s\n",
-		       inode->i_sb->s_id);
+//		printk("Major problem: unable to read inode from dev %s\n",
+;
 		goto bad_inode;
 	}
 	/* SystemV FS: kludge permissions if ino==SYSV_ROOT_INO ?? */
@@ -260,13 +260,13 @@ static int __sysv_write_inode(struct inode *inode, int wait)
 
 	ino = inode->i_ino;
 	if (!ino || ino > sbi->s_ninodes) {
-		printk("Bad inode number on dev %s: %d is out of range\n",
-		       inode->i_sb->s_id, ino);
+//		printk("Bad inode number on dev %s: %d is out of range\n",
+;
 		return -EIO;
 	}
 	raw_inode = sysv_raw_inode(sb, ino, &bh);
 	if (!raw_inode) {
-		printk("unable to read i-node block\n");
+;
 		return -EIO;
 	}
 

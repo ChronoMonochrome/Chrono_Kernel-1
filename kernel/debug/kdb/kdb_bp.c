@@ -171,11 +171,15 @@ static int _kdb_bp_install(struct pt_regs *regs, kdb_bp_t *bp)
  *	Install kdb_breakpoints prior to returning from the
  *	kernel debugger.  This allows the kdb_breakpoints to be set
  *	upon functions that are used internally by kdb, such as
+#ifdef CONFIG_DEBUG_PRINTK
  *	printk().  This function is only called once per kdb session.
  */
 void kdb_bp_install(struct pt_regs *regs)
 {
 	int i;
+#else
+ *	;
+#endif
 
 	for (i = 0; i < KDB_MAXBPT; i++) {
 		kdb_bp_t *bp = &kdb_breakpoints[i];

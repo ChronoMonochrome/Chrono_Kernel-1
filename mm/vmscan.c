@@ -533,7 +533,11 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
 		if (page_has_private(page)) {
 			if (try_to_free_buffers(page)) {
 				ClearPageDirty(page);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: orphaned page\n", __func__);
+#else
+				;
+#endif
 				return PAGE_CLEAN;
 			}
 		}
@@ -3330,7 +3334,11 @@ int kswapd_run(int nid)
 	if (IS_ERR(pgdat->kswapd)) {
 		/* failure at boot is fatal */
 		BUG_ON(system_state == SYSTEM_BOOTING);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to start kswapd on node %d\n",nid);
+#else
+		;
+#endif
 		ret = -1;
 	}
 	return ret;

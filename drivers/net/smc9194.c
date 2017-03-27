@@ -500,7 +500,7 @@ static netdev_tx_t smc_wait_to_send_packet(struct sk_buff *skb,
 	if ( lp->saved_skb) {
 		/* THIS SHOULD NEVER HAPPEN. */
 		dev->stats.tx_aborted_errors++;
-		printk(CARDNAME": Bad Craziness - sent packet while busy.\n" );
+;
 		return NETDEV_TX_BUSY;
 	}
 	lp->saved_skb = skb;
@@ -525,7 +525,7 @@ static netdev_tx_t smc_wait_to_send_packet(struct sk_buff *skb,
 	numPages =  ((length & 0xfffe) + 6) / 256;
 
 	if (numPages > 7 ) {
-		printk(CARDNAME": Far too big packet error.\n");
+;
 		/* freeing the packet is a good thing here... but should
 		 . any packets of this size get down here?   */
 		dev_kfree_skb (skb);
@@ -617,7 +617,7 @@ static void smc_hardware_send_packet( struct net_device * dev )
 	packet_no = inb( ioaddr + PNR_ARR + 1 );
 	if ( packet_no & 0x80 ) {
 		/* or isn't there?  BAD CHIP! */
-		printk(KERN_DEBUG CARDNAME": Memory allocation failed.\n");
+;
 		dev_kfree_skb_any(skb);
 		lp->saved_skb = NULL;
 		netif_wake_queue(dev);
@@ -911,9 +911,9 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
 	SMC_SELECT_BANK(1);
 	base_address_register = inw( ioaddr + BASE );
 	if ( ioaddr != ( base_address_register >> 3 & 0x3E0 ) )  {
-		printk(CARDNAME ": IOADDR %x doesn't match configuration (%x). "
-			"Probably not a SMC chip\n",
-			ioaddr, base_address_register >> 3 & 0x3E0 );
+//		printk(CARDNAME ": IOADDR %x doesn't match configuration (%x). "
+//			"Probably not a SMC chip\n",
+;
 		/* well, the base address register didn't match.  Must not have
 		   been a SMC chip after all. */
 		retval = -ENODEV;
@@ -931,8 +931,8 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
 	revision_register  = inw( ioaddr + REVISION );
 	if ( !chip_ids[ ( revision_register  >> 4 ) & 0xF  ] ) {
 		/* I don't recognize this chip, so... */
-		printk(CARDNAME ": IO %x: Unrecognized revision register:"
-			" %x, Contact author.\n", ioaddr, revision_register);
+//		printk(CARDNAME ": IO %x: Unrecognized revision register:"
+;
 
 		retval = -ENODEV;
 		goto err_out;
@@ -943,7 +943,7 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
 	   against the hardware address, or do some other tests. */
 
 	if (version_printed++ == 0)
-		printk("%s", version);
+;
 
 	/* fill in some of the fields */
 	dev->base_addr = ioaddr;
@@ -1025,26 +1025,26 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
 		}
 	}
 	if (dev->irq == 0 ) {
-		printk(CARDNAME": Couldn't autodetect your IRQ. Use irq=xx.\n");
+;
 		retval = -ENODEV;
 		goto err_out;
 	}
 
 	/* now, print out the card info, in a short format.. */
 
-	printk("%s: %s(r:%d) at %#3x IRQ:%d INTF:%s MEM:%db ", dev->name,
-		version_string, revision_register & 0xF, ioaddr, dev->irq,
-		if_string, memory );
+//	printk("%s: %s(r:%d) at %#3x IRQ:%d INTF:%s MEM:%db ", dev->name,
+//		version_string, revision_register & 0xF, ioaddr, dev->irq,
+;
 	/*
 	 . Print the Ethernet address
 	*/
-	printk("ADDR: %pM\n", dev->dev_addr);
+;
 
 	/* Grab the IRQ */
       	retval = request_irq(dev->irq, smc_interrupt, 0, DRV_NAME, dev);
       	if (retval) {
-		printk("%s: unable to get IRQ %d (irqval=%d).\n", DRV_NAME,
-			dev->irq, retval);
+//		printk("%s: unable to get IRQ %d (irqval=%d).\n", DRV_NAME,
+;
   	  	goto err_out;
       	}
 
@@ -1066,7 +1066,7 @@ static void print_packet( byte * buf, int length )
 	int remainder;
 	int lines;
 
-	printk("Packet of length %d\n", length);
+;
 	lines = length / 16;
 	remainder = length % 16;
 
@@ -1078,18 +1078,18 @@ static void print_packet( byte * buf, int length )
 
 			a = *(buf ++ );
 			b = *(buf ++ );
-			printk("%02x%02x ", a, b );
+;
 		}
-		printk("\n");
+;
 	}
 	for ( i = 0; i < remainder/2 ; i++ ) {
 		byte a, b;
 
 		a = *(buf ++ );
 		b = *(buf ++ );
-		printk("%02x%02x ", a, b );
+;
 	}
-	printk("\n");
+;
 #endif
 }
 #endif
@@ -1156,9 +1156,9 @@ static void smc_timeout(struct net_device *dev)
 {
 	/* If we get here, some higher level has decided we are broken.
 	   There should really be a "kick me" function call instead. */
-	printk(KERN_WARNING CARDNAME": transmit timed out, %s?\n",
-		tx_done(dev) ? "IRQ conflict" :
-		"network cable problem");
+//	printk(KERN_WARNING CARDNAME": transmit timed out, %s?\n",
+//		tx_done(dev) ? "IRQ conflict" :
+;
 	/* "kick" the adaptor */
 	smc_reset( dev->base_addr );
 	smc_enable( dev->base_addr );
@@ -1230,7 +1230,7 @@ static void smc_rcv(struct net_device *dev)
 		skb = dev_alloc_skb( packet_length + 5);
 
 		if ( skb == NULL ) {
-			printk(KERN_NOTICE CARDNAME ": Low memory, packet dropped.\n");
+;
 			dev->stats.rx_dropped++;
 			goto done;
 		}
@@ -1330,8 +1330,8 @@ static void smc_tx( struct net_device * dev )
 	dev->stats.tx_errors++;
 	if ( tx_status & TS_LOSTCAR ) dev->stats.tx_carrier_errors++;
 	if ( tx_status & TS_LATCOL  ) {
-		printk(KERN_DEBUG CARDNAME
-			": Late collision occurred on last xmit.\n");
+//		printk(KERN_DEBUG CARDNAME
+;
 		dev->stats.tx_window_errors++;
 	}
 #if 0
@@ -1339,7 +1339,7 @@ static void smc_tx( struct net_device * dev )
 #endif
 
 	if ( tx_status & TS_SUCCESS ) {
-		printk(CARDNAME": Successful packet caused interrupt\n");
+;
 	}
 	/* re-enable transmit */
 	SMC_SELECT_BANK( 0 );
@@ -1573,8 +1573,8 @@ MODULE_PARM_DESC(ifport, "SMC 99194 interface port (0-default, 1-TP, 2-AUI)");
 int __init init_module(void)
 {
 	if (io == 0)
-		printk(KERN_WARNING
-		CARDNAME": You shouldn't use auto-probing with insmod!\n" );
+//		printk(KERN_WARNING
+;
 
 	/* copy the parameters from insmod into the device structure */
 	devSMC9194 = smc_init(-1);

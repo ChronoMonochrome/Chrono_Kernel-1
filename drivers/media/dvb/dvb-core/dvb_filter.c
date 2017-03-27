@@ -46,7 +46,11 @@ static void ts_to_pes(ipack *p, u8 *buf) // don't need count (=188)
 	u8 off = 0;
 
 	if (!buf || !p ){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("NULL POINTER IDIOT\n");
+#else
+		;
+#endif
 		return;
 	}
 	if (buf[1]&PAY_START) {
@@ -71,23 +75,43 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 {
 	u8 pct;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk( "Pic header: ");
+#else
+	if (pr) ;
+#endif
 	pic->temporal_reference[field] = (( headr[0] << 2 ) |
 					  (headr[1] & 0x03) )& 0x03ff;
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk( " temp ref: 0x%04x", pic->temporal_reference[field]);
+#else
+	if (pr) ;
+#endif
 
 	pct = ( headr[1] >> 2 ) & 0x07;
 	pic->picture_coding_type[field] = pct;
 	if (pr) {
 		switch(pct){
 			case I_FRAME:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk( "  I-FRAME");
+#else
+				;
+#endif
 				break;
 			case B_FRAME:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk( "  B-FRAME");
+#else
+				;
+#endif
 				break;
 			case P_FRAME:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk( "  P-FRAME");
+#else
+				;
+#endif
 				break;
 		}
 	}
@@ -96,7 +120,11 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 	pic->vinfo.vbv_delay  = (( headr[1] >> 5 ) | ( headr[2] << 3) |
 				 ( (headr[3] & 0x1F) << 11) ) & 0xffff;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk( " vbv delay: 0x%04x", pic->vinfo.vbv_delay);
+#else
+	if (pr) ;
+#endif
 
 	pic->picture_header_parameter = ( headr[3] & 0xe0 ) |
 		((headr[4] & 0x80) >> 3);
@@ -104,8 +132,12 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 	if ( pct == B_FRAME ){
 		pic->picture_header_parameter |= ( headr[4] >> 3 ) & 0x0f;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk( " pic head param: 0x%x",
 			pic->picture_header_parameter);
+#else
+	if (pr) ;
+#endif
 
 	return pct;
 }
@@ -115,28 +147,44 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 /* needs 4 byte input */
 static int read_gop_header(u8 *headr, struct mpg_picture *pic, int pr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk("GOP header: ");
+#else
+	if (pr) ;
+#endif
 
 	pic->time_code  = (( headr[0] << 17 ) | ( headr[1] << 9) |
 			   ( headr[2] << 1 ) | (headr[3] &0x01)) & 0x1ffffff;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk(" time: %d:%d.%d ", (headr[0]>>2)& 0x1F,
 		       ((headr[0]<<4)& 0x30)| ((headr[1]>>4)& 0x0F),
 		       ((headr[1]<<3)& 0x38)| ((headr[2]>>5)& 0x0F));
+#else
+	if (pr) ;
+#endif
 
 	if ( ( headr[3] & 0x40 ) != 0 ){
 		pic->closed_gop = 1;
 	} else {
 		pic->closed_gop = 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk("closed: %d", pic->closed_gop);
+#else
+	if (pr) ;
+#endif
 
 	if ( ( headr[3] & 0x20 ) != 0 ){
 		pic->broken_link = 1;
 	} else {
 		pic->broken_link = 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk(" broken: %d\n", pic->broken_link);
+#else
+	if (pr) ;
+#endif
 
 	return 0;
 }
@@ -149,7 +197,11 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	int sw;
 	int form = -1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	if (pr) printk("Reading sequence header\n");
+#else
+	if (pr) ;
+#endif
 
 	vi->horizontal_size	= ((headr[1] &0xF0) >> 4) | (headr[0] << 4);
 	vi->vertical_size	= ((headr[1] &0x0F) << 8) | (headr[2]);
@@ -159,28 +211,48 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	switch( sw ){
 	case 1:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Videostream: ASPECT: 1:1");
+#else
+			;
+#endif
 		vi->aspect_ratio = 100;
 		break;
 	case 2:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Videostream: ASPECT: 4:3");
+#else
+			;
+#endif
 		vi->aspect_ratio = 133;
 		break;
 	case 3:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Videostream: ASPECT: 16:9");
+#else
+			;
+#endif
 		vi->aspect_ratio = 177;
 		break;
 	case 4:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Videostream: ASPECT: 2.21:1");
+#else
+			;
+#endif
 		vi->aspect_ratio = 221;
 		break;
 
 	case 5 ... 15:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Videostream: ASPECT: reserved");
+#else
+			;
+#endif
 		vi->aspect_ratio = 0;
 		break;
 
@@ -190,50 +262,82 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	}
 
 	if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Size = %dx%d",vi->horizontal_size,vi->vertical_size);
+#else
+		;
+#endif
 
 	sw = (int)(headr[3]&0x0F);
 
 	switch ( sw ) {
 	case 1:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 23.976 fps");
+#else
+			;
+#endif
 		vi->framerate = 23976;
 		form = -1;
 		break;
 	case 2:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 24 fps");
+#else
+			;
+#endif
 		vi->framerate = 24000;
 		form = -1;
 		break;
 	case 3:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 25 fps");
+#else
+			;
+#endif
 		vi->framerate = 25000;
 		form = VIDEO_MODE_PAL;
 		break;
 	case 4:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 29.97 fps");
+#else
+			;
+#endif
 		vi->framerate = 29970;
 		form = VIDEO_MODE_NTSC;
 		break;
 	case 5:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 30 fps");
+#else
+			;
+#endif
 		vi->framerate = 30000;
 		form = VIDEO_MODE_NTSC;
 		break;
 	case 6:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 50 fps");
+#else
+			;
+#endif
 		vi->framerate = 50000;
 		form = VIDEO_MODE_PAL;
 		break;
 	case 7:
 		if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  FRate: 60 fps");
+#else
+			;
+#endif
 		vi->framerate = 60000;
 		form = VIDEO_MODE_NTSC;
 		break;
@@ -245,9 +349,21 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 		= (( headr[6] & 0xF8) >> 3 ) | (( headr[7] & 0x1F )<< 5);
 
 	if (pr){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  BRate: %d Mbit/s",4*(vi->bit_rate)/10000);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  vbvbuffer %d",16*1024*(vi->vbv_buffer_size));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	vi->video_format = form;
@@ -313,27 +429,51 @@ static int get_ainfo(u8 *mbuf, int count, struct dvb_audio_info *ai, int pr)
 	ai->layer = (headr[1] & 0x06) >> 1;
 
 	if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Audiostream: Layer: %d", 4-ai->layer);
+#else
+		;
+#endif
 
 
 	ai->bit_rate = bitrates[(3-ai->layer)][(headr[2] >> 4 )]*1000;
 
 	if (pr){
 		if (ai->bit_rate == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  Bit rate: free");
+#else
+			;
+#endif
 		else if (ai->bit_rate == 0xf)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  BRate: reserved");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  BRate: %d kb/s", ai->bit_rate/1000);
+#else
+			;
+#endif
 	}
 
 	fr = (headr[2] & 0x0c ) >> 2;
 	ai->frequency = freq[fr]*100;
 	if (pr){
 		if (ai->frequency == 3)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  Freq: reserved\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  Freq: %d kHz\n",ai->frequency);
+#else
+			;
+#endif
 
 	}
 	ai->off = c;
@@ -362,7 +502,11 @@ int dvb_filter_get_ac3info(u8 *mbuf, int count, struct dvb_audio_info *ai, int p
 
 	if (!found) return -1;
 	if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Audiostream: AC3");
+#else
+		;
+#endif
 
 	ai->off = c;
 	if (c+5 >= count) return -1;
@@ -374,7 +518,11 @@ int dvb_filter_get_ac3info(u8 *mbuf, int count, struct dvb_audio_info *ai, int p
 	ai->bit_rate = ac3_bitrates[frame >> 1]*1000;
 
 	if (pr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  BRate: %d kb/s", (int) ai->bit_rate/1000);
+#else
+		;
+#endif
 
 	ai->frequency = (headr[2] & 0xc0 ) >> 6;
 	fr = (headr[2] & 0xc0 ) >> 6;

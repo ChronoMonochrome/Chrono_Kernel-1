@@ -423,25 +423,49 @@ static int __init intel_iommu_setup(char *str)
 	while (*str) {
 		if (!strncmp(str, "on", 2)) {
 			dmar_disabled = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Intel-IOMMU: enabled\n");
+#else
+			;
+#endif
 		} else if (!strncmp(str, "off", 3)) {
 			dmar_disabled = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Intel-IOMMU: disabled\n");
+#else
+			;
+#endif
 		} else if (!strncmp(str, "igfx_off", 8)) {
 			dmar_map_gfx = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Intel-IOMMU: disable GFX device mapping\n");
+#else
+			;
+#endif
 		} else if (!strncmp(str, "forcedac", 8)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Intel-IOMMU: Forcing DAC for PCI devices\n");
+#else
+			;
+#endif
 			dmar_forcedac = 1;
 		} else if (!strncmp(str, "strict", 6)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Intel-IOMMU: disable batched IOTLB flush\n");
+#else
+			;
+#endif
 			intel_iommu_strict = 1;
 		} else if (!strncmp(str, "sp_off", 6)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Intel-IOMMU: disable supported super page\n");
+#else
+			;
+#endif
 			intel_iommu_superpage = 0;
 		}
 
@@ -1805,8 +1829,12 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
 		tmp = cmpxchg64_local(&pte->val, 0ULL, pteval);
 		if (tmp) {
 			static int dumps = 5;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "ERROR: DMA PTE for vPFN 0x%lx already set (to %llx not %llx)\n",
 			       iov_pfn, tmp, (unsigned long long)pteval);
+#else
+			;
+#endif
 			if (dumps) {
 				dumps--;
 				debug_dma_dump_mappings(NULL);
@@ -2100,14 +2128,22 @@ static int iommu_prepare_identity_map(struct pci_dev *pdev,
 	   range which is reserved in E820, so which didn't get set
 	   up to start with in si_domain */
 	if (domain == si_domain && hw_pass_through) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Ignoring identity map for HW passthrough device %s [0x%Lx - 0x%Lx]\n",
 		       pci_name(pdev), start, end);
+#else
+		;
+#endif
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "IOMMU: Setting identity map for device %s [0x%Lx - 0x%Lx]\n",
 	       pci_name(pdev), start, end);
+#else
+	;
+#endif
 	
 	if (end < start) {
 		WARN(1, "Your BIOS is broken; RMRR ends before it starts!\n"
@@ -2165,7 +2201,11 @@ static inline void iommu_prepare_isa(void)
 	if (!pdev)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOMMU: Prepare 0-16MiB unity mapping for LPC\n");
+#else
+	;
+#endif
 	ret = iommu_prepare_identity_map(pdev, 0, 16*1024*1024 - 1);
 
 	if (ret)
@@ -2354,8 +2394,12 @@ static int __init iommu_prepare_static_identity_mapping(int hw)
 		if (IS_BRIDGE_HOST_DEVICE(pdev))
 			continue;
 		if (iommu_should_identity_map(pdev, 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
 			       hw ? "hardware" : "software", pci_name(pdev));
+#else
+			;
+#endif
 
 			ret = domain_add_dev_info(si_domain, pdev,
 						     hw ? CONTEXT_TT_PASS_THROUGH :
@@ -2472,17 +2516,25 @@ static int __init init_dmars(void)
 			 */
 			iommu->flush.flush_context = __iommu_flush_context;
 			iommu->flush.flush_iotlb = __iommu_flush_iotlb;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IOMMU %d 0x%Lx: using Register based "
 			       "invalidation\n",
 				iommu->seq_id,
 			       (unsigned long long)drhd->reg_base_addr);
+#else
+			;
+#endif
 		} else {
 			iommu->flush.flush_context = qi_flush_context;
 			iommu->flush.flush_iotlb = qi_flush_iotlb;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IOMMU %d 0x%Lx: using Queued "
 			       "invalidation\n",
 				iommu->seq_id,
 			       (unsigned long long)drhd->reg_base_addr);
+#else
+			;
+#endif
 		}
 	}
 
@@ -2503,7 +2555,11 @@ static int __init init_dmars(void)
 	if (iommu_identity_mapping) {
 		ret = iommu_prepare_static_identity_mapping(hw_pass_through);
 		if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "Failed to setup IOMMU pass-through\n");
+#else
+			;
+#endif
 			goto error;
 		}
 	}
@@ -2521,7 +2577,11 @@ static int __init init_dmars(void)
 	 *    endfor
 	 * endfor
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOMMU: Setting RMRR:\n");
+#else
+	;
+#endif
 	for_each_rmrr_units(rmrr) {
 		for (i = 0; i < rmrr->devices_cnt; i++) {
 			pdev = rmrr->devices[i];
@@ -2692,8 +2752,12 @@ static int iommu_no_mapping(struct device *dev)
 			 * to non-identity mapping.
 			 */
 			domain_remove_one_dev_info(si_domain, pdev);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "32bit %s uses non-identity mapping\n",
 			       pci_name(pdev));
+#else
+			;
+#endif
 			return 0;
 		}
 	} else {
@@ -2708,8 +2772,12 @@ static int iommu_no_mapping(struct device *dev)
 						  CONTEXT_TT_PASS_THROUGH :
 						  CONTEXT_TT_MULTI_LEVEL);
 			if (!ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "64bit %s uses identity mapping\n",
 				       pci_name(pdev));
+#else
+				;
+#endif
 				return 1;
 			}
 		}
@@ -3480,8 +3548,12 @@ int __init intel_iommu_init(void)
 		iommu_exit_mempool();
 		return ret;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	"PCI-DMA: Intel(R) Virtualization Technology for Directed I/O\n");
+#else
+	;
+#endif
 
 	init_timer(&unmap_timer);
 #ifdef CONFIG_SWIOTLB
@@ -3925,12 +3997,20 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
 	 * Mobile 4 Series Chipset neglects to set RWBF capability,
 	 * but needs it:
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+#else
+	;
+#endif
 	rwbf_quirk = 1;
 
 	/* https://bugzilla.redhat.com/show_bug.cgi?id=538163 */
 	if (dev->revision == 0x07) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
+#else
+		;
+#endif
 		dmar_map_gfx = 0;
 	}
 }
@@ -3955,7 +4035,11 @@ static void __devinit quirk_calpella_no_shadow_gtt(struct pci_dev *dev)
 		return;
 
 	if (!(ggc & GGC_MEMORY_VT_ENABLED)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DMAR: BIOS has allocated no shadow GTT; disabling IOMMU for graphics\n");
+#else
+		;
+#endif
 		dmar_map_gfx = 0;
 	}
 }
@@ -4018,6 +4102,10 @@ static void __init check_tylersburg_isoch(void)
 		return;
 	}
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "DMAR: Recommended TLB entries for ISOCH unit is 16; your BIOS set %d\n",
+#else
+	;
+#endif
 	       vtisochctrl);
 }

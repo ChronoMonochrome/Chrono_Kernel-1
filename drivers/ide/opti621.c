@@ -104,7 +104,11 @@ static void opti621_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	/* check CLK speed */
 	clk = read_reg(STRAP_REG) & 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: CLK = %d MHz\n", hwif->name, clk ? 25 : 33);
+#else
+	;
+#endif
 
 	tim  = data_rec_timings[clk][pio];
 	misc = addr_timings[clk][addr_pio];

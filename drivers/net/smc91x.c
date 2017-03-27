@@ -152,19 +152,19 @@ MODULE_ALIAS("platform:smc91x");
 #define DBG(n, args...)					\
 	do {						\
 		if (SMC_DEBUG >= (n))			\
-			printk(args);	\
+;
 	} while (0)
 
-#define PRINTK(args...)   printk(args)
-#else
-#define DBG(n, args...)   do { } while(0)
-#define PRINTK(args...)   printk(KERN_DEBUG args)
-#endif
-
-#if SMC_DEBUG > 3
-static void PRINT_PKT(u_char *buf, int length)
-{
-	int i;
+//#define PRINTK(args...)   printk(args)
+//#else
+//#define DBG(n, args...)   do { } while(0)
+//#define PRINTK(args...)   printk(KERN_DEBUG args)
+//#endif
+//
+//#if SMC_DEBUG > 3
+//static void PRINT_PKT(u_char *buf, int length)
+//{
+;
 	int remainder;
 	int lines;
 
@@ -177,17 +177,17 @@ static void PRINT_PKT(u_char *buf, int length)
 			u_char a, b;
 			a = *buf++;
 			b = *buf++;
-			printk("%02x%02x ", a, b);
+;
 		}
-		printk("\n");
+;
 	}
 	for (i = 0; i < remainder/2 ; i++) {
 		u_char a, b;
 		a = *buf++;
 		b = *buf++;
-		printk("%02x%02x ", a, b);
+;
 	}
-	printk("\n");
+;
 }
 #else
 #define PRINT_PKT(x...)  do { } while(0)
@@ -226,8 +226,8 @@ static void PRINT_PKT(u_char *buf, int length)
 		unsigned long timeout = jiffies + 2;			\
 		while (SMC_GET_MMU_CMD(lp) & MC_BUSY) {		\
 			if (time_after(jiffies, timeout)) {		\
-				printk("%s: timeout %s line %d\n",	\
-					dev->name, __FILE__, __LINE__);	\
+//				printk("%s: timeout %s line %d\n",	\
+;
 				break;					\
 			}						\
 			cpu_relax();					\
@@ -433,8 +433,8 @@ static inline void  smc_rcv(struct net_device *dev)
 		}
 		if (packet_len < 6) {
 			/* bloody hardware */
-			printk(KERN_ERR "%s: fubar (rxlen %u status %x\n",
-					dev->name, packet_len, status);
+//			printk(KERN_ERR "%s: fubar (rxlen %u status %x\n",
+;
 			status |= RS_TOOSHORT;
 		}
 		SMC_WAIT_MMU_BUSY(lp);
@@ -465,8 +465,8 @@ static inline void  smc_rcv(struct net_device *dev)
 		 */
 		skb = dev_alloc_skb(packet_len);
 		if (unlikely(skb == NULL)) {
-			printk(KERN_NOTICE "%s: Low memory, packet dropped.\n",
-				dev->name);
+//			printk(KERN_NOTICE "%s: Low memory, packet dropped.\n",
+;
 			SMC_WAIT_MMU_BUSY(lp);
 			SMC_SET_MMU_CMD(lp, MC_RELEASE);
 			dev->stats.rx_dropped++;
@@ -570,7 +570,7 @@ static void smc_hardware_send_pkt(unsigned long data)
 
 	packet_no = SMC_GET_AR(lp);
 	if (unlikely(packet_no & AR_FAILED)) {
-		printk("%s: Memory allocation failed.\n", dev->name);
+;
 		dev->stats.tx_errors++;
 		dev->stats.tx_fifo_errors++;
 		smc_special_unlock(&lp->lock, flags);
@@ -656,7 +656,7 @@ static int smc_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	 */
 	numPages = ((skb->len & ~1) + (6 - 1)) >> 8;
 	if (unlikely(numPages > 7)) {
-		printk("%s: Far too big packet error.\n", dev->name);
+;
 		dev->stats.tx_errors++;
 		dev->stats.tx_dropped++;
 		dev_kfree_skb(skb);
@@ -742,9 +742,9 @@ static void smc_tx(struct net_device *dev)
 			"late collision" : "too many collisions");
 		dev->stats.tx_window_errors++;
 		if (!(dev->stats.tx_window_errors & 63) && net_ratelimit()) {
-			printk(KERN_INFO "%s: unexpectedly large number of "
-			       "bad collisions. Please check duplex "
-			       "setting.\n", dev->name);
+//			printk(KERN_INFO "%s: unexpectedly large number of "
+//			       "bad collisions. Please check duplex "
+;
 		}
 	}
 
@@ -1057,7 +1057,7 @@ static void smc_phy_configure(struct work_struct *work)
 		goto smc_phy_configure_exit;
 
 	if (smc_phy_reset(dev, phyaddr)) {
-		printk("%s: PHY reset timed out\n", dev->name);
+;
 		goto smc_phy_configure_exit;
 	}
 
@@ -1084,7 +1084,7 @@ static void smc_phy_configure(struct work_struct *work)
 	my_phy_caps = smc_phy_read(dev, phyaddr, MII_BMSR);
 
 	if (!(my_phy_caps & BMSR_ANEGCAPABLE)) {
-		printk(KERN_INFO "Auto negotiation NOT supported\n");
+;
 		smc_phy_fixed(dev);
 		goto smc_phy_configure_exit;
 	}
@@ -1181,8 +1181,8 @@ static void smc_10bt_check_media(struct net_device *dev, int init)
 			netif_carrier_on(dev);
 		}
 		if (netif_msg_link(lp))
-			printk(KERN_INFO "%s: link %s\n", dev->name,
-			       new_carrier ? "up" : "down");
+//			printk(KERN_INFO "%s: link %s\n", dev->name,
+;
 	}
 }
 
@@ -1884,9 +1884,9 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 	DBG(2, "%s: bank signature probe returned 0x%04x\n", CARDNAME, val);
 	if ((val & 0xFF00) != 0x3300) {
 		if ((val & 0xFF) == 0x33) {
-			printk(KERN_WARNING
-				"%s: Detected possible byte-swapped interface"
-				" at IOADDR %p\n", CARDNAME, ioaddr);
+//			printk(KERN_WARNING
+//				"%s: Detected possible byte-swapped interface"
+;
 		}
 		retval = -ENODEV;
 		goto err_out;
@@ -1913,8 +1913,8 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 	val = SMC_GET_BASE(lp);
 	val = ((val & 0x1F00) >> 3) << SMC_IO_SHIFT;
 	if (((unsigned int)ioaddr & (0x3e0 << SMC_IO_SHIFT)) != val) {
-		printk("%s: IOADDR %p doesn't match configuration (%x).\n",
-			CARDNAME, ioaddr, val);
+//		printk("%s: IOADDR %p doesn't match configuration (%x).\n",
+;
 	}
 
 	/*
@@ -1928,9 +1928,9 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 	version_string = chip_ids[ (revision_register >> 4) & 0xF];
 	if (!version_string || (revision_register & 0xff00) != 0x3300) {
 		/* I don't recognize this chip, so... */
-		printk("%s: IO %p: Unrecognized revision register 0x%04x"
-			", Contact author.\n", CARDNAME,
-			ioaddr, revision_register);
+//		printk("%s: IO %p: Unrecognized revision register 0x%04x"
+//			", Contact author.\n", CARDNAME,
+;
 
 		retval = -ENODEV;
 		goto err_out;
@@ -1938,7 +1938,7 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 
 	/* At this point I'll assume that the chip is an SMC91x. */
 	if (version_printed++ == 0)
-		printk("%s", version);
+;
 
 	/* fill in some of the fields */
 	dev->base_addr = (unsigned long)ioaddr;
@@ -1981,8 +1981,8 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 		}
 	}
 	if (dev->irq == 0) {
-		printk("%s: Couldn't autodetect your IRQ. Use irq=xx.\n",
-			dev->name);
+//		printk("%s: Couldn't autodetect your IRQ. Use irq=xx.\n",
+;
 		retval = -ENODEV;
 		goto err_out;
 	}
@@ -2046,24 +2046,24 @@ static int __devinit smc_probe(struct net_device *dev, void __iomem *ioaddr,
 	retval = register_netdev(dev);
 	if (retval == 0) {
 		/* now, print out the card info, in a short format.. */
-		printk("%s: %s (rev %d) at %p IRQ %d",
-			dev->name, version_string, revision_register & 0x0f,
-			lp->base, dev->irq);
+//		printk("%s: %s (rev %d) at %p IRQ %d",
+//			dev->name, version_string, revision_register & 0x0f,
+;
 
 		if (dev->dma != (unsigned char)-1)
-			printk(" DMA %d", dev->dma);
+;
 
-		printk("%s%s\n",
-			lp->cfg.flags & SMC91X_NOWAIT ? " [nowait]" : "",
-			THROTTLE_TX_PKTS ? " [throttle_tx]" : "");
+//		printk("%s%s\n",
+//			lp->cfg.flags & SMC91X_NOWAIT ? " [nowait]" : "",
+;
 
 		if (!is_valid_ether_addr(dev->dev_addr)) {
-			printk("%s: Invalid ethernet MAC address.  Please "
-			       "set using ifconfig\n", dev->name);
+//			printk("%s: Invalid ethernet MAC address.  Please "
+;
 		} else {
 			/* Print the Ethernet address */
-			printk("%s: Ethernet addr: %pM\n",
-			       dev->name, dev->dev_addr);
+//			printk("%s: Ethernet addr: %pM\n",
+;
 		}
 
 		if (lp->phy_type == 0) {
@@ -2181,7 +2181,7 @@ static inline void smc_request_datacs(struct platform_device *pdev, struct net_d
 			return;
 
 		if(!request_mem_region(res->start, SMC_DATA_EXTENT, CARDNAME)) {
-			printk(KERN_INFO "%s: failed to request datacs memory region.\n", CARDNAME);
+;
 			return;
 		}
 
@@ -2228,7 +2228,7 @@ static int __devinit smc_drv_probe(struct platform_device *pdev)
 
 	ndev = alloc_etherdev(sizeof(struct smc_local));
 	if (!ndev) {
-		printk("%s: could not allocate device.\n", CARDNAME);
+;
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -2325,7 +2325,7 @@ static int __devinit smc_drv_probe(struct platform_device *pdev)
  out_free_netdev:
 	free_netdev(ndev);
  out:
-	printk("%s: not found (%d).\n", CARDNAME, ret);
+;
 
 	return ret;
 }

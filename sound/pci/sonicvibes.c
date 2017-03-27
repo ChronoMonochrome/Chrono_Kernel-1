@@ -273,8 +273,12 @@ static inline void snd_sonicvibes_setdmaa(struct sonicvibes * sonic,
 	outl(count, sonic->dmaa_port + SV_DMA_COUNT0);
 	outb(0x18, sonic->dmaa_port + SV_DMA_MODE);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "program dmaa: addr = 0x%x, paddr = 0x%x\n",
 	       addr, inl(sonic->dmaa_port + SV_DMA_ADDR0));
+#else
+	;
+#endif
 #endif
 }
 
@@ -289,8 +293,12 @@ static inline void snd_sonicvibes_setdmac(struct sonicvibes * sonic,
 	outl(count, sonic->dmac_port + SV_DMA_COUNT0);
 	outb(0x14, sonic->dmac_port + SV_DMA_MODE);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "program dmac: addr = 0x%x, paddr = 0x%x\n",
 	       addr, inl(sonic->dmac_port + SV_DMA_ADDR0));
+#else
+	;
+#endif
 #endif
 }
 
@@ -357,105 +365,369 @@ static unsigned char snd_sonicvibes_in(struct sonicvibes * sonic, unsigned char 
 #if 0
 static void snd_sonicvibes_debug(struct sonicvibes * sonic)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "SV REGS:          INDEX = 0x%02x  ", inb(SV_REG(sonic, INDEX)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("                 STATUS = 0x%02x\n", inb(SV_REG(sonic, STATUS)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x00: left input      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x00));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x20: synth rate low  = 0x%02x\n", snd_sonicvibes_in(sonic, 0x20));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x01: right input     = 0x%02x  ", snd_sonicvibes_in(sonic, 0x01));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x21: synth rate high = 0x%02x\n", snd_sonicvibes_in(sonic, 0x21));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x02: left AUX1       = 0x%02x  ", snd_sonicvibes_in(sonic, 0x02));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x22: ADC clock       = 0x%02x\n", snd_sonicvibes_in(sonic, 0x22));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x03: right AUX1      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x03));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x23: ADC alt rate    = 0x%02x\n", snd_sonicvibes_in(sonic, 0x23));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x04: left CD         = 0x%02x  ", snd_sonicvibes_in(sonic, 0x04));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x24: ADC pll M       = 0x%02x\n", snd_sonicvibes_in(sonic, 0x24));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x05: right CD        = 0x%02x  ", snd_sonicvibes_in(sonic, 0x05));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x25: ADC pll N       = 0x%02x\n", snd_sonicvibes_in(sonic, 0x25));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x06: left line       = 0x%02x  ", snd_sonicvibes_in(sonic, 0x06));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x26: Synth pll M     = 0x%02x\n", snd_sonicvibes_in(sonic, 0x26));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x07: right line      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x07));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x27: Synth pll N     = 0x%02x\n", snd_sonicvibes_in(sonic, 0x27));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x08: MIC             = 0x%02x  ", snd_sonicvibes_in(sonic, 0x08));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x28: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x28));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x09: Game port       = 0x%02x  ", snd_sonicvibes_in(sonic, 0x09));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x29: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x29));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0a: left synth      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0a));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2a: MPU401          = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2a));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0b: right synth     = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0b));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2b: drive ctrl      = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2b));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0c: left AUX2       = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0c));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2c: SRS space       = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2c));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0d: right AUX2      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0d));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2d: SRS center      = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2d));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0e: left analog     = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0e));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2e: wave source     = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2e));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x0f: right analog    = 0x%02x  ", snd_sonicvibes_in(sonic, 0x0f));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x2f: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x2f));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x10: left PCM        = 0x%02x  ", snd_sonicvibes_in(sonic, 0x10));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x30: analog power    = 0x%02x\n", snd_sonicvibes_in(sonic, 0x30));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x11: right PCM       = 0x%02x  ", snd_sonicvibes_in(sonic, 0x11));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x31: analog power    = 0x%02x\n", snd_sonicvibes_in(sonic, 0x31));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x12: DMA data format = 0x%02x  ", snd_sonicvibes_in(sonic, 0x12));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x32: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x32));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x13: P/C enable      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x13));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x33: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x33));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x14: U/D button      = 0x%02x  ", snd_sonicvibes_in(sonic, 0x14));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x34: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x34));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x15: revision        = 0x%02x  ", snd_sonicvibes_in(sonic, 0x15));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x35: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x35));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x16: ADC output ctrl = 0x%02x  ", snd_sonicvibes_in(sonic, 0x16));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x36: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x36));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x17: ---             = 0x%02x  ", snd_sonicvibes_in(sonic, 0x17));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x37: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x37));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x18: DMA A upper cnt = 0x%02x  ", snd_sonicvibes_in(sonic, 0x18));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x38: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x38));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x19: DMA A lower cnt = 0x%02x  ", snd_sonicvibes_in(sonic, 0x19));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x39: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x39));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1a: ---             = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1a));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3a: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3a));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1b: ---             = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1b));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3b: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3b));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1c: DMA C upper cnt = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1c));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3c: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3c));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1d: DMA C upper cnt = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1d));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3d: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3d));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1e: PCM rate low    = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1e));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3e: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3e));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  0x1f: PCM rate high   = 0x%02x  ", snd_sonicvibes_in(sonic, 0x1f));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  0x3f: ---             = 0x%02x\n", snd_sonicvibes_in(sonic, 0x3f));
+#else
+	;
+#endif
 }
 
 #endif
@@ -511,8 +783,16 @@ static void snd_sonicvibes_pll(unsigned int rate,
 	*res_m = m;
 	*res_n = n;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "metric = %i, xm = %i, xn = %i\n", metric, xm, xn);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pll: m = 0x%x, r = 0x%x, n = 0x%x\n", reg, m, r, n);
+#else
+	;
+#endif
 #endif
 }
 
@@ -1309,12 +1589,20 @@ static int __devinit snd_sonicvibes_create(struct snd_card *card,
 	if (!dmaa) {
 		dmaa = dmaio;
 		dmaio += 0x10;
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "BIOS did not allocate DDMA channel A i/o, allocated at 0x%x\n", dmaa);
+#else
+		;
+#endif
 	}
 	if (!dmac) {
 		dmac = dmaio;
 		dmaio += 0x10;
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "BIOS did not allocate DDMA channel C i/o, allocated at 0x%x\n", dmac);
+#else
+		;
+#endif
 	}
 	pci_write_config_dword(pci, 0x40, dmaa);
 	pci_write_config_dword(pci, 0x48, dmac);

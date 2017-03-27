@@ -529,8 +529,12 @@ static int __init gru_init(void)
 #endif
 	gru_start_vaddr = __va(gru_start_paddr);
 	gru_end_paddr = gru_start_paddr + GRU_MAX_BLADES * GRU_SIZE;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "GRU space: 0x%lx - 0x%lx\n",
 	       gru_start_paddr, gru_end_paddr);
+#else
+	;
+#endif
 	ret = misc_register(&gru_miscdev);
 	if (ret) {
 		printk(KERN_ERR "%s: misc_register failed\n",
@@ -556,8 +560,12 @@ static int __init gru_init(void)
 
 	gru_kservices_init();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: v%s\n", GRU_DRIVER_ID_STR,
 	       GRU_DRIVER_VERSION_STR);
+#else
+	;
+#endif
 	return 0;
 
 exit3:

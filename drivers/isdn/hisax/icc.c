@@ -34,7 +34,11 @@ ICCVersion(struct IsdnCardState *cs, char *s)
 	int val;
 
 	val = cs->readisac(cs, ICC_RBCH);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s ICC version (%x): %s\n", s, val, ICCVer[(val >> 5) & 3]);
+#else
+	;
+#endif
 }
 
 static void
@@ -215,7 +219,11 @@ icc_interrupt(struct IsdnCardState *cs, u_char val)
 			if ((count = cs->rcvidx) > 0) {
 				cs->rcvidx = 0;
 				if (!(skb = alloc_skb(count, GFP_ATOMIC)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HiSax: D receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), cs->rcvbuf, count);
 					skb_queue_tail(&cs->rq, skb);
@@ -282,11 +290,19 @@ icc_interrupt(struct IsdnCardState *cs, u_char val)
 			debugl1(cs, "ICC EXIR %02x", exval);
 		if (exval & 0x80) {  /* XMR */
 			debugl1(cs, "ICC XMR");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: ICC XMR\n");
+#else
+			;
+#endif
 		}
 		if (exval & 0x40) {  /* XDU */
 			debugl1(cs, "ICC XDU");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: ICC XDU\n");
+#else
+			;
+#endif
 #ifdef ERROR_STATISTIC
 			cs->err_tx++;
 #endif
@@ -299,7 +315,11 @@ icc_interrupt(struct IsdnCardState *cs, u_char val)
 				cs->tx_cnt = 0;
 				icc_fill_fifo(cs);
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: ICC XDU no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "ICC XDU no skb");
 			}
 		}
@@ -606,7 +626,11 @@ dbusy_timer_handler(struct IsdnCardState *cs)
 				cs->tx_cnt = 0;
 				cs->tx_skb = NULL;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: ICC D-Channel Busy no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "D-Channel Busy no skb");
 			}
 			cs->writeisac(cs, ICC_CMDR, 0x01); /* Transmitter reset */

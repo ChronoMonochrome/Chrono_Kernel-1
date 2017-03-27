@@ -1400,12 +1400,12 @@ MODULE_PARM_DESC(addr, "The DECnet address of this machine: area,node");
 void __init dn_dev_init(void)
 {
 	if (addr[0] > 63 || addr[0] < 0) {
-		printk(KERN_ERR "DECnet: Area must be between 0 and 63");
+;
 		return;
 	}
 
 	if (addr[1] > 1023 || addr[1] < 0) {
-		printk(KERN_ERR "DECnet: Node must be between 0 and 1023");
+;
 		return;
 	}
 

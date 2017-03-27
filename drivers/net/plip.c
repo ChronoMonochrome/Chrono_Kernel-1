@@ -424,8 +424,8 @@ plip_bh_timeout_error(struct net_device *dev, struct net_local *nl,
 				return TIMEOUT;
 			}
 			c0 = read_status(dev);
-			printk(KERN_WARNING "%s: transmit timeout(%d,%02x)\n",
-			       dev->name, snd->state, c0);
+//			printk(KERN_WARNING "%s: transmit timeout(%d,%02x)\n",
+;
 		} else
 			error = HS_TIMEOUT;
 		dev->stats.tx_errors++;
@@ -443,8 +443,8 @@ plip_bh_timeout_error(struct net_device *dev, struct net_local *nl,
 				return TIMEOUT;
 			}
 			c0 = read_status(dev);
-			printk(KERN_WARNING "%s: receive timeout(%d,%02x)\n",
-			       dev->name, rcv->state, c0);
+//			printk(KERN_WARNING "%s: receive timeout(%d,%02x)\n",
+;
 		}
 		dev->stats.rx_dropped++;
 	}
@@ -596,7 +596,7 @@ plip_receive_packet(struct net_device *dev, struct net_local *nl,
 		disable_parport_interrupts (dev);
 		write_data (dev, 0x01); /* send ACK */
 		if (net_debug > 2)
-			printk(KERN_DEBUG "%s: receive start\n", dev->name);
+;
 		rcv->state = PLIP_PK_LENGTH_LSB;
 		rcv->nibble = PLIP_NB_BEGIN;
 
@@ -626,13 +626,13 @@ plip_receive_packet(struct net_device *dev, struct net_local *nl,
 			return TIMEOUT;
 		if (rcv->length.h > dev->mtu + dev->hard_header_len ||
 		    rcv->length.h < 8) {
-			printk(KERN_WARNING "%s: bogus packet size %d.\n", dev->name, rcv->length.h);
+;
 			return ERROR;
 		}
 		/* Malloc up new buffer. */
 		rcv->skb = dev_alloc_skb(rcv->length.h + 2);
 		if (rcv->skb == NULL) {
-			printk(KERN_ERR "%s: Memory squeeze.\n", dev->name);
+;
 			return ERROR;
 		}
 		skb_reserve(rcv->skb, 2);	/* Align IP on 16 byte boundaries */
@@ -661,7 +661,7 @@ plip_receive_packet(struct net_device *dev, struct net_local *nl,
 		if (rcv->data != rcv->checksum) {
 			dev->stats.rx_crc_errors++;
 			if (net_debug)
-				printk(KERN_DEBUG "%s: checksum error\n", dev->name);
+;
 			return ERROR;
 		}
 		rcv->state = PLIP_PK_DONE;
@@ -674,7 +674,7 @@ plip_receive_packet(struct net_device *dev, struct net_local *nl,
 		dev->stats.rx_packets++;
 		rcv->skb = NULL;
 		if (net_debug > 2)
-			printk(KERN_DEBUG "%s: receive end\n", dev->name);
+;
 
 		/* Close the connection. */
 		write_data (dev, 0x00);
@@ -753,7 +753,7 @@ plip_send_packet(struct net_device *dev, struct net_local *nl,
 	unsigned int cx;
 
 	if (snd->skb == NULL || (lbuf = snd->skb->data) == NULL) {
-		printk(KERN_DEBUG "%s: send skb lost\n", dev->name);
+;
 		snd->state = PLIP_PK_DONE;
 		snd->skb = NULL;
 		return ERROR;
@@ -794,7 +794,7 @@ plip_send_packet(struct net_device *dev, struct net_local *nl,
 				}
 				disable_parport_interrupts (dev);
 				if (net_debug > 2)
-					printk(KERN_DEBUG "%s: send start\n", dev->name);
+;
 				snd->state = PLIP_PK_LENGTH_LSB;
 				snd->nibble = PLIP_NB_BEGIN;
 				nl->timeout_count = 0;
@@ -847,7 +847,7 @@ plip_send_packet(struct net_device *dev, struct net_local *nl,
 		write_data (dev, 0x00);
 		snd->skb = NULL;
 		if (net_debug > 2)
-			printk(KERN_DEBUG "%s: send end\n", dev->name);
+;
 		nl->connection = PLIP_CN_CLOSING;
 		nl->is_deferred = 1;
 		schedule_delayed_work(&nl->deferred, 1);
@@ -885,7 +885,7 @@ plip_error(struct net_device *dev, struct net_local *nl,
 	status = read_status(dev);
 	if ((status & 0xf8) == 0x80) {
 		if (net_debug > 2)
-			printk(KERN_DEBUG "%s: reset interface.\n", dev->name);
+;
 		nl->connection = PLIP_CN_NONE;
 		nl->should_relinquish = 0;
 		netif_start_queue (dev);
@@ -918,13 +918,13 @@ plip_interrupt(void *dev_id)
 	c0 = read_status(dev);
 	if ((c0 & 0xf8) != 0xc0) {
 		if ((dev->irq != -1) && (net_debug > 1))
-			printk(KERN_DEBUG "%s: spurious interrupt\n", dev->name);
+;
 		spin_unlock_irqrestore (&nl->lock, flags);
 		return;
 	}
 
 	if (net_debug > 3)
-		printk(KERN_DEBUG "%s: interrupt.\n", dev->name);
+;
 
 	switch (nl->connection) {
 	case PLIP_CN_CLOSING:
@@ -944,7 +944,7 @@ plip_interrupt(void *dev_id)
 		break;
 
 	case PLIP_CN_ERROR:
-		printk(KERN_ERR "%s: receive interrupt in error state\n", dev->name);
+;
 		break;
 	}
 
@@ -970,13 +970,13 @@ plip_tx_packet(struct sk_buff *skb, struct net_device *dev)
 	netif_stop_queue (dev);
 
 	if (skb->len > dev->mtu + dev->hard_header_len) {
-		printk(KERN_WARNING "%s: packet too big, %d.\n", dev->name, (int)skb->len);
+;
 		netif_start_queue (dev);
 		return NETDEV_TX_BUSY;
 	}
 
 	if (net_debug > 2)
-		printk(KERN_DEBUG "%s: send request\n", dev->name);
+;
 
 	spin_lock_irq(&nl->lock);
 	snd->skb = skb;
@@ -1178,10 +1178,10 @@ plip_wakeup(void *handle)
 
 	if (nl->port_owner) {
 		/* Why are we being woken up? */
-		printk(KERN_DEBUG "%s: why am I being woken up?\n", dev->name);
+;
 		if (!parport_claim(nl->pardev))
 			/* bus_owner is already set (but why?) */
-			printk(KERN_DEBUG "%s: I'm broken.\n", dev->name);
+;
 		else
 			return;
 	}
@@ -1254,14 +1254,14 @@ static void plip_attach (struct parport *port)
 	if ((parport[0] == -1 && (!timid || !port->devices)) ||
 	    plip_searchfor(parport, port->number)) {
 		if (unit == PLIP_MAX) {
-			printk(KERN_ERR "plip: too many devices\n");
+;
 			return;
 		}
 
 		sprintf(name, "plip%d", unit);
 		dev = alloc_etherdev(sizeof(struct net_local));
 		if (!dev) {
-			printk(KERN_ERR "plip: memory squeeze\n");
+;
 			return;
 		}
 
@@ -1270,8 +1270,8 @@ static void plip_attach (struct parport *port)
 		dev->irq = port->irq;
 		dev->base_addr = port->base;
 		if (port->irq == -1) {
-			printk(KERN_INFO "plip: %s has no IRQ. Using IRQ-less mode,"
-		                 "which is fairly inefficient!\n", port->name);
+//			printk(KERN_INFO "plip: %s has no IRQ. Using IRQ-less mode,"
+;
 		}
 
 		nl = netdev_priv(dev);
@@ -1281,26 +1281,26 @@ static void plip_attach (struct parport *port)
 						 0, dev);
 
 		if (!nl->pardev) {
-			printk(KERN_ERR "%s: parport_register failed\n", name);
+;
 			goto err_free_dev;
 		}
 
 		plip_init_netdev(dev);
 
 		if (register_netdev(dev)) {
-			printk(KERN_ERR "%s: network register failed\n", name);
+;
 			goto err_parport_unregister;
 		}
 
-		printk(KERN_INFO "%s", version);
+;
 		if (dev->irq != -1)
-			printk(KERN_INFO "%s: Parallel port at %#3lx, "
-					 "using IRQ %d.\n",
-				         dev->name, dev->base_addr, dev->irq);
+//			printk(KERN_INFO "%s: Parallel port at %#3lx, "
+//					 "using IRQ %d.\n",
+;
 		else
-			printk(KERN_INFO "%s: Parallel port at %#3lx, "
-					 "not using IRQ.\n",
-					 dev->name, dev->base_addr);
+//			printk(KERN_INFO "%s: Parallel port at %#3lx, "
+//					 "not using IRQ.\n",
+;
 		dev_plip[unit++] = dev;
 	}
 	return;
@@ -1360,8 +1360,8 @@ static int __init plip_setup(char *str)
 		if (parport_ptr < PLIP_MAX)
 			parport[parport_ptr++] = n;
 		else
-			printk(KERN_INFO "plip: too many ports, %s ignored.\n",
-			       str);
+//			printk(KERN_INFO "plip: too many ports, %s ignored.\n",
+;
 	} else if (!strcmp(str, "timid")) {
 		timid = 1;
 	} else {
@@ -1369,8 +1369,8 @@ static int __init plip_setup(char *str)
 			/* disable driver on "plip=" or "plip=0" */
 			parport[0] = -2;
 		} else {
-			printk(KERN_WARNING "warning: 'plip=0x%x' ignored\n",
-			       ints[1]);
+//			printk(KERN_WARNING "warning: 'plip=0x%x' ignored\n",
+;
 		}
 	}
 	return 1;
@@ -1386,7 +1386,7 @@ static int __init plip_init (void)
 		return 0;
 
 	if (parport[0] != -1 && timid) {
-		printk(KERN_WARNING "plip: warning, ignoring `timid' since specific ports given.\n");
+;
 		timid = 0;
 	}
 

@@ -450,7 +450,7 @@ static int eexp_open(struct net_device *dev)
 	struct net_local *lp = netdev_priv(dev);
 
 #if NET_DEBUG > 6
-	printk(KERN_DEBUG "%s: eexp_open()\n", dev->name);
+;
 #endif
 
 	if (!dev->irq || !irqrmap[dev->irq])
@@ -461,35 +461,35 @@ static int eexp_open(struct net_device *dev)
 		return ret;
 
 	if (!request_region(ioaddr, EEXP_IO_EXTENT, "EtherExpress")) {
-		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
-			, ioaddr);
+//		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
+;
 		goto err_out1;
 	}
 	if (!request_region(ioaddr+0x4000, EEXP_IO_EXTENT, "EtherExpress shadow")) {
-		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
-			, ioaddr+0x4000);
+//		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
+;
 		goto err_out2;
 	}
 	if (!request_region(ioaddr+0x8000, EEXP_IO_EXTENT, "EtherExpress shadow")) {
-		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
-			, ioaddr+0x8000);
+//		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
+;
 		goto err_out3;
 	}
 	if (!request_region(ioaddr+0xc000, EEXP_IO_EXTENT, "EtherExpress shadow")) {
-		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
-			, ioaddr+0xc000);
+//		printk(KERN_WARNING "EtherExpress io port %x, is busy.\n"
+;
 		goto err_out4;
 	}
 
 	if (lp->width) {
-		printk("%s: forcing ASIC to 8-bit mode\n", dev->name);
+;
 		outb(inb(dev->base_addr+Config)&~4, dev->base_addr+Config);
 	}
 
 	eexp_hw_init586(dev);
 	netif_start_queue(dev);
 #if NET_DEBUG > 6
-	printk(KERN_DEBUG "%s: leaving eexp_open()\n", dev->name);
+;
 #endif
 	return 0;
 
@@ -548,8 +548,8 @@ static void unstick_cu(struct net_device *dev)
 			if (lp->tx_link==lp->last_tx_restart)
 			{
 				unsigned short boguscount=200,rsst;
-				printk(KERN_WARNING "%s: Retransmit timed out, status %04x, resetting...\n",
-				       dev->name, scb_status(dev));
+//				printk(KERN_WARNING "%s: Retransmit timed out, status %04x, resetting...\n",
+;
 				eexp_hw_txinit(dev);
 				lp->last_tx_restart = 0;
 				scb_wrcbl(dev, lp->tx_link);
@@ -560,8 +560,8 @@ static void unstick_cu(struct net_device *dev)
 					if (!--boguscount)
 					{
 						boguscount=200;
-						printk(KERN_WARNING "%s: Reset timed out status %04x, retrying...\n",
-						       dev->name,rsst);
+//						printk(KERN_WARNING "%s: Reset timed out status %04x, retrying...\n",
+;
 						scb_wrcbl(dev, lp->tx_link);
 						scb_command(dev, SCB_CUstart);
 						outb(0,ioaddr+SIGNAL_CA);
@@ -575,8 +575,8 @@ static void unstick_cu(struct net_device *dev)
 				if (SCB_CUdead(status))
 				{
 					unsigned short txstatus = eexp_hw_lasttxstat(dev);
-					printk(KERN_WARNING "%s: Transmit timed out, CU not active status %04x %04x, restarting...\n",
-					       dev->name, status, txstatus);
+//					printk(KERN_WARNING "%s: Transmit timed out, CU not active status %04x %04x, restarting...\n",
+;
 					eexp_hw_txrestart(dev);
 				}
 				else
@@ -584,14 +584,14 @@ static void unstick_cu(struct net_device *dev)
 					unsigned short txstatus = eexp_hw_lasttxstat(dev);
 					if (netif_queue_stopped(dev) && !txstatus)
 					{
-						printk(KERN_WARNING "%s: CU wedged, status %04x %04x, resetting...\n",
-						       dev->name,status,txstatus);
+//						printk(KERN_WARNING "%s: CU wedged, status %04x %04x, resetting...\n",
+;
 						eexp_hw_init586(dev);
 						netif_wake_queue(dev);
 					}
 					else
 					{
-						printk(KERN_WARNING "%s: transmit timed out\n", dev->name);
+;
 					}
 				}
 			}
@@ -602,8 +602,8 @@ static void unstick_cu(struct net_device *dev)
 		if (time_after(jiffies, lp->init_time + 10))
 		{
 			unsigned short status = scb_status(dev);
-			printk(KERN_WARNING "%s: i82586 startup timed out, status %04x, resetting...\n",
-			       dev->name, status);
+//			printk(KERN_WARNING "%s: i82586 startup timed out, status %04x, resetting...\n",
+;
 			eexp_hw_init586(dev);
 			netif_wake_queue(dev);
 		}
@@ -631,9 +631,9 @@ static void eexp_timeout(struct net_device *dev)
 
 	status = scb_status(dev);
 	unstick_cu(dev);
-	printk(KERN_INFO "%s: transmit timed out, %s?\n", dev->name,
-	       (SCB_complete(status)?"lost interrupt":
-		"board on fire"));
+//	printk(KERN_INFO "%s: transmit timed out, %s?\n", dev->name,
+//	       (SCB_complete(status)?"lost interrupt":
+;
 	dev->stats.tx_errors++;
 	lp->last_tx = jiffies;
 	if (!SCB_complete(status)) {
@@ -659,7 +659,7 @@ static netdev_tx_t eexp_xmit(struct sk_buff *buf, struct net_device *dev)
 #endif
 
 #if NET_DEBUG > 6
-	printk(KERN_DEBUG "%s: eexp_xmit()\n", dev->name);
+;
 #endif
 
 	if (buf->len < ETH_ZLEN) {
@@ -712,34 +712,34 @@ static unsigned short eexp_start_irq(struct net_device *dev,
 		while (SCB_CUstat(status)==2)
 			status = scb_status(dev);
 #if NET_DEBUG > 4
-		printk("%s: CU went non-active (status %04x)\n",
-		       dev->name, status);
+//		printk("%s: CU went non-active (status %04x)\n",
+;
 #endif
 
 		outw(CONF_DIAG_RESULT & ~31, ioaddr + SM_PTR);
 		diag_status = inw(ioaddr + SHADOW(CONF_DIAG_RESULT));
 		if (diag_status & 1<<11) {
-			printk(KERN_WARNING "%s: 82586 failed self-test\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: 82586 failed self-test\n",
+;
 		} else if (!(diag_status & 1<<13)) {
-			printk(KERN_WARNING "%s: 82586 self-test failed to complete\n", dev->name);
+;
 		}
 
 		outw(CONF_TDR_RESULT & ~31, ioaddr + SM_PTR);
 		tdr_status = inw(ioaddr + SHADOW(CONF_TDR_RESULT));
 		if (tdr_status & (TDR_SHORT|TDR_OPEN)) {
-			printk(KERN_WARNING "%s: TDR reports cable %s at %d tick%s\n", dev->name, (tdr_status & TDR_SHORT)?"short":"broken", tdr_status & TDR_TIME, ((tdr_status & TDR_TIME) != 1) ? "s" : "");
+;
 		}
 		else if (tdr_status & TDR_XCVRPROBLEM) {
-			printk(KERN_WARNING "%s: TDR reports transceiver problem\n", dev->name);
+;
 		}
 		else if (tdr_status & TDR_LINKOK) {
 #if NET_DEBUG > 4
-			printk(KERN_DEBUG "%s: TDR reports link OK\n", dev->name);
+;
 #endif
 		} else {
-			printk("%s: TDR is ga-ga (status %04x)\n", dev->name,
-			       tdr_status);
+//			printk("%s: TDR is ga-ga (status %04x)\n", dev->name,
+;
 		}
 
 		lp->started |= STARTED_CU;
@@ -765,7 +765,7 @@ static void eexp_cmd_clear(struct net_device *dev)
 	unsigned long int oldtime = jiffies;
 	while (scb_rdcmd(dev) && (time_before(jiffies, oldtime + 10)));
 	if (scb_rdcmd(dev)) {
-		printk("%s: command didn't clear\n", dev->name);
+;
 	}
 }
 
@@ -789,7 +789,7 @@ static irqreturn_t eexp_irq(int dummy, void *dev_info)
 	status = scb_status(dev);
 
 #if NET_DEBUG > 4
-	printk(KERN_DEBUG "%s: interrupt (status %x)\n", dev->name, status);
+;
 #endif
 
 	if (lp->started == (STARTED_CU | STARTED_RU)) {
@@ -805,7 +805,7 @@ static irqreturn_t eexp_irq(int dummy, void *dev_info)
 
 			if (SCB_complete(status)) {
 				if (!eexp_hw_lasttxstat(dev)) {
-					printk("%s: tx interrupt but no status\n", dev->name);
+;
 				}
 			}
 
@@ -817,18 +817,18 @@ static irqreturn_t eexp_irq(int dummy, void *dev_info)
 
 		if (SCB_RUdead(status))
 		{
-			printk(KERN_WARNING "%s: RU stopped: status %04x\n",
-			       dev->name,status);
+//			printk(KERN_WARNING "%s: RU stopped: status %04x\n",
+;
 #if 0
-			printk(KERN_WARNING "%s: cur_rfd=%04x, cur_rbd=%04x\n", dev->name, lp->cur_rfd, lp->cur_rbd);
+;
 			outw(lp->cur_rfd, ioaddr+READ_PTR);
-			printk(KERN_WARNING "%s: [%04x]\n", dev->name, inw(ioaddr+DATAPORT));
+;
 			outw(lp->cur_rfd+6, ioaddr+READ_PTR);
-			printk(KERN_WARNING "%s: rbd is %04x\n", dev->name, rbd= inw(ioaddr+DATAPORT));
+;
 			outw(rbd, ioaddr+READ_PTR);
-			printk(KERN_WARNING "%s: [%04x %04x] ", dev->name, inw(ioaddr+DATAPORT), inw(ioaddr+DATAPORT));
+;
 			outw(rbd+8, ioaddr+READ_PTR);
-			printk("[%04x]\n", inw(ioaddr+DATAPORT));
+;
 #endif
 			dev->stats.rx_errors++;
 #if 1
@@ -854,7 +854,7 @@ static irqreturn_t eexp_irq(int dummy, void *dev_info)
 	outb(SIRQ_en|irqrmap[dev->irq], ioaddr+SET_IRQ);
 
 #if NET_DEBUG > 6
-	printk("%s: leaving eexp_irq()\n", dev->name);
+;
 #endif
 	outw(old_read_ptr, ioaddr+READ_PTR);
 	outw(old_write_ptr, ioaddr+WRITE_PTR);
@@ -901,7 +901,7 @@ static void eexp_hw_rx_pio(struct net_device *dev)
 	unsigned short status;
 
 #if NET_DEBUG > 6
-	printk(KERN_DEBUG "%s: eexp_hw_rx()\n", dev->name);
+;
 #endif
 
  	do {
@@ -921,20 +921,20 @@ static void eexp_hw_rx_pio(struct net_device *dev)
 
 			if (rfd_cmd!=0x0000)
   			{
-				printk(KERN_WARNING "%s: rfd_cmd not zero:0x%04x\n",
-				       dev->name, rfd_cmd);
+//				printk(KERN_WARNING "%s: rfd_cmd not zero:0x%04x\n",
+;
 				continue;
 			}
 			else if (pbuf!=rx_block+0x16)
 			{
-				printk(KERN_WARNING "%s: rfd and rbd out of sync 0x%04x 0x%04x\n",
-				       dev->name, rx_block+0x16, pbuf);
+//				printk(KERN_WARNING "%s: rfd and rbd out of sync 0x%04x 0x%04x\n",
+;
 				continue;
 			}
 			else if ((pkt_len & 0xc000)!=0xc000)
 			{
-				printk(KERN_WARNING "%s: EOF or F not set on received buffer (%04x)\n",
-				       dev->name, pkt_len & 0xc000);
+//				printk(KERN_WARNING "%s: EOF or F not set on received buffer (%04x)\n",
+;
   				continue;
   			}
   			else if (!FD_OK(status))
@@ -958,7 +958,7 @@ static void eexp_hw_rx_pio(struct net_device *dev)
 				skb = dev_alloc_skb(pkt_len+16);
 				if (skb == NULL)
 				{
-					printk(KERN_WARNING "%s: Memory squeeze, dropping packet\n",dev->name);
+;
 					dev->stats.rx_dropped++;
 					break;
 				}
@@ -1070,7 +1070,7 @@ static int __init eexp_hw_probe(struct net_device *dev, unsigned short ioaddr)
 	unsigned short xsum = 0;
 	struct net_local *lp = netdev_priv(dev);
 
-	printk("%s: EtherExpress 16 at %#x ",dev->name,ioaddr);
+;
 
 	outb(ASIC_RST, ioaddr+EEPROM_Ctrl);
 	outb(0, ioaddr+EEPROM_Ctrl);
@@ -1085,8 +1085,8 @@ static int __init eexp_hw_probe(struct net_device *dev, unsigned short ioaddr)
 	if (!((hw_addr[2]==0x00aa && ((hw_addr[1] & 0xff00)==0x0000)) ||
 	      (hw_addr[2]==0x0080 && ((hw_addr[1] & 0xff00)==0x5F00))))
 	{
-		printk(" rejected: invalid address %04x%04x%04x\n",
-			hw_addr[2],hw_addr[1],hw_addr[0]);
+//		printk(" rejected: invalid address %04x%04x%04x\n",
+;
 		return -ENODEV;
 	}
 
@@ -1096,7 +1096,7 @@ static int __init eexp_hw_probe(struct net_device *dev, unsigned short ioaddr)
 	for (i = 0; i < 64; i++)
 		xsum += eexp_hw_readeeprom(ioaddr, i);
 	if (xsum != 0xbaba)
-		printk(" (bad EEPROM xsum 0x%02x)", xsum);
+;
 
 	dev->base_addr = ioaddr;
 	for ( i=0 ; i<6 ; i++ )
@@ -1121,8 +1121,8 @@ static int __init eexp_hw_probe(struct net_device *dev, unsigned short ioaddr)
 	memset(lp, 0, sizeof(struct net_local));
 	spin_lock_init(&lp->lock);
 
- 	printk("(IRQ %d, %s connector, %d-bit bus", dev->irq,
- 	       eexp_ifmap[dev->if_port], buswidth?8:16);
+// 	printk("(IRQ %d, %s connector, %d-bit bus", dev->irq,
+;
 
 	if (!request_region(dev->base_addr + 0x300e, 1, "EtherExpress"))
 		return -EBUSY;
@@ -1163,10 +1163,10 @@ static int __init eexp_hw_probe(struct net_device *dev, unsigned short ioaddr)
 	case 32:
 		lp->rx_buf_end += 0x4000;
 	case 16:
-		printk(", %dk RAM)\n", memory_size);
+;
 		break;
 	default:
-		printk(") bad memory size (%dk).\n", memory_size);
+;
 		return -ENODEV;
 		break;
 	}
@@ -1279,8 +1279,8 @@ static unsigned short eexp_hw_lasttxstat(struct net_device *dev)
 					dev->stats.tx_aborted_errors++;
 				}
 				if (whatsup)
-					printk(KERN_INFO "%s: transmit %s\n",
-					       dev->name, whatsup);
+//					printk(KERN_INFO "%s: transmit %s\n",
+;
 			}
 			else
 				dev->stats.tx_packets++;
@@ -1322,7 +1322,7 @@ static void eexp_hw_txrestart(struct net_device *dev)
 			{
 				if (--failcount)
 				{
-					printk(KERN_WARNING "%s: CU start timed out, status %04x, cmd %04x\n", dev->name, scb_status(dev), scb_rdcmd(dev));
+;
 				        scb_wrcbl(dev, lp->tx_link);
 					scb_command(dev, SCB_CUstart);
 					outb(0,ioaddr+SIGNAL_CA);
@@ -1330,7 +1330,7 @@ static void eexp_hw_txrestart(struct net_device *dev)
 				}
 				else
 				{
-					printk(KERN_WARNING "%s: Failed to restart CU, resetting board...\n",dev->name);
+;
 					eexp_hw_init586(dev);
 					netif_wake_queue(dev);
 					return;
@@ -1457,7 +1457,7 @@ static void eexp_hw_init586(struct net_device *dev)
 	int i;
 
 #if NET_DEBUG > 6
-	printk("%s: eexp_hw_init586()\n", dev->name);
+;
 #endif
 
 	lp->started = 0;
@@ -1520,15 +1520,15 @@ static void eexp_hw_init586(struct net_device *dev)
 		{
 			if (!--rboguscount)
 			{
-				printk(KERN_WARNING "%s: i82586 reset timed out, kicking...\n",
-					dev->name);
+//				printk(KERN_WARNING "%s: i82586 reset timed out, kicking...\n",
+;
 				scb_command(dev, 0);
 				outb(0,ioaddr+SIGNAL_CA);
 				rboguscount = 100;
 				if (!--rfailcount)
 				{
-					printk(KERN_WARNING "%s: i82586 not responding, giving up.\n",
-						dev->name);
+//					printk(KERN_WARNING "%s: i82586 not responding, giving up.\n",
+;
 					return;
 				}
 			}
@@ -1547,8 +1547,8 @@ static void eexp_hw_init586(struct net_device *dev)
 			{
 				if (--ifailcount)
 				{
-					printk(KERN_WARNING "%s: i82586 initialization timed out, status %04x, cmd %04x\n",
-						dev->name, scb_status(dev), scb_rdcmd(dev));
+//					printk(KERN_WARNING "%s: i82586 initialization timed out, status %04x, cmd %04x\n",
+;
 					scb_wrcbl(dev, CONF_LINK);
 				        scb_command(dev, 0xf000|SCB_CUstart);
 					outb(0,ioaddr+SIGNAL_CA);
@@ -1556,7 +1556,7 @@ static void eexp_hw_init586(struct net_device *dev)
 				}
 				else
 				{
-					printk(KERN_WARNING "%s: Failed to initialize i82586, giving up.\n",dev->name);
+;
 					return;
 				}
 			}
@@ -1568,7 +1568,7 @@ static void eexp_hw_init586(struct net_device *dev)
 
 	lp->init_time = jiffies;
 #if NET_DEBUG > 6
-        printk("%s: leaving eexp_hw_init586()\n", dev->name);
+;
 #endif
 }
 
@@ -1579,8 +1579,8 @@ static void eexp_setup_filter(struct net_device *dev)
 	int count = netdev_mc_count(dev);
 	int i;
 	if (count > 8) {
-		printk(KERN_INFO "%s: too many multicast addresses (%d)\n",
-		       dev->name, count);
+//		printk(KERN_INFO "%s: too many multicast addresses (%d)\n",
+;
 		count = 8;
 	}
 
@@ -1632,13 +1632,13 @@ eexp_set_multicast(struct net_device *dev)
                 outb(0, ioaddr+SIGNAL_CA);
                 outb(0, ioaddr+SIGNAL_CA);
 #if 0
-                printk("%s: waiting for CU to go suspended\n", dev->name);
+;
 #endif
                 oj = jiffies;
                 while ((SCB_CUstat(scb_status(dev)) == 2) &&
                        (time_before(jiffies, oj + 2000)));
 		if (SCB_CUstat(scb_status(dev)) == 2)
-			printk("%s: warning, CU didn't stop\n", dev->name);
+;
                 lp->started &= ~(STARTED_CU);
                 scb_wrcbl(dev, CONF_LINK);
                 scb_command(dev, SCB_CUstart);
@@ -1682,14 +1682,14 @@ int __init init_module(void)
 		if (io[this_dev] == 0) {
 			if (this_dev)
 				break;
-			printk(KERN_NOTICE "eexpress.c: Module autoprobe not recommended, give io=xx.\n");
+;
 		}
 		if (do_express_probe(dev) == 0) {
 			dev_eexp[this_dev] = dev;
 			found++;
 			continue;
 		}
-		printk(KERN_WARNING "eexpress.c: Failed to register card at 0x%x.\n", io[this_dev]);
+;
 		free_netdev(dev);
 		break;
 	}

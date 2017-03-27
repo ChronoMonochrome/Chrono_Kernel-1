@@ -251,10 +251,14 @@ void ft_recv_write_data(struct ft_cmd *cmd, struct fc_frame *fp)
 	 */
 	buf = fc_frame_payload_get(fp, 1);
 	if (cmd->was_ddp_setup && buf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: When DDP was setup, not expected to"
 				 "receive frame with payload, Payload shall be"
 				 "copied directly to buffer instead of coming "
 				 "via. legacy receive queues\n", __func__);
+#else
+		;
+#endif
 		BUG_ON(buf);
 	}
 

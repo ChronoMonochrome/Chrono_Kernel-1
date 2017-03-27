@@ -43,6 +43,7 @@
 
 #define DEBUG_LUN_RESET
 #ifdef DEBUG_LUN_RESET
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_LR(x...) printk(KERN_INFO x)
 #else
 #define DEBUG_LR(x...)
@@ -54,6 +55,9 @@ struct se_tmr_req *core_tmr_alloc_req(
 	u8 function)
 {
 	struct se_tmr_req *tmr;
+#else
+#define DEBUG_LR(x...) ;
+#endif
 
 	tmr = kmem_cache_zalloc(se_tmr_req_cache, (in_interrupt()) ?
 					GFP_ATOMIC : GFP_KERNEL);
@@ -402,7 +406,11 @@ int core_tmr_lun_reset(
 		dev->dev_reserved_node_acl = NULL;
 		dev->dev_flags &= ~DF_SPC2_RESERVATIONS;
 		spin_unlock(&dev->dev_reservation_lock);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");
+#else
+		;
+#endif
 	}
 
 	spin_lock_irq(&dev->stats_lock);

@@ -290,8 +290,12 @@ static int __init acpi_event_init(void)
 	/* create genetlink for acpi event */
 	error = acpi_event_genetlink_init();
 	if (error)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 		       "Failed to create genetlink family for ACPI event\n");
+#else
+		;
+#endif
 
 #ifdef CONFIG_ACPI_PROC_EVENT
 	/* 'event' [R] */

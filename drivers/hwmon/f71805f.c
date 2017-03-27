@@ -1277,8 +1277,12 @@ static void __devinit f71805f_init_device(struct f71805f_data *data)
 
 	reg = f71805f_read8(data, F71805F_REG_START);
 	if ((reg & 0x41) != 0x01) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG DRVNAME ": Starting monitoring "
 		       "operations\n");
+#else
+		;
+#endif
 		f71805f_write8(data, F71805F_REG_START, (reg | 0x01) & ~0x40);
 	}
 

@@ -203,7 +203,11 @@ static int __devinit scoop_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, devptr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Sharp Scoop Device found at 0x%08x -> 0x%8p\n",(unsigned int)mem->start, devptr->base);
+#else
+	;
+#endif
 
 	iowrite16(0x0140, devptr->base + SCOOP_MCR);
 	reset_scoop(&pdev->dev);

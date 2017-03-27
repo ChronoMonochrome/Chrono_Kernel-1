@@ -73,7 +73,7 @@ void msm_fb_config_backlight(struct msm_fb_data_type *mfd)
 			backlight_update_status(pbd);
 		} else {
 			fbi->bl_dev = NULL;
-			printk(KERN_ERR "msm_fb: backlight_device_register failed!\n");
+;
 		}
 	}
 }

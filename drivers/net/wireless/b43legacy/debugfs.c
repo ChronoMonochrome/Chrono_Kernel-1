@@ -71,7 +71,7 @@ struct b43legacy_dfs_file * fops_to_dfs_file(struct b43legacy_wldev *dev,
 					  bufsize - count,	\
 					  fmt , ##x);		\
 		else						\
-			printk(KERN_ERR "b43legacy: fappend overflow\n"); \
+;
 	} while (0)
 
 

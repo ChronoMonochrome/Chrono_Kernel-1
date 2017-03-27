@@ -256,7 +256,11 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!scl || !sda) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: bus seems to be busy\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 
@@ -264,12 +268,20 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (sda) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SDA stuck high!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 	if (!scl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SCL unexpected low "
 		       "while pulling SDA low!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 
@@ -277,12 +289,20 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!sda) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SDA stuck low!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 	if (!scl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SCL unexpected low "
 		       "while pulling SDA high!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 
@@ -290,12 +310,20 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 0 : getscl(adap);
 	if (scl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SCL stuck high!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 	if (!sda) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SDA unexpected low "
 		       "while pulling SCL low!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 
@@ -303,12 +331,20 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!scl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SCL stuck low!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 	if (!sda) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: SDA unexpected low "
 		       "while pulling SCL high!\n", name);
+#else
+		;
+#endif
 		goto bailout;
 	}
 

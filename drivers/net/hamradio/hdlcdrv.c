@@ -153,7 +153,7 @@ static void hdlc_rx_flag(struct net_device *dev, struct hdlcdrv_state *s)
 		return;
 	pkt_len = s->hdlcrx.len - 2 + 1; /* KISS kludge */
 	if (!(skb = dev_alloc_skb(pkt_len))) {
-		printk("%s: memory squeeze, dropping packet\n", dev->name);
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -226,13 +226,13 @@ static inline void do_kiss_params(struct hdlcdrv_state *s,
 {
 
 #ifdef KISS_VERBOSE
-#define PKP(a,b) printk(KERN_INFO "hdlcdrv.c: channel params: " a "\n", b)
-#else /* KISS_VERBOSE */	      
-#define PKP(a,b) 
-#endif /* KISS_VERBOSE */	      
-
-	if (len < 2)
-		return;
+//#define PKP(a,b) printk(KERN_INFO "hdlcdrv.c: channel params: " a "\n", b)
+//#else /* KISS_VERBOSE */	      
+//#define PKP(a,b) 
+//#endif /* KISS_VERBOSE */	      
+//
+//	if (len < 2)
+;
 	switch(data[0]) {
 	case PARAM_TXDELAY:
 		s->ch_params.tx_delay = data[1];
@@ -713,8 +713,8 @@ struct net_device *hdlcdrv_register(const struct hdlcdrv_ops *ops,
 
 	err = register_netdev(dev);
 	if (err < 0) {
-		printk(KERN_WARNING "hdlcdrv: cannot register net "
-		       "device %s\n", dev->name);
+//		printk(KERN_WARNING "hdlcdrv: cannot register net "
+;
 		free_netdev(dev);
 		dev = ERR_PTR(err);
 	}
@@ -748,8 +748,8 @@ EXPORT_SYMBOL(hdlcdrv_unregister);
 
 static int __init hdlcdrv_init_driver(void)
 {
-	printk(KERN_INFO "hdlcdrv: (C) 1996-2000 Thomas Sailer HB9JNX/AE4WA\n");
-	printk(KERN_INFO "hdlcdrv: version 0.8\n");
+;
+;
 	return 0;
 }
 
@@ -757,7 +757,7 @@ static int __init hdlcdrv_init_driver(void)
 
 static void __exit hdlcdrv_cleanup_driver(void)
 {
-	printk(KERN_INFO "hdlcdrv: cleanup\n");
+;
 }
 
 /* --------------------------------------------------------------------- */

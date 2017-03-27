@@ -679,14 +679,14 @@ gss_verify_header(struct svc_rqst *rqstp, struct rsc *rsci,
 	}
 
 	if (gc->gc_seq > MAXSEQ) {
-		dprintk("RPC:       svcauth_gss: discarding request with "
-				"large sequence number %d\n", gc->gc_seq);
+//		dprintk("RPC:       svcauth_gss: discarding request with "
+;
 		*authp = rpcsec_gsserr_ctxproblem;
 		return SVC_DENIED;
 	}
 	if (!gss_check_seq_num(rsci, gc->gc_seq)) {
-		dprintk("RPC:       svcauth_gss: discarding request with "
-				"old sequence number %d\n", gc->gc_seq);
+//		dprintk("RPC:       svcauth_gss: discarding request with "
+;
 		return SVC_DROP;
 	}
 	return SVC_OK;
@@ -1078,8 +1078,8 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
 	int		ret;
 	struct sunrpc_net *sn = net_generic(rqstp->rq_xprt->xpt_net, sunrpc_net_id);
 
-	dprintk("RPC:       svcauth_gss: argv->iov_len = %zd\n",
-			argv->iov_len);
+//	dprintk("RPC:       svcauth_gss: argv->iov_len = %zd\n",
+;
 
 	*authp = rpc_autherr_badcred;
 	if (!svcdata)

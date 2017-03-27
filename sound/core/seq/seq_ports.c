@@ -134,7 +134,11 @@ struct snd_seq_client_port *snd_seq_create_port(struct snd_seq_client *client,
 		return NULL;
 
 	if (client->num_ports >= SNDRV_SEQ_MAX_PORTS - 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "too many ports for client %d\n", client->number);
+#else
+		;
+#endif
 		return NULL;
 	}
 

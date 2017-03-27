@@ -960,7 +960,11 @@ int  r852_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
 		&dev->card_detect_work, 0);
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE DRV_NAME ": driver loaded successfully\n");
+#else
+	;
+#endif
 	return 0;
 
 error10:

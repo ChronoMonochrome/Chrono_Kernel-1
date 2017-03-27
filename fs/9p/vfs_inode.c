@@ -396,7 +396,7 @@ v9fs_clone_walk(struct v9fs_session_info *v9ses, u32 fid, struct dentry *dentry)
 
 	nfid = v9fs_get_idpool(&v9ses->fidpool);
 	if (nfid < 0) {
-		eprintk(KERN_WARNING, "no free fids available\n");
+;
 		return ERR_PTR(-ENOSPC);
 	}
 

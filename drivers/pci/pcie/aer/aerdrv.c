@@ -315,7 +315,11 @@ static int __devinit aer_probe(struct pcie_device *dev)
 	/* Alloc rpc data structure */
 	rpc = aer_alloc_rpc(dev);
 	if (!rpc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, device, "alloc rpc failed\n");
+#else
+		dev_;
+#endif
 		aer_remove(dev);
 		return -ENOMEM;
 	}
@@ -323,7 +327,11 @@ static int __devinit aer_probe(struct pcie_device *dev)
 	/* Request IRQ ISR */
 	status = request_irq(dev->irq, aer_irq, IRQF_SHARED, "aerdrv", dev);
 	if (status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, device, "request IRQ failed\n");
+#else
+		dev_;
+#endif
 		aer_remove(dev);
 		return status;
 	}
@@ -354,7 +362,11 @@ static pci_ers_result_t aer_root_reset(struct pci_dev *dev)
 	pci_write_config_dword(dev, pos + PCI_ERR_ROOT_COMMAND, reg32);
 
 	aer_do_secondary_bus_reset(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev, "Root Port link has been reset\n");
+#else
+	dev_;
+#endif
 
 	/* Clear Root Error Status */
 	pci_read_config_dword(dev, pos + PCI_ERR_ROOT_STATUS, &reg32);

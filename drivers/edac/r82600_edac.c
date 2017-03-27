@@ -25,6 +25,7 @@
 #define R82600_REVISION	" Ver: 2.0.2"
 #define EDAC_MOD_STR	"r82600_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define r82600_printk(level, fmt, arg...) \
 	edac_printk(level, "r82600", fmt, ##arg)
 
@@ -129,6 +130,9 @@
 
 struct r82600_error_info {
 	u32 eapr;
+#else
+#define r82600_;
+#endif
 };
 
 static bool disable_hardware_scrub;
@@ -332,12 +336,20 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	r82600_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!r82600_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	debugf3("%s(): success\n", __func__);

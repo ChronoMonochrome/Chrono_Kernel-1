@@ -479,8 +479,8 @@ static int __devinit acenic_probe_one(struct pci_dev *pdev,
 
 	dev = alloc_etherdev(sizeof(struct ace_private));
 	if (dev == NULL) {
-		printk(KERN_ERR "acenic: Unable to allocate "
-		       "net_device structure!\n");
+//		printk(KERN_ERR "acenic: Unable to allocate "
+;
 		return -ENOMEM;
 	}
 
@@ -502,7 +502,7 @@ static int __devinit acenic_probe_one(struct pci_dev *pdev,
 
 	/* we only display this string ONCE */
 	if (!boards_found)
-		printk(version);
+;
 
 	if (pci_enable_device(pdev))
 		goto fail_free_netdev;
@@ -518,9 +518,9 @@ static int __devinit acenic_probe_one(struct pci_dev *pdev,
 
 	/* OpenFirmware on Mac's does not set this - DOH.. */
 	if (!(ap->pci_command & PCI_COMMAND_MEMORY)) {
-		printk(KERN_INFO "%s: Enabling PCI Memory Mapped "
-		       "access - was not enabled by BIOS/Firmware\n",
-		       ap->name);
+//		printk(KERN_INFO "%s: Enabling PCI Memory Mapped "
+//		       "access - was not enabled by BIOS/Firmware\n",
+;
 		ap->pci_command = ap->pci_command | PCI_COMMAND_MEMORY;
 		pci_write_config_word(ap->pdev, PCI_COMMAND,
 				      ap->pci_command);
@@ -541,49 +541,49 @@ static int __devinit acenic_probe_one(struct pci_dev *pdev,
 	dev->base_addr = pci_resource_start(pdev, 0);
 	ap->regs = ioremap(dev->base_addr, 0x4000);
 	if (!ap->regs) {
-		printk(KERN_ERR "%s:  Unable to map I/O register, "
-		       "AceNIC %i will be disabled.\n",
-		       ap->name, boards_found);
+//		printk(KERN_ERR "%s:  Unable to map I/O register, "
+//		       "AceNIC %i will be disabled.\n",
+;
 		goto fail_free_netdev;
 	}
 
 	switch(pdev->vendor) {
 	case PCI_VENDOR_ID_ALTEON:
 		if (pdev->device == PCI_DEVICE_ID_FARALLON_PN9100T) {
-			printk(KERN_INFO "%s: Farallon PN9100-T ",
-			       ap->name);
+//			printk(KERN_INFO "%s: Farallon PN9100-T ",
+;
 		} else {
-			printk(KERN_INFO "%s: Alteon AceNIC ",
-			       ap->name);
+//			printk(KERN_INFO "%s: Alteon AceNIC ",
+;
 		}
 		break;
 	case PCI_VENDOR_ID_3COM:
-		printk(KERN_INFO "%s: 3Com 3C985 ", ap->name);
+;
 		break;
 	case PCI_VENDOR_ID_NETGEAR:
-		printk(KERN_INFO "%s: NetGear GA620 ", ap->name);
+;
 		break;
 	case PCI_VENDOR_ID_DEC:
 		if (pdev->device == PCI_DEVICE_ID_FARALLON_PN9000SX) {
-			printk(KERN_INFO "%s: Farallon PN9000-SX ",
-			       ap->name);
+//			printk(KERN_INFO "%s: Farallon PN9000-SX ",
+;
 			break;
 		}
 	case PCI_VENDOR_ID_SGI:
-		printk(KERN_INFO "%s: SGI AceNIC ", ap->name);
+;
 		break;
 	default:
-		printk(KERN_INFO "%s: Unknown AceNIC ", ap->name);
+;
 		break;
 	}
 
-	printk("Gigabit Ethernet at 0x%08lx, ", dev->base_addr);
-	printk("irq %d\n", pdev->irq);
+;
+;
 
 #ifdef CONFIG_ACENIC_OMIT_TIGON_I
 	if ((readl(&ap->regs->HostCtrl) >> 28) == 4) {
-		printk(KERN_ERR "%s: Driver compiled without Tigon I"
-		       " support - NIC disabled\n", dev->name);
+//		printk(KERN_ERR "%s: Driver compiled without Tigon I"
+;
 		goto fail_uninit;
 	}
 #endif
@@ -604,7 +604,7 @@ static int __devinit acenic_probe_one(struct pci_dev *pdev,
 		goto fail_free_netdev;
 
 	if (register_netdev(dev)) {
-		printk(KERN_ERR "acenic: device registration failed\n");
+;
 		goto fail_uninit;
 	}
 	ap->name = dev->name;
@@ -948,18 +948,18 @@ static int __devinit ace_init(struct net_device *dev)
 #ifndef CONFIG_ACENIC_OMIT_TIGON_I
 	case 4:
 	case 5:
-		printk(KERN_INFO "  Tigon I  (Rev. %i), Firmware: %i.%i.%i, ",
-		       tig_ver, ap->firmware_major, ap->firmware_minor,
-		       ap->firmware_fix);
+//		printk(KERN_INFO "  Tigon I  (Rev. %i), Firmware: %i.%i.%i, ",
+//		       tig_ver, ap->firmware_major, ap->firmware_minor,
+;
 		writel(0, &regs->LocalCtrl);
 		ap->version = 1;
 		ap->tx_ring_entries = TIGON_I_TX_RING_ENTRIES;
 		break;
 #endif
 	case 6:
-		printk(KERN_INFO "  Tigon II (Rev. %i), Firmware: %i.%i.%i, ",
-		       tig_ver, ap->firmware_major, ap->firmware_minor,
-		       ap->firmware_fix);
+//		printk(KERN_INFO "  Tigon II (Rev. %i), Firmware: %i.%i.%i, ",
+//		       tig_ver, ap->firmware_major, ap->firmware_minor,
+;
 		writel(readl(&regs->CpuBCtrl) | CPU_HALT, &regs->CpuBCtrl);
 		readl(&regs->CpuBCtrl);		/* PCI write posting */
 		/*
@@ -973,8 +973,8 @@ static int __devinit ace_init(struct net_device *dev)
 		ap->tx_ring_entries = MAX_TX_RING_ENTRIES;
 		break;
 	default:
-		printk(KERN_WARNING "  Unsupported Tigon version detected "
-		       "(%i)\n", tig_ver);
+//		printk(KERN_WARNING "  Unsupported Tigon version detected "
+;
 		ecode = -ENODEV;
 		goto init_error;
 	}
@@ -1030,7 +1030,7 @@ static int __devinit ace_init(struct net_device *dev)
 	dev->dev_addr[4] = (mac2 >> 8) & 0xff;
 	dev->dev_addr[5] = mac2 & 0xff;
 
-	printk("MAC: %pM\n", dev->dev_addr);
+;
 
 	/*
 	 * Looks like this is necessary to deal with on all architectures,
@@ -1042,23 +1042,23 @@ static int __devinit ace_init(struct net_device *dev)
 	pci_read_config_byte(pdev, PCI_CACHE_LINE_SIZE, &cache_size);
 	cache_size <<= 2;
 	if (cache_size != SMP_CACHE_BYTES) {
-		printk(KERN_INFO "  PCI cache line size set incorrectly "
-		       "(%i bytes) by BIOS/FW, ", cache_size);
+//		printk(KERN_INFO "  PCI cache line size set incorrectly "
+;
 		if (cache_size > SMP_CACHE_BYTES)
-			printk("expecting %i\n", SMP_CACHE_BYTES);
+;
 		else {
-			printk("correcting to %i\n", SMP_CACHE_BYTES);
+;
 			pci_write_config_byte(pdev, PCI_CACHE_LINE_SIZE,
 					      SMP_CACHE_BYTES >> 2);
 		}
 	}
 
 	pci_state = readl(&regs->PciState);
-	printk(KERN_INFO "  PCI bus width: %i bits, speed: %iMHz, "
-	       "latency: %i clks\n",
-	       	(pci_state & PCI_32BIT) ? 32 : 64,
-		(pci_state & PCI_66MHZ) ? 66 : 33,
-		ap->pci_latency);
+//	printk(KERN_INFO "  PCI bus width: %i bits, speed: %iMHz, "
+//	       "latency: %i clks\n",
+//	       	(pci_state & PCI_32BIT) ? 32 : 64,
+//		(pci_state & PCI_66MHZ) ? 66 : 33,
+;
 
 	/*
 	 * Set the max DMA transfer size. Seems that for most systems
@@ -1082,12 +1082,12 @@ static int __devinit ace_init(struct net_device *dev)
 				ap->pci_command &= ~PCI_COMMAND_INVALIDATE;
 				pci_write_config_word(pdev, PCI_COMMAND,
 						      ap->pci_command);
-				printk(KERN_INFO "  Disabling PCI memory "
-				       "write and invalidate\n");
+//				printk(KERN_INFO "  Disabling PCI memory "
+;
 			}
 		} else if (ap->pci_command & PCI_COMMAND_INVALIDATE) {
-			printk(KERN_INFO "  PCI memory write & invalidate "
-			       "enabled by BIOS, enabling counter measures\n");
+//			printk(KERN_INFO "  PCI memory write & invalidate "
+;
 
 			switch(SMP_CACHE_BYTES) {
 			case 16:
@@ -1103,9 +1103,9 @@ static int __devinit ace_init(struct net_device *dev)
 				tmp |= DMA_WRITE_MAX_128;
 				break;
 			default:
-				printk(KERN_INFO "  Cache line size %i not "
-				       "supported, PCI write and invalidate "
-				       "disabled\n", SMP_CACHE_BYTES);
+//				printk(KERN_INFO "  Cache line size %i not "
+//				       "supported, PCI write and invalidate "
+;
 				ap->pci_command &= ~PCI_COMMAND_INVALIDATE;
 				pci_write_config_word(pdev, PCI_COMMAND,
 						      ap->pci_command);
@@ -1154,7 +1154,7 @@ static int __devinit ace_init(struct net_device *dev)
 	 * bit is enabled.
 	 */
 	if (!(ap->pci_command & PCI_COMMAND_FAST_BACK)) {
-		printk(KERN_INFO "  Enabling PCI Fast Back to Back\n");
+;
 		ap->pci_command |= PCI_COMMAND_FAST_BACK;
 		pci_write_config_word(pdev, PCI_COMMAND, ap->pci_command);
 	}
@@ -1195,8 +1195,8 @@ static int __devinit ace_init(struct net_device *dev)
 	ecode = request_irq(pdev->irq, ace_interrupt, IRQF_SHARED,
 			    DRV_NAME, dev);
 	if (ecode) {
-		printk(KERN_WARNING "%s: Requested IRQ %d is busy\n",
-		       DRV_NAME, pdev->irq);
+//		printk(KERN_WARNING "%s: Requested IRQ %d is busy\n",
+;
 		goto init_error;
 	} else
 		dev->irq = pdev->irq;
@@ -1373,9 +1373,9 @@ static int __devinit ace_init(struct net_device *dev)
 	ace_set_rxtx_parms(dev, 0);
 
 	if (board_idx == BOARD_IDX_OVERFLOW) {
-		printk(KERN_WARNING "%s: more than %i NICs detected, "
-		       "ignoring module parameters!\n",
-		       ap->name, ACE_MAX_MOD_PARMS);
+//		printk(KERN_WARNING "%s: more than %i NICs detected, "
+//		       "ignoring module parameters!\n",
+;
 	} else if (board_idx >= 0) {
 		if (tx_coal_tick[board_idx])
 			writel(tx_coal_tick[board_idx],
@@ -1413,8 +1413,8 @@ static int __devinit ace_init(struct net_device *dev)
 		tmp = LNK_ENABLE;
 
 		if (option & 0x01) {
-			printk(KERN_INFO "%s: Setting half duplex link\n",
-			       ap->name);
+//			printk(KERN_INFO "%s: Setting half duplex link\n",
+;
 			tmp &= ~LNK_FULL_DUPLEX;
 		}
 		if (option & 0x02)
@@ -1426,21 +1426,21 @@ static int __devinit ace_init(struct net_device *dev)
 		if (option & 0x40)
 			tmp |= LNK_1000MB;
 		if ((option & 0x70) == 0) {
-			printk(KERN_WARNING "%s: No media speed specified, "
-			       "forcing auto negotiation\n", ap->name);
+//			printk(KERN_WARNING "%s: No media speed specified, "
+;
 			tmp |= LNK_NEGOTIATE | LNK_1000MB |
 				LNK_100MB | LNK_10MB;
 		}
 		if ((option & 0x100) == 0)
 			tmp |= LNK_NEG_FCTL;
 		else
-			printk(KERN_INFO "%s: Disabling flow control "
-			       "negotiation\n", ap->name);
+//			printk(KERN_INFO "%s: Disabling flow control "
+;
 		if (option & 0x200)
 			tmp |= LNK_RX_FLOW_CTL_Y;
 		if ((option & 0x400) && (ap->version >= 2)) {
-			printk(KERN_INFO "%s: Enabling TX flow control\n",
-			       ap->name);
+//			printk(KERN_INFO "%s: Enabling TX flow control\n",
+;
 			tmp |= LNK_TX_FLOW_CTL_Y;
 		}
 	}
@@ -1489,7 +1489,7 @@ static int __devinit ace_init(struct net_device *dev)
 		cpu_relax();
 
 	if (!ap->fw_running) {
-		printk(KERN_ERR "%s: Firmware NOT running!\n", ap->name);
+;
 
 		ace_dump_trace(ap);
 		writel(readl(&regs->CpuCtrl) | CPU_HALT, &regs->CpuCtrl);
@@ -1521,14 +1521,14 @@ static int __devinit ace_init(struct net_device *dev)
 	if (!test_and_set_bit(0, &ap->std_refill_busy))
 		ace_load_std_rx_ring(ap, RX_RING_SIZE);
 	else
-		printk(KERN_ERR "%s: Someone is busy refilling the RX ring\n",
-		       ap->name);
+//		printk(KERN_ERR "%s: Someone is busy refilling the RX ring\n",
+;
 	if (ap->version >= 2) {
 		if (!test_and_set_bit(0, &ap->mini_refill_busy))
 			ace_load_mini_rx_ring(ap, RX_MINI_SIZE);
 		else
-			printk(KERN_ERR "%s: Someone is busy refilling "
-			       "the RX mini ring\n", ap->name);
+//			printk(KERN_ERR "%s: Someone is busy refilling "
+;
 	}
 	return 0;
 
@@ -1588,12 +1588,12 @@ static void ace_watchdog(struct net_device *data)
 	 * assume the card is stuck.
 	 */
 	if (*ap->tx_csm != ap->tx_ret_csm) {
-		printk(KERN_WARNING "%s: Transmitter is stuck, %08x\n",
-		       dev->name, (unsigned int)readl(&regs->HostCtrl));
+//		printk(KERN_WARNING "%s: Transmitter is stuck, %08x\n",
+;
 		/* This can happen due to ieee flow control. */
 	} else {
-		printk(KERN_DEBUG "%s: BUG... transmitter died. Kicking it.\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: BUG... transmitter died. Kicking it.\n",
+;
 #if 0
 		netif_wake_queue(dev);
 #endif
@@ -1610,7 +1610,7 @@ static void ace_tasklet(unsigned long dev)
 	if ((cur_size < RX_LOW_STD_THRES) &&
 	    !test_and_set_bit(0, &ap->std_refill_busy)) {
 #ifdef DEBUG
-		printk("refilling buffers (current %i)\n", cur_size);
+;
 #endif
 		ace_load_std_rx_ring(ap, RX_RING_SIZE - cur_size);
 	}
@@ -1620,8 +1620,8 @@ static void ace_tasklet(unsigned long dev)
 		if ((cur_size < RX_LOW_MINI_THRES) &&
 		    !test_and_set_bit(0, &ap->mini_refill_busy)) {
 #ifdef DEBUG
-			printk("refilling mini buffers (current %i)\n",
-			       cur_size);
+//			printk("refilling mini buffers (current %i)\n",
+;
 #endif
 			ace_load_mini_rx_ring(ap, RX_MINI_SIZE - cur_size);
 		}
@@ -1631,7 +1631,7 @@ static void ace_tasklet(unsigned long dev)
 	if (ap->jumbo && (cur_size < RX_LOW_JUMBO_THRES) &&
 	    !test_and_set_bit(0, &ap->jumbo_refill_busy)) {
 #ifdef DEBUG
-		printk("refilling jumbo buffers (current %i)\n", cur_size);
+;
 #endif
 		ace_load_jumbo_rx_ring(ap, RX_JUMBO_SIZE - cur_size);
 	}
@@ -1716,8 +1716,8 @@ static void ace_load_std_rx_ring(struct ace_private *ap, int nr_bufs)
 	return;
 
  error_out:
-	printk(KERN_INFO "Out of memory when allocating "
-	       "standard receive buffers\n");
+//	printk(KERN_INFO "Out of memory when allocating "
+;
 	goto out;
 }
 
@@ -1769,8 +1769,8 @@ static void ace_load_mini_rx_ring(struct ace_private *ap, int nr_bufs)
 	clear_bit(0, &ap->mini_refill_busy);
 	return;
  error_out:
-	printk(KERN_INFO "Out of memory when allocating "
-	       "mini receive buffers\n");
+//	printk(KERN_INFO "Out of memory when allocating "
+;
 	goto out;
 }
 
@@ -1833,8 +1833,8 @@ static void ace_load_jumbo_rx_ring(struct ace_private *ap, int nr_bufs)
 	return;
  error_out:
 	if (net_ratelimit())
-		printk(KERN_INFO "Out of memory when allocating "
-		       "jumbo receive buffers\n");
+//		printk(KERN_INFO "Out of memory when allocating "
+;
 	goto out;
 }
 
@@ -1853,8 +1853,8 @@ static u32 ace_handle_event(struct net_device *dev, u32 evtcsm, u32 evtprd)
 	while (evtcsm != evtprd) {
 		switch (ap->evt_ring[evtcsm].evt) {
 		case E_FW_RUNNING:
-			printk(KERN_INFO "%s: Firmware up and running\n",
-			       ap->name);
+//			printk(KERN_INFO "%s: Firmware up and running\n",
+;
 			ap->fw_running = 1;
 			wmb();
 			break;
@@ -1867,45 +1867,45 @@ static u32 ace_handle_event(struct net_device *dev, u32 evtcsm, u32 evtprd)
 			case E_C_LINK_UP:
 			{
 				u32 state = readl(&ap->regs->GigLnkState);
-				printk(KERN_WARNING "%s: Optical link UP "
-				       "(%s Duplex, Flow Control: %s%s)\n",
-				       ap->name,
-				       state & LNK_FULL_DUPLEX ? "Full":"Half",
-				       state & LNK_TX_FLOW_CTL_Y ? "TX " : "",
-				       state & LNK_RX_FLOW_CTL_Y ? "RX" : "");
+//				printk(KERN_WARNING "%s: Optical link UP "
+//				       "(%s Duplex, Flow Control: %s%s)\n",
+//				       ap->name,
+//				       state & LNK_FULL_DUPLEX ? "Full":"Half",
+//				       state & LNK_TX_FLOW_CTL_Y ? "TX " : "",
+;
 				break;
 			}
 			case E_C_LINK_DOWN:
-				printk(KERN_WARNING "%s: Optical link DOWN\n",
-				       ap->name);
+//				printk(KERN_WARNING "%s: Optical link DOWN\n",
+;
 				break;
 			case E_C_LINK_10_100:
-				printk(KERN_WARNING "%s: 10/100BaseT link "
-				       "UP\n", ap->name);
+//				printk(KERN_WARNING "%s: 10/100BaseT link "
+;
 				break;
 			default:
-				printk(KERN_ERR "%s: Unknown optical link "
-				       "state %02x\n", ap->name, code);
+//				printk(KERN_ERR "%s: Unknown optical link "
+;
 			}
 			break;
 		}
 		case E_ERROR:
 			switch(ap->evt_ring[evtcsm].code) {
 			case E_C_ERR_INVAL_CMD:
-				printk(KERN_ERR "%s: invalid command error\n",
-				       ap->name);
+//				printk(KERN_ERR "%s: invalid command error\n",
+;
 				break;
 			case E_C_ERR_UNIMP_CMD:
-				printk(KERN_ERR "%s: unimplemented command "
-				       "error\n", ap->name);
+//				printk(KERN_ERR "%s: unimplemented command "
+;
 				break;
 			case E_C_ERR_BAD_CFG:
-				printk(KERN_ERR "%s: bad config error\n",
-				       ap->name);
+//				printk(KERN_ERR "%s: bad config error\n",
+;
 				break;
 			default:
-				printk(KERN_ERR "%s: unknown error %02x\n",
-				       ap->name, ap->evt_ring[evtcsm].code);
+//				printk(KERN_ERR "%s: unknown error %02x\n",
+;
 			}
 			break;
 		case E_RESET_JUMBO_RNG:
@@ -1933,14 +1933,14 @@ static u32 ace_handle_event(struct net_device *dev, u32 evtcsm, u32 evtprd)
 
 			ap->jumbo = 0;
 			ap->rx_jumbo_skbprd = 0;
-			printk(KERN_INFO "%s: Jumbo ring flushed\n",
-			       ap->name);
+//			printk(KERN_INFO "%s: Jumbo ring flushed\n",
+;
 			clear_bit(0, &ap->jumbo_refill_busy);
 			break;
 		}
 		default:
-			printk(KERN_ERR "%s: Unhandled event 0x%02x\n",
-			       ap->name, ap->evt_ring[evtcsm].evt);
+//			printk(KERN_ERR "%s: Unhandled event 0x%02x\n",
+;
 		}
 		evtcsm = (evtcsm + 1) % EVT_RING_ENTRIES;
 	}
@@ -2005,9 +2005,9 @@ static void ace_rx_int(struct net_device *dev, u32 rxretprd, u32 rxretcsm)
 			mini_count++;
 			break;
 		default:
-			printk(KERN_INFO "%s: unknown frame type (0x%02x) "
-			       "returned by NIC\n", dev->name,
-			       retdesc->flags);
+//			printk(KERN_INFO "%s: unknown frame type (0x%02x) "
+//			       "returned by NIC\n", dev->name,
+;
 			goto error;
 		}
 
@@ -2214,7 +2214,7 @@ static irqreturn_t ace_interrupt(int irq, void *dev_id)
 			if ((cur_size < RX_PANIC_STD_THRES) &&
 			    !test_and_set_bit(0, &ap->std_refill_busy)) {
 #ifdef DEBUG
-				printk("low on std buffers %i\n", cur_size);
+;
 #endif
 				ace_load_std_rx_ring(ap,
 						     RX_RING_SIZE - cur_size);
@@ -2229,8 +2229,8 @@ static irqreturn_t ace_interrupt(int irq, void *dev_id)
 				    !test_and_set_bit(0,
 						      &ap->mini_refill_busy)) {
 #ifdef DEBUG
-					printk("low on mini buffers %i\n",
-					       cur_size);
+//					printk("low on mini buffers %i\n",
+;
 #endif
 					ace_load_mini_rx_ring(ap, RX_MINI_SIZE - cur_size);
 				} else
@@ -2245,8 +2245,8 @@ static irqreturn_t ace_interrupt(int irq, void *dev_id)
 				    !test_and_set_bit(0,
 						      &ap->jumbo_refill_busy)){
 #ifdef DEBUG
-					printk("low on jumbo buffers %i\n",
-					       cur_size);
+//					printk("low on jumbo buffers %i\n",
+;
 #endif
 					ace_load_jumbo_rx_ring(ap, RX_JUMBO_SIZE - cur_size);
 				} else
@@ -2287,7 +2287,7 @@ static int ace_open(struct net_device *dev)
 	struct cmd cmd;
 
 	if (!(ap->fw_running)) {
-		printk(KERN_WARNING "%s: Firmware not running!\n", dev->name);
+;
 		return -EBUSY;
 	}
 
@@ -2599,7 +2599,7 @@ overflow:
 	}
 
 	/* The ring is stuck full. */
-	printk(KERN_WARNING "%s: Transmit ring stuck full\n", dev->name);
+;
 	return NETDEV_TX_BUSY;
 }
 
@@ -2617,8 +2617,8 @@ static int ace_change_mtu(struct net_device *dev, int new_mtu)
 
 	if (new_mtu > ACE_STD_MTU) {
 		if (!(ap->jumbo)) {
-			printk(KERN_INFO "%s: Enabling Jumbo frame "
-			       "support\n", dev->name);
+//			printk(KERN_INFO "%s: Enabling Jumbo frame "
+;
 			ap->jumbo = 1;
 			if (!test_and_set_bit(0, &ap->jumbo_refill_busy))
 				ace_load_jumbo_rx_ring(ap, RX_JUMBO_SIZE);
@@ -2739,8 +2739,8 @@ static int ace_set_settings(struct net_device *dev, struct ethtool_cmd *ecmd)
 
 	if (link != ap->link) {
 		struct cmd cmd;
-		printk(KERN_INFO "%s: Renegotiating link state\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Renegotiating link state\n",
+;
 
 		ap->link = link;
 		writel(link, &regs->TuneLink);
@@ -2940,8 +2940,8 @@ static int __devinit ace_load_firmware(struct net_device *dev)
 	int ret;
 
 	if (!(readl(&regs->CpuCtrl) & CPU_HALTED)) {
-		printk(KERN_ERR "%s: trying to download firmware while the "
-		       "CPU is running!\n", ap->name);
+//		printk(KERN_ERR "%s: trying to download firmware while the "
+;
 		return -EFAULT;
 	}
 
@@ -2950,8 +2950,8 @@ static int __devinit ace_load_firmware(struct net_device *dev)
 
 	ret = request_firmware(&fw, fw_name, &ap->pdev->dev);
 	if (ret) {
-		printk(KERN_ERR "%s: Failed to load firmware \"%s\"\n",
-		       ap->name, fw_name);
+//		printk(KERN_ERR "%s: Failed to load firmware \"%s\"\n",
+;
 		return ret;
 	}
 
@@ -2968,16 +2968,16 @@ static int __devinit ace_load_firmware(struct net_device *dev)
 
 	ap->firmware_start = be32_to_cpu(fw_data[1]);
 	if (ap->firmware_start < 0x4000 || ap->firmware_start >= 0x80000) {
-		printk(KERN_ERR "%s: bogus load address %08x in \"%s\"\n",
-		       ap->name, ap->firmware_start, fw_name);
+//		printk(KERN_ERR "%s: bogus load address %08x in \"%s\"\n",
+;
 		ret = -EINVAL;
 		goto out;
 	}
 
 	load_addr = be32_to_cpu(fw_data[2]);
 	if (load_addr < 0x4000 || load_addr >= 0x80000) {
-		printk(KERN_ERR "%s: bogus load address %08x in \"%s\"\n",
-		       ap->name, load_addr, fw_name);
+//		printk(KERN_ERR "%s: bogus load address %08x in \"%s\"\n",
+;
 		ret = -EINVAL;
 		goto out;
 	}
@@ -3159,7 +3159,7 @@ static int __devinit read_eeprom_byte(struct net_device *dev,
 	eeprom_prep(regs, EEPROM_WRITE_SELECT);
 	if (eeprom_check_ack(regs)) {
 		local_irq_restore(flags);
-		printk(KERN_ERR "%s: Unable to sync eeprom\n", ap->name);
+;
 		result = -EIO;
 		goto eeprom_read_error;
 	}
@@ -3167,8 +3167,8 @@ static int __devinit read_eeprom_byte(struct net_device *dev,
 	eeprom_prep(regs, (offset >> 8) & 0xff);
 	if (eeprom_check_ack(regs)) {
 		local_irq_restore(flags);
-		printk(KERN_ERR "%s: Unable to set address byte 0\n",
-		       ap->name);
+//		printk(KERN_ERR "%s: Unable to set address byte 0\n",
+;
 		result = -EIO;
 		goto eeprom_read_error;
 	}
@@ -3176,8 +3176,8 @@ static int __devinit read_eeprom_byte(struct net_device *dev,
 	eeprom_prep(regs, offset & 0xff);
 	if (eeprom_check_ack(regs)) {
 		local_irq_restore(flags);
-		printk(KERN_ERR "%s: Unable to set address byte 1\n",
-		       ap->name);
+//		printk(KERN_ERR "%s: Unable to set address byte 1\n",
+;
 		result = -EIO;
 		goto eeprom_read_error;
 	}
@@ -3186,8 +3186,8 @@ static int __devinit read_eeprom_byte(struct net_device *dev,
 	eeprom_prep(regs, EEPROM_READ_SELECT);
 	if (eeprom_check_ack(regs)) {
 		local_irq_restore(flags);
-		printk(KERN_ERR "%s: Unable to set READ_SELECT\n",
-		       ap->name);
+//		printk(KERN_ERR "%s: Unable to set READ_SELECT\n",
+;
 		result = -EIO;
 		goto eeprom_read_error;
 	}
@@ -3243,7 +3243,7 @@ static int __devinit read_eeprom_byte(struct net_device *dev,
 	return result;
 
  eeprom_read_error:
-	printk(KERN_ERR "%s: Unable to read eeprom byte 0x%02lx\n",
-	       ap->name, offset);
+//	printk(KERN_ERR "%s: Unable to read eeprom byte 0x%02lx\n",
+;
 	goto out;
 }

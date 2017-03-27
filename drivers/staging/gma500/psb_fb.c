@@ -467,8 +467,8 @@ static int psbfb_create(struct psb_fbdev *fbdev,
 	DRM_DEBUG("fb depth is %d\n", fb->depth);
 	DRM_DEBUG("   pitch is %d\n", fb->pitch);
 
-	printk(KERN_INFO"allocated %dx%d fb\n",
-				psbfb->base.width, psbfb->base.height);
+//	printk(KERN_INFO"allocated %dx%d fb\n",
+;
 
 	mutex_unlock(&dev->struct_mutex);
 

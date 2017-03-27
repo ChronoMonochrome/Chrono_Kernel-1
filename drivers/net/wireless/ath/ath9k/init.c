@@ -893,17 +893,17 @@ static int __init ath9k_init(void)
 	/* Register rate control algorithm */
 	error = ath_rate_control_register();
 	if (error != 0) {
-		printk(KERN_ERR
-			"ath9k: Unable to register rate control "
-			"algorithm: %d\n",
-			error);
+//		printk(KERN_ERR
+//			"ath9k: Unable to register rate control "
+//			"algorithm: %d\n",
+;
 		goto err_out;
 	}
 
 	error = ath_pci_init();
 	if (error < 0) {
-		printk(KERN_ERR
-			"ath9k: No PCI devices found, driver not installed.\n");
+//		printk(KERN_ERR
+;
 		error = -ENODEV;
 		goto err_rate_unregister;
 	}
@@ -932,6 +932,6 @@ static void __exit ath9k_exit(void)
 	ath_ahb_exit();
 	ath_pci_exit();
 	ath_rate_control_unregister();
-	printk(KERN_INFO "%s: Driver unloaded\n", dev_info);
+;
 }
 module_exit(ath9k_exit);

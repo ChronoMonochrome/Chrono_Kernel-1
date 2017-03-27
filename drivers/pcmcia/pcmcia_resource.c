@@ -508,8 +508,12 @@ int pcmcia_enable_device(struct pcmcia_device *p_dev)
 	s->socket.Vpp = p_dev->vpp;
 	if (s->ops->set_socket(s, &s->socket)) {
 		mutex_unlock(&s->ops_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &p_dev->dev,
 			   "Unable to set socket state\n");
+#else
+		dev_;
+#endif
 		return -EINVAL;
 	}
 
@@ -736,13 +740,25 @@ __pcmcia_request_exclusive_irq(struct pcmcia_device *p_dev,
 	ret = request_irq(p_dev->irq, handler, 0, p_dev->devname, p_dev->priv);
 	if (ret) {
 		ret = pcmcia_request_irq(p_dev, handler);
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &p_dev->dev, "pcmcia: "
 			"request for exclusive IRQ could not be fulfilled.\n");
+#else
+		dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &p_dev->dev, "pcmcia: the driver "
 			"needs updating to supported shared IRQ lines.\n");
+#else
+		dev_;
+#endif
 	}
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &p_dev->dev, "request_irq() failed\n");
+#else
+		dev_;
+#endif
 	else
 		p_dev->_irq = 1;
 

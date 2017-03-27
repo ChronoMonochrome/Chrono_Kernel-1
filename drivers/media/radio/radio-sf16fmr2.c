@@ -332,9 +332,17 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
 
 #ifdef DEBUG
 	if (fmr2->curvol && !fmr2->mute)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "unmute\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "mute\n");
+#else
+		;
+#endif
 #endif
 
 	mutex_lock(&fmr2->lock);

@@ -231,23 +231,23 @@ static void veth_timed_reset(unsigned long ptr);
  */
 
 #define veth_info(fmt, args...) \
-	printk(KERN_INFO DRV_NAME ": " fmt, ## args)
-
-#define veth_error(fmt, args...) \
-	printk(KERN_ERR DRV_NAME ": Error: " fmt, ## args)
-
-#ifdef DEBUG
-#define veth_debug(fmt, args...) \
-	printk(KERN_DEBUG DRV_NAME ": " fmt, ## args)
-#else
-#define veth_debug(fmt, args...) do {} while (0)
-#endif
-
-/* You must hold the connection's lock when you call this function. */
-static inline void veth_stack_push(struct veth_lpar_connection *cnx,
-				   struct veth_msg *msg)
-{
-	msg->next = cnx->msg_stack_head;
+//	printk(KERN_INFO DRV_NAME ": " fmt, ## args)
+//
+//#define veth_error(fmt, args...) \
+//	printk(KERN_ERR DRV_NAME ": Error: " fmt, ## args)
+//
+//#ifdef DEBUG
+//#define veth_debug(fmt, args...) \
+//	printk(KERN_DEBUG DRV_NAME ": " fmt, ## args)
+//#else
+//#define veth_debug(fmt, args...) do {} while (0)
+//#endif
+//
+///* You must hold the connection's lock when you call this function. */
+//static inline void veth_stack_push(struct veth_lpar_connection *cnx,
+//				   struct veth_msg *msg)
+//{
+;
 	cnx->msg_stack_head = msg;
 }
 

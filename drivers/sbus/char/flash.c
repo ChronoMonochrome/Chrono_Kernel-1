@@ -183,10 +183,14 @@ static int __devinit flash_probe(struct platform_device *op)
 	}
 	flash.busy = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: OBP Flash, RD %lx[%lx] WR %lx[%lx]\n",
 	       op->dev.of_node->full_name,
 	       flash.read_base, flash.read_size,
 	       flash.write_base, flash.write_size);
+#else
+	;
+#endif
 
 	return misc_register(&flash_dev);
 }

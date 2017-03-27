@@ -719,7 +719,11 @@ kdb_printit:
 	if (logging) {
 		saved_loglevel = console_loglevel;
 		console_loglevel = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s", kdb_buffer);
+#else
+		;
+#endif
 	}
 
 	if (KDB_STATE(PAGER)) {
@@ -789,7 +793,11 @@ kdb_printit:
 		}
 
 		if (logging)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s", moreprompt);
+#else
+			;
+#endif
 
 		kdb_read(buf1, 2); /* '2' indicates to return
 				    * immediately after getting one key. */

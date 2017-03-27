@@ -41,7 +41,11 @@ waitforHIA(struct IsdnCardState *cs, int timeout)
 		timeout--;
 	}
 	if (!timeout)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: ISAR waitforHIA timeout\n");
+#else
+		;
+#endif
 	return(timeout);
 }
 
@@ -140,7 +144,11 @@ waitrecmsg(struct IsdnCardState *cs, u_char *len,
 		(timeout++ < maxdelay))
 		udelay(1);
 	if (timeout > maxdelay) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"isar recmsg IRQSTA timeout\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	get_irq_infos(cs, ir);
@@ -177,7 +185,11 @@ ISARVersion(struct IsdnCardState *cs, char *s)
 	if (cs->bcs[0].hw.isar.reg->iis == ISAR_IIS_VNR) {
 		if (len == 1) {
 			ver = tmp[0] & 0xf;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s ISAR version %d\n", s, ver);
+#else
+			;
+#endif
 		} else
 			ver = -3;
 	} else
@@ -218,7 +230,11 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 		return -EFAULT;
 	}
 	p += sizeof(int);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG"isar_load_firmware size: %d\n", size);
+#else
+	;
+#endif
 	cnt = 0;
 	/* disable ISAR IRQ */
 	cs->BC_Write_Reg(cs, 0, ISAR_IRQBIT, 0);
@@ -250,8 +266,12 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 #endif /* __BIG_ENDIAN */
 		cnt += BLK_HEAD_SIZE;
 		p += BLK_HEAD_SIZE;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar firmware block (%#x,%5d,%#x)\n",
 			blk_head.sadr, blk_head.len, blk_head.d_key & 0xff);
+#else
+		;
+#endif
 		sadr = blk_head.sadr;
 		left = blk_head.len;
 		spin_lock_irqsave(&cs->lock, flags);
@@ -289,8 +309,12 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 			nom += 3;
 			sp = (u_short *)tmpmsg;
 #if DBG_LOADFIRM
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG"isar: load %3d words at %04x left %d\n",
 				 noc, sadr, left);
+#else
+			;
+#endif
 #endif
 			sadr += noc;
 			while(noc) {
@@ -320,8 +344,12 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 			}
 			spin_unlock_irqrestore(&cs->lock, flags);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar firmware block %5d words loaded\n",
 			blk_head.len);
+#else
+		;
+#endif
 	}
 	/* 10ms delay */
 	cnt = 10;
@@ -344,7 +372,11 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 			ireg->iis, ireg->cmsb, len);
 		ret = 1;goto reterr_unlock;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar start dsp success\n");
+#else
+		;
+#endif
 	/* NORMAL mode entered */
 	/* Enable IRQs of ISAR */
 	cs->BC_Write_Reg(cs, 0, ISAR_IRQBIT, ISAR_IRQSTA);
@@ -358,8 +390,12 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 		printk(KERN_ERR"isar no general status event received\n");
 		ret = 1;goto reterror;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar general status event %x\n",
 			ireg->bstat);
+#else
+		;
+#endif
 	}
 	/* 10ms delay */
 	cnt = 10;
@@ -384,10 +420,18 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 	}
 	if ((ireg->cmsb == ISAR_CTRL_STST) && (ireg->clsb == 1)
 		&& (ireg->par[0] == 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar selftest OK\n");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"isar selftest not OK %x/%x/%x\n",
 			ireg->cmsb, ireg->clsb, ireg->par[0]);
+#else
+		;
+#endif
 		ret = 1;goto reterror;
 	}
 	spin_lock_irqsave(&cs->lock, flags);
@@ -408,8 +452,12 @@ isar_load_firmware(struct IsdnCardState *cs, u_char __user *buf)
 		ret = 1;goto reterror;
 	} else {
 		if ((ireg->cmsb == ISAR_CTRL_SWVER) && (ireg->clsb == 1))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG"isar software version %#x\n",
 				ireg->par[0]);
+#else
+			;
+#endif
 		else {
 			printk(KERN_ERR"isar wrong swver response (%x,%x) cnt(%d)\n",
 				ireg->cmsb, ireg->clsb, cnt);
@@ -462,7 +510,11 @@ send_DLE_ETX(struct BCState *bcs)
 		skb_queue_tail(&bcs->rqueue, skb);
 		schedule_event(bcs, B_RCVBUFREADY);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: skb out of memory\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -503,8 +555,12 @@ isar_rcv_frame(struct IsdnCardState *cs, struct BCState *bcs)
 	case L1_MODE_NULL:
 		debugl1(cs, "isar mode 0 spurious IIS_RDATA %x/%x/%x",
 			ireg->iis, ireg->cmsb, ireg->clsb);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"isar mode 0 spurious IIS_RDATA %x/%x/%x\n",
 			ireg->iis, ireg->cmsb, ireg->clsb);
+#else
+		;
+#endif
 		cs->BC_Write_Reg(cs, 1, ISAR_IIA, 0);
 		break;
 	case L1_MODE_TRANS:
@@ -514,7 +570,11 @@ isar_rcv_frame(struct IsdnCardState *cs, struct BCState *bcs)
 			skb_queue_tail(&bcs->rqueue, skb);
 			schedule_event(bcs, B_RCVBUFREADY);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: skb out of memory\n");
+#else
+			;
+#endif
 			cs->BC_Write_Reg(cs, 1, ISAR_IIA, 0);
 		}
 		break;
@@ -548,7 +608,11 @@ isar_rcv_frame(struct IsdnCardState *cs, struct BCState *bcs)
 						debugl1(cs, "isar frame to short %d",
 							bcs->hw.isar.rcvidx);
 				} else if (!(skb = dev_alloc_skb(bcs->hw.isar.rcvidx-2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "ISAR: receive out of memory\n");
+#else
+					;
+#endif
 				} else {
 					memcpy(skb_put(skb, bcs->hw.isar.rcvidx-2),
 						bcs->hw.isar.rcvbuf, bcs->hw.isar.rcvidx-2);
@@ -591,7 +655,11 @@ isar_rcv_frame(struct IsdnCardState *cs, struct BCState *bcs)
 					schedule_event(bcs, B_LL_NOCARRIER);
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: skb out of memory\n");
+#else
+				;
+#endif
 			}
 			break;
 		}
@@ -629,10 +697,18 @@ isar_rcv_frame(struct IsdnCardState *cs, struct BCState *bcs)
 					if (cs->debug & L1_DEB_WARN)
 						debugl1(cs, "isar frame to short %d",
 							bcs->hw.isar.rcvidx);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "ISAR: frame to short %d\n",
 						bcs->hw.isar.rcvidx);
+#else
+					;
+#endif
 				} else if (!(skb = dev_alloc_skb(len))) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "ISAR: receive out of memory\n");
+#else
+					;
+#endif
 				} else {
 					insert_dle((u_char *)skb_put(skb, len),
 						bcs->hw.isar.rcvbuf,
@@ -1417,7 +1493,11 @@ modeisar(struct BCState *bcs, int mode, int bc)
 					&bcs->hw.isar.reg->Flags))
 					bcs->hw.isar.dpath = 1;
 				else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING"isar modeisar both pathes in use\n");
+#else
+					;
+#endif
 					return(1);
 				}
 				break;
@@ -1428,7 +1508,11 @@ modeisar(struct BCState *bcs, int mode, int bc)
 					&bcs->hw.isar.reg->Flags))
 					bcs->hw.isar.dpath = 1;
 				else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING"isar modeisar analog functions only with DP1\n");
+#else
+					;
+#endif
 					debugl1(cs, "isar modeisar analog functions only with DP1");
 					return(1);
 				}
@@ -1613,7 +1697,11 @@ isar_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "isar_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				if (bcs->cs->debug & L1_DEB_HSCX)
@@ -1711,8 +1799,12 @@ open_isarstate(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.isar.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: No memory for isar.rcvbuf\n");
+#else
+			;
+#endif
 			return (1);
 		}
 		skb_queue_head_init(&bcs->rqueue);
@@ -1866,27 +1958,43 @@ isar_auxcmd(struct IsdnCardState *cs, isdn_ctrl *ic) {
 					break;
 				case 20:
 					features = *(unsigned int *) ic->parm.num;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "HiSax: max modulation old(%04x) new(%04x)\n",
 						modmask, features);
+#else
+					;
+#endif
 					modmask = features;
 					break;
 				case 21:
 					features = *(unsigned int *) ic->parm.num;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "HiSax: FRM extra delay old(%d) new(%d) ms\n",
 						frm_extra_delay, features);
+#else
+					;
+#endif
 					if (features >= 0)
 						frm_extra_delay = features;
 					break;
 				case 22:
 					features = *(unsigned int *) ic->parm.num;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "HiSax: TOA old(%d) new(%d) db\n",
 						para_TOA, features);
+#else
+					;
+#endif
 					if (features >= 0 && features < 32)
 						para_TOA = features;
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "HiSax: invalid ioctl %d\n",
 					       (int) ic->arg);
+#else
+					;
+#endif
 					return(-EINVAL);
 			}
 			break;

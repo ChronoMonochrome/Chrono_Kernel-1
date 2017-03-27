@@ -173,12 +173,20 @@ static int ams_i2c_probe(struct i2c_client *client,
 	ams_info.i2c_client = client;
 
 	if (ams_i2c_cmd(AMS_CMD_RESET)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ams: Failed to reset the device\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if (ams_i2c_cmd(AMS_CMD_START)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ams: Failed to start the device\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -192,8 +200,12 @@ static int ams_i2c_probe(struct i2c_client *client,
 	vmaj = ams_i2c_read(AMS_DATA1);
 	vmin = ams_i2c_read(AMS_DATA2);
 	if (vmaj != 1 || vmin != 52) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ams: Incorrect device version (%d.%d)\n",
 			vmaj, vmin);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -202,8 +214,12 @@ static int ams_i2c_probe(struct i2c_client *client,
 	vmaj = ams_i2c_read(AMS_DATA1);
 	vmin = ams_i2c_read(AMS_DATA2);
 	if (vmaj != 0 || vmin != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ams: Incorrect firmware version (%d.%d)\n",
 			vmaj, vmin);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -230,7 +246,11 @@ static int ams_i2c_probe(struct i2c_client *client,
 	/* Enable interrupts */
 	ams_i2c_set_irq(AMS_IRQ_ALL, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ams: Found I2C based motion sensor\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -246,7 +266,11 @@ static int ams_i2c_remove(struct i2c_client *client)
 		/* Clear interrupts */
 		ams_i2c_clear_irq(AMS_IRQ_ALL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ams: Unloading\n");
+#else
+		;
+#endif
 
 		ams_info.has_device = 0;
 	}

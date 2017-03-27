@@ -2401,7 +2401,7 @@ void mdp_set_scale(MDPIBUF *iBuf,
 	}
 	/* setting edge condition here after scaling check */
 	if (mdp_get_edge_cond(iBuf, &lines_dup, &lines_dup_bg))
-		printk(KERN_ERR "msm_fb: mdp_get_edge_cond() error!\n");
+;
 
 	MDP_OUTP(MDP_CMD_DEBUG_ACCESS_BASE + 0x01b8, lines_dup);
 	MDP_OUTP(MDP_CMD_DEBUG_ACCESS_BASE + 0x01bc, lines_dup_bg);

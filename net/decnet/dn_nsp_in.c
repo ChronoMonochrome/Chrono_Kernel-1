@@ -83,9 +83,9 @@ static void dn_log_martian(struct sk_buff *skb, const char *msg)
 	if (decnet_log_martians && net_ratelimit()) {
 		char *devname = skb->dev ? skb->dev->name : "???";
 		struct dn_skb_cb *cb = DN_SKB_CB(skb);
-		printk(KERN_INFO "DECnet: Martian packet (%s) dev=%s src=0x%04hx dst=0x%04hx srcport=0x%04hx dstport=0x%04hx\n",
-		       msg, devname, le16_to_cpu(cb->src), le16_to_cpu(cb->dst),
-		       le16_to_cpu(cb->src_port), le16_to_cpu(cb->dst_port));
+//		printk(KERN_INFO "DECnet: Martian packet (%s) dev=%s src=0x%04hx dst=0x%04hx srcport=0x%04hx dstport=0x%04hx\n",
+//		       msg, devname, le16_to_cpu(cb->src), le16_to_cpu(cb->dst),
+;
 	}
 }
 
@@ -727,7 +727,7 @@ static int dn_nsp_rx_packet(struct sk_buff *skb)
 	cb->nsp_flags = *ptr++;
 
 	if (decnet_debug_level & 2)
-		printk(KERN_DEBUG "dn_nsp_rx: Message type 0x%02x\n", (int)cb->nsp_flags);
+;
 
 	if (cb->nsp_flags & 0x83)
 		goto free_out;

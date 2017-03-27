@@ -104,9 +104,9 @@ static int _usbctrl_vendorreq_sync_read(struct usb_device *udev, u8 request,
 				 pdata, len, 0); /* max. timeout */
 
 	if (status < 0)
-		printk(KERN_ERR "reg 0x%x, usbctrl_vendorreq TimeOut! "
-		       "status:0x%x value=0x%x\n", value, status,
-		       *(u32 *)pdata);
+//		printk(KERN_ERR "reg 0x%x, usbctrl_vendorreq TimeOut! "
+//		       "status:0x%x value=0x%x\n", value, status,
+;
 	return status;
 }
 
@@ -316,8 +316,8 @@ static int _rtl_usb_init_rx(struct ieee80211_hw *hw)
 	rtlusb->usb_rx_segregate_hdl =
 		rtlpriv->cfg->usb_interface_cfg->usb_rx_segregate_hdl;
 
-	printk(KERN_INFO "rtl8192cu: rx_max_size %d, rx_urb_num %d, in_ep %d\n",
-		rtlusb->rx_max_size, rtlusb->rx_urb_num, rtlusb->in_ep);
+//	printk(KERN_INFO "rtl8192cu: rx_max_size %d, rx_urb_num %d, in_ep %d\n",
+;
 	init_usb_anchor(&rtlusb->rx_submitted);
 	return 0;
 }
@@ -580,7 +580,7 @@ static void _rtl_rx_completed(struct urb *_urb)
 		} else{
 			/* TO DO */
 			_rtl_rx_pre_process(hw, skb);
-			printk(KERN_ERR "rtlwifi: rx agg not supported\n");
+;
 		}
 		goto resubmit;
 	}

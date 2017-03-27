@@ -227,7 +227,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 		fbram = ioremap((unsigned long)fbram_phys, fbram_size);
 
 		if (!fbram) {
-			printk(KERN_ERR "fbram ioremap failed!\n");
+;
 			return -ENOMEM;
 		}
 		MSM_FB_INFO("msm_fb_probe:  phy_Addr = 0x%x virt = 0x%x\n",
@@ -271,7 +271,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 	/* android supports only one lcd-backlight/lcd for now */
 	if (!lcd_backlight_registered) {
 		if (led_classdev_register(&pdev->dev, &backlight_led))
-			printk(KERN_ERR "led_classdev_register failed\n");
+;
 		else
 			lcd_backlight_registered = 1;
 	}
@@ -296,7 +296,7 @@ static int msm_fb_remove(struct platform_device *pdev)
 		return -EINVAL;
 
 	if (msm_fb_suspend_sub(mfd))
-		printk(KERN_ERR "msm_fb_remove: can't stop the device %d\n", mfd->index);
+;
 
 	if (mfd->channel_irq != 0)
 		free_irq(mfd->channel_irq, (void *)mfd);
@@ -352,7 +352,7 @@ static int msm_fb_suspend(struct platform_device *pdev, pm_message_t state)
 
 	ret = msm_fb_suspend_sub(mfd);
 	if (ret != 0) {
-		printk(KERN_ERR "msm_fb: failed to suspend! %d\n", ret);
+;
 		fb_set_suspend(mfd->fbi, 0);
 	} else {
 		pdev->dev.power.power_state = state;
@@ -533,7 +533,7 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
 	if ((!pdata) || (!pdata->on) || (!pdata->off)) {
-		printk(KERN_ERR "msm_fb_blank_sub: no panel operation detected!\n");
+;
 		return -ENODEV;
 	}
 
@@ -923,7 +923,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	fbram_size -= fbram_offset;
 
 	if (fbram_size < fix->smem_len) {
-		printk(KERN_ERR "error: no more framebuffer memory!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -948,8 +948,8 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	if (mfd->lut_update) {
 		ret = fb_alloc_cmap(&fbi->cmap, 256, 0);
 		if (ret)
-			printk(KERN_ERR "%s: fb_alloc_cmap() failed!\n",
-					__func__);
+//			printk(KERN_ERR "%s: fb_alloc_cmap() failed!\n",
+;
 	}
 
 	if (register_framebuffer(fbi) < 0) {
@@ -1124,7 +1124,7 @@ static int msm_fb_open(struct fb_info *info, int user)
 		mdp_set_dma_pan_info(info, NULL, TRUE);
 
 		if (msm_fb_blank_sub(FB_BLANK_UNBLANK, info, mfd->op_enable)) {
-			printk(KERN_ERR "msm_fb_open: can't turn on display!\n");
+;
 			return -1;
 		}
 	}
@@ -1150,7 +1150,7 @@ static int msm_fb_release(struct fb_info *info, int user)
 		if ((ret =
 		     msm_fb_blank_sub(FB_BLANK_POWERDOWN, info,
 				      mfd->op_enable)) != 0) {
-			printk(KERN_ERR "msm_fb_release: can't turn off display!\n");
+;
 			return ret;
 		}
 	}
@@ -1452,7 +1452,7 @@ int mdp_blit(struct fb_info *info, struct mdp_blit_req *req)
 	int ret;
 	struct file *p_src_file = 0, *p_dst_file = 0;
 	if (unlikely(req->src_rect.h == 0 || req->src_rect.w == 0)) {
-		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
+;
 		return -EINVAL;
 	}
 	if (unlikely(req->dst_rect.h == 0 || req->dst_rect.w == 0))
@@ -1888,13 +1888,13 @@ static int msmfb_overlay_get(struct fb_info *info, void __user *p)
 
 	ret = mdp4_overlay_get(info, &req);
 	if (ret) {
-		printk(KERN_ERR "%s: ioctl failed \n",
-			__func__);
+//		printk(KERN_ERR "%s: ioctl failed \n",
+;
 		return ret;
 	}
 	if (copy_to_user(p, &req, sizeof(req))) {
-		printk(KERN_ERR "%s: copy2user failed \n",
-			__func__);
+//		printk(KERN_ERR "%s: copy2user failed \n",
+;
 		return -EFAULT;
 	}
 
@@ -1911,14 +1911,14 @@ static int msmfb_overlay_set(struct fb_info *info, void __user *p)
 
 	ret = mdp4_overlay_set(info, &req);
 	if (ret) {
-		printk(KERN_ERR "%s:ioctl failed \n",
-			__func__);
+//		printk(KERN_ERR "%s:ioctl failed \n",
+;
 		return ret;
 	}
 
 	if (copy_to_user(p, &req, sizeof(req))) {
-		printk(KERN_ERR "%s: copy2user failed \n",
-			__func__);
+//		printk(KERN_ERR "%s: copy2user failed \n",
+;
 		return -EFAULT;
 	}
 
@@ -1931,8 +1931,8 @@ static int msmfb_overlay_unset(struct fb_info *info, unsigned long *argp)
 
 	ret = copy_from_user(&ndx, argp, sizeof(ndx));
 	if (ret) {
-		printk(KERN_ERR "%s:msmfb_overlay_unset ioctl failed \n",
-			__func__);
+//		printk(KERN_ERR "%s:msmfb_overlay_unset ioctl failed \n",
+;
 		return ret;
 	}
 
@@ -1947,8 +1947,8 @@ static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
 
 	ret = copy_from_user(&req, argp, sizeof(req));
 	if (ret) {
-		printk(KERN_ERR "%s:msmfb_overlay_play ioctl failed \n",
-			__func__);
+//		printk(KERN_ERR "%s:msmfb_overlay_play ioctl failed \n",
+;
 		return ret;
 	}
 
@@ -2062,9 +2062,9 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 #ifndef CONFIG_FB_MSM_MDP40
 		ret = copy_from_user(&ccs_matrix, argp, sizeof(ccs_matrix));
 		if (ret) {
-			printk(KERN_ERR
-				"%s:MSMFB_SET_CCS_MATRIX ioctl failed \n",
-				__func__);
+//			printk(KERN_ERR
+//				"%s:MSMFB_SET_CCS_MATRIX ioctl failed \n",
+;
 			return ret;
 		}
 
@@ -2087,9 +2087,9 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 #ifndef CONFIG_FB_MSM_MDP40
 		ret = copy_from_user(&ccs_matrix, argp, sizeof(ccs_matrix)) ;
 		if (ret) {
-			printk(KERN_ERR
-				"%s:MSMFB_GET_CCS_MATRIX ioctl failed \n",
-				 __func__);
+//			printk(KERN_ERR
+//				"%s:MSMFB_GET_CCS_MATRIX ioctl failed \n",
+;
 			return ret;
 		}
 
@@ -2102,9 +2102,9 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = copy_to_user(argp, &ccs_matrix, sizeof(ccs_matrix));
 
 		if (ret)	{
-			printk(KERN_ERR
-				"%s:MSMFB_GET_CCS_MATRIX ioctl failed \n",
-				 __func__);
+//			printk(KERN_ERR
+//				"%s:MSMFB_GET_CCS_MATRIX ioctl failed \n",
+;
 			return ret ;
 		}
 		up(&msm_fb_ioctl_ppp_sem);
@@ -2270,7 +2270,7 @@ void msm_fb_add_device(struct platform_device *pdev)
 		return;
 
 	if (fbi_list_index >= MAX_FBI_LIST) {
-		printk(KERN_ERR "msm_fb: no more framebuffer info list!\n");
+;
 		return;
 	}
 	/*
@@ -2279,8 +2279,8 @@ void msm_fb_add_device(struct platform_device *pdev)
 	this_dev = msm_fb_device_alloc(pdata, type, id);
 
 	if (!this_dev) {
-		printk(KERN_ERR
-		"%s: msm_fb_device_alloc failed!\n", __func__);
+//		printk(KERN_ERR
+;
 		return;
 	}
 
@@ -2290,7 +2290,7 @@ void msm_fb_add_device(struct platform_device *pdev)
 	fbi = framebuffer_alloc(sizeof(struct msm_fb_data_type), NULL);
 	if (fbi == NULL) {
 		platform_device_put(this_dev);
-		printk(KERN_ERR "msm_fb: can't alloca framebuffer info data!\n");
+;
 		return;
 	}
 
@@ -2315,7 +2315,7 @@ void msm_fb_add_device(struct platform_device *pdev)
 	platform_set_drvdata(this_dev, mfd);
 
 	if (platform_device_add(this_dev)) {
-		printk(KERN_ERR "msm_fb: platform_device_add failed!\n");
+;
 		platform_device_put(this_dev);
 		framebuffer_release(fbi);
 		fbi_list_index--;

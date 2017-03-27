@@ -823,17 +823,17 @@ hugetlbfs_parse_options(char *options, struct hugetlbfs_config *pconfig)
 			ps = memparse(args[0].from, &rest);
 			pconfig->hstate = size_to_hstate(ps);
 			if (!pconfig->hstate) {
-				printk(KERN_ERR
-				"hugetlbfs: Unsupported page size %lu MB\n",
-					ps >> 20);
+//				printk(KERN_ERR
+//				"hugetlbfs: Unsupported page size %lu MB\n",
+;
 				return -EINVAL;
 			}
 			break;
 		}
 
 		default:
-			printk(KERN_ERR "hugetlbfs: Bad mount option: \"%s\"\n",
-				 p);
+//			printk(KERN_ERR "hugetlbfs: Bad mount option: \"%s\"\n",
+;
 			return -EINVAL;
 			break;
 		}
@@ -853,8 +853,8 @@ hugetlbfs_parse_options(char *options, struct hugetlbfs_config *pconfig)
 	return 0;
 
 bad_val:
- 	printk(KERN_ERR "hugetlbfs: Bad value '%s' for mount option '%s'\n",
-	       args[0].from, p);
+// 	printk(KERN_ERR "hugetlbfs: Bad value '%s' for mount option '%s'\n",
+;
  	return -EINVAL;
 }
 

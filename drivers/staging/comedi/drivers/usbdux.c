@@ -1101,11 +1101,11 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
 
 	this_usbduxsub->dux_commands[0] = cmd_type;
 #ifdef NOISY_DUX_DEBUGBUG
-	printk(KERN_DEBUG "comedi%d: usbdux: dux_commands: ",
-	       this_usbduxsub->comedidev->minor);
+//	printk(KERN_DEBUG "comedi%d: usbdux: dux_commands: ",
+;
 	for (result = 0; result < SIZEOFDUXBUFFER; result++)
-		printk(" %02x", this_usbduxsub->dux_commands[result]);
-	printk("\n");
+;
+;
 #endif
 	result = usb_bulk_msg(this_usbduxsub->usbdev,
 			      usb_sndbulkpipe(this_usbduxsub->usbdev,
@@ -2640,8 +2640,8 @@ static int usbdux_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 
 	if (index < 0) {
-		printk(KERN_ERR "comedi%d: usbdux: error: attach failed, no "
-		       "usbdux devs connected to the usb bus.\n", dev->minor);
+//		printk(KERN_ERR "comedi%d: usbdux: error: attach failed, no "
+;
 		up(&start_stop_sem);
 		return -ENODEV;
 	}
@@ -2790,15 +2790,15 @@ static int usbdux_detach(struct comedi_device *dev)
 	struct usbduxsub *usbduxsub_tmp;
 
 	if (!dev) {
-		printk(KERN_ERR
-		       "comedi?: usbdux: detach without dev variable...\n");
+//		printk(KERN_ERR
+;
 		return -EFAULT;
 	}
 
 	usbduxsub_tmp = dev->private;
 	if (!usbduxsub_tmp) {
-		printk(KERN_ERR
-		       "comedi?: usbdux: detach without ptr to usbduxsub[]\n");
+//		printk(KERN_ERR
+;
 		return -EFAULT;
 	}
 
@@ -2847,8 +2847,8 @@ static struct usb_driver usbduxsub_driver = {
 /* registering the usb-system _and_ the comedi-driver */
 static int __init init_usbdux(void)
 {
-	printk(KERN_INFO KBUILD_MODNAME ": "
-	       DRIVER_VERSION ":" DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": "
+;
 	usb_register(&usbduxsub_driver);
 	comedi_driver_register(&driver_usbdux);
 	return 0;

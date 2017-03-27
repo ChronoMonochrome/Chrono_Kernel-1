@@ -457,8 +457,8 @@ static int gred_change(struct Qdisc *sch, struct nlattr *opt)
 			if (table->tab[table->def])
 				def_prio = table->tab[table->def]->prio;
 
-			printk(KERN_DEBUG "GRED: DP %u does not have a prio "
-			       "setting default to %d\n", ctl->DP, def_prio);
+//			printk(KERN_DEBUG "GRED: DP %u does not have a prio "
+;
 
 			prio = def_prio;
 		} else

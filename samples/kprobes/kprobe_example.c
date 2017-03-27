@@ -23,19 +23,31 @@ static struct kprobe kp = {
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 #ifdef CONFIG_X86
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pre_handler: p->addr = 0x%p, ip = %lx,"
 			" flags = 0x%lx\n",
 		p->addr, regs->ip, regs->flags);
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_PPC
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pre_handler: p->addr = 0x%p, nip = 0x%lx,"
 			" msr = 0x%lx\n",
 		p->addr, regs->nip, regs->msr);
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_MIPS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pre_handler: p->addr = 0x%p, epc = 0x%lx,"
 			" status = 0x%lx\n",
 		p->addr, regs->cp0_epc, regs->cp0_status);
+#else
+	;
+#endif
 #endif
 
 	/* A dump_stack() here will give a stack backtrace */
@@ -47,16 +59,28 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
 				unsigned long flags)
 {
 #ifdef CONFIG_X86
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "post_handler: p->addr = 0x%p, flags = 0x%lx\n",
 		p->addr, regs->flags);
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_PPC
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "post_handler: p->addr = 0x%p, msr = 0x%lx\n",
 		p->addr, regs->msr);
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_MIPS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "post_handler: p->addr = 0x%p, status = 0x%lx\n",
 		p->addr, regs->cp0_status);
+#else
+	;
+#endif
 #endif
 }
 
@@ -67,8 +91,12 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
  */
 static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fault_handler: p->addr = 0x%p, trap #%dn",
 		p->addr, trapnr);
+#else
+	;
+#endif
 	/* Return 0 because we don't handle the fault. */
 	return 0;
 }
@@ -82,17 +110,29 @@ static int __init kprobe_init(void)
 
 	ret = register_kprobe(&kp);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "register_kprobe failed, returned %d\n", ret);
+#else
+		;
+#endif
 		return ret;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Planted kprobe at %p\n", kp.addr);
+#else
+	;
+#endif
 	return 0;
 }
 
 static void __exit kprobe_exit(void)
 {
 	unregister_kprobe(&kp);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "kprobe at %p unregistered\n", kp.addr);
+#else
+	;
+#endif
 }
 
 module_init(kprobe_init)

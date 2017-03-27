@@ -381,22 +381,22 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #endif
 		break;
 	default:
-		printk("bug! couldn't determine board type\n");
+;
 		return -EINVAL;
 		break;
 	}
-	printk("comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
-	       thisboard->name, iobase);
+//	printk("comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
+;
 #ifdef incomplete
 	if (irq)
-		printk(", irq %u", irq);
+;
 
 #endif
 
-	printk("\n");
+;
 
 	if (iobase == 0) {
-		printk("io base address is zero!\n");
+;
 		return -EINVAL;
 	}
 
@@ -421,7 +421,7 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int dio700_detach(struct comedi_device *dev)
 {
-	printk("comedi%d: ni_daq_700: cs-remove\n", dev->minor);
+;
 
 	if (dev->subdevices)
 		subdev_700_cleanup(dev, dev->subdevices + 0);
@@ -452,7 +452,7 @@ static int dio700_cs_attach(struct pcmcia_device *link)
 {
 	struct local_info_t *local;
 
-	printk(KERN_INFO "ni_daq_700:  cs-attach\n");
+;
 
 	dev_dbg(&link->dev, "dio700_cs_attach()\n");
 
@@ -473,7 +473,7 @@ static int dio700_cs_attach(struct pcmcia_device *link)
 static void dio700_cs_detach(struct pcmcia_device *link)
 {
 
-	printk(KERN_INFO "ni_daq_700: cs-detach!\n");
+;
 
 	dev_dbg(&link->dev, "dio700_cs_detach\n");
 
@@ -498,7 +498,7 @@ static void dio700_config(struct pcmcia_device *link)
 {
 	int ret;
 
-	printk(KERN_INFO "ni_daq_700:  cs-config\n");
+;
 
 	dev_dbg(&link->dev, "dio700_config\n");
 
@@ -521,7 +521,7 @@ static void dio700_config(struct pcmcia_device *link)
 	return;
 
 failed:
-	printk(KERN_INFO "ni_daq_700 cs failed");
+;
 	dio700_release(link);
 
 }				/* dio700_config */

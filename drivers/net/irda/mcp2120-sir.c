@@ -118,23 +118,23 @@ static int mcp2120_change_speed(struct sir_dev *dev, unsigned speed)
 			/* fall through */
 		case 9600:
 			control[0] = MCP2120_9600;
-                        //printk("mcp2120 9600\n");
+;
 			break;
 		case 19200:
 			control[0] = MCP2120_19200;
-                        //printk("mcp2120 19200\n");
+;
 			break;
 		case 34800:
 			control[0] = MCP2120_38400;
-                        //printk("mcp2120 38400\n");
+;
 			break;
 		case 57600:
 			control[0] = MCP2120_57600;
-                        //printk("mcp2120 57600\n");
+;
 			break;
 		case 115200:
                         control[0] = MCP2120_115200;
-                        //printk("mcp2120 115200\n");
+;
 			break;
 		}
 		control[1] = MCP2120_COMMIT;
@@ -145,13 +145,13 @@ static int mcp2120_change_speed(struct sir_dev *dev, unsigned speed)
 
 		state = MCP2120_STATE_WAIT_SPEED;
 		delay = 100;
-                //printk("mcp2120_change_speed: dongle_speed\n");
+;
 		break;
 
 	case MCP2120_STATE_WAIT_SPEED:
 		/* Go back to normal mode */
 		sirdev_set_dtr_rts(dev, FALSE, FALSE);
-                //printk("mcp2120_change_speed: mcp_wait\n");
+;
 		break;
 
 	default:
@@ -191,7 +191,7 @@ static int mcp2120_reset(struct sir_dev *dev)
 
 	switch (state) {
 	case SIRDEV_STATE_DONGLE_RESET:
-                //printk("mcp2120_reset: dongle_reset\n");
+;
 		/* Reset dongle by setting RTS*/
 		sirdev_set_dtr_rts(dev, TRUE, TRUE);
 		state = MCP2120_STATE_WAIT1_RESET;
@@ -199,7 +199,7 @@ static int mcp2120_reset(struct sir_dev *dev)
 		break;
 
 	case MCP2120_STATE_WAIT1_RESET:
-                //printk("mcp2120_reset: mcp2120_wait1\n");
+;
                 /* clear RTS and wait for at least 30 ms. */
 		sirdev_set_dtr_rts(dev, FALSE, FALSE);
 		state = MCP2120_STATE_WAIT2_RESET;
@@ -207,7 +207,7 @@ static int mcp2120_reset(struct sir_dev *dev)
 		break;
 
 	case MCP2120_STATE_WAIT2_RESET:
-                //printk("mcp2120_reset mcp2120_wait2\n");
+;
 		/* Go back to normal mode */
 		sirdev_set_dtr_rts(dev, FALSE, FALSE);
 		break;

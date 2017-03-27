@@ -1360,11 +1360,19 @@ static int __devinit snd_miro_probe(struct snd_card *card)
 		default:
 			sprintf(card->shortname, 
 				"unknown miro");
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "unknown miro aci id\n");
+#else
+			;
+#endif
 			break;
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "found unsupported aci card\n");
+#else
+		;
+#endif
 		sprintf(card->shortname, "unknown Cardinal Technologies");
 	}
 
@@ -1380,8 +1388,12 @@ static int __devinit snd_miro_probe(struct snd_card *card)
 				mpu_port, 0, miro->mpu_irq, IRQF_DISABLED,
 				&rmidi);
 		if (error < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "no MPU-401 device at 0x%lx?\n",
 				   mpu_port);
+#else
+			;
+#endif
 	}
 
 	if (fm_port > 0 && fm_port != SNDRV_AUTO_PORT) {
@@ -1390,8 +1402,12 @@ static int __devinit snd_miro_probe(struct snd_card *card)
 
 		if (snd_opl4_create(card, fm_port, fm_port - 8,
 				    2, &opl3, &opl4) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "no OPL4 device at 0x%lx\n",
 				   fm_port);
+#else
+			;
+#endif
 	}
 
 	error = snd_set_aci_init_values(miro);

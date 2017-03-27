@@ -73,6 +73,7 @@
 #include <asm/runway.h>		/* for proc_runway_root */
 
 #ifdef DEBUG_CCIO_INIT
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG_INIT(x...)  printk(x)
 #else
 #define DBG_INIT(x...)
@@ -112,6 +113,9 @@
 struct ioa_registers {
         /* Runway Supervisory Set */
         int32_t    unused1[12];
+#else
+#define DBG_INIT(x...)  ;
+#endif
         uint32_t   io_command;             /* Offset 12 */
         uint32_t   io_status;              /* Offset 13 */
         uint32_t   io_control;             /* Offset 14 */
@@ -1549,8 +1553,12 @@ static int __init ccio_probe(struct parisc_device *dev)
 
 	ioc->name = dev->id.hversion == U2_IOA_RUNWAY ? "U2" : "UTurn";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Found %s at 0x%lx\n", ioc->name,
 		(unsigned long)dev->hpa.start);
+#else
+	;
+#endif
 
 	for (i = 0; i < ioc_count; i++) {
 		ioc_p = &(*ioc_p)->next;

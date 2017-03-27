@@ -491,9 +491,13 @@ static void hash_eval(struct hashtab *h, const char *hash_name)
 	struct hashtab_info info;
 
 	hashtab_stat(h, &info);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux: %s:  %d entries and %d/%d buckets used, "
 	       "longest chain length %d\n", hash_name, h->nel,
 	       info.slots_used, h->size, info.max_chain_len);
+#else
+	;
+#endif
 }
 
 static void symtab_hash_eval(struct symtab *s)
@@ -520,15 +524,31 @@ static int policydb_index(struct policydb *p)
 {
 	int i, rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux:  %d users, %d roles, %d types, %d bools",
 	       p->p_users.nprim, p->p_roles.nprim, p->p_types.nprim, p->p_bools.nprim);
+#else
+	;
+#endif
 	if (p->mls_enabled)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", %d sens, %d cats", p->p_levels.nprim,
 		       p->p_cats.nprim);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux:  %d classes, %d rules\n",
 	       p->p_classes.nprim, p->te_avtab.nel);
+#else
+	;
+#endif
 
 #ifdef DEBUG_HASHES
 	avtab_hash_eval(&p->te_avtab, "rules");
@@ -1916,7 +1936,11 @@ static int range_read(struct policydb *p, void *fp)
 
 		rc = -EINVAL;
 		if (!mls_range_isvalid(p, r)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "SELinux:  rangetrans:  invalid range\n");
+#else
+			;
+#endif
 			goto out;
 		}
 

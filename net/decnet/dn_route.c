@@ -492,11 +492,11 @@ static int dn_route_rx_packet(struct sk_buff *skb)
 	if (decnet_debug_level & 4) {
 		char *devname = skb->dev ? skb->dev->name : "???";
 
-		printk(KERN_DEBUG
-			"DECnet: dn_route_rx_packet: rt_flags=0x%02x dev=%s len=%d src=0x%04hx dst=0x%04hx err=%d type=%d\n",
-			(int)cb->rt_flags, devname, skb->len,
-			le16_to_cpu(cb->src), le16_to_cpu(cb->dst),
-			err, skb->pkt_type);
+//		printk(KERN_DEBUG
+//			"DECnet: dn_route_rx_packet: rt_flags=0x%02x dev=%s len=%d src=0x%04hx dst=0x%04hx err=%d type=%d\n",
+//			(int)cb->rt_flags, devname, skb->len,
+//			le16_to_cpu(cb->src), le16_to_cpu(cb->dst),
+;
 	}
 
 	if ((skb->pkt_type == PACKET_HOST) && (cb->rt_flags & DN_RT_F_RQR)) {
@@ -648,10 +648,10 @@ int dn_route_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type
 	cb->rt_flags = flags;
 
 	if (decnet_debug_level & 1)
-		printk(KERN_DEBUG
-			"dn_route_rcv: got 0x%02x from %s [%d %d %d]\n",
-			(int)flags, (dev) ? dev->name : "???", len, skb->len,
-			padlen);
+//		printk(KERN_DEBUG
+//			"dn_route_rcv: got 0x%02x from %s [%d %d %d]\n",
+//			(int)flags, (dev) ? dev->name : "???", len, skb->len,
+;
 
 	if (flags & DN_RT_PKT_CNTL) {
 		if (unlikely(skb_linearize(skb)))
@@ -749,7 +749,7 @@ static int dn_output(struct sk_buff *skb)
 
 error:
 	if (net_ratelimit())
-		printk(KERN_DEBUG "dn_output: This should not happen\n");
+;
 
 	kfree_skb(skb);
 
@@ -810,8 +810,8 @@ static int dn_rt_bug(struct sk_buff *skb)
 	if (net_ratelimit()) {
 		struct dn_skb_cb *cb = DN_SKB_CB(skb);
 
-		printk(KERN_DEBUG "dn_rt_bug: skb from:%04x to:%04x\n",
-				le16_to_cpu(cb->src), le16_to_cpu(cb->dst));
+//		printk(KERN_DEBUG "dn_rt_bug: skb from:%04x to:%04x\n",
+;
 	}
 
 	kfree_skb(skb);
@@ -942,12 +942,12 @@ static int dn_route_output_slow(struct dst_entry **pprt, const struct flowidn *o
 	__le16 gateway = 0;
 
 	if (decnet_debug_level & 16)
-		printk(KERN_DEBUG
-		       "dn_route_output_slow: dst=%04x src=%04x mark=%d"
-		       " iif=%d oif=%d\n", le16_to_cpu(oldflp->daddr),
-		       le16_to_cpu(oldflp->saddr),
-		       oldflp->flowidn_mark, init_net.loopback_dev->ifindex,
-		       oldflp->flowidn_oif);
+//		printk(KERN_DEBUG
+//		       "dn_route_output_slow: dst=%04x src=%04x mark=%d"
+//		       " iif=%d oif=%d\n", le16_to_cpu(oldflp->daddr),
+//		       le16_to_cpu(oldflp->saddr),
+//		       oldflp->flowidn_mark, init_net.loopback_dev->ifindex,
+;
 
 	/* If we have an output interface, verify its a DECnet device */
 	if (oldflp->flowidn_oif) {
@@ -1015,11 +1015,11 @@ source_ok:
 	}
 
 	if (decnet_debug_level & 16)
-		printk(KERN_DEBUG
-		       "dn_route_output_slow: initial checks complete."
-		       " dst=%o4x src=%04x oif=%d try_hard=%d\n",
-		       le16_to_cpu(fld.daddr), le16_to_cpu(fld.saddr),
-		       fld.flowidn_oif, try_hard);
+//		printk(KERN_DEBUG
+//		       "dn_route_output_slow: initial checks complete."
+//		       " dst=%o4x src=%04x oif=%d try_hard=%d\n",
+//		       le16_to_cpu(fld.daddr), le16_to_cpu(fld.saddr),
+;
 
 	/*
 	 * N.B. If the kernel is compiled without router support then
@@ -1328,8 +1328,8 @@ static int dn_route_input_slow(struct sk_buff *skb)
 		out_dev = DN_FIB_RES_DEV(res);
 		if (out_dev == NULL) {
 			if (net_ratelimit())
-				printk(KERN_CRIT "Bug in dn_route_input_slow() "
-						 "No output device\n");
+//				printk(KERN_CRIT "Bug in dn_route_input_slow() "
+;
 			goto e_inval;
 		}
 		dev_hold(out_dev);
@@ -1843,10 +1843,10 @@ void __init dn_route_init(void)
 	if (!dn_rt_hash_table)
 		panic("Failed to allocate DECnet route cache hash table\n");
 
-	printk(KERN_INFO
-		"DECnet: Routing cache hash table of %u buckets, %ldKbytes\n",
-		dn_rt_hash_mask,
-		(long)(dn_rt_hash_mask*sizeof(struct dn_rt_hash_bucket))/1024);
+//	printk(KERN_INFO
+//		"DECnet: Routing cache hash table of %u buckets, %ldKbytes\n",
+//		dn_rt_hash_mask,
+;
 
 	dn_rt_hash_mask--;
 	for(i = 0; i <= dn_rt_hash_mask; i++) {

@@ -228,7 +228,11 @@ static struct capiminor *capiminor_alloc(struct capi20_appl *ap, u32 ncci)
 	spin_unlock(&capiminors_lock);
 
 	if (minor == capi_ttyminors) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "capi: out of minors\n");
+#else
+		;
+#endif
 		goto err_out1;
 	}
 
@@ -1454,8 +1458,12 @@ static int __init capi_init(void)
 #else
         compileinfo = " (no middleware)";
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "CAPI 2.0 started up with major %d%s\n",
 	       capi_major, compileinfo);
+#else
+	;
+#endif
 
 	return 0;
 }

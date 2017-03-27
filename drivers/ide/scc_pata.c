@@ -380,8 +380,12 @@ static int scc_dma_end(ide_drive_t *drive)
 	    drive->media == ide_disk && drive->current_speed > XFER_UDMA_4) {
 		reg = in_be32((void __iomem *)intsts_port);
 		if (!(reg & INTSTS_ACTEINT)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: operation failed (transfer data loss)\n",
 			       drive->name);
+#else
+			;
+#endif
 			data_loss = 1;
 			if (retry++) {
 				struct request *rq = hwif->rq;
@@ -404,7 +408,11 @@ static int scc_dma_end(ide_drive_t *drive)
 		reg = in_be32((void __iomem *)intsts_port);
 
 		if (reg & INTSTS_SERROR) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: SERROR\n", SCC_PATA_NAME);
+#else
+			;
+#endif
 			out_be32((void __iomem *)intsts_port, INTSTS_SERROR|INTSTS_BMSINT);
 
 			out_be32(dma_base, in_be32(dma_base) & ~QCHCD_IOS_SS);
@@ -418,7 +426,11 @@ static int scc_dma_end(ide_drive_t *drive)
 			maea0 = in_be32((void __iomem *)(ctl_base + 0xF50));
 			maec0 = in_be32((void __iomem *)(ctl_base + 0xF54));
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: PRERR [addr:%x cmd:%x]\n", SCC_PATA_NAME, maea0, maec0);
+#else
+			;
+#endif
 
 			out_be32((void __iomem *)intsts_port, INTSTS_PRERR|INTSTS_BMSINT);
 
@@ -427,7 +439,11 @@ static int scc_dma_end(ide_drive_t *drive)
 		}
 
 		if (reg & INTSTS_RERR) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Response Error\n", SCC_PATA_NAME);
+#else
+			;
+#endif
 			out_be32((void __iomem *)intsts_port, INTSTS_RERR|INTSTS_BMSINT);
 
 			out_be32(dma_base, in_be32(dma_base) & ~QCHCD_IOS_SS);
@@ -437,13 +453,21 @@ static int scc_dma_end(ide_drive_t *drive)
 		if (reg & INTSTS_ICERR) {
 			out_be32(dma_base, in_be32(dma_base) & ~QCHCD_IOS_SS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Illegal Configuration\n", SCC_PATA_NAME);
+#else
+			;
+#endif
 			out_be32((void __iomem *)intsts_port, INTSTS_ICERR|INTSTS_BMSINT);
 			continue;
 		}
 
 		if (reg & INTSTS_BMSINT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Internal Bus Error\n", SCC_PATA_NAME);
+#else
+			;
+#endif
 			out_be32((void __iomem *)intsts_port, INTSTS_BMSINT);
 
 			ide_do_reset(drive);
@@ -499,8 +523,12 @@ static u8 scc_udma_filter(ide_drive_t *drive)
 
 	/* errata A308 workaround: limit non ide_disk drive to UDMA4 */
 	if ((drive->media != ide_disk) && (mask & 0xE0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: limit %s to UDMA4\n",
 		       SCC_PATA_NAME, drive->name);
+#else
+		;
+#endif
 		mask = ATA_UDMA4;
 	}
 

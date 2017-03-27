@@ -306,7 +306,11 @@ static void etm_dump(void)
 	int length;
 
 	if (!t->etb_regs) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "No tracing hardware found\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -322,11 +326,27 @@ static void etm_dump(void)
 
 	etb_writel(t, first, ETBR_READADDR);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "--- ETB buffer begin ---\n");
+#else
+	;
+#endif
 	for (; length; length--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n--- ETB buffer end ---\n");
+#else
+	;
+#endif
 
 	etb_lock(t);
 }
@@ -334,7 +354,11 @@ static void etm_dump(void)
 static void sysrq_etm_dump(int key)
 {
 	if (!mutex_trylock(&tracer.mutex)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Tracing hardware busy\n");
+#else
+		;
+#endif
 		return;
 	}
 	dev_dbg(tracer.dev, "Dumping ETB buffer\n");

@@ -187,15 +187,23 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t 
 	}
 
 	if (count > HID_MAX_BUFFER_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hidraw: pid %d passed too large report\n",
 				task_pid_nr(current));
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if (count < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hidraw: pid %d passed too short report\n",
 				task_pid_nr(current));
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto out;
 	}

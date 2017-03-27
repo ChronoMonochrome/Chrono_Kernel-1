@@ -172,25 +172,25 @@ static void dump_eth_one(struct net_device *dev)
 {
 	struct tsi108_prv_data *data = netdev_priv(dev);
 
-	printk("Dumping %s...\n", dev->name);
-	printk("intstat %x intmask %x phy_ok %d"
-	       " link %d speed %d duplex %d\n",
-	       TSI_READ(TSI108_EC_INTSTAT),
-	       TSI_READ(TSI108_EC_INTMASK), data->phy_ok,
-	       data->link_up, data->speed, data->duplex);
+;
+//	printk("intstat %x intmask %x phy_ok %d"
+//	       " link %d speed %d duplex %d\n",
+//	       TSI_READ(TSI108_EC_INTSTAT),
+//	       TSI_READ(TSI108_EC_INTMASK), data->phy_ok,
+;
 
-	printk("TX: head %d, tail %d, free %d, stat %x, estat %x, err %x\n",
-	       data->txhead, data->txtail, data->txfree,
-	       TSI_READ(TSI108_EC_TXSTAT),
-	       TSI_READ(TSI108_EC_TXESTAT),
-	       TSI_READ(TSI108_EC_TXERR));
+//	printk("TX: head %d, tail %d, free %d, stat %x, estat %x, err %x\n",
+//	       data->txhead, data->txtail, data->txfree,
+//	       TSI_READ(TSI108_EC_TXSTAT),
+//	       TSI_READ(TSI108_EC_TXESTAT),
+;
 
-	printk("RX: head %d, tail %d, free %d, stat %x,"
-	       " estat %x, err %x, pending %d\n\n",
-	       data->rxhead, data->rxtail, data->rxfree,
-	       TSI_READ(TSI108_EC_RXSTAT),
-	       TSI_READ(TSI108_EC_RXESTAT),
-	       TSI_READ(TSI108_EC_RXERR), data->rxpending);
+//	printk("RX: head %d, tail %d, free %d, stat %x,"
+//	       " estat %x, err %x, pending %d\n\n",
+//	       data->rxhead, data->rxtail, data->rxfree,
+//	       TSI_READ(TSI108_EC_RXSTAT),
+//	       TSI_READ(TSI108_EC_RXESTAT),
+;
 }
 
 /* Synchronization is needed between the thread and up/down events.
@@ -263,7 +263,7 @@ static inline void tsi108_write_tbi(struct tsi108_prv_data *data,
 			return;
 		udelay(10);
 	}
-	printk(KERN_ERR "%s function time out\n", __func__);
+;
 }
 
 static int mii_speed(struct mii_if_info *mii)
@@ -359,7 +359,7 @@ static void tsi108_check_phy(struct net_device *dev)
 		if (data->link_up == 1) {
 			netif_stop_queue(dev);
 			data->link_up = 0;
-			printk(KERN_NOTICE "%s : link is down\n", dev->name);
+;
 		}
 
 		goto out;
@@ -633,8 +633,8 @@ static void tsi108_complete_tx(struct net_device *dev)
 		skb = data->txskbs[tx];
 
 		if (!(data->txring[tx].misc & TSI108_TX_OK))
-			printk("%s: bad tx packet, misc %x\n",
-			       dev->name, data->txring[tx].misc);
+//			printk("%s: bad tx packet, misc %x\n",
+;
 
 		data->txtail = (data->txtail + 1) % TSI108_TXRING_LEN;
 		data->txfree++;
@@ -658,11 +658,11 @@ static int tsi108_send_packet(struct sk_buff * skb, struct net_device *dev)
 	int i;
 
 	if (!data->phy_ok && net_ratelimit())
-		printk(KERN_ERR "%s: Transmit while PHY is down!\n", dev->name);
+;
 
 	if (!data->link_up) {
-		printk(KERN_ERR "%s: Transmit while link is down!\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: Transmit while link is down!\n",
+;
 		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
 	}
@@ -671,8 +671,8 @@ static int tsi108_send_packet(struct sk_buff * skb, struct net_device *dev)
 		netif_stop_queue(dev);
 
 		if (net_ratelimit())
-			printk(KERN_ERR "%s: Transmit with full tx ring!\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Transmit with full tx ring!\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -721,11 +721,11 @@ static int tsi108_send_packet(struct sk_buff * skb, struct net_device *dev)
 
 		if (netif_msg_pktdata(data)) {
 			int i;
-			printk("%s: Tx Frame contents (%d)\n", dev->name,
-			       skb->len);
+//			printk("%s: Tx Frame contents (%d)\n", dev->name,
+;
 			for (i = 0; i < skb->len; i++)
-				printk(" %2.2x", skb->data[i]);
-			printk(".\n");
+;
+;
 		}
 		data->txring[tx].misc = misc | TSI108_TX_OWN;
 
@@ -778,11 +778,11 @@ static int tsi108_complete_rx(struct net_device *dev, int budget)
 		}
 		if (netif_msg_pktdata(data)) {
 			int i;
-			printk("%s: Rx Frame contents (%d)\n",
-			       dev->name, data->rxring[rx].len);
+//			printk("%s: Rx Frame contents (%d)\n",
+;
 			for (i = 0; i < data->rxring[rx].len; i++)
-				printk(" %2.2x", skb->data[i]);
-			printk(".\n");
+;
+;
 		}
 
 		skb_put(skb, data->rxring[rx].len);
@@ -869,8 +869,8 @@ static int tsi108_poll(struct napi_struct *napi, int budget)
 
 		if (err) {
 			if (net_ratelimit())
-				printk(KERN_DEBUG "%s: RX error %x\n",
-				       dev->name, err);
+//				printk(KERN_DEBUG "%s: RX error %x\n",
+;
 
 			if (!(TSI_READ(TSI108_EC_RXSTAT) &
 			      TSI108_EC_RXSTAT_QUEUE0))
@@ -992,7 +992,7 @@ static void tsi108_tx_int(struct net_device *dev)
 		TSI_WRITE(TSI108_EC_TXERR, err);
 
 		if (err && net_ratelimit())
-			printk(KERN_ERR "%s: TX error %x\n", dev->name, err);
+;
 	}
 
 	if (estat & (TSI108_EC_TXESTAT_Q0_DESCINT | TSI108_EC_TXESTAT_Q0_EOQ)) {
@@ -1024,7 +1024,7 @@ static irqreturn_t tsi108_irq(int irq, void *dev_id)
 
 	if (stat & TSI108_INT_SFN) {
 		if (net_ratelimit())
-			printk(KERN_DEBUG "%s: SFN error\n", dev->name);
+;
 		TSI_WRITE(TSI108_EC_INTSTAT, TSI108_INT_SFN);
 	}
 
@@ -1056,7 +1056,7 @@ static void tsi108_stop_ethernet(struct net_device *dev)
 			return;
 		udelay(10);
 	}
-	printk(KERN_ERR "%s function time out\n", __func__);
+;
 }
 
 static void tsi108_reset_ether(struct tsi108_prv_data * data)
@@ -1130,9 +1130,9 @@ static int tsi108_get_mac(struct net_device *dev)
 	}
 
 	if (!is_valid_ether_addr(dev->dev_addr)) {
-		printk(KERN_ERR
-		       "%s: Invalid MAC address. word1: %08x, word2: %08x\n",
-		       dev->name, word1, word2);
+//		printk(KERN_ERR
+//		       "%s: Invalid MAC address. word1: %08x, word2: %08x\n",
+;
 		return -EINVAL;
 	}
 
@@ -1233,7 +1233,7 @@ static void tsi108_init_phy(struct net_device *dev)
 		udelay(10);
 	}
 	if (i == 0)
-		printk(KERN_ERR "%s function time out\n", __func__);
+;
 
 	if (data->phy_type == TSI108_PHY_BCM54XX) {
 		tsi108_write_mii(data, 0x09, 0x0300);
@@ -1271,7 +1271,7 @@ static void tsi108_init_phy(struct net_device *dev)
 	}
 
 	data->mii_if.supports_gmii = mii_check_gmii_support(&data->mii_if);
-	printk(KERN_DEBUG "PHY_STAT reg contains %08x\n", phyval);
+;
 	data->phy_ok = 1;
 	data->init_media = 1;
 	spin_unlock_irqrestore(&phy_lock, flags);
@@ -1297,22 +1297,22 @@ static int tsi108_open(struct net_device *dev)
 
 	i = request_irq(data->irq_num, tsi108_irq, 0, dev->name, dev);
 	if (i != 0) {
-		printk(KERN_ERR "tsi108_eth%d: Could not allocate IRQ%d.\n",
-		       data->id, data->irq_num);
+//		printk(KERN_ERR "tsi108_eth%d: Could not allocate IRQ%d.\n",
+;
 		return i;
 	} else {
 		dev->irq = data->irq_num;
-		printk(KERN_NOTICE
-		       "tsi108_open : Port %d Assigned IRQ %d to %s\n",
-		       data->id, dev->irq, dev->name);
+//		printk(KERN_NOTICE
+//		       "tsi108_open : Port %d Assigned IRQ %d to %s\n",
+;
 	}
 
 	data->rxring = dma_alloc_coherent(NULL, rxring_size,
 			&data->rxdma, GFP_KERNEL);
 
 	if (!data->rxring) {
-		printk(KERN_DEBUG
-		       "TSI108_ETH: failed to allocate memory for rxring!\n");
+//		printk(KERN_DEBUG
+;
 		return -ENOMEM;
 	} else {
 		memset(data->rxring, 0, rxring_size);
@@ -1322,8 +1322,8 @@ static int tsi108_open(struct net_device *dev)
 			&data->txdma, GFP_KERNEL);
 
 	if (!data->txring) {
-		printk(KERN_DEBUG
-		       "TSI108_ETH: failed to allocate memory for txring!\n");
+//		printk(KERN_DEBUG
+;
 		pci_free_consistent(0, rxring_size, data->rxring, data->rxdma);
 		return -ENOMEM;
 	} else {
@@ -1350,9 +1350,9 @@ static int tsi108_open(struct net_device *dev)
 			 * some more later.
 			 * For now, we'll live with the smaller ring.
 			 */
-			printk(KERN_WARNING
-			       "%s: Could only allocate %d receive skb(s).\n",
-			       dev->name, i);
+//			printk(KERN_WARNING
+//			       "%s: Could only allocate %d receive skb(s).\n",
+;
 			data->rxhead = i;
 			break;
 		}
@@ -1572,8 +1572,8 @@ tsi108_init_one(struct platform_device *pdev)
 	einfo = pdev->dev.platform_data;
 
 	if (NULL == einfo) {
-		printk(KERN_ERR "tsi-eth %d: Missing additional data!\n",
-		       pdev->id);
+//		printk(KERN_ERR "tsi-eth %d: Missing additional data!\n",
+;
 		return -ENODEV;
 	}
 
@@ -1581,11 +1581,11 @@ tsi108_init_one(struct platform_device *pdev)
 
 	dev = alloc_etherdev(sizeof(struct tsi108_prv_data));
 	if (!dev) {
-		printk("tsi108_eth: Could not allocate a device structure\n");
+;
 		return -ENOMEM;
 	}
 
-	printk("tsi108_eth%d: probe...\n", pdev->id);
+;
 	data = netdev_priv(dev);
 	data->dev = dev;
 
@@ -1637,22 +1637,22 @@ tsi108_init_one(struct platform_device *pdev)
 	tsi108_kill_phy(dev);
 
 	if ((err = tsi108_get_mac(dev)) != 0) {
-		printk(KERN_ERR "%s: Invalid MAC address.  Please correct.\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: Invalid MAC address.  Please correct.\n",
+;
 		goto register_fail;
 	}
 
 	tsi108_init_mac(dev);
 	err = register_netdev(dev);
 	if (err) {
-		printk(KERN_ERR "%s: Cannot register net device, aborting.\n",
-				dev->name);
+//		printk(KERN_ERR "%s: Cannot register net device, aborting.\n",
+;
 		goto register_fail;
 	}
 
 	platform_set_drvdata(pdev, dev);
-	printk(KERN_INFO "%s: Tsi108 Gigabit Ethernet, MAC: %pM\n",
-	       dev->name, dev->dev_addr);
+//	printk(KERN_INFO "%s: Tsi108 Gigabit Ethernet, MAC: %pM\n",
+;
 #ifdef DEBUG
 	data->msg_enable = DEBUG;
 	dump_eth_one(dev);
@@ -1691,8 +1691,8 @@ static int tsi108_ether_init(void)
 	int ret;
 	ret = platform_driver_register (&tsi_eth_driver);
 	if (ret < 0){
-		printk("tsi108_ether_init: error initializing ethernet "
-		       "device\n");
+//		printk("tsi108_ether_init: error initializing ethernet "
+;
 		return ret;
 	}
 	return 0;

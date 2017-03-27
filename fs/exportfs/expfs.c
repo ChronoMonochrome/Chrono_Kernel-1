@@ -16,11 +16,11 @@
 #include <linux/namei.h>
 #include <linux/sched.h>
 
-#define dprintk(fmt, args...) do{}while(0)
-
-
-static int get_name(struct vfsmount *mnt, struct dentry *dentry, char *name,
-		struct dentry *child);
+//#define dprintk(fmt, args...) do{}while(0)
+//
+//
+//static int get_name(struct vfsmount *mnt, struct dentry *dentry, char *name,
+;
 
 
 static int exportfs_get_name(struct vfsmount *mnt, struct dentry *dir,
@@ -119,7 +119,7 @@ reconnect_path(struct vfsmount *mnt, struct dentry *target_dir, char *nbuf)
 			spin_unlock(&pd->d_lock);
 			noprogress = 0;
 		} else if (pd == mnt->mnt_sb->s_root) {
-			printk(KERN_ERR "export: Eeek filesystem root is not connected, impossible\n");
+;
 			spin_lock(&pd->d_lock);
 			pd->d_flags &= ~DCACHE_DISCONNECTED;
 			spin_unlock(&pd->d_lock);
@@ -150,14 +150,14 @@ reconnect_path(struct vfsmount *mnt, struct dentry *target_dir, char *nbuf)
 
 			if (IS_ERR(ppd)) {
 				err = PTR_ERR(ppd);
-				dprintk("%s: get_parent of %ld failed, err %d\n",
-					__func__, pd->d_inode->i_ino, err);
+//				dprintk("%s: get_parent of %ld failed, err %d\n",
+;
 				dput(pd);
 				break;
 			}
 
-			dprintk("%s: find name of %lu in %lu\n", __func__,
-				pd->d_inode->i_ino, ppd->d_inode->i_ino);
+//			dprintk("%s: find name of %lu in %lu\n", __func__,
+;
 			err = exportfs_get_name(mnt, ppd, nbuf, pd);
 			if (err) {
 				dput(ppd);
@@ -169,14 +169,14 @@ reconnect_path(struct vfsmount *mnt, struct dentry *target_dir, char *nbuf)
 					continue;
 				break;
 			}
-			dprintk("%s: found name: %s\n", __func__, nbuf);
+;
 			mutex_lock(&ppd->d_inode->i_mutex);
 			npd = lookup_one_len(nbuf, ppd, strlen(nbuf));
 			mutex_unlock(&ppd->d_inode->i_mutex);
 			if (IS_ERR(npd)) {
 				err = PTR_ERR(npd);
-				dprintk("%s: lookup failed: %d\n",
-					__func__, err);
+//				dprintk("%s: lookup failed: %d\n",
+;
 				dput(ppd);
 				dput(pd);
 				break;
@@ -189,7 +189,7 @@ reconnect_path(struct vfsmount *mnt, struct dentry *target_dir, char *nbuf)
 			if (npd == pd)
 				noprogress = 0;
 			else
-				printk("%s: npd != pd\n", __func__);
+;
 			dput(npd);
 			dput(ppd);
 			if (IS_ROOT(pd)) {

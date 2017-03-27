@@ -262,8 +262,12 @@ int ssb_pcicore_plat_dev_init(struct pci_dev *d)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO "PCI: Fixing up device %s\n",
 		   pci_name(d));
+#else
+	ssb_;
+#endif
 
 	/* Fix up interrupt lines */
 	d->irq = ssb_mips_irq(extpci_core->dev) + 2;
@@ -284,7 +288,11 @@ static void ssb_pcicore_fixup_pcibridge(struct pci_dev *dev)
 	if (dev->bus->number != 0 || PCI_SLOT(dev->devfn) != 0)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO "PCI: Fixing up bridge %s\n", pci_name(dev));
+#else
+	ssb_;
+#endif
 
 	/* Enable PCI bridge bus mastering and memory space */
 	pci_set_master(dev);
@@ -298,8 +306,12 @@ static void ssb_pcicore_fixup_pcibridge(struct pci_dev *dev)
 
 	/* Make sure our latency is high enough to handle the devices behind us */
 	lat = 168;
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO "PCI: Fixing latency timer of device %s to %u\n",
 		   pci_name(dev), lat);
+#else
+	ssb_;
+#endif
 	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
 }
 DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_ANY_ID, ssb_pcicore_fixup_pcibridge);
@@ -322,7 +334,11 @@ static void ssb_pcicore_init_hostmode(struct ssb_pcicore *pc)
 		return;
 	extpci_core = pc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_dprintk(KERN_INFO PFX "PCIcore in host mode found\n");
+#else
+	ssb_d;
+#endif
 	/* Reset devices on the external PCI bus */
 	val = SSB_PCICORE_CTL_RST_OE;
 	val |= SSB_PCICORE_CTL_CLK_OE;
@@ -337,7 +353,11 @@ static void ssb_pcicore_init_hostmode(struct ssb_pcicore *pc)
 	udelay(1); /* Assertion time demanded by the PCI standard */
 
 	if (pc->dev->bus->has_cardbus_slot) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_dprintk(KERN_INFO PFX "CardBus slot detected\n");
+#else
+		ssb_d;
+#endif
 		pc->cardbusmode = 1;
 		/* GPIO 1 resets the bridge */
 		ssb_gpio_out(pc->dev->bus, 1, 1);

@@ -263,25 +263,41 @@ static void macio_add_missing_resources(struct macio_dev *dev)
 		macio_create_fixup_irq(dev, 0, 15 + irq_base);
 		macio_create_fixup_irq(dev, 1,  4 + irq_base);
 		macio_create_fixup_irq(dev, 2,  5 + irq_base);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "macio: fixed SCC irqs on gatwick\n");
+#else
+		;
+#endif
 	}
 
 	/* Fix media-bay */
 	if (strcmp(np->name, "media-bay") == 0) {
 		macio_create_fixup_irq(dev, 0, 29 + irq_base);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "macio: fixed media-bay irq on gatwick\n");
+#else
+		;
+#endif
 	}
 
 	/* Fix left media bay childs */
 	if (dev->media_bay != NULL && strcmp(np->name, "floppy") == 0) {
 		macio_create_fixup_irq(dev, 0, 19 + irq_base);
 		macio_create_fixup_irq(dev, 1,  1 + irq_base);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "macio: fixed left floppy irqs\n");
+#else
+		;
+#endif
 	}
 	if (dev->media_bay != NULL && strcasecmp(np->name, "ata4") == 0) {
 		macio_create_fixup_irq(dev, 0, 14 + irq_base);
 		macio_create_fixup_irq(dev, 0,  3 + irq_base);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "macio: fixed left ide irqs\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -336,9 +352,13 @@ static void macio_setup_resources(struct macio_dev *dev,
 		 * tree bugs in older machines & worked around them
 		 */
 		if (insert_resource(parent_res, res)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Can't request resource "
 			       "%d for MacIO device %s\n",
 			       index, dev_name(&dev->ofdev.dev));
+#else
+			;
+#endif
 		}
 	}
 	dev->n_resources = index;
@@ -394,8 +414,12 @@ static struct macio_dev * macio_add_one_device(struct macio_chip *chip,
 #endif /* CONFIG_PCI */
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("preparing mdev @%p, ofdev @%p, dev @%p, kobj @%p\n",
 	       dev, &dev->ofdev, &dev->ofdev.dev, &dev->ofdev.dev.kobj);
+#else
+	;
+#endif
 #endif
 
 	/* MacIO itself has a different reg, we use it's PCI base */
@@ -422,8 +446,12 @@ static struct macio_dev * macio_add_one_device(struct macio_chip *chip,
 
 	/* Register with core */
 	if (of_device_register(&dev->ofdev) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"macio: device registration error for %s!\n",
 		       dev_name(&dev->ofdev.dev));
+#else
+		;
+#endif
 		kfree(dev);
 		return NULL;
 	}
@@ -715,8 +743,12 @@ static int __devinit macio_pci_probe(struct pci_dev *pdev, const struct pci_devi
 		pci_set_master(pdev);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MacIO PCI driver attached to %s chipset\n",
 		chip->name);
+#else
+	;
+#endif
 
 	/*
 	 * HACK ALERT: The WallStreet PowerBook and some OHare based machines

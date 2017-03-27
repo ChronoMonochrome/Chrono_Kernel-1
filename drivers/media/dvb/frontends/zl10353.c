@@ -43,9 +43,13 @@ struct zl10353_state {
 };
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "zl10353: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 static int debug_regs;
@@ -58,7 +62,11 @@ static int zl10353_single_write(struct dvb_frontend *fe, u8 reg, u8 val)
 			       .buf = buf, .len = 2 };
 	int err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("zl10353: write to reg %x failed (err = %d)!\n", reg, err);
+#else
+		;
+#endif
 		return err;
 	}
 	return 0;
@@ -89,8 +97,12 @@ static int zl10353_read_register(struct zl10353_state *state, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: readreg error (reg=%d, ret==%i)\n",
 		       __func__, reg, ret);
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -107,18 +119,38 @@ static void zl10353_dump_regs(struct dvb_frontend *fe)
 	for (reg = 0; ; reg++) {
 		if (reg % 16 == 0) {
 			if (reg)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%02x:", reg);
+#else
+			;
+#endif
 		}
 		ret = zl10353_read_register(state, reg);
 		if (ret >= 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " %02x", (u8)ret);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " --");
+#else
+			;
+#endif
 		if (reg == 0xff)
 			break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 }
 
 static void zl10353_calc_nominal_rate(struct dvb_frontend *fe,
@@ -151,8 +183,12 @@ static void zl10353_calc_nominal_rate(struct dvb_frontend *fe,
 	do_div(value, adc_clock);
 	*nominal_rate = value;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: bw %d, adc_clock %d => 0x%x\n",
 		__func__, bw, adc_clock, *nominal_rate);
+#else
+	d;
+#endif
 }
 
 static void zl10353_calc_input_freq(struct dvb_frontend *fe,
@@ -180,8 +216,12 @@ static void zl10353_calc_input_freq(struct dvb_frontend *fe,
 	do_div(value, adc_clock);
 	*input_freq = -value;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: if2 %d, ife %d, adc_clock %d => %d / 0x%x\n",
 		__func__, if2, ife, adc_clock, -(int)value, *input_freq);
+#else
+	d;
+#endif
 }
 
 static int zl10353_sleep(struct dvb_frontend *fe)

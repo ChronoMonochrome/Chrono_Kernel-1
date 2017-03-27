@@ -213,10 +213,10 @@ static void dnet_handle_link_change(struct net_device *dev)
 				mode_reg &= ~DNET_INTERNAL_MODE_GBITEN;
 				break;
 			default:
-				printk(KERN_WARNING
-				       "%s: Ack!  Speed (%d) is not "
-				       "10/100/1000!\n", dev->name,
-				       phydev->speed);
+//				printk(KERN_WARNING
+//				       "%s: Ack!  Speed (%d) is not "
+//				       "10/100/1000!\n", dev->name,
+;
 				break;
 			}
 			bp->speed = phydev->speed;
@@ -248,11 +248,11 @@ static void dnet_handle_link_change(struct net_device *dev)
 
 	if (status_change) {
 		if (phydev->link)
-			printk(KERN_INFO "%s: link up (%d/%s)\n",
-			       dev->name, phydev->speed,
-			       DUPLEX_FULL == phydev->duplex ? "Full" : "Half");
+//			printk(KERN_INFO "%s: link up (%d/%s)\n",
+//			       dev->name, phydev->speed,
+;
 		else
-			printk(KERN_INFO "%s: link down\n", dev->name);
+;
 	}
 }
 
@@ -271,7 +271,7 @@ static int dnet_mii_probe(struct net_device *dev)
 	}
 
 	if (!phydev) {
-		printk(KERN_ERR "%s: no PHY found\n", dev->name);
+;
 		return -ENODEV;
 	}
 
@@ -289,7 +289,7 @@ static int dnet_mii_probe(struct net_device *dev)
 	}
 
 	if (IS_ERR(phydev)) {
-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
+;
 		return PTR_ERR(phydev);
 	}
 
@@ -416,8 +416,8 @@ static int dnet_poll(struct napi_struct *napi, int budget)
 		pkt_len = cmd_word & 0xFFFF;
 
 		if (cmd_word & 0xDF180000)
-			printk(KERN_ERR "%s packet receive error %x\n",
-			       __func__, cmd_word);
+//			printk(KERN_ERR "%s packet receive error %x\n",
+;
 
 		skb = dev_alloc_skb(pkt_len + 5);
 		if (skb != NULL) {
@@ -434,9 +434,9 @@ static int dnet_poll(struct napi_struct *napi, int budget)
 			netif_receive_skb(skb);
 			npackets++;
 		} else
-			printk(KERN_NOTICE
-			       "%s: No memory to allocate a sk_buff of "
-			       "size %u.\n", dev->name, pkt_len);
+//			printk(KERN_NOTICE
+//			       "%s: No memory to allocate a sk_buff of "
+;
 	}
 
 	budget -= npackets;
@@ -482,8 +482,8 @@ static irqreturn_t dnet_interrupt(int irq, void *dev_id)
 	/* RX FIFO error checking */
 	if (int_current &
 	    (DNET_INTR_SRC_RX_CMDFIFOFF | DNET_INTR_SRC_RX_DATAFIFOFF)) {
-		printk(KERN_ERR "%s: RX fifo error %x, irq %x\n", __func__,
-		       dnet_readl(bp, RX_STATUS), int_current);
+//		printk(KERN_ERR "%s: RX fifo error %x, irq %x\n", __func__,
+;
 		/* we can only flush the RX FIFOs */
 		dnet_writel(bp, DNET_SYS_CTL_RXFIFOFLUSH, SYS_CTL);
 		ndelay(500);
@@ -494,8 +494,8 @@ static irqreturn_t dnet_interrupt(int irq, void *dev_id)
 	/* TX FIFO error checking */
 	if (int_current &
 	    (DNET_INTR_SRC_TX_FIFOFULL | DNET_INTR_SRC_TX_DISCFRM)) {
-		printk(KERN_ERR "%s: TX fifo error %x, irq %x\n", __func__,
-		       dnet_readl(bp, TX_STATUS), int_current);
+//		printk(KERN_ERR "%s: TX fifo error %x, irq %x\n", __func__,
+;
 		/* we can only flush the TX FIFOs */
 		dnet_writel(bp, DNET_SYS_CTL_TXFIFOFLUSH, SYS_CTL);
 		ndelay(500);
@@ -530,10 +530,10 @@ static irqreturn_t dnet_interrupt(int irq, void *dev_id)
 static inline void dnet_print_skb(struct sk_buff *skb)
 {
 	int k;
-	printk(KERN_DEBUG PFX "data:");
+;
 	for (k = 0; k < skb->len; k++)
-		printk(" %02x", (unsigned int)skb->data[k]);
-	printk("\n");
+;
+;
 }
 #else
 #define dnet_print_skb(skb)	do {} while (0)

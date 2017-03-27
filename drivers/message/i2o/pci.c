@@ -134,16 +134,32 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 
 	/* Map the I2O controller */
 	if (c->raptor) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: PCI I2O controller\n", c->name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "     BAR0 at 0x%08lX size=%ld\n",
 		       (unsigned long)c->base.phys, (unsigned long)c->base.len);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "     BAR1 at 0x%08lX size=%ld\n",
 		       (unsigned long)c->in_queue.phys,
 		       (unsigned long)c->in_queue.len);
+#else
+		;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: PCI I2O controller at %08lX size=%ld\n",
 		       c->name, (unsigned long)c->base.phys,
 		       (unsigned long)c->base.len);
+#else
+		;
+#endif
 
 	c->base.virt = ioremap_nocache(c->base.phys, c->base.len);
 	if (!c->base.virt) {
@@ -173,8 +189,12 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 	if (pdev->vendor == PCI_VENDOR_ID_MOTOROLA && pdev->device == 0x18c0) {
 		/* Check if CPU is enabled */
 		if (be32_to_cpu(readl(c->base.virt + 0x10000)) & 0x10000000) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: MPC82XX needs CPU running to "
 			       "service I2O.\n", c->name);
+#else
+			;
+#endif
 			i2o_pci_free(c);
 			return -ENODEV;
 		} else {
@@ -182,8 +202,12 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 			c->irq_mask += I2O_MOTOROLA_PORT_OFFSET;
 			c->in_port += I2O_MOTOROLA_PORT_OFFSET;
 			c->out_port += I2O_MOTOROLA_PORT_OFFSET;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: MPC82XX workarounds activated.\n",
 			       c->name);
+#else
+			;
+#endif
 		}
 	}
 
@@ -284,7 +308,11 @@ static int i2o_pci_irq_enable(struct i2o_controller *c)
 
 	writel(0x00000000, c->irq_mask);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Installed at IRQ %d\n", c->name, pdev->irq);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -321,23 +349,39 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 	int rc;
 	struct pci_dev *i960 = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "i2o: Checking for PCI I2O controllers...\n");
+#else
+	;
+#endif
 
 	if ((pdev->class & 0xff) > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i2o: %s does not support I2O 1.5 "
 		       "(skipping).\n", pci_name(pdev));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if ((rc = pci_enable_device(pdev))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i2o: couldn't enable device %s\n",
 		       pci_name(pdev));
+#else
+		;
+#endif
 		return rc;
 	}
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i2o: no suitable DMA found for %s\n",
 		       pci_name(pdev));
+#else
+		;
+#endif
 		rc = -ENODEV;
 		goto disable;
 	}
@@ -351,8 +395,12 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 		rc = PTR_ERR(c);
 		goto disable;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: controller found (%s)\n", c->name,
 		       pci_name(pdev));
+#else
+		;
+#endif
 
 	c->pdev = pdev;
 	c->device.parent = &pdev->dev;
@@ -360,8 +408,12 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 	/* Cards that fall apart if you hit them with large I/O loads... */
 	if (pdev->vendor == PCI_VENDOR_ID_NCR && pdev->device == 0x0630) {
 		c->short_req = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Symbios FC920 workarounds activated.\n",
 		       c->name);
+#else
+		;
+#endif
 	}
 
 	if (pdev->subsystem_vendor == PCI_VENDOR_ID_PROMISE) {
@@ -392,19 +444,31 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 
 		if (pdev->subsystem_device == 0xc05a) {
 			c->limit_sectors = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "%s: limit sectors per request to %d\n", c->name,
 			       I2O_MAX_SECTORS_LIMITED);
+#else
+			;
+#endif
 		}
 #ifdef CONFIG_I2O_EXT_ADAPTEC_DMA64
 		if (sizeof(dma_addr_t) > 4) {
 			if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: 64-bit DMA unavailable\n",
 				       c->name);
+#else
+				;
+#endif
 			else {
 				c->pae_support = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: using 64-bit DMA\n",
 				       c->name);
+#else
+				;
+#endif
 			}
 		}
 #endif
@@ -463,7 +527,11 @@ static void __devexit i2o_pci_remove(struct pci_dev *pdev)
 
 	pci_disable_device(pdev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Controller removed.\n", c->name);
+#else
+	;
+#endif
 
 	put_device(&c->device);
 };

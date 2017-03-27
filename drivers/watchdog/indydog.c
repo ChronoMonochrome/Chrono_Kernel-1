@@ -60,7 +60,11 @@ static void indydog_stop(void)
 	sgimc->cpuctrl0 = mc_ctrl0;
 	spin_unlock(&indydog_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+#else
+	;
+#endif
 }
 
 static void indydog_ping(void)
@@ -83,7 +87,11 @@ static int indydog_open(struct inode *inode, struct file *file)
 	indydog_start();
 	indydog_ping();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Started watchdog timer.\n");
+#else
+	;
+#endif
 
 	return nonseekable_open(inode, file);
 }
@@ -203,7 +211,11 @@ static int __init watchdog_init(void)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 
 	return 0;
 }

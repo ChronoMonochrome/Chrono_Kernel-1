@@ -432,9 +432,9 @@ static int wl3501_pwr_mgmt(struct wl3501_card *this, int suspend)
 			spin_unlock_irqrestore(&this->lock, flags);
 			rc = wait_event_interruptible(this->wait,
 				this->sig_pwr_mgmt_confirm.status != 255);
-			printk(KERN_INFO "%s: %s status=%d\n", __func__,
-			       suspend ? "suspend" : "resume",
-			       this->sig_pwr_mgmt_confirm.status);
+//			printk(KERN_INFO "%s: %s status=%d\n", __func__,
+//			       suspend ? "suspend" : "resume",
+;
 			goto out;
 		}
 	}
@@ -823,8 +823,8 @@ static void wl3501_online(struct net_device *dev)
 {
 	struct wl3501_card *this = netdev_priv(dev);
 
-	printk(KERN_INFO "%s: Wireless LAN online. BSSID: %pM\n",
-	       dev->name, this->bssid);
+//	printk(KERN_INFO "%s: Wireless LAN online. BSSID: %pM\n",
+;
 	netif_wake_queue(dev);
 }
 
@@ -917,7 +917,7 @@ static inline void wl3501_alarm_interrupt(struct net_device *dev,
 					  struct wl3501_card *this)
 {
 	if (this->net_type == IW_MODE_INFRA) {
-		printk(KERN_INFO "Wireless LAN offline\n");
+;
 		netif_stop_queue(dev);
 		wl3501_mgmt_resync(this);
 	}
@@ -957,7 +957,7 @@ static inline void wl3501_md_ind_interrupt(struct net_device *dev,
 			    &addr4, sizeof(addr4));
 	if (!(addr4[0] == 0xAA && addr4[1] == 0xAA &&
 	      addr4[2] == 0x03 && addr4[4] == 0x00)) {
-		printk(KERN_INFO "Insupported packet type!\n");
+;
 		return;
 	}
 	pkt_len = sig.size + 12 - 24 - 4 - 6;
@@ -965,8 +965,8 @@ static inline void wl3501_md_ind_interrupt(struct net_device *dev,
 	skb = dev_alloc_skb(pkt_len + 5);
 
 	if (!skb) {
-		printk(KERN_WARNING "%s: Can't alloc a sk_buff of size %d.\n",
-		       dev->name, pkt_len);
+//		printk(KERN_WARNING "%s: Can't alloc a sk_buff of size %d.\n",
+;
 		dev->stats.rx_dropped++;
 	} else {
 		skb->dev = dev;
@@ -1159,7 +1159,7 @@ static int wl3501_reset_board(struct wl3501_card *this)
 		}
 		WL3501_NOPLOOP(10);
 	}
-	printk(KERN_WARNING "%s: failed to reset the board!\n", __func__);
+;
 	rc = -ENODEV;
 out:
 	return rc;
@@ -1210,7 +1210,7 @@ static int wl3501_init_firmware(struct wl3501_card *this)
 out:
 	return rc;
 fail:
-	printk(KERN_WARNING "%s: failed!\n", __func__);
+;
 	goto out;
 }
 
@@ -1233,7 +1233,7 @@ static int wl3501_close(struct net_device *dev)
 	wl3501_block_interrupt(this);
 
 	rc = 0;
-	printk(KERN_INFO "%s: WL3501 closed\n", dev->name);
+;
 	spin_unlock_irqrestore(&this->lock, flags);
 	return rc;
 }
@@ -1254,8 +1254,8 @@ static int wl3501_reset(struct net_device *dev)
 	wl3501_block_interrupt(this);
 
 	if (wl3501_init_firmware(this)) {
-		printk(KERN_WARNING "%s: Can't initialize Firmware!\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Can't initialize Firmware!\n",
+;
 		/* Free IRQ, and mark IRQ as unused */
 		free_irq(dev->irq, dev);
 		goto out;
@@ -1287,8 +1287,8 @@ static void wl3501_tx_timeout(struct net_device *dev)
 	rc = wl3501_reset(dev);
 	spin_unlock_irqrestore(&this->lock, flags);
 	if (rc)
-		printk(KERN_ERR "%s: Error %d resetting card on Tx timeout!\n",
-		       dev->name, rc);
+//		printk(KERN_ERR "%s: Error %d resetting card on Tx timeout!\n",
+;
 	else {
 		dev->trans_start = jiffies; /* prevent tx timeout */
 		netif_wake_queue(dev);
@@ -1355,15 +1355,15 @@ static int wl3501_open(struct net_device *dev)
 	wl3501_mgmt_scan(this, 100);
 	rc = 0;
 	pr_debug("%s: WL3501 opened", dev->name);
-	printk(KERN_INFO "%s: Card Name: %s\n"
-			 "%s: Firmware Date: %s\n",
-			 dev->name, this->card_name,
-			 dev->name, this->firmware_date);
+//	printk(KERN_INFO "%s: Card Name: %s\n"
+//			 "%s: Firmware Date: %s\n",
+//			 dev->name, this->card_name,
+;
 out:
 	spin_unlock_irqrestore(&this->lock, flags);
 	return rc;
 fail:
-	printk(KERN_WARNING "%s: Can't initialize firmware!\n", dev->name);
+;
 	goto out;
 }
 
@@ -1923,7 +1923,7 @@ static int wl3501_config(struct pcmcia_device *link)
 	dev->base_addr = link->resource[0]->start;
 	SET_NETDEV_DEV(dev, &link->dev);
 	if (register_netdev(dev)) {
-		printk(KERN_NOTICE "wl3501_cs: register_netdev() failed\n");
+;
 		goto failed;
 	}
 
@@ -1932,8 +1932,8 @@ static int wl3501_config(struct pcmcia_device *link)
 	this->base_addr = dev->base_addr;
 
 	if (!wl3501_get_flash_mac_addr(this)) {
-		printk(KERN_WARNING "%s: Can't read MAC addr in flash ROM?\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Can't read MAC addr in flash ROM?\n",
+;
 		unregister_netdev(dev);
 		goto failed;
 	}
@@ -1942,10 +1942,10 @@ static int wl3501_config(struct pcmcia_device *link)
 		dev->dev_addr[i] = ((char *)&this->mac_addr)[i];
 
 	/* print probe information */
-	printk(KERN_INFO "%s: wl3501 @ 0x%3.3x, IRQ %d, "
-	       "MAC addr in flash ROM:%pM\n",
-	       dev->name, this->base_addr, (int)dev->irq,
-	       dev->dev_addr);
+//	printk(KERN_INFO "%s: wl3501 @ 0x%3.3x, IRQ %d, "
+//	       "MAC addr in flash ROM:%pM\n",
+//	       dev->name, this->base_addr, (int)dev->irq,
+;
 	/*
 	 * Initialize card parameters - added by jss
 	 */

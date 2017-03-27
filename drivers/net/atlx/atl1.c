@@ -1822,8 +1822,8 @@ static void atl1_rx_checksum(struct atl1_adapter *adapter,
 					ERR_FLAG_CODE | ERR_FLAG_OV)) {
 			adapter->hw_csum_err++;
 			if (netif_msg_rx_err(adapter))
-				dev_printk(KERN_DEBUG, &pdev->dev,
-					"rx checksum error\n");
+//				dev_printk(KERN_DEBUG, &pdev->dev,
+;
 			return;
 		}
 	}
@@ -1940,26 +1940,26 @@ chk_rrd:
 			if (likely(rrd->num_buf == 1))
 				goto rrd_ok;
 			else if (netif_msg_rx_err(adapter)) {
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"unexpected RRD buffer count\n");
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"rx_buf_len = %d\n",
-					adapter->rx_buffer_len);
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"RRD num_buf = %d\n",
-					rrd->num_buf);
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"RRD pkt_len = %d\n",
-					rrd->xsz.xsum_sz.pkt_size);
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"RRD pkt_flg = 0x%08X\n",
-					rrd->pkt_flg);
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"RRD err_flg = 0x%08X\n",
-					rrd->err_flg);
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"RRD vlan_tag = 0x%08X\n",
-					rrd->vlan_tag);
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"rx_buf_len = %d\n",
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"RRD num_buf = %d\n",
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"RRD pkt_len = %d\n",
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"RRD pkt_flg = 0x%08X\n",
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"RRD err_flg = 0x%08X\n",
+;
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"RRD vlan_tag = 0x%08X\n",
+;
 			}
 
 			/* rrd seems to be bad */
@@ -1970,8 +1970,8 @@ chk_rrd:
 			}
 			/* bad rrd */
 			if (netif_msg_rx_err(adapter))
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"bad RRD\n");
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+;
 			/* see if update RFD index */
 			if (rrd->num_buf > 1)
 				atl1_update_rfd_index(adapter, rrd);
@@ -2178,8 +2178,8 @@ static int atl1_tx_csum(struct atl1_adapter *adapter, struct sk_buff *skb,
 		if (unlikely(css & 0x1)) {
 			/* L1 hardware requires an even number here */
 			if (netif_msg_tx_err(adapter))
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"payload offset not an even number\n");
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+;
 			return -1;
 		}
 		ptpd->word3 |= (css & TPD_PLOADOFFSET_MASK) <<
@@ -2400,8 +2400,8 @@ static netdev_tx_t atl1_xmit_frame(struct sk_buff *skb,
 		/* not enough descriptors */
 		netif_stop_queue(netdev);
 		if (netif_msg_tx_queued(adapter))
-			dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-				"tx busy\n");
+//			dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -2472,8 +2472,8 @@ static irqreturn_t atl1_intr(int irq, void *data)
 		/* check if PCIE PHY Link down */
 		if (status & ISR_PHY_LINKDOWN) {
 			if (netif_msg_intr(adapter))
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"pcie phy link down %x\n", status);
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+;
 			if (netif_running(adapter->netdev)) {	/* reset MAC */
 				iowrite32(0, adapter->hw.hw_addr + REG_IMR);
 				schedule_work(&adapter->reset_dev_task);
@@ -2484,9 +2484,9 @@ static irqreturn_t atl1_intr(int irq, void *data)
 		/* check if DMA read/write error ? */
 		if (status & (ISR_DMAR_TO_RST | ISR_DMAW_TO_RST)) {
 			if (netif_msg_intr(adapter))
-				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
-					"pcie DMA r/w error (status = 0x%x)\n",
-					status);
+//				dev_printk(KERN_DEBUG, &adapter->pdev->dev,
+//					"pcie DMA r/w error (status = 0x%x)\n",
+;
 			iowrite32(0, adapter->hw.hw_addr + REG_IMR);
 			schedule_work(&adapter->reset_dev_task);
 			return IRQ_HANDLED;
@@ -2510,10 +2510,10 @@ static irqreturn_t atl1_intr(int irq, void *data)
 				ISR_RRD_OV | ISR_HOST_RFD_UNRUN |
 				ISR_HOST_RRD_OV))
 				if (netif_msg_intr(adapter))
-					dev_printk(KERN_DEBUG,
-						&adapter->pdev->dev,
-						"rx exception, ISR = 0x%x\n",
-						status);
+//					dev_printk(KERN_DEBUG,
+//						&adapter->pdev->dev,
+//						"rx exception, ISR = 0x%x\n",
+;
 			atl1_intr_rx(adapter);
 		}
 
@@ -2762,8 +2762,8 @@ static int atl1_suspend(struct device *dev)
 		val = atl1_get_speed_and_duplex(hw, &speed, &duplex);
 		if (val) {
 			if (netif_msg_ifdown(adapter))
-				dev_printk(KERN_DEBUG, &pdev->dev,
-					"error getting speed/duplex\n");
+//				dev_printk(KERN_DEBUG, &pdev->dev,
+;
 			goto disable_wol;
 		}
 

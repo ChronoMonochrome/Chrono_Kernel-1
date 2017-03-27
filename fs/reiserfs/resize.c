@@ -38,14 +38,14 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
 	sb = SB_DISK_SUPER_BLOCK(s);
 
 	if (SB_BLOCK_COUNT(s) >= block_count_new) {
-		printk("can\'t shrink filesystem on-line\n");
+;
 		return -EINVAL;
 	}
 
 	/* check the device size */
 	bh = sb_bread(s, block_count_new - 1);
 	if (!bh) {
-		printk("reiserfs_resize: can\'t read last block\n");
+;
 		return -EINVAL;
 	}
 	bforget(bh);
@@ -114,7 +114,7 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
 		if (!bitmap) {
 			/* Journal bitmaps are still supersized, but the memory isn't
 			 * leaked, so I guess it's ok */
-			printk("reiserfs_resize: unable to allocate memory.\n");
+;
 			return -ENOMEM;
 		}
 		for (i = 0; i < bmap_nr; i++)

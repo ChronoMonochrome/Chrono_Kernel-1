@@ -56,33 +56,33 @@
 #ifdef STMMAC_DEBUG
 #define DBG(nlevel, klevel, fmt, args...) \
 		((void)(netif_msg_##nlevel(priv) && \
-		printk(KERN_##klevel fmt, ## args)))
-#else
-#define DBG(nlevel, klevel, fmt, args...) do { } while (0)
-#endif
-
-#undef STMMAC_RX_DEBUG
-/*#define STMMAC_RX_DEBUG*/
-#ifdef STMMAC_RX_DEBUG
-#define RX_DBG(fmt, args...)  printk(fmt, ## args)
-#else
-#define RX_DBG(fmt, args...)  do { } while (0)
-#endif
-
-#undef STMMAC_XMIT_DEBUG
-/*#define STMMAC_XMIT_DEBUG*/
-#ifdef STMMAC_TX_DEBUG
-#define TX_DBG(fmt, args...)  printk(fmt, ## args)
-#else
-#define TX_DBG(fmt, args...)  do { } while (0)
-#endif
-
-#define STMMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
-#define JUMBO_LEN	9000
-
-/* Module parameters */
-#define TX_TIMEO 5000 /* default 5 seconds */
-static int watchdog = TX_TIMEO;
+//		printk(KERN_##klevel fmt, ## args)))
+//#else
+//#define DBG(nlevel, klevel, fmt, args...) do { } while (0)
+//#endif
+//
+//#undef STMMAC_RX_DEBUG
+///*#define STMMAC_RX_DEBUG*/
+//#ifdef STMMAC_RX_DEBUG
+//#define RX_DBG(fmt, args...)  printk(fmt, ## args)
+//#else
+//#define RX_DBG(fmt, args...)  do { } while (0)
+//#endif
+//
+//#undef STMMAC_XMIT_DEBUG
+///*#define STMMAC_XMIT_DEBUG*/
+//#ifdef STMMAC_TX_DEBUG
+//#define TX_DBG(fmt, args...)  printk(fmt, ## args)
+//#else
+//#define TX_DBG(fmt, args...)  do { } while (0)
+//#endif
+//
+//#define STMMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
+//#define JUMBO_LEN	9000
+//
+///* Module parameters */
+//#define TX_TIMEO 5000 /* default 5 seconds */
+;
 module_param(watchdog, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(watchdog, "Transmit timeout in milliseconds");
 

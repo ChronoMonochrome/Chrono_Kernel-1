@@ -1066,13 +1066,13 @@ static int __init netlbl_init(void)
 {
 	int ret_val;
 
-	printk(KERN_INFO "NetLabel: Initializing\n");
-	printk(KERN_INFO "NetLabel:  domain hash size = %u\n",
-	       (1 << NETLBL_DOMHSH_BITSIZE));
-	printk(KERN_INFO "NetLabel:  protocols ="
-	       " UNLABELED"
-	       " CIPSOv4"
-	       "\n");
+;
+//	printk(KERN_INFO "NetLabel:  domain hash size = %u\n",
+;
+//	printk(KERN_INFO "NetLabel:  protocols ="
+//	       " UNLABELED"
+//	       " CIPSOv4"
+;
 
 	ret_val = netlbl_domhsh_init(NETLBL_DOMHSH_BITSIZE);
 	if (ret_val != 0)
@@ -1089,7 +1089,7 @@ static int __init netlbl_init(void)
 	ret_val = netlbl_unlabel_defconf();
 	if (ret_val != 0)
 		goto init_failure;
-	printk(KERN_INFO "NetLabel:  unlabeled traffic allowed by default\n");
+;
 
 	return 0;
 

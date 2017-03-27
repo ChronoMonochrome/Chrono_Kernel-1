@@ -397,16 +397,24 @@ static int aer_inject(struct aer_error_inj *einj)
 	if (!aer_mask_override && einj->cor_status &&
 	    !(einj->cor_status & ~cor_mask)) {
 		ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "The correctable error(s) is masked "
 				"by device\n");
+#else
+		;
+#endif
 		spin_unlock_irqrestore(&inject_lock, flags);
 		goto out_put;
 	}
 	if (!aer_mask_override && einj->uncor_status &&
 	    !(einj->uncor_status & ~uncor_mask)) {
 		ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "The uncorrectable error(s) is masked "
 				"by device\n");
+#else
+		;
+#endif
 		spin_unlock_irqrestore(&inject_lock, flags);
 		goto out_put;
 	}
@@ -459,7 +467,11 @@ static int aer_inject(struct aer_error_inj *einj)
 
 	if (find_aer_device(rpdev, &edev)) {
 		if (!get_service_data(edev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "AER service is not initialized\n");
+#else
+			;
+#endif
 			ret = -EINVAL;
 			goto out_put;
 		}

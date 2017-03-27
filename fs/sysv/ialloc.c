@@ -109,13 +109,13 @@ void sysv_free_inode(struct inode * inode)
 	sb = inode->i_sb;
 	ino = inode->i_ino;
 	if (ino <= SYSV_ROOT_INO || ino > sbi->s_ninodes) {
-		printk("sysv_free_inode: inode 0,1,2 or nonexistent inode\n");
+;
 		return;
 	}
 	raw_inode = sysv_raw_inode(sb, ino, &bh);
 	if (!raw_inode) {
-		printk("sysv_free_inode: unable to read inode block on device "
-		       "%s\n", inode->i_sb->s_id);
+//		printk("sysv_free_inode: unable to read inode block on device "
+;
 		return;
 	}
 	lock_super(sb);
@@ -217,9 +217,9 @@ out:
 	return count;
 
 Einval:
-	printk("sysv_count_free_inodes: "
-		"free inode count was %d, correcting to %d\n",
-		sb_count, count);
+//	printk("sysv_count_free_inodes: "
+//		"free inode count was %d, correcting to %d\n",
+;
 	if (!(sb->s_flags & MS_RDONLY)) {
 		*sbi->s_sb_total_free_inodes = cpu_to_fs16(SYSV_SB(sb), count);
 		dirty_sb(sb);
@@ -227,7 +227,7 @@ Einval:
 	goto out;
 
 Eio:
-	printk("sysv_count_free_inodes: unable to read inode table\n");
+;
 trust_sb:
 	count = sb_count;
 	goto out;

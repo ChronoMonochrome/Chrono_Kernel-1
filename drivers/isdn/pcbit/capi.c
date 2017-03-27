@@ -78,7 +78,11 @@ int capi_conn_req(const char * calledPN, struct sk_buff **skb, int proto)
 
 	if ((*skb = dev_alloc_skb(len)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 	        printk(KERN_WARNING "capi_conn_req: alloc_skb failed\n");
+#else
+	        ;
+#endif
 		return -1;
 	}
 
@@ -136,7 +140,11 @@ int capi_conn_resp(struct pcbit_chan* chan, struct sk_buff **skb)
         
 	if ((*skb = dev_alloc_skb(5)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_conn_resp: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -156,14 +164,22 @@ int capi_conn_active_req(struct pcbit_chan* chan, struct sk_buff **skb)
         
 	if ((*skb = dev_alloc_skb(8)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_conn_active_req: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
         *((ushort*) skb_put(*skb, 2) ) = chan->callref;  
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Call Reference: %04x\n", chan->callref); 
+#else
+	;
+#endif
 #endif
 
         *(skb_put(*skb, 1)) = 0;       /*  BC.Length = 0;          */
@@ -184,7 +200,11 @@ int capi_conn_active_resp(struct pcbit_chan* chan, struct sk_buff **skb)
   
 	if ((*skb = dev_alloc_skb(2)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_conn_active_resp: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -204,7 +224,11 @@ int capi_select_proto_req(struct pcbit_chan *chan, struct sk_buff **skb,
 
 	if ((*skb = dev_alloc_skb(18)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_select_proto_req: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -227,7 +251,11 @@ int capi_select_proto_req(struct pcbit_chan *chan, struct sk_buff **skb,
 		break;
         default:
 #ifdef DEBUG 
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "Transparent\n");
+#else
+                ;
+#endif
 #endif
                 *(skb_put(*skb, 1)) = 0x03;
                 break;
@@ -265,7 +293,11 @@ int capi_activate_transp_req(struct pcbit_chan *chan, struct sk_buff **skb)
 
 	if ((*skb = dev_alloc_skb(7)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_activate_transp_req: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -299,7 +331,11 @@ int capi_tdata_req(struct pcbit_chan* chan, struct sk_buff *skb)
 
 	if(skb_headroom(skb) < 10)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "No headspace (%u) on headroom %p for capi header\n", skb_headroom(skb), skb);
+#else
+		;
+#endif
 	}
 	else
 	{	
@@ -323,7 +359,11 @@ int capi_tdata_resp(struct pcbit_chan *chan, struct sk_buff ** skb)
 {
 	if ((*skb = dev_alloc_skb(4)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_tdata_resp: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -340,7 +380,11 @@ int capi_disc_req(ushort callref, struct sk_buff **skb, u_char cause)
 
 	if ((*skb = dev_alloc_skb(6)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_disc_req: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -363,7 +407,11 @@ int capi_disc_resp(struct pcbit_chan *chan, struct sk_buff **skb)
 {
 	if ((*skb = dev_alloc_skb(2)) == NULL) {
     
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "capi_disc_resp: alloc_skb failed\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -389,7 +437,11 @@ int capi_decode_conn_ind(struct pcbit_chan * chan,
         skb_pull(skb, 2);
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Call Reference: %04x\n", chan->callref); 
+#else
+	;
+#endif
 #endif
 
         /* Channel Identification */
@@ -404,11 +456,23 @@ int capi_decode_conn_ind(struct pcbit_chan * chan,
         if (CIlen == 1) {
 
                 if ( ((skb->data[1]) & 0xFC) == 0x48 )
+#ifdef CONFIG_DEBUG_PRINTK
                         printk(KERN_DEBUG "decode_conn_ind: chan ok\n");
+#else
+                        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "phyChan = %d\n", skb->data[1] & 0x03); 
+#else
+                ;
+#endif
         }
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "conn_ind: CIlen = %d\n", CIlen);
+#else
+		;
+#endif
 #endif
         skb_pull(skb, CIlen + 1);
 
@@ -421,7 +485,11 @@ int capi_decode_conn_ind(struct pcbit_chan * chan,
 		int count = 1;
 		
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "CPN: Octect 3 %02x\n", skb->data[1]);
+#else
+		;
+#endif
 #endif
 		if ((skb->data[1] & 0x80) == 0)
 			count = 2;
@@ -437,7 +505,11 @@ int capi_decode_conn_ind(struct pcbit_chan * chan,
 	}
 	else {
 		info->data.setup.CallingPN = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "NULL CallingPN\n");
+#else
+		;
+#endif
 	}
 
 	skb_pull(skb, len + 1);
@@ -466,7 +538,11 @@ int capi_decode_conn_ind(struct pcbit_chan * chan,
 	}
 	else {
 		info->data.setup.CalledPN = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "NULL CalledPN\n");
+#else
+		;
+#endif
 	}
 
 	skb_pull(skb, len + 1);
@@ -508,7 +584,11 @@ int capi_decode_conn_conf(struct pcbit_chan * chan, struct sk_buff *skb,
         /* This is actually a firmware bug */
         if (!*complete)
         {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "complete=%02x\n", *complete);
+#else
+                ;
+#endif
                 *complete = 1;
         }
 
@@ -543,10 +623,18 @@ int capi_decode_conn_actv_ind(struct pcbit_chan * chan, struct sk_buff *skb)
 	if (len > 1 && len < 31) {
 		skb_copy_from_linear_data_offset(skb, 2, str, len - 1);
 		str[len] = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Connected Party Number: %s\n", str);
+#else
+		;
+#endif
 	}
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "actv_ind CPN len = %d\n", len);
+#else
+		;
+#endif
 #endif
 
         skb_pull(skb, len + 1);
@@ -595,7 +683,11 @@ int capi_decode_actv_trans_conf(struct pcbit_chan *chan, struct sk_buff *skb)
         ushort errcode;
 
         if (chan->layer2link != *(skb->data) )
+#ifdef CONFIG_DEBUG_PRINTK
                 printk("capi_decode_actv_trans_conf: layer2link doesn't match\n");
+#else
+                ;
+#endif
 
         skb_pull(skb, 1);
 
@@ -619,8 +711,12 @@ int capi_decode_disc_ind(struct pcbit_chan *chan, struct sk_buff *skb)
 #ifdef DEBUG
 
         for (i=0; i<len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "Cause Octect %d: %02x\n", i+3, 
                        *(skb->data + i));
+#else
+                ;
+#endif
 #endif
 
         skb_pull(skb, len);
@@ -639,10 +735,18 @@ int capi_decode_debug_188(u_char *hdr, ushort hdrlen)
         if (len < 64 && len == hdrlen - 1) {        
                 memcpy(str, hdr + 1, hdrlen - 1);
                 str[hdrlen - 1] = 0;
+#ifdef CONFIG_DEBUG_PRINTK
                 printk("%s\n", str);
+#else
+                ;
+#endif
         }
         else
+#ifdef CONFIG_DEBUG_PRINTK
                 printk("debug message incorrect\n");
+#else
+                ;
+#endif
 
         return 0;
 }

@@ -1088,9 +1088,9 @@ static void bnx2x_stats_update(struct bnx2x *bp)
 		struct bnx2x_eth_stats *estats = &bp->eth_stats;
 		int i;
 
-		printk(KERN_DEBUG "%s: brb drops %u  brb truncate %u\n",
-		       bp->dev->name,
-		       estats->brb_drop_lo, estats->brb_truncate_lo);
+//		printk(KERN_DEBUG "%s: brb drops %u  brb truncate %u\n",
+//		       bp->dev->name,
+;
 
 		for_each_eth_queue(bp, i) {
 			struct bnx2x_fastpath *fp = &bp->fp[i];

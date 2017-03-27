@@ -285,9 +285,13 @@ static int pt_wait(struct pt_unit *tape, int go, int stop, char *fun, char *msg)
 		if (j > PT_SPIN)
 			e |= 0x100;
 		if (fun)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s %s: alt=0x%x stat=0x%x err=0x%x"
 			       " loop=%d phase=%d\n",
 			       tape->name, fun, msg, r, s, e, j, p);
+#else
+			;
+#endif
 		return (e << 8) + s;
 	}
 	return 0;
@@ -315,7 +319,11 @@ static int pt_command(struct pt_unit *tape, char *cmd, int dlen, char *fun)
 	}
 
 	if (read_reg(pi, 2) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: command phase error\n", tape->name, fun);
+#else
+		;
+#endif
 		pi_disconnect(pi);
 		return -1;
 	}
@@ -364,8 +372,12 @@ static void pt_req_sense(struct pt_unit *tape, int quiet)
 	tape->last_sense = -1;
 	if (!r) {
 		if (!quiet)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Sense key: %x, ASC: %x, ASQ: %x\n",
 			       tape->name, buf[2] & 0xf, buf[12], buf[13]);
+#else
+			;
+#endif
 		tape->last_sense = (buf[2] & 0xf) | ((buf[12] & 0xff) << 8)
 		    | ((buf[13] & 0xff) << 16);
 	}
@@ -411,10 +423,18 @@ static int pt_poll_dsc(struct pt_unit *tape, int pause, int tmo, char *msg)
 	}
 	if ((k >= tmo) || (s & STAT_ERR)) {
 		if (k >= tmo)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s DSC timeout\n", tape->name, msg);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s stat=0x%x err=0x%x\n", tape->name, msg, s,
 			       e);
+#else
+			;
+#endif
 		pt_req_sense(tape, 0);
 		return 0;
 	}
@@ -468,12 +488,28 @@ static int pt_reset(struct pt_unit *tape)
 		flg &= (read_reg(pi, i + 1) == expect[i]);
 
 	if (verbose) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Reset (%d) signature = ", tape->name, k);
+#else
+		;
+#endif
 		for (i = 0; i < 5; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%3x", read_reg(pi, i + 1));
+#else
+			;
+#endif
 		if (!flg)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (incorrect)");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	pi_disconnect(pi);
@@ -543,8 +579,12 @@ static int pt_identify(struct pt_unit *tape)
 	dt = buf[0] & 0x1f;
 	if (dt != 1) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Drive %d, unsupported type %d\n",
 			       tape->name, tape->drive, dt);
+#else
+			;
+#endif
 		return -1;
 	}
 
@@ -567,13 +607,29 @@ static int pt_identify(struct pt_unit *tape)
 	if (!pt_atapi(tape, ls_cmd, 36, buf, "log sense"))
 		tape->capacity = xn(buf, 24, 4);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s %s, %s", tape->name, mf, id, ms[tape->drive]);
+#else
+	;
+#endif
 	if (!(tape->flags & PT_MEDIA))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no media\n");
+#else
+		;
+#endif
 	else {
 		if (!(tape->flags & PT_WRITE_OK))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", RO");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", blocksize %d, %d MB\n", tape->bs, tape->capacity / 1024);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -603,7 +659,11 @@ static int pt_detect(void)
 	int specified = 0, found = 0;
 	int unit;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s version %s, major %d\n", name, name, PT_VERSION, major);
+#else
+	;
+#endif
 
 	specified = 0;
 	for (unit = 0; unit < PT_UNITS; unit++) {
@@ -644,7 +704,11 @@ static int pt_detect(void)
 	if (found)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: No ATAPI tape drive detected\n", name);
+#else
+	;
+#endif
 	return -1;
 }
 
@@ -680,7 +744,11 @@ static int pt_open(struct inode *inode, struct file *file)
 	err = -ENOMEM;
 	tape->bufptr = kmalloc(PT_BUFSIZE, GFP_KERNEL);
 	if (tape->bufptr == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: buffer allocation failed\n", tape->name);
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -721,8 +789,12 @@ static long pt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		default:
 			/* FIXME: rate limit ?? */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: Unimplemented mt_op %d\n", tape->name,
 			       mtop.mt_op);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 
@@ -819,8 +891,12 @@ static ssize_t pt_read(struct file *filp, char __user *buf, size_t count, loff_t
 			p = (read_reg(pi, 2) & 3);
 			if (p != 2) {
 				pi_disconnect(pi);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: Phase error on read: %d\n", tape->name,
 				       p);
+#else
+				;
+#endif
 				return -EIO;
 			}
 
@@ -920,8 +996,12 @@ static ssize_t pt_write(struct file *filp, const char __user *buf, size_t count,
 			p = (read_reg(pi, 2) & 3);
 			if (p != 0) {
 				pi_disconnect(pi);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: Phase error on write: %d \n",
 				       tape->name, p);
+#else
+				;
+#endif
 				return -EIO;
 			}
 
@@ -968,7 +1048,11 @@ static int __init pt_init(void)
 
 	err = register_chrdev(major, name, &pt_fops);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pt_init: unable to get major number %d\n", major);
+#else
+		;
+#endif
 		for (unit = 0; unit < PT_UNITS; unit++)
 			if (pt[unit].present)
 				pi_release(pt[unit].pi);

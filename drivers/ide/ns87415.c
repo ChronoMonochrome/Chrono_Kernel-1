@@ -40,7 +40,11 @@ static u8 superio_ide_inb (unsigned long port)
 	u8 tmp;
 	int retries = SUPERIO_IDE_MAX_RETRIES;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(" [ reading port 0x%x with retry ] ", port); */
+#else
+	/* ;
+#endif
 
 	do {
 		tmp = inb(port);

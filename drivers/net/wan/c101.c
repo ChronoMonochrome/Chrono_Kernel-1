@@ -231,11 +231,11 @@ static int c101_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 #ifdef DEBUG_RINGS
 	if (cmd == SIOCDEVPRIVATE) {
 		sca_dump_rings(dev);
-		printk(KERN_DEBUG "MSCI1: ST: %02x %02x %02x %02x\n",
-		       sca_in(MSCI1_OFFSET + ST0, port),
-		       sca_in(MSCI1_OFFSET + ST1, port),
-		       sca_in(MSCI1_OFFSET + ST2, port),
-		       sca_in(MSCI1_OFFSET + ST3, port));
+//		printk(KERN_DEBUG "MSCI1: ST: %02x %02x %02x %02x\n",
+//		       sca_in(MSCI1_OFFSET + ST0, port),
+//		       sca_in(MSCI1_OFFSET + ST1, port),
+//		       sca_in(MSCI1_OFFSET + ST2, port),
+;
 		return 0;
 	}
 #endif
@@ -313,44 +313,44 @@ static int __init c101_run(unsigned long irq, unsigned long winbase)
 	int result;
 
 	if (irq<3 || irq>15 || irq == 6) /* FIXME */ {
-		printk(KERN_ERR "c101: invalid IRQ value\n");
+;
 		return -ENODEV;
 	}
 
 	if (winbase < 0xC0000 || winbase > 0xDFFFF || (winbase & 0x3FFF) !=0) {
-		printk(KERN_ERR "c101: invalid RAM value\n");
+;
 		return -ENODEV;
 	}
 
 	card = kzalloc(sizeof(card_t), GFP_KERNEL);
 	if (card == NULL) {
-		printk(KERN_ERR "c101: unable to allocate memory\n");
+;
 		return -ENOBUFS;
 	}
 
 	card->dev = alloc_hdlcdev(card);
 	if (!card->dev) {
-		printk(KERN_ERR "c101: unable to allocate memory\n");
+;
 		kfree(card);
 		return -ENOBUFS;
 	}
 
 	if (request_irq(irq, sca_intr, 0, devname, card)) {
-		printk(KERN_ERR "c101: could not allocate IRQ\n");
+;
 		c101_destroy_card(card);
 		return -EBUSY;
 	}
 	card->irq = irq;
 
 	if (!request_mem_region(winbase, C101_MAPPED_RAM_SIZE, devname)) {
-		printk(KERN_ERR "c101: could not request RAM window\n");
+;
 		c101_destroy_card(card);
 		return -EBUSY;
 	}
 	card->phy_winbase = winbase;
 	card->win0base = ioremap(winbase, C101_MAPPED_RAM_SIZE);
 	if (!card->win0base) {
-		printk(KERN_ERR "c101: could not map I/O address\n");
+;
 		c101_destroy_card(card);
 		return -EFAULT;
 	}
@@ -381,7 +381,7 @@ static int __init c101_run(unsigned long irq, unsigned long winbase)
 
 	result = register_hdlc_device(dev);
 	if (result) {
-		printk(KERN_WARNING "c101: unable to register hdlc device\n");
+;
 		c101_destroy_card(card);
 		return result;
 	}
@@ -389,10 +389,10 @@ static int __init c101_run(unsigned long irq, unsigned long winbase)
 	sca_init_port(card); /* Set up C101 memory */
 	set_carrier(card);
 
-	printk(KERN_INFO "%s: Moxa C101 on IRQ%u,"
-	       " using %u TX + %u RX packets rings\n",
-	       dev->name, card->irq,
-	       card->tx_ring_buffers, card->rx_ring_buffers);
+//	printk(KERN_INFO "%s: Moxa C101 on IRQ%u,"
+//	       " using %u TX + %u RX packets rings\n",
+//	       dev->name, card->irq,
+;
 
 	*new_card = card;
 	new_card = &card->next_card;
@@ -405,12 +405,12 @@ static int __init c101_init(void)
 {
 	if (hw == NULL) {
 #ifdef MODULE
-		printk(KERN_INFO "c101: no card initialized\n");
+;
 #endif
 		return -EINVAL;	/* no parameters specified, abort */
 	}
 
-	printk(KERN_INFO "%s\n", version);
+;
 
 	do {
 		unsigned long irq, ram;
@@ -428,7 +428,7 @@ static int __init c101_init(void)
 			return first_card ? 0 : -EINVAL;
 	}while(*hw++ == ':');
 
-	printk(KERN_ERR "c101: invalid hardware parameters\n");
+;
 	return first_card ? 0 : -EINVAL;
 }
 

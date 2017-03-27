@@ -259,16 +259,16 @@ void wl_adapter_insert(struct pcmcia_device *link)
 
 	SET_NETDEV_DEV(dev, &link->dev);
 	if (register_netdev(dev) != 0) {
-		printk("%s: register_netdev() failed\n", MODULE_NAME);
+;
 		goto failed;
 	}
 
 	register_wlags_sysfs(dev);
 
-	printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, ""mac_address ",
-		dev->name, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, ""mac_address ",
+;
 	for (i = 0; i < ETH_ALEN; i++)
-		printk("%02X%c", dev->dev_addr[i], ((i < (ETH_ALEN-1)) ? ':' : '\n'));
+;
 
 	DBG_LEAVE(DbgInfo);
 	return;

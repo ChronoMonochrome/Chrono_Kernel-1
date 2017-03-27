@@ -37,16 +37,28 @@ static void pretty_print(struct parport *port, int device)
 {
 	struct parport_device_info *info = &port->probe_info[device + 1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", port->name);
+#else
+	;
+#endif
 
 	if (device >= 0)
 		printk (" (addr %d)", device);
 
 	printk (": %s", classes[info->class].descr);
 	if (info->class)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", %s %s", info->mfr, info->model);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static void parse_data(struct parport *port, int device, char *str)
@@ -57,7 +69,11 @@ static void parse_data(struct parport *port, int device, char *str)
 	struct parport_device_info *info = &port->probe_info[device + 1];
 
 	if (!txt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s probe: memory squeeze\n", port->name);
+#else
+		;
+#endif
 		return;
 	}
 	strcpy(txt, str);
@@ -97,7 +113,11 @@ static void parse_data(struct parport *port, int device, char *str)
 						goto rock_on;
 					}
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s probe: warning, class '%s' not understood.\n", port->name, sep);
+#else
+				;
+#endif
 				info->class = PARPORT_CLASS_OTHER;
 			} else if (!strcmp(p, "CMD") ||
 				   !strcmp(p, "COMMAND SET")) {

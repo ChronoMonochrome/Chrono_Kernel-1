@@ -1327,7 +1327,11 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
 		mdelay(40);
 	}
 	if (i >= 3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "PLL initialization failed!!!\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -1351,7 +1355,11 @@ static int hw_auto_init(struct hw *hw)
 			break;
 	}
 	if (!get_field(gctl, GCTL_AID)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "Card Auto-init failed!!!\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 

@@ -509,10 +509,10 @@ static int kingsun_probe(struct usb_interface *intf,
 	if (!kingsun->out_buf)
 		goto free_mem;
 
-	printk(KERN_INFO "KingSun/DonShine IRDA/USB found at address %d, "
-		"Vendor: %x, Product: %x\n",
-	       dev->devnum, le16_to_cpu(dev->descriptor.idVendor),
-	       le16_to_cpu(dev->descriptor.idProduct));
+//	printk(KERN_INFO "KingSun/DonShine IRDA/USB found at address %d, "
+//		"Vendor: %x, Product: %x\n",
+//	       dev->devnum, le16_to_cpu(dev->descriptor.idVendor),
+;
 
 	/* Initialize QoS for this device */
 	irda_init_max_qos_capabilies(&kingsun->qos);

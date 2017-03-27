@@ -64,8 +64,12 @@ int transport_subsystem_register(struct se_subsystem_api *sub_api)
 	list_add_tail(&sub_api->sub_api_list, &subsystem_list);
 	mutex_unlock(&subsystem_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM: Registered subsystem plugin: %s struct module:"
 			" %p\n", sub_api->name, sub_api->owner);
+#else
+	;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(transport_subsystem_register);
@@ -134,8 +138,12 @@ core_alloc_hba(const char *plugin_name, u32 plugin_dep_id, u32 hba_flags)
 	list_add_tail(&hba->hba_list, &se_global->g_hba_list);
 	spin_unlock(&se_global->hba_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Attached HBA to Generic Target"
 			" Core\n", hba->hba_id);
+#else
+	;
+#endif
 
 	return hba;
 
@@ -160,8 +168,12 @@ core_delete_hba(struct se_hba *hba)
 	list_del(&hba->hba_list);
 	spin_unlock(&se_global->hba_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Detached HBA from Generic Target"
 			" Core\n", hba->hba_id);
+#else
+	;
+#endif
 
 	if (hba->transport->owner)
 		module_put(hba->transport->owner);

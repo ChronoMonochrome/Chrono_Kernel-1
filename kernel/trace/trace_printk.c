@@ -22,10 +22,14 @@
 #ifdef CONFIG_MODULES
 
 /*
+#ifdef CONFIG_DEBUG_PRINTK
  * modules trace_printk()'s formats are autosaved in struct trace_bprintk_fmt
  * which are queued on trace_bprintk_fmt_list.
  */
 static LIST_HEAD(trace_bprintk_fmt_list);
+#else
+ * modules trace_;
+#endif
 
 /* serialize accesses to trace_bprintk_fmt_list */
 static DEFINE_MUTEX(btrace_mutex);
@@ -182,9 +186,13 @@ struct notifier_block module_trace_bprintk_format_nb = {
 	.notifier_call = module_trace_bprintk_format_notify,
 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 int __trace_bprintk(unsigned long ip, const char *fmt, ...)
  {
 	int ret;
+#else
+int __trace_b;
+#endif
 	va_list ap;
 
 	if (unlikely(!fmt))
@@ -194,45 +202,73 @@ int __trace_bprintk(unsigned long ip, const char *fmt, ...)
 		return 0;
 
 	va_start(ap, fmt);
+#ifdef CONFIG_DEBUG_PRINTK
 	ret = trace_vbprintk(ip, fmt, ap);
+#else
+	ret = trace_vb;
+#endif
 	va_end(ap);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(__trace_bprintk);
 
+#ifdef CONFIG_DEBUG_PRINTK
 int __ftrace_vbprintk(unsigned long ip, const char *fmt, va_list ap)
  {
 	if (unlikely(!fmt))
 		return 0;
+#else
+int __ftrace_vb;
+#endif
 
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	return trace_vbprintk(ip, fmt, ap);
+#else
+	return trace_vb;
+#endif
 }
 EXPORT_SYMBOL_GPL(__ftrace_vbprintk);
 
+#ifdef CONFIG_DEBUG_PRINTK
 int __trace_printk(unsigned long ip, const char *fmt, ...)
 {
 	int ret;
+#else
+int __trace_;
+#endif
 	va_list ap;
 
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
 
 	va_start(ap, fmt);
+#ifdef CONFIG_DEBUG_PRINTK
 	ret = trace_vprintk(ip, fmt, ap);
+#else
+	ret = trace_v;
+#endif
 	va_end(ap);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(__trace_printk);
 
+#ifdef CONFIG_DEBUG_PRINTK
 int __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap)
 {
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
+#else
+int __ftrace_v;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	return trace_vprintk(ip, fmt, ap);
+#else
+	return trace_v;
+#endif
 }
 EXPORT_SYMBOL_GPL(__ftrace_vprintk);
 
@@ -337,9 +373,13 @@ static __init int init_trace_printk_function_export(void)
 
 fs_initcall(init_trace_printk_function_export);
 
+#ifdef CONFIG_DEBUG_PRINTK
 static __init int init_trace_printk(void)
 {
 	return register_module_notifier(&module_trace_bprintk_format_nb);
+#else
+static __init int init_trace_;
+#endif
 }
 
 early_initcall(init_trace_printk);

@@ -3262,7 +3262,11 @@ static int __init probe_vwsnd(struct address_info *hw_config)
 	/* XXX verify lithium present (to prevent crash on non-vw) */
 
 	if (li_create(&lith, hw_config->io_base) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "probe_vwsnd: can't map lithium\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	later = jiffies + 2;
@@ -3281,17 +3285,29 @@ static int __init probe_vwsnd(struct address_info *hw_config)
 		 * or a future machine with different audio.
 		 * On beta-release 320 w/ no audio, HC == 0x4000 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "probe_vwsnd: audio codec not found\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
 	if (w & LI_HC_LINK_FAILURE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "probe_vwsnd: can't init audio codec\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "vwsnd: lithium audio at mmio %#x irq %d\n",
 		hw_config->io_base, hw_config->irq);
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -3368,17 +3384,25 @@ static int __init attach_vwsnd(struct address_info *hw_config)
 
 	devc->audio_minor = register_sound_dsp(&vwsnd_audio_fops, -1);
 	if ((err = devc->audio_minor) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBGDO(printk(KERN_WARNING
 			     "attach_vwsnd: register_sound_dsp error %d\n",
 			     err));
+#else
+		DBGDO(;
+#endif
 		goto fail6;
 	}
 	devc->mixer_minor = register_sound_mixer(&vwsnd_mixer_fops,
 						 devc->audio_minor >> 4);
 	if ((err = devc->mixer_minor) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBGDO(printk(KERN_WARNING
 			     "attach_vwsnd: register_sound_mixer error %d\n",
 			     err));
+#else
+		DBGDO(;
+#endif
 		goto fail7;
 	}
 

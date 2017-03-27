@@ -150,7 +150,7 @@ int MS_CardInit(struct us_data *us)
 	WORD			btBlk1st, btBlk2nd;
 	DWORD			btBlk1stErred;
 
-	printk(KERN_INFO "MS_CardInit start\n");
+;
 
 	MS_LibFreeAllocatedArea(us);
 
@@ -257,7 +257,7 @@ exit:
 	kfree(PageBuffer1);
 	kfree(PageBuffer0);
 
-	printk(KERN_INFO "MS_CardInit end\n");
+;
 	return result;
 }
 

@@ -47,7 +47,11 @@ static void mantis_hifevm_work(struct work_struct *work)
 
 	if (gpif_stat & MANTIS_GPIF_DETSTAT) {
 		if (gpif_stat & MANTIS_CARD_PLUGIN) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): CAM Plugin", mantis->num);
+#else
+			d;
+#endif
 			mmwrite(0xdada0000, MANTIS_CARD_RESET);
 			mantis_event_cam_plugin(ca);
 			dvb_ca_en50221_camchange_irq(&ca->en50221,
@@ -56,7 +60,11 @@ static void mantis_hifevm_work(struct work_struct *work)
 		}
 	} else {
 		if (gpif_stat & MANTIS_CARD_PLUGOUT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): CAM Unplug", mantis->num);
+#else
+			d;
+#endif
 			mmwrite(0xdada0000, MANTIS_CARD_RESET);
 			mantis_event_cam_unplug(ca);
 			dvb_ca_en50221_camchange_irq(&ca->en50221,
@@ -66,28 +74,60 @@ static void mantis_hifevm_work(struct work_struct *work)
 	}
 
 	if (mantis->gpif_status & MANTIS_GPIF_EXTIRQ)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Ext IRQ", mantis->num);
+#else
+		d;
+#endif
 
 	if (mantis->gpif_status & MANTIS_SBUF_WSTO)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Smart Buffer Timeout", mantis->num);
+#else
+		d;
+#endif
 
 	if (mantis->gpif_status & MANTIS_GPIF_OTHERR)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Alignment Error", mantis->num);
+#else
+		d;
+#endif
 
 	if (gpif_stat & MANTIS_SBUF_OVFLW)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Smart Buffer Overflow", mantis->num);
+#else
+		d;
+#endif
 
 	if (gpif_stat & MANTIS_GPIF_BRRDY)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Smart Buffer Read Ready", mantis->num);
+#else
+		d;
+#endif
 
 	if (gpif_stat & MANTIS_GPIF_INTSTAT)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): GPIF IRQ", mantis->num);
+#else
+		d;
+#endif
 
 	if (gpif_stat & MANTIS_SBUF_EMPTY)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Smart Buffer Empty", mantis->num);
+#else
+		d;
+#endif
 
 	if (gpif_stat & MANTIS_SBUF_OPDONE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "Event Mgr: Adapter(%d) Slot(0): Smart Buffer operation complete", mantis->num);
+#else
+		d;
+#endif
 		ca->sbuf_status = MANTIS_SBUF_DATA_AVAIL;
 		ca->hif_event = MANTIS_SBUF_OPDONE;
 		wake_up(&ca->hif_opdone_wq);
@@ -98,7 +138,11 @@ int mantis_evmgr_init(struct mantis_ca *ca)
 {
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Initializing Mantis Host I/F Event manager");
+#else
+	d;
+#endif
 	INIT_WORK(&ca->hif_evm_work, mantis_hifevm_work);
 	mantis_pcmcia_init(ca);
 	schedule_work(&ca->hif_evm_work);
@@ -110,7 +154,11 @@ void mantis_evmgr_exit(struct mantis_ca *ca)
 {
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Mantis Host I/F Event manager exiting");
+#else
+	d;
+#endif
 	flush_work_sync(&ca->hif_evm_work);
 	mantis_hif_exit(ca);
 	mantis_pcmcia_exit(ca);

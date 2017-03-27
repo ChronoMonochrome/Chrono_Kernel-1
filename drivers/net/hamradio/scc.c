@@ -547,7 +547,7 @@ static inline void scc_rxint(struct scc_channel *scc)
 	if (skb->len >= scc->stat.bufsize)
 	{
 #ifdef notdef
-		printk(KERN_DEBUG "z8530drv: oops, scc_rxint() received huge frame...\n");
+;
 #endif
 		dev_kfree_skb_irq(skb);
 		scc->rx_buff = NULL;
@@ -654,7 +654,7 @@ static irqreturn_t scc_isr(int irq, void *dev_id)
 		}  
 
 		if (k == SCC_IRQTIMEOUT)
-			printk(KERN_WARNING "z8530drv: endless loop in scc_isr()?\n");
+;
 
 		return IRQ_HANDLED;
 	}
@@ -686,7 +686,7 @@ static irqreturn_t scc_isr(int irq, void *dev_id)
 
 		if (k == SCC_IRQTIMEOUT)
 		{
-			printk(KERN_WARNING "z8530drv: endless loop in scc_isr()?!\n");
+;
 			break;
 		}
 
@@ -1470,10 +1470,10 @@ static void z8530_init(void)
 	for (k = 0; k < nr_irqs; k++)
 		if (Ivec[k].used) 
 		{
-			printk("%s%d", flag, k);
+;
 			flag=",";
 		}
-	printk("\n");
+;
 
 
 	/* reset and pre-init all chips in the system */
@@ -1528,8 +1528,8 @@ static int scc_net_alloc(const char *name, struct scc_channel *scc)
 
 	err = register_netdevice(dev);
 	if (err) {
-		printk(KERN_ERR "%s: can't register network device (%d)\n", 
-		       name, err);
+//		printk(KERN_ERR "%s: can't register network device (%d)\n", 
+;
 		free_netdev(dev);
 		scc->dev = NULL;
 		return err;
@@ -1737,14 +1737,14 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				if (request_irq(hwcfg.irq, scc_isr,
 						IRQF_DISABLED, "AX.25 SCC",
 						(void *)(long) hwcfg.irq))
-					printk(KERN_WARNING "z8530drv: warning, cannot get IRQ %d\n", hwcfg.irq);
+;
 				else
 					Ivec[hwcfg.irq].used = 1;
 			}
 
 			if (hwcfg.vector_latch && !Vector_Latch) {
 				if (!request_region(hwcfg.vector_latch, 1, "scc vector latch"))
-					printk(KERN_WARNING "z8530drv: warning, cannot reserve vector latch port 0x%lx\n, disabled.", hwcfg.vector_latch);
+;
 				else
 					Vector_Latch = hwcfg.vector_latch;
 			}
@@ -1798,17 +1798,17 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				SCC_Info[2*Nchips+chan].enhanced = hwcfg.escc;
 
 #ifdef SCC_DONT_CHECK
-				printk(KERN_INFO "%s: data port = 0x%3.3x  control port = 0x%3.3x\n",
-					device_name, 
-					SCC_Info[2*Nchips+chan].data, 
-					SCC_Info[2*Nchips+chan].ctrl);
+//				printk(KERN_INFO "%s: data port = 0x%3.3x  control port = 0x%3.3x\n",
+//					device_name, 
+//					SCC_Info[2*Nchips+chan].data, 
+;
 
 #else
-				printk(KERN_INFO "%s: data port = 0x%3.3lx  control port = 0x%3.3lx -- %s\n",
-					device_name,
-					chan? hwcfg.data_b : hwcfg.data_a, 
-					chan? hwcfg.ctrl_b : hwcfg.ctrl_a,
-					found? "found" : "missing");
+//				printk(KERN_INFO "%s: data port = 0x%3.3lx  control port = 0x%3.3lx -- %s\n",
+//					device_name,
+//					chan? hwcfg.data_b : hwcfg.data_a, 
+//					chan? hwcfg.ctrl_b : hwcfg.ctrl_a,
+;
 #endif
 
 				if (found)
@@ -2107,14 +2107,14 @@ static int __init scc_init_driver (void)
 {
 	char devname[IFNAMSIZ];
 	
-	printk(banner);
+;
 	
 	sprintf(devname,"%s0", SCC_DriverName);
 	
 	rtnl_lock();
 	if (scc_net_alloc(devname, SCC_Info)) {
 		rtnl_unlock();
-		printk(KERN_ERR "z8530drv: cannot initialize module\n");
+;
 		return -EIO;
 	}
 	rtnl_unlock();

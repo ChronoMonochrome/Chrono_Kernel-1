@@ -118,7 +118,7 @@ static int file_removed(struct dentry *dentry, const char *file)
 
 	host_file = dentry_name(dentry, extra + strlen("/remove"));
 	if (host_file == NULL) {
-		printk(KERN_ERR "file_removed : allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -204,7 +204,7 @@ static ssize_t hppfs_read_file(int fd, char __user *buf, ssize_t count)
 	n = -ENOMEM;
 	new_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	if (new_buf == NULL) {
-		printk(KERN_ERR "hppfs_read_file : kmalloc failed\n");
+;
 		goto out;
 	}
 	n = 0;
@@ -212,8 +212,8 @@ static ssize_t hppfs_read_file(int fd, char __user *buf, ssize_t count)
 		cur = min_t(ssize_t, count, PAGE_SIZE);
 		err = os_read_file(fd, new_buf, cur);
 		if (err < 0) {
-			printk(KERN_ERR "hppfs_read : read failed, "
-			       "errno = %d\n", err);
+//			printk(KERN_ERR "hppfs_read : read failed, "
+;
 			n = err;
 			goto out_free;
 		} else if (err == 0)
@@ -263,13 +263,13 @@ static ssize_t hppfs_read(struct file *file, char __user *buf, size_t count,
 	} else if (hppfs->host_fd != -1) {
 		err = os_seek_file(hppfs->host_fd, *ppos);
 		if (err) {
-			printk(KERN_ERR "hppfs_read : seek failed, "
-			       "errno = %d\n", err);
+//			printk(KERN_ERR "hppfs_read : seek failed, "
+;
 			return err;
 		}
 		err = hppfs_read_file(hppfs->host_fd, buf, count);
 		if (err < 0) {
-			printk(KERN_ERR "hppfs_read: read failed: %d\n", err);
+;
 			return err;
 		}
 		count = err;
@@ -336,7 +336,7 @@ static struct hppfs_data *hppfs_get_data(int fd, int filter,
 	err = -ENOMEM;
 	data = kmalloc(sizeof(*data), GFP_KERNEL);
 	if (data == NULL) {
-		printk(KERN_ERR "hppfs_get_data : head allocation failed\n");
+;
 		goto failed;
 	}
 
@@ -351,8 +351,8 @@ static struct hppfs_data *hppfs_get_data(int fd, int filter,
 			os_write_file(fd, data->contents, n);
 		err = os_shutdown_socket(fd, 0, 1);
 		if (err) {
-			printk(KERN_ERR "hppfs_get_data : failed to shut down "
-			       "socket\n");
+//			printk(KERN_ERR "hppfs_get_data : failed to shut down "
+;
 			goto failed_free;
 		}
 	}
@@ -360,8 +360,8 @@ static struct hppfs_data *hppfs_get_data(int fd, int filter,
 		n = os_read_file(fd, data->contents, sizeof(data->contents));
 		if (n < 0) {
 			err = n;
-			printk(KERN_ERR "hppfs_get_data : read failed, "
-			       "errno = %d\n", err);
+//			printk(KERN_ERR "hppfs_get_data : read failed, "
+;
 			goto failed_free;
 		} else if (n == 0)
 			break;
@@ -373,8 +373,8 @@ static struct hppfs_data *hppfs_get_data(int fd, int filter,
 
 		new = kmalloc(sizeof(*data), GFP_KERNEL);
 		if (new == 0) {
-			printk(KERN_ERR "hppfs_get_data : data allocation "
-			       "failed\n");
+//			printk(KERN_ERR "hppfs_get_data : data allocation "
+;
 			err = -ENOMEM;
 			goto failed_free;
 		}
@@ -450,8 +450,8 @@ static int hppfs_open(struct inode *inode, struct file *file)
 		if (fd >= 0)
 			data->host_fd = fd;
 		else
-			printk(KERN_ERR "hppfs_open : failed to open '%s', "
-			       "errno = %d\n", host_file, -fd);
+//			printk(KERN_ERR "hppfs_open : failed to open '%s', "
+;
 
 		data->contents = NULL;
 	} else if (type == OS_TYPE_DIR) {
@@ -463,8 +463,8 @@ static int hppfs_open(struct inode *inode, struct file *file)
 			if (!IS_ERR(data->contents))
 				data->host_fd = fd;
 		} else
-			printk(KERN_ERR "hppfs_open : failed to open a socket "
-			       "in '%s', errno = %d\n", host_file, -fd);
+//			printk(KERN_ERR "hppfs_open : failed to open a socket "
+;
 	}
 	kfree(host_file);
 

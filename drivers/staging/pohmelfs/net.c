@@ -69,7 +69,7 @@ static int netfs_data_recv(struct netfs_state *st, void *buf, u64 size)
 	err = kernel_recvmsg(st->socket, &msg, &iov, 1, iov.iov_len,
 			msg.msg_flags);
 	if (err <= 0) {
-		printk("%s: failed to recv data: size: %llu, err: %d.\n", __func__, size, err);
+;
 		if (err == 0)
 			err = -ECONNRESET;
 	}
@@ -122,8 +122,8 @@ static int pohmelfs_data_recv(struct netfs_state *st, void *data, unsigned int s
 		}
 
 		if (revents & err_mask) {
-			printk("%s: revents: %x, socket: %p, size: %u, err: %d.\n",
-					__func__, revents, st->socket, size, err);
+//			printk("%s: revents: %x, socket: %p, size: %u, err: %d.\n",
+;
 			err = -ECONNRESET;
 		}
 		netfs_state_unlock(st);
@@ -144,10 +144,10 @@ static int pohmelfs_data_recv(struct netfs_state *st, void *data, unsigned int s
 			err = -ENODEV;
 
 		if (err)
-			printk("%s: socket: %p, read_socket: %p, revents: %x, rev_error: %d, "
-					"should_stop: %d, size: %u, err: %d.\n",
-				__func__, st->socket, st->read_socket,
-				revents, revents & err_mask, kthread_should_stop(), size, err);
+//			printk("%s: socket: %p, read_socket: %p, revents: %x, rev_error: %d, "
+//					"should_stop: %d, size: %u, err: %d.\n",
+//				__func__, st->socket, st->read_socket,
+;
 	}
 
 	return err;
@@ -234,15 +234,15 @@ static int pohmelfs_read_page_response(struct netfs_state *st)
 
 	inode = ilookup(st->psb->sb, cmd->id);
 	if (!inode) {
-		printk("%s: failed to find inode: id: %llu.\n", __func__, cmd->id);
+;
 		err = -ENOENT;
 		goto err_out_exit;
 	}
 
 	page = find_get_page(inode->i_mapping, cmd->start >> PAGE_CACHE_SHIFT);
 	if (!page || !PageLocked(page)) {
-		printk("%s: failed to find/lock page: page: %p, id: %llu, start: %llu, index: %llu.\n",
-				__func__, page, cmd->id, cmd->start, cmd->start >> PAGE_CACHE_SHIFT);
+//		printk("%s: failed to find/lock page: page: %p, id: %llu, start: %llu, index: %llu.\n",
+;
 
 		while (cmd->size) {
 			unsigned int sz = min(cmd->size, st->size);
@@ -271,8 +271,8 @@ static int pohmelfs_read_page_response(struct netfs_state *st)
 			goto err_out_page_unlock;
 	}
 
-	dprintk("%s: page: %p, start: %llu, size: %u, locked: %d.\n",
-		__func__, page, cmd->start, cmd->size, PageLocked(page));
+//	dprintk("%s: page: %p, start: %llu, size: %u, locked: %d.\n",
+;
 
 	SetPageChecked(page);
 	if ((psb->hash_string || psb->cipher_string) && psb->perform_crypto && cmd->size) {
@@ -323,7 +323,7 @@ static int pohmelfs_check_name(struct pohmelfs_inode *parent, struct qstr *str,
 	if (!inode)
 		goto out;
 
-	dprintk("%s: parent: %llu, inode: %llu.\n", __func__, parent->ino, ino);
+;
 
 	pohmelfs_fill_inode(inode, info);
 	pohmelfs_put_inode(POHMELFS_I(inode));
@@ -350,7 +350,7 @@ static int pohmelfs_readdir_response(struct netfs_state *st)
 
 	inode = ilookup(st->psb->sb, cmd->id);
 	if (!inode) {
-		printk("%s: failed to find inode: id: %llu.\n", __func__, cmd->id);
+;
 		return -ENOENT;
 	}
 	parent = POHMELFS_I(inode);
@@ -390,9 +390,9 @@ static int pohmelfs_readdir_response(struct netfs_state *st)
 		if (!info->ino)
 			info->ino = pohmelfs_new_ino(st->psb);
 
-		dprintk("%s: parent: %llu, ino: %llu, name: '%s', hash: %x, len: %u, mode: %o.\n",
-				__func__, parent->ino, info->ino, str.name, str.hash, str.len,
-				info->mode);
+//		dprintk("%s: parent: %llu, ino: %llu, name: '%s', hash: %x, len: %u, mode: %o.\n",
+//				__func__, parent->ino, info->ino, str.name, str.hash, str.len,
+;
 
 		npi = pohmelfs_new_inode(st->psb, parent, &str, info, 0);
 		if (IS_ERR(npi)) {
@@ -433,7 +433,7 @@ out:
 
 err_out_put:
 	clear_bit(NETFS_INODE_REMOTE_DIR_SYNCED, &parent->state);
-	printk("%s: parent: %llu, ino: %llu, cmd_id: %llu.\n", __func__, parent->ino, cmd->start, cmd->id);
+;
 	pohmelfs_put_inode(parent);
 	wake_up(&st->psb->wait);
 	return err;
@@ -456,8 +456,8 @@ static int pohmelfs_lookup_response(struct netfs_state *st)
 
 	inode = ilookup(st->psb->sb, cmd->id);
 	if (!inode) {
-		printk("%s: lookup response: id: %llu, start: %llu, size: %u.\n",
-				__func__, cmd->id, cmd->start, cmd->size);
+//		printk("%s: lookup response: id: %llu, start: %llu, size: %u.\n",
+;
 		err = -ENOENT;
 		goto err_out_exit;
 	}
@@ -469,8 +469,8 @@ static int pohmelfs_lookup_response(struct netfs_state *st)
 	}
 
 	if (cmd->size < sizeof(struct netfs_inode_info)) {
-		printk("%s: broken lookup response: id: %llu, start: %llu, size: %u.\n",
-				__func__, cmd->id, cmd->start, cmd->size);
+//		printk("%s: broken lookup response: id: %llu, start: %llu, size: %u.\n",
+;
 		err = -EINVAL;
 		goto err_out_put;
 	}
@@ -488,8 +488,8 @@ static int pohmelfs_lookup_response(struct netfs_state *st)
 	if (!info->ino)
 		info->ino = pohmelfs_new_ino(st->psb);
 
-	dprintk("%s: parent: %llu, ino: %llu, name: '%s', start: %llu.\n",
-			__func__, parent->ino, info->ino, name, cmd->start);
+//	dprintk("%s: parent: %llu, ino: %llu, name: '%s', start: %llu.\n",
+;
 
 	if (cmd->start)
 		npi = pohmelfs_new_inode(st->psb, parent, NULL, info, 0);
@@ -524,8 +524,8 @@ err_out_put:
 err_out_exit:
 	clear_bit(NETFS_COMMAND_PENDING, &parent->state);
 	wake_up(&st->psb->wait);
-	printk("%s: inode: %p, id: %llu, start: %llu, size: %u, err: %d.\n",
-			__func__, inode, cmd->id, cmd->start, cmd->size, err);
+//	printk("%s: inode: %p, id: %llu, start: %llu, size: %u, err: %d.\n",
+;
 	return err;
 }
 
@@ -541,8 +541,8 @@ static int pohmelfs_create_response(struct netfs_state *st)
 
 	inode = ilookup(st->psb->sb, cmd->id);
 	if (!inode) {
-		printk("%s: failed to find inode: id: %llu, start: %llu.\n",
-				__func__, cmd->id, cmd->start);
+//		printk("%s: failed to find inode: id: %llu, start: %llu.\n",
+;
 		goto err_out_exit;
 	}
 
@@ -609,8 +609,8 @@ static int pohmelfs_transaction_response(struct netfs_state *st)
 	mutex_unlock(&st->trans_lock);
 
 	if (!t) {
-		printk("%s: failed to find transaction: start: %llu: id: %llu, size: %u, ext: %u.\n",
-				__func__, cmd->start, cmd->id, cmd->size, cmd->ext);
+//		printk("%s: failed to find transaction: start: %llu: id: %llu, size: %u, ext: %u.\n",
+;
 		err = -EINVAL;
 		goto out;
 	}
@@ -631,11 +631,11 @@ static int pohmelfs_page_cache_response(struct netfs_state *st)
 	struct netfs_cmd *cmd = &st->cmd;
 	struct inode *inode;
 
-	dprintk("%s: st: %p, id: %llu, start: %llu, size: %u.\n", __func__, st, cmd->id, cmd->start, cmd->size);
+;
 
 	inode = ilookup(st->psb->sb, cmd->id);
 	if (!inode) {
-		printk("%s: failed to find inode: id: %llu.\n", __func__, cmd->id);
+;
 		return -ENOENT;
 	}
 
@@ -674,18 +674,18 @@ static int pohmelfs_root_cap_response(struct netfs_state *st)
 
 	if (psb->state_flags & POHMELFS_FLAGS_RO) {
 		psb->sb->s_flags |= MS_RDONLY;
-		printk(KERN_INFO "Mounting POHMELFS (%d) read-only.\n", psb->idx);
+;
 	}
 
 	if (psb->state_flags & POHMELFS_FLAGS_XATTR)
-		printk(KERN_INFO "Mounting POHMELFS (%d) "
-			"with extended attributes support.\n", psb->idx);
+//		printk(KERN_INFO "Mounting POHMELFS (%d) "
+;
 
 	if (atomic_long_read(&psb->total_inodes) <= 1)
 		atomic_long_set(&psb->total_inodes, cap->nr_files);
 
-	dprintk("%s: total: %llu, avail: %llu, flags: %llx, inodes: %llu.\n",
-		__func__, psb->total_size, psb->avail_size, psb->state_flags, cap->nr_files);
+//	dprintk("%s: total: %llu, avail: %llu, flags: %llx, inodes: %llu.\n",
+;
 
 	psb->flags = 0;
 	wake_up(&psb->wait);
@@ -711,10 +711,10 @@ static int pohmelfs_crypto_cap_response(struct netfs_state *st)
 
 	cap = st->data;
 
-	dprintk("%s: cipher '%s': %s, hash: '%s': %s.\n",
-			__func__,
-			psb->cipher_string, (cap->cipher_strlen) ? "SUPPORTED" : "NOT SUPPORTED",
-			psb->hash_string, (cap->hash_strlen) ? "SUPPORTED" : "NOT SUPPORTED");
+//	dprintk("%s: cipher '%s': %s, hash: '%s': %s.\n",
+//			__func__,
+//			psb->cipher_string, (cap->cipher_strlen) ? "SUPPORTED" : "NOT SUPPORTED",
+;
 
 	if (!cap->hash_strlen) {
 		if (psb->hash_strlen && psb->crypto_fail_unsupported)
@@ -773,11 +773,11 @@ static int pohmelfs_getxattr_response(struct netfs_state *st)
 
 	m = pohmelfs_mcache_search(psb, cmd->id);
 
-	dprintk("%s: id: %llu, gen: %llu, err: %d.\n",
-		__func__, cmd->id, (m) ? m->gen : 0, error);
+//	dprintk("%s: id: %llu, gen: %llu, err: %d.\n",
+;
 
 	if (!m) {
-		printk("%s: failed to find getxattr cache entry: id: %llu.\n", __func__, cmd->id);
+;
 		return -ENOENT;
 	}
 
@@ -823,12 +823,12 @@ int pohmelfs_data_lock_response(struct netfs_state *st)
 
 	m = pohmelfs_mcache_search(psb, id);
 
-	dprintk("%s: id: %llu, gen: %llu, err: %d.\n",
-		__func__, cmd->id, (m) ? m->gen : 0, err);
+//	dprintk("%s: id: %llu, gen: %llu, err: %d.\n",
+;
 
 	if (!m) {
 		pohmelfs_data_recv(st, st->data, cmd->size);
-		printk("%s: failed to find data lock response: id: %llu.\n", __func__, cmd->id);
+;
 		return -ENOENT;
 	}
 
@@ -881,10 +881,10 @@ static int pohmelfs_recv(void *data)
 
 		netfs_convert_cmd(cmd);
 
-		dprintk("%s: cmd: %u, id: %llu, start: %llu, size: %u, "
-				"ext: %u, csize: %u, cpad: %u.\n",
-				__func__, cmd->cmd, cmd->id, cmd->start,
-				cmd->size, cmd->ext, cmd->csize, cmd->cpad);
+//		dprintk("%s: cmd: %u, id: %llu, start: %llu, size: %u, "
+//				"ext: %u, csize: %u, cpad: %u.\n",
+//				__func__, cmd->cmd, cmd->id, cmd->start,
+;
 
 		if (cmd->csize) {
 			struct pohmelfs_crypto_engine *e = &st->eng;
@@ -895,10 +895,10 @@ static int pohmelfs_recv(void *data)
 			}
 
 			if (e->hash && unlikely(cmd->csize != st->psb->crypto_attached_size)) {
-				dprintk("%s: cmd: cmd: %u, id: %llu, start: %llu, size: %u, "
-						"csize: %u != digest size %u.\n",
-						__func__, cmd->cmd, cmd->id, cmd->start, cmd->size,
-						cmd->csize, st->psb->crypto_attached_size);
+//				dprintk("%s: cmd: cmd: %u, id: %llu, start: %llu, size: %u, "
+//						"csize: %u != digest size %u.\n",
+//						__func__, cmd->cmd, cmd->id, cmd->start, cmd->size,
+;
 				netfs_state_reset(st);
 				continue;
 			}
@@ -914,11 +914,11 @@ static int pohmelfs_recv(void *data)
 				unsigned int i;
 				unsigned char *hash = e->data;
 
-				dprintk("%s: received hash: ", __func__);
+;
 				for (i = 0; i < cmd->csize; ++i)
-					printk("%02x ", hash[i]);
+;
 
-				printk("\n");
+;
 			}
 #endif
 			cmd->size -= cmd->csize;
@@ -964,8 +964,8 @@ static int pohmelfs_recv(void *data)
 				err = pohmelfs_getxattr_response(st);
 				break;
 		default:
-				printk("%s: wrong cmd: %u, id: %llu, start: %llu, size: %u, ext: %u.\n",
-					__func__, cmd->cmd, cmd->id, cmd->start, cmd->size, cmd->ext);
+//				printk("%s: wrong cmd: %u, id: %llu, start: %llu, size: %u, ext: %u.\n",
+;
 				netfs_state_reset(st);
 				break;
 		}
@@ -984,8 +984,8 @@ int netfs_state_init(struct netfs_state *st)
 
 	err = sock_create(ctl->addr.sa_family, ctl->type, ctl->proto, &st->socket);
 	if (err) {
-		printk("%s: failed to create a socket: family: %d, type: %d, proto: %d, err: %d.\n",
-				__func__, ctl->addr.sa_family, ctl->type, ctl->proto, err);
+//		printk("%s: failed to create a socket: family: %d, type: %d, proto: %d, err: %d.\n",
+;
 		goto err_out_exit;
 	}
 
@@ -994,8 +994,8 @@ int netfs_state_init(struct netfs_state *st)
 
 	err = kernel_connect(st->socket, (struct sockaddr *)&ctl->addr, ctl->addrlen, 0);
 	if (err) {
-		printk("%s: failed to connect to server: idx: %u, err: %d.\n",
-				__func__, st->psb->idx, err);
+//		printk("%s: failed to connect to server: idx: %u, err: %d.\n",
+;
 		goto err_out_release;
 	}
 	st->socket->sk->sk_sndtimeo = st->socket->sk->sk_rcvtimeo = msecs_to_jiffies(60000);
@@ -1006,12 +1006,12 @@ int netfs_state_init(struct netfs_state *st)
 
 	if (st->socket->ops->family == AF_INET) {
 		struct sockaddr_in *sin = (struct sockaddr_in *)&ctl->addr;
-		printk(KERN_INFO "%s: (re)connected to peer %pi4:%d.\n", __func__,
-			&sin->sin_addr.s_addr, ntohs(sin->sin_port));
+//		printk(KERN_INFO "%s: (re)connected to peer %pi4:%d.\n", __func__,
+;
 	} else if (st->socket->ops->family == AF_INET6) {
 		struct sockaddr_in6 *sin = (struct sockaddr_in6 *)&ctl->addr;
-		printk(KERN_INFO "%s: (re)connected to peer %pi6:%d", __func__,
-				&sin->sin6_addr, ntohs(sin->sin6_port));
+//		printk(KERN_INFO "%s: (re)connected to peer %pi6:%d", __func__,
+;
 	}
 
 	return 0;
@@ -1031,12 +1031,12 @@ void netfs_state_exit(struct netfs_state *st)
 
 		if (st->socket->ops->family == AF_INET) {
 			struct sockaddr_in *sin = (struct sockaddr_in *)&st->ctl.addr;
-			printk(KERN_INFO "%s: disconnected from peer %pi4:%d.\n", __func__,
-				&sin->sin_addr.s_addr, ntohs(sin->sin_port));
+//			printk(KERN_INFO "%s: disconnected from peer %pi4:%d.\n", __func__,
+;
 		} else if (st->socket->ops->family == AF_INET6) {
 			struct sockaddr_in6 *sin = (struct sockaddr_in6 *)&st->ctl.addr;
-			printk(KERN_INFO "%s: disconnected from peer %pi6:%d", __func__,
-				&sin->sin6_addr, ntohs(sin->sin6_port));
+//			printk(KERN_INFO "%s: disconnected from peer %pi6:%d", __func__,
+;
 		}
 
 		sock_release(st->socket);
@@ -1083,8 +1083,8 @@ int pohmelfs_state_init_one(struct pohmelfs_sb *psb, struct pohmelfs_config *con
 	if (!psb->active_state)
 		psb->active_state = conf;
 
-	dprintk("%s: conf: %p, st: %p, socket: %p.\n",
-			__func__, conf, st, st->socket);
+//	dprintk("%s: conf: %p, st: %p, socket: %p.\n",
+;
 	return 0;
 
 err_out_netfs_exit:
@@ -1119,7 +1119,7 @@ static void pohmelfs_state_exit_one(struct pohmelfs_config *c)
 {
 	struct netfs_state *st = &c->state;
 
-	dprintk("%s: exiting, st: %p.\n", __func__, st);
+;
 	if (st->thread) {
 		kthread_stop(st->thread);
 		st->thread = NULL;
@@ -1178,9 +1178,9 @@ void pohmelfs_switch_active(struct pohmelfs_sb *psb)
 				struct pohmelfs_config, config_entry);
 		}
 
-		dprintk("%s: empty: %d, active %p -> %p.\n",
-			__func__, list_empty(&psb->state_list), c,
-			psb->active_state);
+//		dprintk("%s: empty: %d, active %p -> %p.\n",
+//			__func__, list_empty(&psb->state_list), c,
+;
 	} else
 		psb->active_state = NULL;
 }

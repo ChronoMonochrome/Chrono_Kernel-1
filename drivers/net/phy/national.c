@@ -107,8 +107,8 @@ static void ns_10_base_t_hdx_loopack(struct phy_device *phydev, int disable)
 		ns_exp_write(phydev, 0x1c0,
 			     ns_exp_read(phydev, 0x1c0) & 0xfffe);
 
-	printk(KERN_DEBUG "DP83865 PHY: 10BASE-T HDX loopback %s\n",
-	       (ns_exp_read(phydev, 0x1c0) & 0x0001) ? "off" : "on");
+//	printk(KERN_DEBUG "DP83865 PHY: 10BASE-T HDX loopback %s\n",
+;
 }
 
 static int ns_config_init(struct phy_device *phydev)

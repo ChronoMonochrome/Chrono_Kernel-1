@@ -43,6 +43,7 @@
 #include "target_core_file.h"
 
 #if 1
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_FD_CACHE(x...) printk(x)
 #else
 #define DEBUG_FD_CACHE(x...)
@@ -55,6 +56,9 @@
 #endif
 
 static struct se_subsystem_api fileio_template;
+#else
+#define DEBUG_FD_CACHE(x...) ;
+#endif
 
 /*	fd_attach_hba(): (Part of se_subsystem_api_t template)
  *
@@ -76,13 +80,21 @@ static int fd_attach_hba(struct se_hba *hba, u32 host_id)
 	atomic_set(&hba->max_queue_depth, FD_HBA_QUEUE_DEPTH);
 	hba->hba_ptr = (void *) fd_host;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
 		TARGET_CORE_MOD_VERSION);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
 		" Target Core with TCQ Depth: %d MaxSectors: %u\n",
 		hba->hba_id, fd_host->fd_host_id,
 		atomic_read(&hba->max_queue_depth), FD_MAX_SECTORS);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -91,8 +103,12 @@ static void fd_detach_hba(struct se_hba *hba)
 {
 	struct fd_host *fd_host = hba->hba_ptr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Detached FILEIO HBA: %u from Generic"
 		" Target Core\n", hba->hba_id, fd_host->fd_host_id);
+#else
+	;
+#endif
 
 	kfree(fd_host);
 	hba->hba_ptr = NULL;
@@ -111,7 +127,11 @@ static void *fd_allocate_virtdevice(struct se_hba *hba, const char *name)
 
 	fd_dev->fd_host = fd_host;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "FILEIO: Allocated fd_dev for %p\n", name);
+#else
+	;
+#endif
 
 	return fd_dev;
 }
@@ -202,11 +222,15 @@ static struct se_device *fd_create_virtdevice(
 		fd_dev->fd_dev_size = (i_size_read(file->f_mapping->host) -
 				       fd_dev->fd_block_size);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "FILEIO: Using size: %llu bytes from struct"
 			" block_device blocks: %llu logical_block_size: %d\n",
 			fd_dev->fd_dev_size,
 			div_u64(fd_dev->fd_dev_size, fd_dev->fd_block_size),
 			fd_dev->fd_block_size);
+#else
+		;
+#endif
 	} else {
 		if (!(fd_dev->fbd_flags & FBDF_HAS_SIZE)) {
 			printk(KERN_ERR "FILEIO: Missing fd_dev_size="
@@ -234,9 +258,13 @@ static struct se_device *fd_create_virtdevice(
 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
 	fd_dev->fd_queue_depth = dev->queue_depth;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_FILE[%u] - Added TCM FILEIO Device ID: %u at %s,"
 		" %llu total bytes\n", fd_host->fd_host_id, fd_dev->fd_dev_id,
 			fd_dev->fd_dev_name, fd_dev->fd_dev_size);
+#else
+	;
+#endif
 
 	putname(dev_p);
 	return dev;
@@ -549,8 +577,12 @@ static ssize_t fd_set_configfs_dev_params(
 			snprintf(fd_dev->fd_dev_name, FD_MAX_DEV_NAME,
 					"%s", arg_p);
 			kfree(arg_p);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "FILEIO: Referencing Path: %s\n",
 					fd_dev->fd_dev_name);
+#else
+			;
+#endif
 			fd_dev->fbd_flags |= FBDF_HAS_PATH;
 			break;
 		case Opt_fd_dev_size:
@@ -566,8 +598,12 @@ static ssize_t fd_set_configfs_dev_params(
 						" fd_dev_size=\n");
 				goto out;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "FILEIO: Referencing Size: %llu"
 					" bytes\n", fd_dev->fd_dev_size);
+#else
+			;
+#endif
 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
 			break;
 		case Opt_fd_buffered_io:
@@ -578,8 +614,12 @@ static ssize_t fd_set_configfs_dev_params(
 				goto out;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "FILEIO: Using buffered I/O"
 				" operations for struct fd_dev\n");
+#else
+			;
+#endif
 
 			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
 			break;

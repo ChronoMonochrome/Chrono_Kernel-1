@@ -874,8 +874,8 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
 		if (pipe->pipe_ndx == 0) {
 			pipe->pipe_ndx = i + 1;	/* start from 1 */
 			init_completion(&pipe->comp);
-	printk(KERN_INFO "mdp4_overlay_pipe_alloc: pipe=%p ndx=%d\n",
-					pipe, pipe->pipe_ndx);
+//	printk(KERN_INFO "mdp4_overlay_pipe_alloc: pipe=%p ndx=%d\n",
+;
 			return pipe;
 		}
 		pipe++;
@@ -887,8 +887,8 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
 
 void mdp4_overlay_pipe_free(struct mdp4_overlay_pipe *pipe)
 {
-	printk(KERN_INFO "mdp4_overlay_pipe_free: pipe=%p ndx=%d\n",
-					pipe, pipe->pipe_ndx);
+//	printk(KERN_INFO "mdp4_overlay_pipe_free: pipe=%p ndx=%d\n",
+;
 	memset(pipe, 0, sizeof(*pipe));
 }
 
@@ -929,18 +929,18 @@ static int mdp4_overlay_req2pipe(struct mdp_overlay *req, int mixer,
 	int ret, ptype;
 
 	if (mixer >= MDP4_MAX_MIXER) {
-		printk(KERN_ERR "mpd_overlay_req2pipe: mixer out of range!\n");
+;
 		return -ERANGE;
 	}
 
 	if (req->z_order < 0 || req->z_order > 2) {
-		printk(KERN_ERR "mpd_overlay_req2pipe: z_order=%d out of range!\n",
-				req->z_order);
+//		printk(KERN_ERR "mpd_overlay_req2pipe: z_order=%d out of range!\n",
+;
 		return -ERANGE;
 	}
 
 	if (req->src_rect.h == 0 || req->src_rect.w == 0) {
-		printk(KERN_ERR "mpd_overlay_req2pipe: src img of zero size!\n");
+;
 		return -EINVAL;
 	}
 
@@ -976,8 +976,8 @@ static int mdp4_overlay_req2pipe(struct mdp_overlay *req, int mixer,
 		pipe->mixer_stage = req->z_order + MDP4_MIXER_STAGE0;
 		pipe->pipe_type = ptype;
 		pipe->pipe_num = get_pipe_num(ptype, pipe->mixer_stage);
-		printk(KERN_INFO "mpd4_overlay_req2pipe: zorder=%d pipe_num=%d\n",
-				req->z_order, pipe->pipe_num);
+//		printk(KERN_INFO "mpd4_overlay_req2pipe: zorder=%d pipe_num=%d\n",
+;
 	}
 
 	pipe->src_width = req->src.width & 0x07ff;	/* source img width */
@@ -1198,8 +1198,8 @@ int mdp4_overlay_play(struct fb_info *info, struct msmfb_overlay_data *req,
 	get_img(img, info, &start, &len, &p_src_file);
 	if (len == 0) {
 		mutex_unlock(&mfd->dma->ov_mutex);
-		printk(KERN_ERR "mdp_overlay_play: could not retrieve"
-				       " image from memory\n");
+//		printk(KERN_ERR "mdp_overlay_play: could not retrieve"
+;
 		return -1;
 	}
 	*pp_src_file = p_src_file;

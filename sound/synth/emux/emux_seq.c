@@ -79,11 +79,19 @@ snd_emux_init_seq(struct snd_emux *emu, struct snd_card *card, int index)
 	}
 
 	if (emu->num_ports < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "seqports must be greater than zero\n");
+#else
+		;
+#endif
 		emu->num_ports = 1;
 	} else if (emu->num_ports >= SNDRV_EMUX_MAX_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "too many ports."
 			   "limited max. ports %d\n", SNDRV_EMUX_MAX_PORTS);
+#else
+		;
+#endif
 		emu->num_ports = SNDRV_EMUX_MAX_PORTS;
 	}
 
@@ -376,12 +384,20 @@ int snd_emux_init_virmidi(struct snd_emux *emu, struct snd_card *card)
 			goto __error;
 		}
 		emu->vmidi[i] = rmidi;
+#ifdef CONFIG_DEBUG_PRINTK
 		/* snd_printk(KERN_DEBUG "virmidi %d ok\n", i); */
+#else
+		/* ;
+#endif
 	}
 	return 0;
 
 __error:
+#ifdef CONFIG_DEBUG_PRINTK
 	/* snd_printk(KERN_DEBUG "error init..\n"); */
+#else
+	/* ;
+#endif
 	snd_emux_delete_virmidi(emu);
 	return -ENOMEM;
 }

@@ -462,8 +462,12 @@ static int init_ixp_crypto(void)
 
 	switch ((msg[1]>>16) & 0xff) {
 	case 3:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Firmware of %s lacks AES support\n",
 				npe_name(npe_c));
+#else
+		;
+#endif
 		support_aes = 0;
 		break;
 	case 4:

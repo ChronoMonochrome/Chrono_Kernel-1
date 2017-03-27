@@ -189,7 +189,7 @@ static int fast_reg_xdr(struct svcxprt_rdma *xprt,
 	return 0;
 
  fatal_err:
-	printk("svcrdma: Error fast registering memory for xprt %p\n", xprt);
+;
 	vec->frmr = NULL;
 	svc_rdma_put_frmr(xprt, frmr);
 	return -EIO;
@@ -242,10 +242,10 @@ static int map_xdr(struct svcxprt_rdma *xprt,
 		sge_no++;
 	}
 
-	dprintk("svcrdma: map_xdr: sge_no %d page_no %d "
-		"page_base %u page_len %u head_len %zu tail_len %zu\n",
-		sge_no, page_no, xdr->page_base, xdr->page_len,
-		xdr->head[0].iov_len, xdr->tail[0].iov_len);
+//	dprintk("svcrdma: map_xdr: sge_no %d page_no %d "
+//		"page_base %u page_len %u head_len %zu tail_len %zu\n",
+//		sge_no, page_no, xdr->page_base, xdr->page_len,
+;
 
 	vec->count = sge_no;
 	return 0;
@@ -300,10 +300,10 @@ static int send_write(struct svcxprt_rdma *xprt, struct svc_rqst *rqstp,
 	struct svc_rdma_op_ctxt *ctxt;
 
 	BUG_ON(vec->count > RPCSVC_MAXPAGES);
-	dprintk("svcrdma: RDMA_WRITE rmr=%x, to=%llx, xdr_off=%d, "
-		"write_len=%d, vec->sge=%p, vec->count=%lu\n",
-		rmr, (unsigned long long)to, xdr_off,
-		write_len, vec->sge, vec->count);
+//	dprintk("svcrdma: RDMA_WRITE rmr=%x, to=%llx, xdr_off=%d, "
+//		"write_len=%d, vec->sge=%p, vec->count=%lu\n",
+//		rmr, (unsigned long long)to, xdr_off,
+;
 
 	ctxt = svc_rdma_get_context(xprt);
 	ctxt->direction = DMA_TO_DEVICE;
@@ -429,8 +429,8 @@ static int send_write_chunks(struct svcxprt_rdma *xprt,
 					 this_write,
 					 vec);
 			if (ret) {
-				dprintk("svcrdma: RDMA_WRITE failed, ret=%d\n",
-					ret);
+//				dprintk("svcrdma: RDMA_WRITE failed, ret=%d\n",
+;
 				return -EIO;
 			}
 			chunk_off += this_write;
@@ -503,8 +503,8 @@ static int send_reply_chunks(struct svcxprt_rdma *xprt,
 					 this_write,
 					 vec);
 			if (ret) {
-				dprintk("svcrdma: RDMA_WRITE failed, ret=%d\n",
-					ret);
+//				dprintk("svcrdma: RDMA_WRITE failed, ret=%d\n",
+;
 				return -EIO;
 			}
 			chunk_off += this_write;
@@ -553,9 +553,9 @@ static int send_reply(struct svcxprt_rdma *rdma,
 	/* Post a recv buffer to handle another request. */
 	ret = svc_rdma_post_recv(rdma);
 	if (ret) {
-		printk(KERN_INFO
-		       "svcrdma: could not post a receive buffer, err=%d."
-		       "Closing transport %p.\n", ret, rdma);
+//		printk(KERN_INFO
+//		       "svcrdma: could not post a receive buffer, err=%d."
+;
 		set_bit(XPT_CLOSE, &rdma->sc_xprt.xpt_flags);
 		svc_rdma_put_frmr(rdma, vec->frmr);
 		svc_rdma_put_context(ctxt, 0);
@@ -685,7 +685,7 @@ int svc_rdma_sendto(struct svc_rqst *rqstp)
 	struct svc_rdma_op_ctxt *ctxt;
 	struct svc_rdma_req_map *vec;
 
-	dprintk("svcrdma: sending response for rqstp=%p\n", rqstp);
+;
 
 	/* Get the RDMA request header. */
 	rdma_argp = xdr_start(&rqstp->rq_arg);
@@ -714,8 +714,8 @@ int svc_rdma_sendto(struct svc_rqst *rqstp)
 	ret = send_write_chunks(rdma, rdma_argp, rdma_resp,
 				rqstp, vec);
 	if (ret < 0) {
-		printk(KERN_ERR "svcrdma: failed to send write chunks, rc=%d\n",
-		       ret);
+//		printk(KERN_ERR "svcrdma: failed to send write chunks, rc=%d\n",
+;
 		goto err1;
 	}
 	inline_bytes -= ret;
@@ -724,8 +724,8 @@ int svc_rdma_sendto(struct svc_rqst *rqstp)
 	ret = send_reply_chunks(rdma, rdma_argp, rdma_resp,
 				rqstp, vec);
 	if (ret < 0) {
-		printk(KERN_ERR "svcrdma: failed to send reply chunks, rc=%d\n",
-		       ret);
+//		printk(KERN_ERR "svcrdma: failed to send reply chunks, rc=%d\n",
+;
 		goto err1;
 	}
 	inline_bytes -= ret;
@@ -733,7 +733,7 @@ int svc_rdma_sendto(struct svc_rqst *rqstp)
 	ret = send_reply(rdma, rqstp, res_page, rdma_resp, ctxt, vec,
 			 inline_bytes);
 	svc_rdma_put_req_map(vec);
-	dprintk("svcrdma: send_reply returns %d\n", ret);
+;
 	return ret;
 
  err1:

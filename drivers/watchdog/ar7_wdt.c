@@ -151,21 +151,33 @@ static void ar7_wdt_update_margin(int new_margin)
 		change = 0xffff;
 	ar7_wdt_change(change);
 	margin = change * prescale_value / vbus_rate;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRVNAME
 	       ": timer margin %d seconds (prescale %d, change %d, freq %d)\n",
 	       margin, prescale_value, change, vbus_rate);
+#else
+	;
+#endif
 }
 
 static void ar7_wdt_enable_wdt(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG DRVNAME ": enabling watchdog timer\n");
+#else
+	;
+#endif
 	ar7_wdt_disable(1);
 	ar7_wdt_kick(1);
 }
 
 static void ar7_wdt_disable_wdt(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG DRVNAME ": disabling watchdog timer\n");
+#else
+	;
+#endif
 	ar7_wdt_disable(0);
 }
 
@@ -183,9 +195,13 @@ static int ar7_wdt_open(struct inode *inode, struct file *file)
 static int ar7_wdt_release(struct inode *inode, struct file *file)
 {
 	if (!expect_close)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRVNAME
 		": watchdog device closed unexpectedly,"
 		"will not disable the watchdog timer\n");
+#else
+		;
+#endif
 	else if (!nowayout)
 		ar7_wdt_disable_wdt();
 	clear_bit(0, &wdt_is_open);
@@ -292,7 +308,11 @@ static int __devinit ar7_wdt_probe(struct platform_device *pdev)
 
 	if (!request_mem_region(ar7_regs_wdt->start,
 				resource_size(ar7_regs_wdt), LONGNAME)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRVNAME ": watchdog I/O region busy\n");
+#else
+		;
+#endif
 		rc = -EBUSY;
 		goto out;
 	}

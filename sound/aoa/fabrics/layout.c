@@ -765,19 +765,31 @@ static int check_codec(struct aoa_codec *codec,
 			 "platform-%s-codec-ref", codec->name);
 		ref = of_get_property(ldev->sound, propname, NULL);
 		if (!ref) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "snd-aoa-fabric-layout: "
 				"required property %s not present\n", propname);
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 		if (*ref != codec->node->phandle) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "snd-aoa-fabric-layout: "
 				"%s doesn't match!\n", propname);
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 	} else {
 		if (layouts_list_items != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "snd-aoa-fabric-layout: "
 				"more than one soundbus, but no references.\n");
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 	}
@@ -788,7 +800,11 @@ static int check_codec(struct aoa_codec *codec,
 	if (!cc)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "snd-aoa-fabric-layout: can use this codec\n");
+#else
+	;
+#endif
 
 	codec->connected = 0;
 	codec->fabric_data = cc;
@@ -1028,13 +1044,21 @@ static int aoa_fabric_layout_probe(struct soundbus_dev *sdev)
 	case 51: /* PowerBook5,4 */
 	case 58: /* Mac Mini */
 		ldev->gpio.methods = ftr_gpio_methods;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "snd-aoa-fabric-layout: Using direct GPIOs\n");
+#else
+		;
+#endif
 		break;
 	default:
 		ldev->gpio.methods = pmf_gpio_methods;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "snd-aoa-fabric-layout: Using PMF GPIOs\n");
+#else
+		;
+#endif
 	}
 	ldev->selfptr_headphone.ptr = ldev;
 	ldev->selfptr_lineout.ptr = ldev;
@@ -1056,8 +1080,12 @@ static int aoa_fabric_layout_probe(struct soundbus_dev *sdev)
 
 	err = aoa_fabric_register(&layout_fabric, &sdev->ofdev.dev);
 	if (err && err != -EALREADY) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "snd-aoa-fabric-layout: can't use,"
 				 " another fabric is active!\n");
+#else
+		;
+#endif
 		goto outlistdel;
 	}
 

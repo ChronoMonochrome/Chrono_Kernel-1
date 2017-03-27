@@ -335,10 +335,10 @@ int i2400m_barker_db_init(const char *_options)
 				continue;
 			if (sscanf(token, "%x", &barker) != 1
 			    || barker > 0xffffffff) {
-				printk(KERN_ERR "%s: can't recognize "
-				       "i2400m.barkers value '%s' as "
-				       "a 32-bit number\n",
-				       __func__, token);
+//				printk(KERN_ERR "%s: can't recognize "
+//				       "i2400m.barkers value '%s' as "
+//				       "a 32-bit number\n",
+;
 				result = -EINVAL;
 				goto error_parse;
 			}

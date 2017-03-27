@@ -283,7 +283,11 @@ vortex_mixer_addWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 	while (temp & 0x10) {
 		prev = VORTEX_MIXER_RTBASE + ((temp & 0xf) << 2);
 		temp = hwread(vortex->mmio, prev);
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk(KERN_INFO "vortex: mixAddWTD: while addr=%x, val=%x\n", prev, temp);
+#else
+		//;
+#endif
 		if ((++lifeboat) > 0xf) {
 			printk(KERN_ERR
 			       "vortex_mixer_addWTD: lifeboat overflow\n");
@@ -321,7 +325,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 			edx =
 			    hwread(vortex->mmio,
 				   VORTEX_MIXER_RTBASE + (ebx << 2));
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk(KERN_INFO "vortex: mixdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
+#else
+			//;
+#endif
 			while ((edx & 0xf) != mix) {
 				if ((esi) > 0xf) {
 					printk(KERN_ERR
@@ -334,7 +342,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 				edx =
 				    hwread(vortex->mmio,
 					   VORTEX_MIXER_RTBASE + ebp);
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk(KERN_INFO "vortex: mixdelWTD: while addr=%x, val=%x\n", ebp, edx);
+#else
+				//;
+#endif
 				esi++;
 			}
 			//7b30
@@ -346,7 +358,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 				hwwrite(vortex->mmio,
 					VORTEX_MIXER_RTBASE + ebp, edx);
 				hwwrite(vortex->mmio, ebx, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk(KERN_INFO "vortex mixdelWTD between addr= 0x%x, val= 0x%x\n", ebp, edx);
+#else
+				//;
+#endif
 			} else {	/* Delete last entry */
 				//7b83
 				if (esp14 == -1)
@@ -358,7 +374,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 					hwwrite(vortex->mmio,
 						VORTEX_MIXER_RTBASE +
 						(esp14 << 2), ebx);
+#ifdef CONFIG_DEBUG_PRINTK
 					//printk(KERN_INFO "vortex mixdelWTD last addr= 0x%x, val= 0x%x\n", esp14, ebx);
+#else
+					//;
+#endif
 				}
 				hwwrite(vortex->mmio,
 					VORTEX_MIXER_RTBASE + ebp, 0);
@@ -366,7 +386,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 			}
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk(KERN_INFO "removed last mix\n");
+#else
+		//;
+#endif
 		//7be0
 		vortex_mixer_dis_sr(vortex, ch);
 		hwwrite(vortex->mmio, ebp, 0);
@@ -634,7 +658,11 @@ static void vortex_src_setupchannel(vortex_t * card, unsigned char src,
 	hwwrite(card->mmio, VORTEX_SRC_U2 + (src << 2),
 		(tr << 0x11) | (dirplay << 0x10) | (ebp << 0x8) | esp10);
 	/* 0x30f00 e=g=1 esp10=0 ebp=f */
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk(KERN_INFO "vortex: SRC %d, d=0x%x, esi=0x%x, esp10=0x%x, ebp=0x%x\n", src, d, esi, esp10, ebp);
+#else
+	//;
+#endif
 }
 
 static void vortex_srcblock_init(vortex_t * vortex)
@@ -682,7 +710,11 @@ vortex_src_addWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 		prev = VORTEX_SRC_RTBASE + ((temp & 0xf) << 2);	/*esp12 */
 		//prev = VORTEX_SRC_RTBASE + ((temp & (NR_SRC-1)) << 2); /*esp12*/
 		temp = hwread(vortex->mmio, prev);
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk(KERN_INFO "vortex: srcAddWTD: while addr=%x, val=%x\n", prev, temp);
+#else
+		//;
+#endif
 		if ((++lifeboat) > 0xf) {
 			printk(KERN_ERR
 			       "vortex_src_addWTD: lifeboat overflow\n");
@@ -721,7 +753,11 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 			edx =
 			    hwread(vortex->mmio,
 				   VORTEX_SRC_RTBASE + (ebx << 2));
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk(KERN_INFO "vortex: srcdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
+#else
+			//;
+#endif
 			while ((edx & 0xf) != src) {
 				if ((esi) > 0xf) {
 					printk
@@ -734,7 +770,11 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 				edx =
 				    hwread(vortex->mmio,
 					   VORTEX_SRC_RTBASE + ebp);
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk(KERN_INFO "vortex: srcdelWTD: while addr=%x, val=%x\n", ebp, edx);
+#else
+				//;
+#endif
 				esi++;
 			}
 			//7b30
@@ -746,7 +786,11 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 				hwwrite(vortex->mmio,
 					VORTEX_SRC_RTBASE + ebp, edx);
 				hwwrite(vortex->mmio, ebx, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk(KERN_INFO "vortex srcdelWTD between addr= 0x%x, val= 0x%x\n", ebp, edx);
+#else
+				//;
+#endif
 			} else {	/* Delete last entry */
 				//7b83
 				if (esp14 == -1)
@@ -758,7 +802,11 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 					hwwrite(vortex->mmio,
 						VORTEX_SRC_RTBASE +
 						(esp14 << 2), ebx);
+#ifdef CONFIG_DEBUG_PRINTK
 					//printk(KERN_INFO"vortex srcdelWTD last addr= 0x%x, val= 0x%x\n", esp14, ebx);
+#else
+					//;
+#endif
 				}
 				hwwrite(vortex->mmio,
 					VORTEX_SRC_RTBASE + ebp, 0);
@@ -1136,8 +1184,12 @@ vortex_adbdma_setbuffers(vortex_t * vortex, int adbdma,
 		break;
 	}
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "vortex: cfg0 = 0x%x\nvortex: cfg1=0x%x\n",
 	       dma->cfg0, dma->cfg1);
+#else
+	;
+#endif
 	*/
 	hwwrite(vortex->mmio, VORTEX_ADBDMA_BUFCFG0 + (adbdma << 3), dma->cfg0);
 	hwwrite(vortex->mmio, VORTEX_ADBDMA_BUFCFG1 + (adbdma << 3), dma->cfg1);
@@ -1213,8 +1265,12 @@ static int vortex_adbdma_bufshift(vortex_t * vortex, int adbdma)
 	if (dma->period_virt >= dma->nr_periods)
 		dma->period_virt -= dma->nr_periods;
 	if (delta != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "vortex: %d virt=%d, real=%d, delta=%d\n",
 		       adbdma, dma->period_virt, dma->period_real, delta);
+#else
+		;
+#endif
 
 	return delta;
 }
@@ -1484,8 +1540,12 @@ static int vortex_wtdma_bufshift(vortex_t * vortex, int wtdma)
 	dma->period_real = page;
 
 	if (delta != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "vortex: wt virt = %d, delta = %d\n",
 		       dma->period_virt, delta);
+#else
+		;
+#endif
 
 	return delta;
 }
@@ -1969,7 +2029,11 @@ vortex_connect_codecplay(vortex_t * vortex, int en, unsigned char mixers[])
 					  ADB_CODECOUT(0 + 4));
 		vortex_connection_mix_adb(vortex, en, 0x11, mixers[3],
 					  ADB_CODECOUT(1 + 4));
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk(KERN_DEBUG "SDAC detected "); */
+#else
+		/* ;
+#endif
 	}
 #else
 	// Use plain direct output to codec.
@@ -2024,9 +2088,13 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
 				else
 					vortex->dma_adb[i].resources[restype] |= (1 << i);
 				/*
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "vortex: ResManager: type %d out %d\n",
 				       restype, i);
+#else
+				;
+#endif
 				*/
 				return i;
 			}
@@ -2039,9 +2107,13 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
 			if (resmap[restype] & (1 << i)) {
 				resmap[restype] &= ~(1 << i);
 				/*
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "vortex: ResManager: type %d in %d\n",
 				       restype, i);
+#else
+				;
+#endif
 				*/
 				return i;
 			}
@@ -2676,7 +2748,11 @@ static void vortex_spdif_init(vortex_t * vortex, int spdif_sr, int spdif_mode)
 static int __devinit vortex_core_init(vortex_t * vortex)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Vortex: init.... ");
+#else
+	;
+#endif
 	/* Hardware Init. */
 	hwwrite(vortex->mmio, VORTEX_CTRL, 0xffffffff);
 	msleep(5);
@@ -2721,7 +2797,11 @@ static int __devinit vortex_core_init(vortex_t * vortex)
 	//vortex_enable_timer_int(vortex);
 	//vortex_disable_timer_int(vortex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "done.\n");
+#else
+	;
+#endif
 	spin_lock_init(&vortex->lock);
 
 	return 0;
@@ -2730,7 +2810,11 @@ static int __devinit vortex_core_init(vortex_t * vortex)
 static int vortex_core_shutdown(vortex_t * vortex)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Vortex: shutdown...");
+#else
+	;
+#endif
 #ifndef CHIP_AU8820
 	vortex_eq_free(vortex);
 	vortex_Vort3D_disable(vortex);
@@ -2752,7 +2836,11 @@ static int vortex_core_shutdown(vortex_t * vortex)
 	msleep(5);
 	hwwrite(vortex->mmio, VORTEX_IRQ_SOURCE, 0xffff);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "done.\n");
+#else
+	;
+#endif
 	return 0;
 }
 

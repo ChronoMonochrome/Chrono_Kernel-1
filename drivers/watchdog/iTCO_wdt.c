@@ -750,8 +750,12 @@ static int iTCO_wdt_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		iTCO_wdt_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		iTCO_wdt_keepalive();
 	}
 	clear_bit(0, &is_active);
@@ -920,8 +924,12 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
 
 	/* Check chipset's NO_REBOOT bit */
 	if (iTCO_wdt_unset_NO_REBOOT_bit() && iTCO_vendor_check_noreboot_on()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "unable to reset NO_REBOOT flag, "
 					"device disabled by hardware/BIOS\n");
+#else
+		;
+#endif
 		ret = -ENODEV;	/* Cannot reset NO_REBOOT bit */
 		goto out_unmap;
 	}
@@ -951,11 +959,15 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
 		goto unreg_smi_en;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"Found a %s TCO device (Version=%d, TCOBASE=0x%04lx)\n",
 			iTCO_chipset_info[ent->driver_data].name,
 			iTCO_chipset_info[ent->driver_data].iTCO_version,
 			TCOBASE);
+#else
+	;
+#endif
 
 	/* Clear out the (probably old) status */
 	outw(0x0008, TCO1_STS);	/* Clear the Time Out Status bit */
@@ -969,8 +981,12 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
 	   if not reset to the default */
 	if (iTCO_wdt_set_heartbeat(heartbeat)) {
 		iTCO_wdt_set_heartbeat(WATCHDOG_HEARTBEAT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value out of range, using %d\n", heartbeat);
+#else
+		;
+#endif
 	}
 
 	ret = misc_register(&iTCO_wdt_miscdev);
@@ -981,8 +997,12 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
 		goto unreg_region;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
 							heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -1034,7 +1054,11 @@ static int __devinit iTCO_wdt_probe(struct platform_device *dev)
 	}
 
 	if (!found)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "No device detected.\n");
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -1071,8 +1095,12 @@ static int __init iTCO_wdt_init_module(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Intel TCO WatchDog Timer Driver v%s\n",
 		DRV_VERSION);
+#else
+	;
+#endif
 
 	err = platform_driver_register(&iTCO_wdt_driver);
 	if (err)
@@ -1096,7 +1124,11 @@ static void __exit iTCO_wdt_cleanup_module(void)
 {
 	platform_device_unregister(iTCO_wdt_platform_device);
 	platform_driver_unregister(&iTCO_wdt_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(iTCO_wdt_init_module);

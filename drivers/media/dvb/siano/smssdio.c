@@ -343,8 +343,16 @@ static int __init smssdio_module_init(void)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "smssdio: Siano SMS1xxx SDIO driver\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "smssdio: Copyright Pierre Ossman\n");
+#else
+	;
+#endif
 
 	ret = sdio_register_driver(&smssdio_driver);
 

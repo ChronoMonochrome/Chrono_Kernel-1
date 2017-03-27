@@ -347,14 +347,22 @@ retry_loop:
 	freqs.new = calc_speed(longhaul_get_cpu_mult());
 	/* Check if requested frequency is set. */
 	if (unlikely(freqs.new != speed)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Failed to set requested frequency!\n");
+#else
+		;
+#endif
 		/* Revision ID = 1 but processor is expecting revision key
 		 * equal to 0. Jumpers at the bottom of processor will change
 		 * multiplier and FSB, but will not change bits in Longhaul
 		 * MSR nor enable voltage scaling. */
 		if (!revid_errata) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "Enabling \"Ignore Revision ID\" "
 						"option.\n");
+#else
+			;
+#endif
 			revid_errata = 1;
 			msleep(200);
 			goto retry_loop;
@@ -364,11 +372,19 @@ retry_loop:
 		 * but it doesn't change frequency. I tried poking various
 		 * bits in northbridge registers, but without success. */
 		if (longhaul_flags & USE_ACPI_C3) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "Disabling ACPI C3 support.\n");
+#else
+			;
+#endif
 			longhaul_flags &= ~USE_ACPI_C3;
 			if (revid_errata) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX "Disabling \"Ignore "
 						"Revision ID\" option.\n");
+#else
+				;
+#endif
 				revid_errata = 0;
 			}
 			msleep(200);
@@ -379,7 +395,11 @@ retry_loop:
 		 * RevID = 1. RevID errata will make things right. Just
 		 * to be 100% sure. */
 		if (longhaul_version == TYPE_LONGHAUL_V2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "Switching to Longhaul ver. 1\n");
+#else
+			;
+#endif
 			longhaul_version = TYPE_LONGHAUL_V1;
 			msleep(200);
 			goto retry_loop;
@@ -389,8 +409,12 @@ retry_loop:
 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
 	if (!bm_timeout)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Warning: Timeout while waiting for "
 				"idle PCI bus.\n");
+#else
+		;
+#endif
 }
 
 /*
@@ -431,12 +455,20 @@ static int __cpuinit longhaul_get_ranges(void)
 	/* Get current frequency */
 	mult = longhaul_get_cpu_mult();
 	if (mult == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Invalid (reserved) multiplier!\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	fsb = guess_fsb(mult);
 	if (fsb == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Invalid (reserved) FSB!\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	/* Get max multiplier - as we always did.
@@ -466,12 +498,20 @@ static int __cpuinit longhaul_get_ranges(void)
 		 print_speed(highest_speed/1000));
 
 	if (lowest_speed == highest_speed) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "highestspeed == lowest, aborting.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (lowest_speed > highest_speed) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "nonsense! lowest (%d > %d) !\n",
 			lowest_speed, highest_speed);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -535,16 +575,28 @@ static void __cpuinit longhaul_setup_voltagescaling(void)
 
 	rdmsrl(MSR_VIA_LONGHAUL, longhaul.val);
 	if (!(longhaul.bits.RevisionID & 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Voltage scaling not supported by CPU.\n");
+#else
+		;
+#endif
 		return;
 	}
 
 	if (!longhaul.bits.VRMRev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "VRM 8.5\n");
+#else
+		;
+#endif
 		vrm_mV_table = &vrm85_mV[0];
 		mV_vrm_table = &mV_vrm85[0];
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Mobile VRM\n");
+#else
+		;
+#endif
 		if (cpu_model < CPU_NEHEMIAH)
 			return;
 		vrm_mV_table = &mobilevrm_mV[0];
@@ -555,23 +607,32 @@ static void __cpuinit longhaul_setup_voltagescaling(void)
 	maxvid = vrm_mV_table[longhaul.bits.MaximumVID];
 
 	if (minvid.mV == 0 || maxvid.mV == 0 || minvid.mV > maxvid.mV) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Bogus values Min:%d.%03d Max:%d.%03d. "
 					"Voltage scaling disabled.\n",
 					minvid.mV/1000, minvid.mV%1000,
 					maxvid.mV/1000, maxvid.mV%1000);
+#else
+		;
+#endif
 		return;
 	}
 
 	if (minvid.mV == maxvid.mV) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Claims to support voltage scaling but "
 				"min & max are both %d.%03d. "
 				"Voltage scaling disabled\n",
 				maxvid.mV/1000, maxvid.mV%1000);
+#else
+		;
+#endif
 		return;
 	}
 
 	/* How many voltage steps*/
 	numvscales = maxvid.pos - minvid.pos + 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"Max VID=%d.%03d  "
 		"Min VID=%d.%03d, "
@@ -579,6 +640,9 @@ static void __cpuinit longhaul_setup_voltagescaling(void)
 		maxvid.mV/1000, maxvid.mV%1000,
 		minvid.mV/1000, minvid.mV%1000,
 		numvscales);
+#else
+	;
+#endif
 
 	/* Calculate max frequency at min voltage */
 	j = longhaul.bits.MinMHzBR;
@@ -615,13 +679,21 @@ static void __cpuinit longhaul_setup_voltagescaling(void)
 			pos = minvid.pos;
 		longhaul_table[j].index |= mV_vrm_table[pos] << 8;
 		vid = vrm_mV_table[mV_vrm_table[pos]];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "f: %d kHz, index: %d, vid: %d mV\n",
 				speed, j, vid.mV);
+#else
+		;
+#endif
 		j++;
 	}
 
 	can_scale_voltage = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Voltage scaling enabled.\n");
+#else
+	;
+#endif
 }
 
 
@@ -770,8 +842,12 @@ static int longhaul_setup_southbridge(void)
 		if (pci_cmd & 1 << 7) {
 			pci_read_config_dword(dev, 0x88, &acpi_regs_addr);
 			acpi_regs_addr &= 0xff00;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "ACPI I/O at 0x%x\n",
 					acpi_regs_addr);
+#else
+			;
+#endif
 		}
 
 		pci_dev_put(dev);
@@ -865,14 +941,26 @@ static int __cpuinit longhaul_cpu_init(struct cpufreq_policy *policy)
 			longhaul_version = TYPE_LONGHAUL_V1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "VIA %s CPU detected.  ", cpuname);
+#else
+	;
+#endif
 	switch (longhaul_version) {
 	case TYPE_LONGHAUL_V1:
 	case TYPE_LONGHAUL_V2:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Longhaul v%d supported.\n", longhaul_version);
+#else
+		;
+#endif
 		break;
 	case TYPE_POWERSAVER:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Powersaver supported.\n");
+#else
+		;
+#endif
 		break;
 	};
 
@@ -907,9 +995,17 @@ static int __cpuinit longhaul_cpu_init(struct cpufreq_policy *policy)
 	}
 
 	if (longhaul_flags & USE_NORTHBRIDGE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Using northbridge support.\n");
+#else
+		;
+#endif
 	if (longhaul_flags & USE_ACPI_C3)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Using ACPI support.\n");
+#else
+		;
+#endif
 
 	ret = longhaul_get_ranges();
 	if (ret != 0)

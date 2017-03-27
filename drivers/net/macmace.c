@@ -254,8 +254,8 @@ static int __devinit mace_probe(struct platform_device *pdev)
 	dev->netdev_ops		= &mace_netdev_ops;
 	dev->watchdog_timeo	= TX_TIMEOUT;
 
-	printk(KERN_INFO "%s: 68K MACE, hardware address %pM\n",
-	       dev->name, dev->dev_addr);
+//	printk(KERN_INFO "%s: 68K MACE, hardware address %pM\n",
+;
 
 	err = register_netdev(dev);
 	if (!err)
@@ -286,7 +286,7 @@ static void mace_reset(struct net_device *dev)
 		break;
 	}
 	if (!i) {
-		printk(KERN_ERR "macmace: cannot reset chip!\n");
+;
 		return;
 	}
 
@@ -381,11 +381,11 @@ static int mace_open(struct net_device *dev)
 	mace_reset(dev);
 
 	if (request_irq(dev->irq, mace_interrupt, 0, dev->name, dev)) {
-		printk(KERN_ERR "%s: can't get irq %d\n", dev->name, dev->irq);
+;
 		return -EAGAIN;
 	}
 	if (request_irq(mp->dma_intr, mace_dma_intr, 0, dev->name, dev)) {
-		printk(KERN_ERR "%s: can't get irq %d\n", dev->name, mp->dma_intr);
+;
 		free_irq(dev->irq, dev);
 		return -EAGAIN;
 	}
@@ -396,7 +396,7 @@ static int mace_open(struct net_device *dev)
 			N_TX_RING * MACE_BUFF_SIZE,
 			&mp->tx_ring_phys, GFP_KERNEL);
 	if (mp->tx_ring == NULL) {
-		printk(KERN_ERR "%s: unable to allocate DMA tx buffers\n", dev->name);
+;
 		goto out1;
 	}
 
@@ -404,7 +404,7 @@ static int mace_open(struct net_device *dev)
 			N_RX_RING * MACE_BUFF_SIZE,
 			&mp->rx_ring_phys, GFP_KERNEL);
 	if (mp->rx_ring == NULL) {
-		printk(KERN_ERR "%s: unable to allocate DMA rx buffers\n", dev->name);
+;
 		goto out2;
 	}
 
@@ -465,7 +465,7 @@ static int mace_xmit_start(struct sk_buff *skb, struct net_device *dev)
 	local_irq_save(flags);
 	netif_stop_queue(dev);
 	if (!mp->tx_count) {
-		printk(KERN_ERR "macmace: tx queue running but no free buffers.\n");
+;
 		local_irq_restore(flags);
 		return NETDEV_TX_BUSY;
 	}
@@ -558,10 +558,10 @@ static void mace_handle_misc_intrs(struct net_device *dev, int intr)
 		++dev->stats.tx_heartbeat_errors;
 	if (intr & BABBLE)
 		if (mace_babbles++ < 4)
-			printk(KERN_DEBUG "macmace: babbling transmitter\n");
+;
 	if (intr & JABBER)
 		if (mace_jabbers++ < 4)
-			printk(KERN_DEBUG "macmace: jabbering transceiver\n");
+;
 }
 
 static irqreturn_t mace_interrupt(int irq, void *dev_id)
@@ -581,7 +581,7 @@ static irqreturn_t mace_interrupt(int irq, void *dev_id)
 	if (intr & XMTINT) {
 		fs = mb->xmtfs;
 		if ((fs & XMTSV) == 0) {
-			printk(KERN_ERR "macmace: xmtfs not valid! (fs=%x)\n", fs);
+;
 			mace_reset(dev);
 			/*
 			 * XXX mace likes to hang the machine after a xmtfs error.
@@ -590,7 +590,7 @@ static irqreturn_t mace_interrupt(int irq, void *dev_id)
 		}
 		/* dma should have finished */
 		if (!mp->tx_count) {
-			printk(KERN_DEBUG "macmace: tx ring ran out? (fs=%x)\n", fs);
+;
 		}
 		/* Update stats */
 		if (fs & (UFLO|LCOL|LCAR|RTRY)) {
@@ -600,7 +600,7 @@ static irqreturn_t mace_interrupt(int irq, void *dev_id)
 			else if (fs & (UFLO|LCOL|RTRY)) {
 				++dev->stats.tx_aborted_errors;
 				if (mb->xmtfs & UFLO) {
-					printk(KERN_ERR "%s: DMA underrun.\n", dev->name);
+;
 					dev->stats.tx_fifo_errors++;
 					mace_txdma_reset(dev);
 				}
@@ -626,7 +626,7 @@ static void mace_tx_timeout(struct net_device *dev)
 
 	/* turn off both tx and rx and reset the chip */
 	mb->maccc = 0;
-	printk(KERN_ERR "macmace: transmit timeout - resetting\n");
+;
 	mace_txdma_reset(dev);
 	mace_reset(dev);
 
@@ -656,7 +656,7 @@ static void mace_dma_rx_frame(struct net_device *dev, struct mace_frame *mf)
 	if (frame_status & (RS_OFLO | RS_CLSN | RS_FRAMERR | RS_FCSERR)) {
 		dev->stats.rx_errors++;
 		if (frame_status & RS_OFLO) {
-			printk(KERN_DEBUG "%s: fifo overflow.\n", dev->name);
+;
 			dev->stats.rx_fifo_errors++;
 		}
 		if (frame_status & RS_CLSN)

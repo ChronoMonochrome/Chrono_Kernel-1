@@ -82,7 +82,7 @@ static int __init afs_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "kAFS: Red Hat AFS client v0.1 registering.\n");
+;
 
 	ret = afs_get_client_UUID();
 	if (ret < 0)
@@ -150,7 +150,7 @@ error_cache:
 error_proc:
 	destroy_workqueue(afs_wq);
 	rcu_barrier();
-	printk(KERN_ERR "kAFS: failed to register: %d\n", ret);
+;
 	return ret;
 }
 
@@ -164,7 +164,7 @@ late_initcall(afs_init);	/* must be called after net/ to create socket */
  */
 static void __exit afs_exit(void)
 {
-	printk(KERN_INFO "kAFS: Red Hat AFS client v0.1 unregistering.\n");
+;
 
 	afs_fs_exit();
 	afs_kill_lock_manager();

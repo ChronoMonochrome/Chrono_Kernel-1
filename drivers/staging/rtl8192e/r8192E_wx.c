@@ -398,7 +398,7 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
 			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
 			ieee->current_network.ssid_len = req->essid_len;
 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
+;
 		}
 	}
 
@@ -682,7 +682,7 @@ static int r8192_wx_set_enc(struct net_device *dev,
 			default: break;
 		}
 
-		//printk("-------====>length:%d, key_idx:%d, flag:%x\n", wrqu->encoding.length, key_idx, wrqu->encoding.flags);
+;
 		if(wrqu->encoding.length==0x5){
 		ieee->pairwise_key_type = KEY_TYPE_WEP40;
 			EnableHWSecurityConfig8192(priv);
@@ -696,7 +696,7 @@ static int r8192_wx_set_enc(struct net_device *dev,
 			setKey(priv, key_idx, key_idx, KEY_TYPE_WEP104,
 			       zero_addr[key_idx], 0, hwkey);
 		}
-		else printk("wrong type in WEP, not WEP40 and WEP104\n");
+;
 	}
 
 	priv->ieee80211->wx_set_enc = 0;
@@ -929,7 +929,7 @@ static int r8192_wx_set_auth(struct net_device *dev,
                                         union iwreq_data *data, char *extra)
 {
 	int ret=0;
-	//printk("====>%s()\n", __FUNCTION__);
+;
 	struct r8192_priv *priv = ieee80211_priv(dev);
 
 	if (priv->bHwRadioOff)
@@ -945,7 +945,7 @@ static int r8192_wx_set_mlme(struct net_device *dev,
                                         struct iw_request_info *info,
                                         union iwreq_data *wrqu, char *extra)
 {
-	//printk("====>%s()\n", __FUNCTION__);
+;
 
 	int ret=0;
 	struct r8192_priv *priv = ieee80211_priv(dev);
@@ -963,7 +963,7 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
                                         struct iw_request_info *info,
                                         union iwreq_data *data, char *extra)
 {
-	   //printk("====>%s(), len:%d\n", __FUNCTION__, data->length);
+;
 	int ret=0;
         struct r8192_priv *priv = ieee80211_priv(dev);
 
@@ -973,7 +973,7 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
         down(&priv->wx_sem);
         ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, data->data.length);
         up(&priv->wx_sem);
-	//printk("<======%s(), ret:%d\n", __FUNCTION__, ret);
+;
         return ret;
 }
 
@@ -1142,7 +1142,7 @@ static struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
        tmp_level = (&ieee->current_network)->stats.rssi;
 	tmp_qual = (&ieee->current_network)->stats.signal;
 	tmp_noise = (&ieee->current_network)->stats.noise;
-	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
+;
 
 	wstats->qual.level = tmp_level;
 	wstats->qual.qual = tmp_qual;

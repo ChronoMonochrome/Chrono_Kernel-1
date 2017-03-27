@@ -137,20 +137,40 @@ int dpp_flash(unsigned char *DataSetArray, int iNumArray)
 		if (DataSetArray[i + OFFSET_I2C_DIRECTION] == PRJ_WRITE) {
 			i2c_master_send(info->client, &DataSetArray[CurrentDataIndex], Bytes);
 #ifdef PROJECTOR_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[%s] WRITE addr:", __func__);
+#else
+			;
+#endif
 			for(i=0;i<Bytes;i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%x ", DataSetArray[CurrentDataIndex+i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 #endif
 		} else if (DataSetArray[i + OFFSET_I2C_DIRECTION] == PRJ_READ) {
 			memset(RGB_BUF, 0x0, sizeof(RGB_BUF));
 			i2c_master_recv(info->client, RGB_BUF, Bytes);
 #ifdef PROJECTOR_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "[%s] READ value:%x %x %x %x\n", __func__,
 				RGB_BUF[0], RGB_BUF[1], RGB_BUF[2], RGB_BUF[3]);
+#else
+			;
+#endif
 #endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "[%s] data is invalid !!\n", __func__);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 	}
@@ -160,7 +180,11 @@ int dpp_flash(unsigned char *DataSetArray, int iNumArray)
 void set_proj_status(int enProjectorStatus)
 {
 	status = enProjectorStatus;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] projector status : %d\n", __func__, status);
+#else
+	;
+#endif
 }
 
 int get_proj_status(void)
@@ -176,7 +200,11 @@ static void projector_motor_cw_work(struct work_struct *work)
 		motor_step = 0;
  
 	MOTOR_PHASE_CW_OUT(motor_step);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] CW:%d\n", __func__, motor_step);
+#else
+	;
+#endif
 	motor_abs_step--;
 }
 
@@ -192,7 +220,11 @@ static void projector_motor_ccw_work(struct work_struct *work)
 		motor_step = MOTOR_MAX_PHASE;
 
 	MOTOR_PHASE_CW_OUT(motor_step);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] CCW:%d\n", __func__, motor_step);
+#else
+	;
+#endif
 	motor_abs_step++;
 }
 
@@ -358,8 +390,12 @@ void pwron_seq_current_limit(void)
 	current_limit[3] = ireg;
 
 	DPPDATAFLASH(current_limit);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] Current Limit : %u, %#x\n", __func__,
 			limit, (ireg & (~0x7)) >> 3);
+#else
+	;
+#endif
 }
 
 static void proj_pwron_seq_work(struct work_struct *work)
@@ -739,7 +775,11 @@ void move_motor_step(int value)
 			if (motor_step > MOTOR_MAX_PHASE)
 				motor_step = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "[%s] CW:%d\n", __func__, motor_step);
+#else
+			;
+#endif
 			MOTOR_PHASE_CW_FIRST(motor_step);
 		}
 
@@ -751,7 +791,11 @@ void move_motor_step(int value)
 			if (motor_step < 0)
 				motor_step = MOTOR_MAX_PHASE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "[%s] CCW:%d\n", __func__, motor_step);
+#else
+			;
+#endif
 			MOTOR_PHASE_CW_FIRST(motor_step);
 			motor_abs_step++;
 		}
@@ -764,8 +808,12 @@ void move_motor_step(int value)
 				if (motor_step > MOTOR_MAX_PHASE)
 					motor_step = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "[%s] CW:%d\n",
 						__func__, motor_step);
+#else
+				;
+#endif
 				MOTOR_PHASE_CW_OUT(motor_step);
 				motor_abs_step--;
 			}
@@ -775,16 +823,24 @@ void move_motor_step(int value)
 				if (motor_step < 0)
 					motor_step = MOTOR_MAX_PHASE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "[%s] CCW:%d\n",
 						__func__, motor_step);
+#else
+				;
+#endif
 				MOTOR_PHASE_CW_OUT(motor_step);
 				motor_abs_step++;
 			}
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] Projector Motor ABS Step : %d\n",
 			__func__, motor_abs_step);
+#else
+	;
+#endif
 	verify_value = 300 + value;
 }
 
@@ -836,8 +892,12 @@ static ssize_t store_brightness(struct device *dev,
 	} else {
 		brightness = value;
 		set_led_current(value);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "[%s] Proj Brightness Changed : %d\n",
 					__func__, value);
+#else
+		;
+#endif
 	}
 	return count;
 }
@@ -865,7 +925,11 @@ static ssize_t store_proj_key(struct device *dev,
 		break;
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] -->  %d\n", __func__, value);
+#else
+	;
+#endif
 	return count;
 }
 
@@ -927,7 +991,11 @@ static ssize_t store_rotate_screen(struct device *dev,
 		screen_direction = value;
 		queue_work(projector_work_queue, &projector_work_rotate_screen);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "[%s] inputed rotate : %d\n", __func__, value);
+#else
+		;
+#endif
 	}
 
 	return count;
@@ -939,8 +1007,12 @@ static ssize_t store_projection_verify(struct device *dev,
 	int value;
 
 	sscanf(buf, "%d\n", &value);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s] selected internal pattern : %d\n",
 				__func__, value);
+#else
+	;
+#endif
 
 
 	if (value == CURTAIN_ON) {

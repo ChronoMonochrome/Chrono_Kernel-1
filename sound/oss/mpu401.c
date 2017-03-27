@@ -61,7 +61,11 @@ struct mpu_config
 
 #define MBUF_MAX	10
 #define BUFTEST(dc) if (dc->m_ptr >= MBUF_MAX || dc->m_ptr < 0) \
+#ifdef CONFIG_DEBUG_PRINTK
 	{printk( "MPU: Invalid buffer pointer %d/%d, s=%d\n",  dc->m_ptr,  dc->m_left,  dc->m_state);dc->m_ptr--;}
+#else
+	{;
+#endif
 	  int             m_busy;
 	  unsigned char   m_buf[MBUF_MAX];
 	  int             m_ptr;
@@ -185,7 +189,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					break;
 
 				case 0xfc:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("<all end>");
+#else
+					;
+#endif
 			 		break;
 
 				case 0xfd:
@@ -204,11 +212,19 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 				case 0xf5:
 				case 0xf6:
 				case 0xf7:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("<Trk data rq #%d>", midic & 0x0f);
+#else
+					;
+#endif
 					break;
 
 				case 0xf9:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("<conductor rq>");
+#else
+					;
+#endif
 					break;
 
 				case 0xff:
@@ -218,11 +234,19 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 				default:
 					if (midic <= 0xef)
 					{
+#ifdef CONFIG_DEBUG_PRINTK
 						/* printk( "mpu time: %d ",  midic); */
+#else
+						/* ;
+#endif
 						devc->m_state = ST_TIMED;
 					}
 					else
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("<MPU: Unknown event %02x> ", midic);
+#else
+						;
+#endif
 			}
 			break;
 
@@ -234,7 +258,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 
 				if (msg < 8)	/* Data byte */
 				{
+#ifdef CONFIG_DEBUG_PRINTK
 					/* printk( "midi msg (running status) "); */
+#else
+					/* ;
+#endif
 					msg = ((int) (devc->last_status & 0xf0) >> 4);
 					msg -= 8;
 					devc->m_left = len_tab[msg] - 1;
@@ -257,25 +285,45 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					switch (midic)
 					{
 						case 0xf8:
+#ifdef CONFIG_DEBUG_PRINTK
 							/* printk( "NOP "); */
+#else
+							/* ;
+#endif
 							break;
 
 						case 0xf9:
+#ifdef CONFIG_DEBUG_PRINTK
 							/* printk( "meas end "); */
+#else
+							/* ;
+#endif
 							break;
 
 						case 0xfc:
+#ifdef CONFIG_DEBUG_PRINTK
 							/* printk( "data end "); */
+#else
+							/* ;
+#endif
 							break;
 
 						default:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("Unknown MPU mark %02x\n", midic);
+#else
+							;
+#endif
 					}
 				}
 				else
 				{
 					devc->last_status = midic;
+#ifdef CONFIG_DEBUG_PRINTK
 					/* printk( "midi msg "); */
+#else
+					/* ;
+#endif
 					msg -= 8;
 					devc->m_left = len_tab[msg];
 
@@ -296,7 +344,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 			switch (midic)
 			{
 				case 0xf0:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("<SYX>");
+#else
+					;
+#endif
 					devc->m_state = ST_SYSEX;
 					break;
 
@@ -314,7 +366,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					break;
 
 				case 0xf6:
+#ifdef CONFIG_DEBUG_PRINTK
 					/* printk( "tune_request\n"); */
+#else
+					/* ;
+#endif
 					devc->m_state = ST_INIT;
 
 					/*
@@ -347,29 +403,49 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					break;
 
 				case 0xff:
+#ifdef CONFIG_DEBUG_PRINTK
 					/* printk( "midi hard reset"); */
+#else
+					/* ;
+#endif
 					devc->m_state = ST_INIT;
 					break;
 
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("unknown MIDI sysmsg %0x\n", midic);
+#else
+					;
+#endif
 					devc->m_state = ST_INIT;
 			}
 			break;
 
 		case ST_MTC:
 			devc->m_state = ST_INIT;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("MTC frame %x02\n", midic);
+#else
+			;
+#endif
 			break;
 
 		case ST_SYSEX:
 			if (midic == 0xf7)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("<EOX>");
+#else
+				;
+#endif
 				devc->m_state = ST_INIT;
 			}
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%02x ", midic);
+#else
+				;
+#endif
 			break;
 
 		case ST_SONGPOS:
@@ -397,7 +473,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Bad state %d ", devc->m_state);
+#else
+			;
+#endif
 			devc->m_state = ST_INIT;
 	}
 	return 1;
@@ -497,7 +577,11 @@ static int mpu401_open(int dev, int mode,
 
 		if ((err = coprocessor->open(coprocessor->devc, COPR_MIDI)) < 0)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MPU-401: Can't access coprocessor device\n");
+#else
+			;
+#endif
 			mpu401_close(dev);
 			return err;
 		}
@@ -555,7 +639,11 @@ static int mpu401_out(int dev, unsigned char midi_byte)
 	spin_lock_irqsave(&devc->lock,flags);
 	if (!output_ready(devc))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mpu401: Send data timeout\n");
+#else
+		;
+#endif
 		spin_unlock_irqrestore(&devc->lock,flags);
 		return 0;
 	}
@@ -577,7 +665,11 @@ static int mpu401_command(int dev, mpu_command_rec * cmd)
 				 * Not possible in UART mode
 				 */
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mpu401: commands not possible in the UART mode\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	/*
@@ -595,7 +687,11 @@ static int mpu401_command(int dev, mpu_command_rec * cmd)
 retry:
 	if (timeout-- <= 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mpu401: Command (0x%x) timeout\n", (int) cmd->cmd);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	spin_lock_irqsave(&devc->lock,flags);
@@ -639,7 +735,11 @@ retry:
 			if (!mpu401_out(dev, cmd->data[i]))
 			{
 				spin_unlock_irqrestore(&devc->lock,flags);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "mpu401: Command (0x%x), parm send failed.\n", (int) cmd->cmd);
+#else
+				;
+#endif
 				return -EIO;
 			}
 		}
@@ -731,7 +831,11 @@ static int mpu401_ioctl(int dev, unsigned cmd, void __user *arg)
 	{
 		case SNDCTL_MIDI_MPUMODE:
 			if (!(devc->capabilities & MPU_CAP_INTLG)) { /* No intelligent mode */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "mpu401: Intelligent mode not supported by the HW\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 			if (get_user(val, (int __user *)arg))
@@ -836,7 +940,11 @@ static int mpu_synth_open(int dev, int mode)
 
 		if ((err = coprocessor->open(coprocessor->devc, COPR_MIDI)) < 0)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "mpu401: Can't access coprocessor device\n");
+#else
+			;
+#endif
 			return err;
 		}
 	}
@@ -956,7 +1064,11 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 	m = sound_alloc_mididev();
 	if (m == -1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "MPU-401: Too many midi devices detected\n");
+#else
+		;
+#endif
 		ret = -ENOMEM;
 		goto out_err;
 	}
@@ -988,7 +1100,11 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 		/* Verify the hardware again */
 		if (!reset_mpu401(devc))
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "mpu401: Device didn't respond\n");
+#else
+			;
+#endif
 			ret = -ENODEV;
 			goto out_mididev;
 		}
@@ -997,7 +1113,11 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 			if (request_irq(devc->irq, mpuintr, 0, "mpu401",
 					hw_config) < 0)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "mpu401: Failed to allocate IRQ%d\n", devc->irq);
+#else
+				;
+#endif
 				ret = -ENOMEM;
 				goto out_mididev;
 			}
@@ -1199,14 +1319,22 @@ int probe_mpu401(struct address_info *hw_config, struct resource *ports)
 
 	if (inb(hw_config->io_base + 1) == 0xff)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("MPU401: Port %x looks dead.\n", hw_config->io_base));
+#else
+		DDB(;
+#endif
 		return 0;	/* Just bus float? */
 	}
 	ok = reset_mpu401(&tmp_devc);
 
 	if (!ok)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("MPU401: Reset failed on port %x\n", hw_config->io_base));
+#else
+		DDB(;
+#endif
 	}
 	return ok;
 }
@@ -1266,7 +1394,11 @@ static void set_timebase(int midi_dev, int val)
 
 	if (mpu_cmd(midi_dev, 0xC0 | (hw_val & 0x0f), 0) < 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mpu401: Can't set HW timebase to %d\n", hw_val * 24);
+#else
+		;
+#endif
 		return;
 	}
 	hw_timebase = hw_val * 24;
@@ -1446,7 +1578,11 @@ static int mpu_timer_event(int dev, unsigned char *event)
 			 	if (parm > 250)
 					parm = 250;
 				if (mpu_cmd(midi_dev, 0xE0, parm) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "mpu401: Can't set tempo to %d\n", (int) parm);
+#else
+					;
+#endif
 				curr_tempo = parm;
 			}
 			break;
@@ -1552,7 +1688,11 @@ static int mpu_timer_ioctl(int dev, unsigned int command, void __user *arg)
 						val = 250;
 					if ((ret = mpu_cmd(midi_dev, 0xE0, val)) < 0)
 					{
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "mpu401: Can't set tempo to %d\n", (int) val);
+#else
+						;
+#endif
 						return ret;
 					}
 					curr_tempo = val;
@@ -1646,11 +1786,19 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 	switch (event)
 	{
 		case TMR_CLOCK:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("<MIDI clk>");
+#else
+			;
+#endif
 			break;
 
 		case TMR_START:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Ext MIDI start\n");
+#else
+			;
+#endif
 			if (!tmr_running)
 			{
 				if (timer_mode & TMR_EXTERNAL)
@@ -1664,7 +1812,11 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 			break;
 
 		case TMR_STOP:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Ext MIDI stop\n");
+#else
+			;
+#endif
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				tmr_running = 0;
@@ -1674,7 +1826,11 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 			break;
 
 		case TMR_CONTINUE:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Ext MIDI continue\n");
+#else
+			;
+#endif
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				tmr_running = 1;
@@ -1684,7 +1840,11 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 		  	break;
 
 		case TMR_SPP:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Songpos: %d\n", parm);
+#else
+			;
+#endif
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				STORE(SEQ_SONGPOS(parm));

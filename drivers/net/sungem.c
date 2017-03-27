@@ -250,7 +250,7 @@ static void gem_put_cell(struct gem *gp)
 static void gem_handle_mif_event(struct gem *gp, u32 reg_val, u32 changed_bits)
 {
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: mif interrupt\n", gp->dev->name);
+;
 }
 
 static int gem_pcs_interrupt(struct net_device *dev, struct gem *gp, u32 gem_status)
@@ -259,8 +259,8 @@ static int gem_pcs_interrupt(struct net_device *dev, struct gem *gp, u32 gem_sta
 	u32 pcs_miistat;
 
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: pcs interrupt, pcs_istat: 0x%x\n",
-			gp->dev->name, pcs_istat);
+//		printk(KERN_DEBUG "%s: pcs interrupt, pcs_istat: 0x%x\n",
+;
 
 	if (!(pcs_istat & PCS_ISTAT_LSC)) {
 		netdev_err(dev, "PCS irq but no link status change???\n");
@@ -308,8 +308,8 @@ static int gem_txmac_interrupt(struct net_device *dev, struct gem *gp, u32 gem_s
 	u32 txmac_stat = readl(gp->regs + MAC_TXSTAT);
 
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: txmac interrupt, txmac_stat: 0x%x\n",
-			gp->dev->name, txmac_stat);
+//		printk(KERN_DEBUG "%s: txmac interrupt, txmac_stat: 0x%x\n",
+;
 
 	/* Defer timer expiration is quite normal,
 	 * don't even log the event.
@@ -462,8 +462,8 @@ static int gem_rxmac_interrupt(struct net_device *dev, struct gem *gp, u32 gem_s
 	int ret = 0;
 
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: rxmac interrupt, rxmac_stat: 0x%x\n",
-			gp->dev->name, rxmac_stat);
+//		printk(KERN_DEBUG "%s: rxmac interrupt, rxmac_stat: 0x%x\n",
+;
 
 	if (rxmac_stat & MAC_RXSTAT_OFLW) {
 		u32 smac = readl(gp->regs + MAC_SMACHINE);
@@ -495,8 +495,8 @@ static int gem_mac_interrupt(struct net_device *dev, struct gem *gp, u32 gem_sta
 	u32 mac_cstat = readl(gp->regs + MAC_CSTAT);
 
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: mac interrupt, mac_cstat: 0x%x\n",
-			gp->dev->name, mac_cstat);
+//		printk(KERN_DEBUG "%s: mac interrupt, mac_cstat: 0x%x\n",
+;
 
 	/* This interrupt is just for pause frame and pause
 	 * tracking.  It is useful for diagnostics and debug
@@ -592,16 +592,16 @@ static int gem_abnormal_irq(struct net_device *dev, struct gem *gp, u32 gem_stat
 	if (gem_status & GREG_STAT_RXNOBUF) {
 		/* Frame arrived, no free RX buffers available. */
 		if (netif_msg_rx_err(gp))
-			printk(KERN_DEBUG "%s: no buffer for rx frame\n",
-				gp->dev->name);
+//			printk(KERN_DEBUG "%s: no buffer for rx frame\n",
+;
 		dev->stats.rx_dropped++;
 	}
 
 	if (gem_status & GREG_STAT_RXTAGERR) {
 		/* corrupt RX tag framing */
 		if (netif_msg_rx_err(gp))
-			printk(KERN_DEBUG "%s: corrupt rx tag framing\n",
-				gp->dev->name);
+//			printk(KERN_DEBUG "%s: corrupt rx tag framing\n",
+;
 		dev->stats.rx_errors++;
 
 		goto do_reset;
@@ -651,8 +651,8 @@ static __inline__ void gem_tx(struct net_device *dev, struct gem *gp, u32 gem_st
 	int entry, limit;
 
 	if (netif_msg_intr(gp))
-		printk(KERN_DEBUG "%s: tx interrupt, gem_status: 0x%x\n",
-			gp->dev->name, gem_status);
+//		printk(KERN_DEBUG "%s: tx interrupt, gem_status: 0x%x\n",
+;
 
 	entry = gp->tx_old;
 	limit = ((gem_status & GREG_STAT_TXNR) >> GREG_STAT_TXNR_SHIFT);
@@ -664,8 +664,8 @@ static __inline__ void gem_tx(struct net_device *dev, struct gem *gp, u32 gem_st
 		int frag;
 
 		if (netif_msg_tx_done(gp))
-			printk(KERN_DEBUG "%s: tx done, slot %d\n",
-				gp->dev->name, entry);
+//			printk(KERN_DEBUG "%s: tx done, slot %d\n",
+;
 		skb = gp->tx_skbs[entry];
 		if (skb_shinfo(skb)->nr_frags) {
 			int last = entry + skb_shinfo(skb)->nr_frags;
@@ -744,8 +744,8 @@ static int gem_rx(struct gem *gp, int work_to_do)
 	__sum16 csum;
 
 	if (netif_msg_rx_status(gp))
-		printk(KERN_DEBUG "%s: rx interrupt, done: %d, rx_new: %d\n",
-			gp->dev->name, readl(gp->regs + RXDMA_DONE), gp->rx_new);
+//		printk(KERN_DEBUG "%s: rx interrupt, done: %d, rx_new: %d\n",
+;
 
 	entry = gp->rx_new;
 	drops = 0;
@@ -1108,8 +1108,8 @@ static netdev_tx_t gem_start_xmit(struct sk_buff *skb,
 		netif_stop_queue(dev);
 
 	if (netif_msg_tx_queued(gp))
-		printk(KERN_DEBUG "%s: tx queued, slot %d, skblen %d\n",
-		       dev->name, entry, skb->len);
+//		printk(KERN_DEBUG "%s: tx queued, slot %d, skblen %d\n",
+;
 	mb();
 	writel(gp->tx_new, gp->regs + TXDMA_KICK);
 	spin_unlock_irqrestore(&gp->tx_lock, flags);
@@ -2900,7 +2900,7 @@ static int __devinit gem_get_device_address(struct gem *gp)
 #ifdef CONFIG_SPARC
 		addr = idprom->id_ethaddr;
 #else
-		printk("\n");
+;
 		pr_err("%s: can't get mac-address\n", dev->name);
 		return -1;
 #endif

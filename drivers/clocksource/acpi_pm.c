@@ -109,10 +109,14 @@ static void __devinit acpi_pm_check_blacklist(struct pci_dev *dev)
 
 	/* the bug has been fixed in PIIX4M */
 	if (dev->revision < 3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "* Found PM-Timer Bug on the chipset."
 		       " Due to workarounds for a bug,\n"
 		       "* this clock source is slow. Consider trying"
 		       " other clock sources\n");
+#else
+		;
+#endif
 
 		acpi_pm_need_workaround();
 	}
@@ -125,12 +129,16 @@ static void __devinit acpi_pm_check_graylist(struct pci_dev *dev)
 	if (acpi_pm_good)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "* The chipset may have PM-Timer Bug. Due to"
 	       " workarounds for a bug,\n"
 	       "* this clock source is slow. If you are sure your timer"
 	       " does not have\n"
 	       "* this bug, please use \"acpi_pm_good\" to disable the"
 	       " workaround\n");
+#else
+	;
+#endif
 
 	acpi_pm_need_workaround();
 }
@@ -162,9 +170,13 @@ static int verify_pmtmr_rate(void)
 	/* Check that the PMTMR delta is within 5% of what we expect */
 	if (delta < (PMTMR_EXPECTED_RATE * 19) / 20 ||
 	    delta > (PMTMR_EXPECTED_RATE * 21) / 20) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PM-Timer running at invalid rate: %lu%% "
 			"of normal - aborting.\n",
 			100UL * delta / PMTMR_EXPECTED_RATE);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -199,15 +211,23 @@ static int __init init_acpi_pm_clocksource(void)
 				break;
 			if ((value2 < value1) && ((value2) < 0xFFF))
 				break;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PM-Timer had inconsistent results:"
 			       " 0x%#llx, 0x%#llx - aborting.\n",
 			       value1, value2);
+#else
+			;
+#endif
 			pmtmr_ioport = 0;
 			return -EINVAL;
 		}
 		if (i == ACPI_PM_READ_CHECKS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PM-Timer failed consistency check "
 			       " (0x%#llx) - aborting.\n", value1);
+#else
+			;
+#endif
 			pmtmr_ioport = 0;
 			return -ENODEV;
 		}
@@ -241,8 +261,12 @@ static int __init parse_pmtmr(char *arg)
 	if (base > UINT_MAX)
 		return -ERANGE;
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PMTMR IOPort override: 0x%04x -> 0x%04lx\n",
 	       pmtmr_ioport, base);
+#else
+	;
+#endif
 	pmtmr_ioport = base;
 
 	return 1;

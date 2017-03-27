@@ -67,21 +67,21 @@ static int dio_config_block_size(struct comedi_device *dev, unsigned int *data);
 /* #define HPDI_DEBUG      enable debugging code */
 
 #ifdef HPDI_DEBUG
-#define DEBUG_PRINT(format, args...)  printk(format , ## args)
-#else
-#define DEBUG_PRINT(format, args...)
-#endif
-
-#define TIMER_BASE 50		/*  20MHz master clock */
-#define DMA_BUFFER_SIZE 0x10000
-#define NUM_DMA_BUFFERS 4
-#define NUM_DMA_DESCRIPTORS 256
-
-/* indices of base address regions */
-enum base_address_regions {
-	PLX9080_BADDRINDEX = 0,
-	HPDI_BADDRINDEX = 2,
-};
+//#define DEBUG_PRINT(format, args...)  printk(format , ## args)
+//#else
+//#define DEBUG_PRINT(format, args...)
+//#endif
+//
+//#define TIMER_BASE 50		/*  20MHz master clock */
+//#define DMA_BUFFER_SIZE 0x10000
+//#define NUM_DMA_BUFFERS 4
+//#define NUM_DMA_DESCRIPTORS 256
+//
+///* indices of base address regions */
+//enum base_address_regions {
+//	PLX9080_BADDRINDEX = 0,
+//	HPDI_BADDRINDEX = 2,
+;
 
 enum hpdi_registers {
 	FIRMWARE_REV_REG = 0x0,
@@ -110,8 +110,8 @@ enum hpdi_registers {
 int command_channel_valid(unsigned int channel)
 {
 	if (channel == 0 || channel > 6) {
-		printk(KERN_WARNING
-		       "gsc_hpdi: bug! invalid cable command channel\n");
+//		printk(KERN_WARNING
+;
 		return 0;
 	}
 	return 1;
@@ -608,7 +608,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int i;
 	int retval;
 
-	printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
+;
 
 	if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
 		return -ENOMEM;
@@ -637,17 +637,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		} while (pcidev != NULL);
 	}
 	if (dev->board_ptr == NULL) {
-		printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
+;
 		return -EIO;
 	}
 
-	printk(KERN_WARNING
-	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+//	printk(KERN_WARNING
+//	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
+;
 
 	if (comedi_pci_enable(pcidev, driver_hpdi.driver_name)) {
-		printk(KERN_WARNING
-		       " failed enable PCI device and request regions\n");
+//		printk(KERN_WARNING
+;
 		return -EIO;
 	}
 	pci_set_master(pcidev);
@@ -668,7 +668,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	    ioremap(priv(dev)->hpdi_phys_iobase,
 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
 	if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
-		printk(KERN_WARNING " failed to remap io memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -680,13 +680,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/*  get irq */
 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
 			driver_hpdi.driver_name, dev)) {
-		printk(KERN_WARNING
-		       " unable to allocate irq %u\n", pcidev->irq);
+//		printk(KERN_WARNING
+;
 		return -EINVAL;
 	}
 	dev->irq = pcidev->irq;
 
-	printk(KERN_WARNING " irq %u\n", dev->irq);
+;
 
 	/*  alocate pci dma buffers */
 	for (i = 0; i < NUM_DMA_BUFFERS; i++) {
@@ -704,8 +704,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 						   &priv(dev)->
 						   dma_desc_phys_addr);
 	if (priv(dev)->dma_desc_phys_addr & 0xf) {
-		printk(KERN_WARNING
-		       " dma descriptors not quad-word aligned (bug)\n");
+//		printk(KERN_WARNING
+;
 		return -EIO;
 	}
 
@@ -724,7 +724,7 @@ static int hpdi_detach(struct comedi_device *dev)
 {
 	unsigned int i;
 
-	printk(KERN_WARNING "comedi%d: gsc_hpdi: remove\n", dev->minor);
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);

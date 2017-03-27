@@ -664,16 +664,24 @@ static int tda8290_probe(struct tuner_i2c_props *i2c_props)
 
 	/* detect tda8290 */
 	if (i2c_transfer(i2c_props->adap, msg_read, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
 			       __func__, reg);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if (id == TDA8290_ID) {
 		if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: tda8290 detected @ %d-%04x\n",
 			       __func__, i2c_adapter_id(i2c_props->adap),
 			       i2c_props->addr);
+#else
+			;
+#endif
 		return 0;
 	}
 	return -ENODEV;
@@ -691,18 +699,26 @@ static int tda8295_probe(struct tuner_i2c_props *i2c_props)
 
 	/* detect tda8295 */
 	if (i2c_transfer(i2c_props->adap, msg_read, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
 			       __func__, reg);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if ((id & 0xfe) == TDA8295_ID) {
 		if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: %s detected @ %d-%04x\n",
 			       __func__, (id == TDA8295_ID) ?
 			       "tda8295c1" : "tda8295c2",
 			       i2c_adapter_id(i2c_props->adap),
 			       i2c_props->addr);
+#else
+			;
+#endif
 		return 0;
 	}
 

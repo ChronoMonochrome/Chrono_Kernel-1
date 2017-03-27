@@ -103,14 +103,30 @@ static void watchdog_fire(unsigned long data)
 		module_put(THIS_MODULE);
 
 	if (soft_noboot)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Triggered - Reboot ignored.\n");
+#else
+		;
+#endif
 	else if (soft_panic) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Initiating panic.\n");
+#else
+		;
+#endif
 		panic("Software Watchdog Timer expired.");
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+#else
+		;
+#endif
 		emergency_restart();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Reboot didn't ?????\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -166,8 +182,12 @@ static int softdog_release(struct inode *inode, struct file *file)
 		softdog_stop();
 		module_put(THIS_MODULE);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		set_bit(0, &orphan_timer);
 		softdog_keepalive();
 	}
@@ -287,9 +307,13 @@ static int __init watchdog_init(void)
 	   if not reset to the default */
 	if (softdog_set_heartbeat(soft_margin)) {
 		softdog_set_heartbeat(TIMER_MARGIN);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		    "soft_margin must be 0 < soft_margin < 65536, using %d\n",
 			TIMER_MARGIN);
+#else
+		;
+#endif
 	}
 
 	ret = register_reboot_notifier(&softdog_notifier);
@@ -308,7 +332,11 @@ static int __init watchdog_init(void)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner, soft_noboot, soft_margin, soft_panic, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 }

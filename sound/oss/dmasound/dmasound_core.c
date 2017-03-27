@@ -455,7 +455,11 @@ static int sq_setup(struct sound_queue *sq)
 
 	if (sq->locked) { /* are we already set? - and not changeable */
 #ifdef DEBUG_DMASOUND
+#ifdef CONFIG_DEBUG_PRINTK
 printk("dmasound_core: tried to sq_setup a locked queue\n") ;
+#else
+;
+#endif
 #endif
 		return -EINVAL ;
 	}
@@ -508,7 +512,11 @@ printk("dmasound_core: tried to sq_setup a locked queue\n") ;
 		/* let's just check for obvious mistakes */
 		if ( sq->block_size <= 0 || sq->block_size > sq->bufSize) {
 #ifdef DEBUG_DMASOUND
+#ifdef CONFIG_DEBUG_PRINTK
 printk("dmasound_core: invalid frag size (user set %d)\n", sq->user_frag_size) ;
+#else
+;
+#endif
 #endif
 			sq->block_size = sq->bufSize ;
 		}
@@ -519,7 +527,11 @@ printk("dmasound_core: invalid frag size (user set %d)\n", sq->user_frag_size) ;
 				sq->max_active : sq->max_count ;
 		} else {
 #ifdef DEBUG_DMASOUND
+#ifdef CONFIG_DEBUG_PRINTK
 printk("dmasound_core: invalid frag count (user set %d)\n", sq->user_frags) ;
+#else
+;
+#endif
 #endif
 			sq->max_count =
 			sq->max_active = sq->numBufs ;
@@ -854,7 +866,11 @@ static int sq_fsync(struct file *filp, struct dentry *dentry)
 			break;
 		}
 		if (!--timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "dmasound: Timeout draining output\n");
+#else
+			;
+#endif
 			sq_reset_output();
 			rc = -EIO;
 			break;
@@ -947,7 +963,11 @@ static int set_queue_frags(struct sound_queue *sq, int bufs, int size)
 {
 	if (sq->locked) {
 #ifdef DEBUG_DMASOUND
+#ifdef CONFIG_DEBUG_PRINTK
 printk("dmasound_core: tried to set_queue_frags on a locked queue\n") ;
+#else
+;
+#endif
 #endif
 		return -EINVAL ;
 	}
@@ -1321,7 +1341,11 @@ static int state_open(struct inode *inode, struct file *file)
 		write_sq.count, write_sq.rear_size, write_sq.active,
 		write_sq.busy, write_sq.syncing, write_sq.locked, write_sq.xruns) ;
 #ifdef DEBUG_DMASOUND
+#ifdef CONFIG_DEBUG_PRINTK
 printk("dmasound: stat buffer used %d bytes\n", len) ;
+#else
+;
+#endif
 #endif
 
 	if (len >= STAT_BUFF_LEN)
@@ -1413,15 +1437,27 @@ int dmasound_init(void)
 	irq_installed = 1;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s DMA sound driver rev %03d installed\n",
 		dmasound.mach.name, (DMASOUND_CORE_REVISION<<4) +
 		((dmasound.mach.version>>8) & 0x0f));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"Core driver edition %02d.%02d : %s driver edition %02d.%02d\n",
 		DMASOUND_CORE_REVISION, DMASOUND_CORE_EDITION, dmasound.mach.name2,
 		(dmasound.mach.version >> 8), (dmasound.mach.version & 0xff)) ;
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Write will use %4d fragments of %7d bytes as default\n",
 		numWriteBufs, writeBufSize) ;
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1462,13 +1498,21 @@ static int dmasound_setup(char *str)
 	switch (ints[0]) {
 	case 3:
 		if ((ints[3] < 0) || (ints[3] > MAX_CATCH_RADIUS))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dmasound_setup: invalid catch radius, using default = %d\n", catchRadius);
+#else
+			;
+#endif
 		else
 			catchRadius = ints[3];
 		/* fall through */
 	case 2:
 		if (ints[1] < MIN_BUFFERS)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dmasound_setup: invalid number of buffers, using default = %d\n", numWriteBufs);
+#else
+			;
+#endif
 		else
 			numWriteBufs = ints[1];
 		/* fall through */
@@ -1476,13 +1520,21 @@ static int dmasound_setup(char *str)
 		if ((size = ints[2]) < 256) /* check for small buffer specs */
 			size <<= 10 ;
                 if (size < MIN_BUFSIZE || size > MAX_BUFSIZE)
+#ifdef CONFIG_DEBUG_PRINTK
                         printk("dmasound_setup: invalid write buffer size, using default = %d\n", writeBufSize);
+#else
+                        ;
+#endif
                 else
                         writeBufSize = size;
 	case 0:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dmasound_setup: invalid number of arguments\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	return 1;

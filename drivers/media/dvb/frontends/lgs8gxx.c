@@ -31,10 +31,14 @@
 #include "lgs8gxx.h"
 #include "lgs8gxx_priv.h"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_DEBUG "lgs8gxx: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 static int debug;
@@ -60,13 +64,21 @@ static int lgs8gxx_write_reg(struct lgs8gxx_state *priv, u8 reg, u8 data)
 		msg.addr += 0x02;
 
 	if (debug >= 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: reg=0x%02X, data=0x%02X\n", __func__, reg, data);
+#else
+		d;
+#endif
 
 	ret = i2c_transfer(priv->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
 			__func__, reg, data, ret);
+#else
+		d;
+#endif
 
 	return (ret != 1) ? -1 : 0;
 }
@@ -90,13 +102,21 @@ static int lgs8gxx_read_reg(struct lgs8gxx_state *priv, u8 reg, u8 *p_data)
 
 	ret = i2c_transfer(priv->i2c, msg, 2);
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: error reg=0x%x, ret=%i\n", __func__, reg, ret);
+#else
+		d;
+#endif
 		return -1;
 	}
 
 	*p_data = b1[0];
 	if (debug >= 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: reg=0x%02X, data=0x%02X\n", __func__, reg, b1[0]);
+#else
+		d;
+#endif
 	return 0;
 }
 
@@ -165,12 +185,24 @@ static int lgs8gxx_set_if_freq(struct lgs8gxx_state *priv, u32 freq /*in kHz*/)
 		if (if_clk != 0)
 			do_div(val, if_clk);
 		v32 = val & 0xFFFFFFFF;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Set IF Freq to %dkHz\n", freq);
+#else
+		d;
+#endif
 	} else {
 		v32 = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Set IF Freq to baseband\n");
+#else
+		d;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("AFC_INIT_FREQ = 0x%08X\n", v32);
+#else
+	d;
+#endif
 
 	if (priv->config->prod == LGS8GXX_PROD_LGS8G75) {
 		lgs8gxx_write_reg(priv, 0x08, 0xFF & (v32));
@@ -209,7 +241,11 @@ static int lgs8gxx_get_afc_phase(struct lgs8gxx_state *priv)
 	val = v32;
 	val *= priv->config->if_clk_freq;
 	val >>= 32;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("AFC = %u kHz\n", (u32)val);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -376,11 +412,23 @@ static int lgs8gxx_autolock_gi(struct lgs8gxx_state *priv, u8 gi, u8 cpn,
 	u8 t1, t2;
 
 	if (gi == GI_945)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("try GI 945\n");
+#else
+		d;
+#endif
 	else if (gi == GI_595)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("try GI 595\n");
+#else
+		d;
+#endif
 	else if (gi == GI_420)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("try GI 420\n");
+#else
+		d;
+#endif
 	if (priv->config->prod == LGS8GXX_PROD_LGS8G75) {
 		lgs8gxx_read_reg(priv, 0x0C, &t1);
 		lgs8gxx_read_reg(priv, 0x18, &t2);
@@ -401,7 +449,11 @@ static int lgs8gxx_autolock_gi(struct lgs8gxx_state *priv, u8 gi, u8 cpn,
 	if (err != 0)
 		return err;
 	if (ad_fini) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("auto detect finished\n");
+#else
+		d;
+#endif
 	} else
 		*locked = 0;
 
@@ -415,7 +467,11 @@ static int lgs8gxx_auto_detect(struct lgs8gxx_state *priv,
 	int err = 0;
 	u8 locked = 0, tmp_gi;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lgs8gxx_set_mode_auto(priv);
 	if (priv->config->prod == LGS8GXX_PROD_LGS8G75) {
@@ -464,11 +520,23 @@ locked:
 		}
 
 		if (tmp_gi == GI_945)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("GI 945 locked\n");
+#else
+			d;
+#endif
 		else if (tmp_gi == GI_595)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("GI 595 locked\n");
+#else
+			d;
+#endif
 		else if (tmp_gi == GI_420)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("GI 420 locked\n");
+#else
+			d;
+#endif
 		*gi = tmp_gi;
 	}
 	if (!locked)
@@ -487,9 +555,17 @@ static void lgs8gxx_auto_lock(struct lgs8gxx_state *priv)
 	err = lgs8gxx_auto_detect(priv, &detected_param, &gi);
 
 	if (err != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("lgs8gxx_auto_detect failed\n");
+#else
+		d;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("detected param = 0x%02X\n", detected_param);
+#else
+		d;
+#endif
 
 	/* Apply detected parameters */
 	if (priv->config->prod == LGS8GXX_PROD_LGS8913) {
@@ -627,10 +703,18 @@ static int lgs8gxx_init(struct dvb_frontend *fe)
 	const struct lgs8gxx_config *config = priv->config;
 	u8 data = 0;
 	s8 err;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lgs8gxx_read_reg(priv, 0, &data);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("reg 0 = 0x%02X\n", data);
+#else
+	d;
+#endif
 
 	if (config->prod == LGS8GXX_PROD_LGS8G75)
 		lgs8g75_set_adc_vpp(priv, config->adc_vpp);
@@ -653,7 +737,11 @@ static int lgs8gxx_init(struct dvb_frontend *fe)
 static void lgs8gxx_release(struct dvb_frontend *fe)
 {
 	struct lgs8gxx_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	kfree(state);
 }
@@ -674,7 +762,11 @@ static int lgs8gxx_set_fe(struct dvb_frontend *fe,
 {
 	struct lgs8gxx_state *priv = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* set frequency */
 	if (fe->ops.tuner_ops.set_params) {
@@ -694,7 +786,11 @@ static int lgs8gxx_set_fe(struct dvb_frontend *fe,
 static int lgs8gxx_get_fe(struct dvb_frontend *fe,
 			  struct dvb_frontend_parameters *fe_params)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* TODO: get real readings from device */
 	/* inversion status */
@@ -737,7 +833,11 @@ static int lgs8gxx_read_status(struct dvb_frontend *fe, fe_status_t *fe_status)
 	s8 ret;
 	u8 t, locked = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 	*fe_status = 0;
 
 	lgs8gxx_get_afc_phase(priv);
@@ -753,7 +853,11 @@ static int lgs8gxx_read_status(struct dvb_frontend *fe, fe_status_t *fe_status)
 	if (ret != 0)
 		return -EIO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Reg 0x4B: 0x%02X\n", t);
+#else
+	d;
+#endif
 
 	*fe_status = 0;
 	if (priv->config->prod == LGS8GXX_PROD_LGS8913) {
@@ -769,7 +873,11 @@ static int lgs8gxx_read_status(struct dvb_frontend *fe, fe_status_t *fe_status)
 	}
 
 	/* success */
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: fe_status=0x%x\n", __func__, *fe_status);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -778,7 +886,11 @@ static int lgs8gxx_read_signal_agc(struct lgs8gxx_state *priv, u16 *signal)
 	u16 v;
 	u8 agc_lvl[2], cat;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 	lgs8gxx_read_reg(priv, 0x3F, &agc_lvl[0]);
 	lgs8gxx_read_reg(priv, 0x3E, &agc_lvl[1]);
 
@@ -786,7 +898,11 @@ static int lgs8gxx_read_signal_agc(struct lgs8gxx_state *priv, u16 *signal)
 	v <<= 8;
 	v |= agc_lvl[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("agc_lvl: 0x%04X\n", v);
+#else
+	d;
+#endif
 
 	if (v < 0x100)
 		cat = 0;
@@ -815,7 +931,11 @@ static int lgs8913_read_signal_strength(struct lgs8gxx_state *priv, u16 *signal)
 	u8 str;
 	u16 i, gi = priv->curr_gi;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	ret = lgs8gxx_read_reg(priv, 0x4B, &t);
 	if (ret != 0)
@@ -823,14 +943,22 @@ static int lgs8913_read_signal_strength(struct lgs8gxx_state *priv, u16 *signal)
 
 	if (fake_signal_str) {
 		if ((t & 0xC0) == 0xC0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("Fake signal strength\n");
+#else
+			d;
+#endif
 			*signal = 0x7FFF;
 		} else
 			*signal = 0;
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("gi = %d\n", gi);
+#else
+	d;
+#endif
 	for (i = 0; i < gi; i++) {
 
 		if ((i & 0xFF) == 0)
@@ -843,10 +971,18 @@ static int lgs8913_read_signal_strength(struct lgs8gxx_state *priv, u16 *signal)
 	}
 
 	*signal = max_strength;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: signal=0x%02X\n", __func__, *signal);
+#else
+	d;
+#endif
 
 	lgs8gxx_read_reg(priv, 0x95, &t);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: AVG Noise=0x%02X\n", __func__, t);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -856,7 +992,11 @@ static int lgs8g75_read_signal_strength(struct lgs8gxx_state *priv, u16 *signal)
 	u8 t;
 	s16 v = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lgs8gxx_read_reg(priv, 0xB1, &t);
 	v |= t;
@@ -865,7 +1005,11 @@ static int lgs8g75_read_signal_strength(struct lgs8gxx_state *priv, u16 *signal)
 	v |= t;
 
 	*signal = v;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: signal=0x%02X\n", __func__, *signal);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -892,10 +1036,18 @@ static int lgs8gxx_read_snr(struct dvb_frontend *fe, u16 *snr)
 		lgs8gxx_read_reg(priv, 0x34, &t);
 	else
 		lgs8gxx_read_reg(priv, 0x95, &t);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("AVG Noise=0x%02X\n", t);
+#else
+	d;
+#endif
 	*snr = 256 - t;
 	*snr <<= 8;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("snr=0x%x\n", *snr);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -903,7 +1055,11 @@ static int lgs8gxx_read_snr(struct dvb_frontend *fe, u16 *snr)
 static int lgs8gxx_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
 	*ucblocks = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ucblocks=0x%x\n", __func__, *ucblocks);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -947,7 +1103,11 @@ static int lgs8gxx_read_ber(struct dvb_frontend *fe, u32 *ber)
 	u32 total_cnt = 0, err_cnt = 0;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	packet_counter_start(priv);
 	msleep(200);
@@ -969,14 +1129,22 @@ static int lgs8gxx_read_ber(struct dvb_frontend *fe, u32 *ber)
 		lgs8gxx_read_reg(priv, reg_err+3-i, &t);
 		err_cnt |= t;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("error=%d total=%d\n", err_cnt, total_cnt);
+#else
+	d;
+#endif
 
 	if (total_cnt == 0)
 		*ber = 0;
 	else
 		*ber = err_cnt * 100 / total_cnt;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ber=0x%x\n", __func__, *ber);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1030,7 +1198,11 @@ struct dvb_frontend *lgs8gxx_attach(const struct lgs8gxx_config *config,
 	struct lgs8gxx_state *priv = NULL;
 	u8 data = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (config == NULL || i2c == NULL)
 		return NULL;
@@ -1044,8 +1216,12 @@ struct dvb_frontend *lgs8gxx_attach(const struct lgs8gxx_config *config,
 
 	/* check if the demod is there */
 	if (lgs8gxx_read_reg(priv, 0, &data) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s lgs8gxx not found at i2c addr 0x%02X\n",
 			__func__, priv->config->demod_address);
+#else
+		d;
+#endif
 		goto error_out;
 	}
 
@@ -1061,7 +1237,11 @@ struct dvb_frontend *lgs8gxx_attach(const struct lgs8gxx_config *config,
 	return &priv->frontend;
 
 error_out:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() error_out\n", __func__);
+#else
+	d;
+#endif
 	kfree(priv);
 	return NULL;
 

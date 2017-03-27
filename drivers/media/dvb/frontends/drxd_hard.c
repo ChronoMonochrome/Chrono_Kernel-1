@@ -1505,17 +1505,29 @@ static int SetDeviceTypeId(struct drxd_state *state)
 		status = Read16(state, CC_REG_JTAGID_L__A, &deviceId, 0);
 		if (status < 0)
 			break;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "drxd: deviceId = %04x\n", deviceId);
+#else
+		;
+#endif
 
 		state->type_A = 0;
 		state->PGA = 0;
 		state->diversity = 0;
 		if (deviceId == 0) {	/* on A2 only 3975 available */
 			state->type_A = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "DRX3975D-A2\n");
+#else
+			;
+#endif
 		} else {
 			deviceId >>= 12;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "DRX397%dD-B1\n", deviceId);
+#else
+			;
+#endif
 			switch (deviceId) {
 			case 4:
 				state->diversity = 1;
@@ -1648,7 +1660,11 @@ static int CorrectSysClockDeviation(struct drxd_state *state)
 					   (state->expected_sys_clock_freq));
 
 		Diff = oscClockDeviation - state->osc_clock_deviation;
+#ifdef CONFIG_DEBUG_PRINTK
 		/*printk(KERN_INFO "sysclockdiff=%d\n", Diff); */
+#else
+		/*;
+#endif
 		if (Diff >= -200 && Diff <= 200) {
 			state->sys_clock_freq = (u16) sysClockFreq;
 			if (oscClockDeviation != state->osc_clock_deviation) {

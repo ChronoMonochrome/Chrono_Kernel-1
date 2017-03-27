@@ -113,9 +113,13 @@ static int physmap_flash_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, info);
 
 	for (i = 0; i < dev->num_resources; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "physmap platform flash device: %.8llx at %.8llx\n",
 		       (unsigned long long)resource_size(&dev->resource[i]),
 		       (unsigned long long)dev->resource[i].start);
+#else
+		;
+#endif
 
 		if (!devm_request_mem_region(&dev->dev,
 			dev->resource[i].start,
@@ -184,7 +188,11 @@ static int physmap_flash_probe(struct platform_device *dev)
 	}
 
 	if (physmap_data->nr_parts) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Using physmap partition information\n");
+#else
+		;
+#endif
 		mtd_device_register(info->cmtd, physmap_data->parts,
 				    physmap_data->nr_parts);
 		return 0;

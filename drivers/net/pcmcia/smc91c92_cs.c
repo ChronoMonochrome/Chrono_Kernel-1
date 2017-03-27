@@ -1037,7 +1037,7 @@ static void smc_dump(struct net_device *dev)
     save = inw(ioaddr + BANK_SELECT);
     for (w = 0; w < 4; w++) {
 	SMC_SELECT_BANK(w);
-	netdev_printk(KERN_DEBUG, dev, "bank %d: ", w);
+;
 	for (i = 0; i < 14; i += 2)
 	    pr_cont(" %04x", inw(ioaddr + i));
 	pr_cont("\n");
@@ -1214,8 +1214,8 @@ static netdev_tx_t smc_start_xmit(struct sk_buff *skb,
     if (smc->saved_skb) {
 	/* THIS SHOULD NEVER HAPPEN. */
 	dev->stats.tx_aborted_errors++;
-	netdev_printk(KERN_DEBUG, dev,
-		      "Internal error -- sent packet while busy\n");
+//	netdev_printk(KERN_DEBUG, dev,
+;
 	return NETDEV_TX_BUSY;
     }
     smc->saved_skb = skb;

@@ -297,7 +297,7 @@ static int fast_reg_read_chunks(struct svcxprt_rdma *xprt,
 	return ch_no;
 
  fatal_err:
-	printk("svcrdma: error fast registering xdr for xprt %p", xprt);
+;
 	svc_rdma_put_frmr(xprt, frmr);
 	return -EIO;
 }
@@ -494,8 +494,8 @@ next_sge:
 		/* Post the read */
 		err = svc_rdma_send(xprt, &read_wr);
 		if (err) {
-			printk(KERN_ERR "svcrdma: Error %d posting RDMA_READ\n",
-			       err);
+//			printk(KERN_ERR "svcrdma: Error %d posting RDMA_READ\n",
+;
 			set_bit(XPT_CLOSE, &xprt->sc_xprt.xpt_flags);
 			svc_rdma_unmap_dma(ctxt);
 			svc_rdma_put_context(ctxt, 0);
@@ -568,10 +568,10 @@ static int rdma_read_complete(struct svc_rqst *rqstp,
 	ret = rqstp->rq_arg.head[0].iov_len
 		+ rqstp->rq_arg.page_len
 		+ rqstp->rq_arg.tail[0].iov_len;
-	dprintk("svcrdma: deferred read ret=%d, rq_arg.len =%d, "
-		"rq_arg.head[0].iov_base=%p, rq_arg.head[0].iov_len = %zd\n",
-		ret, rqstp->rq_arg.len,	rqstp->rq_arg.head[0].iov_base,
-		rqstp->rq_arg.head[0].iov_len);
+//	dprintk("svcrdma: deferred read ret=%d, rq_arg.len =%d, "
+//		"rq_arg.head[0].iov_base=%p, rq_arg.head[0].iov_len = %zd\n",
+//		ret, rqstp->rq_arg.len,	rqstp->rq_arg.head[0].iov_base,
+;
 
 	return ret;
 }
@@ -591,7 +591,7 @@ int svc_rdma_recvfrom(struct svc_rqst *rqstp)
 	int ret = 0;
 	int len;
 
-	dprintk("svcrdma: rqstp=%p\n", rqstp);
+;
 
 	spin_lock_bh(&rdma_xprt->sc_rq_dto_lock);
 	if (!list_empty(&rdma_xprt->sc_read_complete_q)) {
@@ -628,8 +628,8 @@ int svc_rdma_recvfrom(struct svc_rqst *rqstp)
 		BUG_ON(ret);
 		goto out;
 	}
-	dprintk("svcrdma: processing ctxt=%p on xprt=%p, rqstp=%p, status=%d\n",
-		ctxt, rdma_xprt, rqstp, ctxt->wc_status);
+//	dprintk("svcrdma: processing ctxt=%p on xprt=%p, rqstp=%p, status=%d\n",
+;
 	BUG_ON(ctxt->wc_status != IB_WC_SUCCESS);
 	atomic_inc(&rdma_stat_recv);
 
@@ -664,11 +664,11 @@ int svc_rdma_recvfrom(struct svc_rqst *rqstp)
 		+ rqstp->rq_arg.tail[0].iov_len;
 	svc_rdma_put_context(ctxt, 0);
  out:
-	dprintk("svcrdma: ret = %d, rq_arg.len =%d, "
-		"rq_arg.head[0].iov_base=%p, rq_arg.head[0].iov_len = %zd\n",
-		ret, rqstp->rq_arg.len,
-		rqstp->rq_arg.head[0].iov_base,
-		rqstp->rq_arg.head[0].iov_len);
+//	dprintk("svcrdma: ret = %d, rq_arg.len =%d, "
+//		"rq_arg.head[0].iov_base=%p, rq_arg.head[0].iov_len = %zd\n",
+//		ret, rqstp->rq_arg.len,
+//		rqstp->rq_arg.head[0].iov_base,
+;
 	rqstp->rq_prot = IPPROTO_MAX;
 	svc_xprt_copy_addrs(rqstp, xprt);
 	return ret;
@@ -676,7 +676,7 @@ int svc_rdma_recvfrom(struct svc_rqst *rqstp)
  close_out:
 	if (ctxt)
 		svc_rdma_put_context(ctxt, 1);
-	dprintk("svcrdma: transport %p is closing\n", xprt);
+;
 	/*
 	 * Set the close bit and enqueue it. svc_recv will see the
 	 * close bit and call svc_xprt_delete

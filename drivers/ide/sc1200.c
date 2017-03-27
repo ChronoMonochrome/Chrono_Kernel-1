@@ -177,8 +177,12 @@ static int sc1200_dma_end(ide_drive_t *drive)
 	dma_stat = inb(dma_base+2);		/* get DMA status */
 
 	if (!(dma_stat & 4))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" ide_dma_end dma_stat=%0x err=%x newerr=%x\n",
 		  dma_stat, ((dma_stat&7)!=4), ((dma_stat&2)==2));
+#else
+		;
+#endif
 
 	outb(dma_stat|0x1b, dma_base+2);	/* clear the INTR & ERROR bits */
 	outb(inb(dma_base)&~1, dma_base);	/* !! DO THIS HERE !! stop DMA */
@@ -211,7 +215,11 @@ static void sc1200_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 		case 102: mode = XFER_MW_DMA_2;	break;
 	}
 	if (mode != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SC1200: %s: changing (U)DMA mode\n", drive->name);
+#else
+		;
+#endif
 		ide_dma_off_quietly(drive);
 		if (ide_set_dma_mode(drive, mode) == 0 &&
 		    (drive->dev_flags & IDE_DFLAG_USING_DMA))
@@ -229,7 +237,11 @@ struct sc1200_saved_state {
 
 static int sc1200_suspend (struct pci_dev *dev, pm_message_t state)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("SC1200: suspend(%u)\n", state.event);
+#else
+	;
+#endif
 
 	/*
 	 * we only save state when going from full power to less

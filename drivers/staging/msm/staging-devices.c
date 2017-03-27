@@ -161,7 +161,7 @@ static void __init qsd8x50_allocate_memory_regions(void)
 
 	addr = alloc_bootmem(size); // (void *)MSM_FB_BASE;
 	if (!addr)
-		printk("Failed to allocate bootmem for framebuffer\n");
+;
 
 
 	msm_fb_resources[0].start = __pa(addr);
@@ -265,7 +265,7 @@ void __init msm_fb_register_device(char *name, void *data)
 	if (!strncmp(name, "lcdc", 4))
 		msm_register_device(&msm_lcdc_device, data);
 	/*else
-		printk(KERN_ERR "%s: unknown device! %s\n", __func__, name);
+;
 */
 }
 
@@ -286,8 +286,8 @@ static void __init msm_fb_add_devices(void)
 			msm_fb_st15_gpio_config_data,
 			ARRAY_SIZE(msm_fb_st15_gpio_config_data));
 		if (rc) {
-			printk(KERN_ERR "%s: unable to init lcdc gpios\n",
-			       __func__);
+//			printk(KERN_ERR "%s: unable to init lcdc gpios\n",
+;
 			return;
 		}
 		msm_fb_register_device("lcdc", &lcdc_pdata);

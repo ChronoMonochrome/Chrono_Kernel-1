@@ -213,10 +213,18 @@ static void sc520cdp_setup_par(void)
 		}
 		if(j == NUM_SC520_PAR)
 		{	/* no matching PAR found: try default BIOS address */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Could not find PAR responsible for %s\n",
 				sc520cdp_map[i].name);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Trying default address 0x%lx\n",
 				par_table[i].default_address);
+#else
+			;
+#endif
 			sc520cdp_map[i].phys = par_table[i].default_address;
 		}
 	}
@@ -235,14 +243,22 @@ static int __init init_sc520cdp(void)
 #endif
 
 	for (i = 0; i < NUM_FLASH_BANKS; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "SC520 CDP flash device: 0x%Lx at 0x%Lx\n",
 			(unsigned long long)sc520cdp_map[i].size,
 			(unsigned long long)sc520cdp_map[i].phys);
+#else
+		;
+#endif
 
 		sc520cdp_map[i].virt = ioremap_nocache(sc520cdp_map[i].phys, sc520cdp_map[i].size);
 
 		if (!sc520cdp_map[i].virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Failed to ioremap_nocache\n");
+#else
+			;
+#endif
 			return -EIO;
 		}
 

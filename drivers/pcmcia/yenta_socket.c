@@ -712,10 +712,14 @@ static int yenta_allocate_res(struct yenta_socket *socket, int nr, unsigned type
 		pcibios_bus_to_resource(dev, res, &region);
 		if (pci_claim_resource(dev, PCI_BRIDGE_RESOURCES + nr) == 0)
 			return 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &dev->dev,
 			   "Preassigned resource %d busy or not available, "
 			   "reconfiguring...\n",
 			   nr);
+#else
+		dev_;
+#endif
 	}
 
 	if (type & IORESOURCE_IO) {
@@ -738,9 +742,13 @@ static int yenta_allocate_res(struct yenta_socket *socket, int nr, unsigned type
 			return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &dev->dev,
 		   "no resource of type %x available, trying to continue...\n",
 		   type);
+#else
+	dev_;
+#endif
 	res->start = res->end = res->flags = 0;
 	return 0;
 }
@@ -979,8 +987,12 @@ static int yenta_probe_cb_irq(struct yenta_socket *socket)
 	socket->probe_status = 0;
 
 	if (request_irq(socket->cb_irq, yenta_probe_handler, IRQF_SHARED, "yenta", socket)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &socket->dev->dev,
 			   "request_irq() in yenta_probe_cb_irq() failed!\n");
+#else
+		dev_;
+#endif
 		return -1;
 	}
 
@@ -1019,9 +1031,13 @@ static void yenta_get_socket_capabilities(struct yenta_socket *socket, u32 isa_i
 	else
 		socket->socket.irq_mask = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &socket->dev->dev,
 		   "ISA IRQ mask 0x%04x, PCI irq %d\n",
 		   socket->socket.irq_mask, socket->cb_irq);
+#else
+	dev_;
+#endif
 }
 
 /*
@@ -1111,9 +1127,13 @@ static void yenta_fixup_parent_bridge(struct pci_bus *cardbus_bridge)
 
 	/* Show that the wanted subordinate number is not possible: */
 	if (cardbus_bridge->subordinate > upper_limit)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &cardbus_bridge->dev,
 			   "Upper limit for fixing this "
 			   "bridge's parent bridge: #%02x\n", upper_limit);
+#else
+		dev_;
+#endif
 
 	/* If we have room to increase the bridge's subordinate number, */
 	if (bridge_to_fix->subordinate < upper_limit) {
@@ -1122,11 +1142,15 @@ static void yenta_fixup_parent_bridge(struct pci_bus *cardbus_bridge)
 		unsigned char subordinate_to_assign =
 			min(cardbus_bridge->subordinate, upper_limit);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &bridge_to_fix->dev,
 			   "Raising subordinate bus# of parent "
 			   "bus (#%02x) from #%02x to #%02x\n",
 			   bridge_to_fix->number,
 			   bridge_to_fix->subordinate, subordinate_to_assign);
+#else
+		dev_;
+#endif
 
 		/* Save the new subordinate in the bus struct of the bridge */
 		bridge_to_fix->subordinate = subordinate_to_assign;
@@ -1208,8 +1232,12 @@ static int __devinit yenta_probe(struct pci_dev *dev, const struct pci_device_id
 	 * report the subsystem vendor and device for help debugging
 	 * the irq stuff...
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &dev->dev, "CardBus bridge found [%04x:%04x]\n",
 		   dev->subsystem_vendor, dev->subsystem_device);
+#else
+	dev_;
+#endif
 
 	yenta_config_init(socket);
 
@@ -1241,12 +1269,20 @@ static int __devinit yenta_probe(struct pci_dev *dev, const struct pci_device_id
 		socket->poll_timer.data = (unsigned long)socket;
 		socket->poll_timer.expires = jiffies + HZ;
 		add_timer(&socket->poll_timer);
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &dev->dev,
 			   "no PCI IRQ, CardBus support disabled for this "
 			   "socket.\n");
+#else
+		dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &dev->dev,
 			   "check your BIOS CardBus, BIOS IRQ or ACPI "
 			   "settings.\n");
+#else
+		dev_;
+#endif
 	} else {
 		socket->socket.features |= SS_CAP_CARDBUS;
 	}
@@ -1254,8 +1290,12 @@ static int __devinit yenta_probe(struct pci_dev *dev, const struct pci_device_id
 	/* Figure out what the dang thing can do for the PCMCIA layer... */
 	yenta_interrogate(socket);
 	yenta_get_socket_capabilities(socket, isa_interrupts);
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &dev->dev,
 		   "Socket status: %08x\n", cb_readl(socket, CB_SOCKET_STATE));
+#else
+	dev_;
+#endif
 
 	yenta_fixup_parent_bridge(dev->subordinate);
 

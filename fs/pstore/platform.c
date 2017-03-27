@@ -261,8 +261,8 @@ out:
 	mutex_unlock(&psi->read_mutex);
 
 	if (failed)
-		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
-		       failed, psi->name);
+//		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
+;
 }
 
 static void pstore_dowork(struct work_struct *work)

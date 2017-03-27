@@ -39,8 +39,12 @@ static int __devinit spi_pci_probe(struct pci_dev *pdev,
 	int pci_bar = 0;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DW: found PCI SPI controller(ID: %04x:%04x)\n",
 		pdev->vendor, pdev->device);
+#else
+	;
+#endif
 
 	ret = pci_enable_device(pdev);
 	if (ret)

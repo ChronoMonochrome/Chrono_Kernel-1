@@ -962,9 +962,13 @@ void pci_restore_state(struct pci_dev *dev)
 	for (i = 15; i >= 0; i--) {
 		pci_read_config_dword(dev, i * 4, &val);
 		if (val != dev->saved_config_space[i]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
 				"space at offset %#x (was %#x, writing %#x)\n",
 				i, val, (int)dev->saved_config_space[i]);
+#else
+			dev_;
+#endif
 			pci_write_config_dword(dev,i * 4,
 				dev->saved_config_space[i]);
 		}
@@ -1529,8 +1533,12 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
 	}
 
 out:
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
 			enable ? "enabled" : "disabled");
+#else
+	dev_;
+#endif
 }
 
 /**
@@ -1804,13 +1812,18 @@ void pci_pm_init(struct pci_dev *dev)
 			dev->d2_support = true;
 
 		if (dev->d1_support || dev->d2_support)
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_DEBUG, &dev->dev, "supports%s%s\n",
 				   dev->d1_support ? " D1" : "",
 				   dev->d2_support ? " D2" : "");
+#else
+			dev_;
+#endif
 	}
 
 	pmc &= PCI_PM_CAP_PME_MASK;
 	if (pmc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &dev->dev,
 			 "PME# supported from%s%s%s%s%s\n",
 			 (pmc & PCI_PM_CAP_PME_D0) ? " D0" : "",
@@ -1818,6 +1831,9 @@ void pci_pm_init(struct pci_dev *dev)
 			 (pmc & PCI_PM_CAP_PME_D2) ? " D2" : "",
 			 (pmc & PCI_PM_CAP_PME_D3) ? " D3hot" : "",
 			 (pmc & PCI_PM_CAP_PME_D3cold) ? " D3cold" : "");
+#else
+		dev_;
+#endif
 		dev->pme_support = pmc >> PCI_PM_CAP_PME_SHIFT;
 		/*
 		 * Make device's PM flags reflect the wake-up capability, but
@@ -2640,8 +2656,12 @@ int pci_set_cacheline_size(struct pci_dev *dev)
 	if (cacheline_size == pci_cache_line_size)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev, "cache line size of %d is not "
 		   "supported\n", pci_cache_line_size << 2);
+#else
+	dev_;
+#endif
 
 	return -EINVAL;
 }

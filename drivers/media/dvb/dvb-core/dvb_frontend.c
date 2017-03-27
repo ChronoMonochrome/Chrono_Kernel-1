@@ -342,10 +342,14 @@ static int dvb_frontend_swzigzag_autotune(struct dvb_frontend *fe, int check_wra
 		return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: drift:%i inversion:%i auto_step:%i "
 		"auto_sub_step:%i started_auto_step:%i\n",
 		__func__, fepriv->lnb_drift, fepriv->inversion,
 		fepriv->auto_step, fepriv->auto_sub_step, fepriv->started_auto_step);
+#else
+	d;
+#endif
 
 	/* set the frontend itself */
 	fepriv->parameters_in.frequency += fepriv->lnb_drift;
@@ -543,7 +547,11 @@ static int dvb_frontend_thread(void *data)
 
 	struct dvb_frontend_parameters *params;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	fepriv->check_wrapped = 0;
 	fepriv->quality = 0;
@@ -591,11 +599,19 @@ restart:
 			algo = fe->ops.get_frontend_algo(fe);
 			switch (algo) {
 			case DVBFE_ALGO_HW:
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_HW\n", __func__);
+#else
+				d;
+#endif
 				params = NULL; /* have we been asked to RETUNE ? */
 
 				if (fepriv->state & FESTATE_RETUNE) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("%s: Retune requested, FESTATE_RETUNE\n", __func__);
+#else
+					d;
+#endif
 					params = &fepriv->parameters_in;
 					fepriv->state = FESTATE_TUNED;
 				}
@@ -606,19 +622,35 @@ restart:
 					fepriv->parameters_out = *params;
 
 				if (s != fepriv->status && !(fepriv->tune_mode_flags & FE_TUNE_MODE_ONESHOT)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("%s: state changed, adding current state\n", __func__);
+#else
+					d;
+#endif
 					dvb_frontend_add_event(fe, s);
 					fepriv->status = s;
 				}
 				break;
 			case DVBFE_ALGO_SW:
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_SW\n", __func__);
+#else
+				d;
+#endif
 				dvb_frontend_swzigzag(fe);
 				break;
 			case DVBFE_ALGO_CUSTOM:
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_CUSTOM, state=%d\n", __func__, fepriv->state);
+#else
+				d;
+#endif
 				if (fepriv->state & FESTATE_RETUNE) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("%s: Retune requested, FESTAT_RETUNE\n", __func__);
+#else
+					d;
+#endif
 					fepriv->state = FESTATE_TUNED;
 				}
 				/* Case where we are going to search for a carrier
@@ -657,7 +689,11 @@ restart:
 				}
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: UNDEFINED ALGO !\n", __func__);
+#else
+				d;
+#endif
 				break;
 			}
 		} else {
@@ -709,8 +745,12 @@ static void dvb_frontend_stop(struct dvb_frontend *fe)
 
 	/* paranoia check in case a signal arrived */
 	if (fepriv->thread)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_frontend_stop: warning: thread %p won't exit\n",
 				fepriv->thread);
+#else
+		;
+#endif
 }
 
 s32 timeval_usec_diff(struct timeval lasttime, struct timeval curtime)
@@ -785,7 +825,11 @@ static int dvb_frontend_start(struct dvb_frontend *fe)
 		"kdvb-ad-%i-fe-%i", fe->dvb->num,fe->id);
 	if (IS_ERR(fe_thread)) {
 		ret = PTR_ERR(fe_thread);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_frontend_start: failed to start kthread (%d)\n", ret);
+#else
+		;
+#endif
 		up(&fepriv->sem);
 		return ret;
 	}
@@ -806,8 +850,12 @@ static void dvb_frontend_get_frequency_limits(struct dvb_frontend *fe,
 		*freq_max = min(fe->ops.info.frequency_max, fe->ops.tuner_ops.info.frequency_max);
 
 	if (*freq_min == 0 || *freq_max == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DVB: adapter %i frontend %u frequency limits undefined - fix the driver\n",
 		       fe->dvb->num,fe->id);
+#else
+		;
+#endif
 }
 
 static int dvb_frontend_check_parameters(struct dvb_frontend *fe,
@@ -820,8 +868,12 @@ static int dvb_frontend_check_parameters(struct dvb_frontend *fe,
 	dvb_frontend_get_frequency_limits(fe, &freq_min, &freq_max);
 	if ((freq_min && parms->frequency < freq_min) ||
 	    (freq_max && parms->frequency > freq_max)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DVB: adapter %i frontend %i frequency %u out of range (%u..%u)\n",
 		       fe->dvb->num, fe->id, parms->frequency, freq_min, freq_max);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -831,9 +883,13 @@ static int dvb_frontend_check_parameters(struct dvb_frontend *fe,
 		     parms->u.qpsk.symbol_rate < fe->ops.info.symbol_rate_min) ||
 		    (fe->ops.info.symbol_rate_max &&
 		     parms->u.qpsk.symbol_rate > fe->ops.info.symbol_rate_max)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "DVB: adapter %i frontend %i symbol rate %u out of range (%u..%u)\n",
 			       fe->dvb->num, fe->id, parms->u.qpsk.symbol_rate,
 			       fe->ops.info.symbol_rate_min, fe->ops.info.symbol_rate_max);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 
@@ -842,9 +898,13 @@ static int dvb_frontend_check_parameters(struct dvb_frontend *fe,
 		     parms->u.qam.symbol_rate < fe->ops.info.symbol_rate_min) ||
 		    (fe->ops.info.symbol_rate_max &&
 		     parms->u.qam.symbol_rate > fe->ops.info.symbol_rate_max)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "DVB: adapter %i frontend %i symbol rate %u out of range (%u..%u)\n",
 			       fe->dvb->num, fe->id, parms->u.qam.symbol_rate,
 			       fe->ops.info.symbol_rate_min, fe->ops.info.symbol_rate_max);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 	}
@@ -853,8 +913,12 @@ static int dvb_frontend_check_parameters(struct dvb_frontend *fe,
 	if (fe->ops.info.type == FE_QAM &&
 	    (parms->u.qam.modulation > QAM_AUTO ||
 	     !((1 << (parms->u.qam.modulation + 10)) & fe->ops.info.caps))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DVB: adapter %i frontend %i modulation %u not supported\n",
 		       fe->dvb->num, fe->id, parms->u.qam.modulation);
+#else
+		;
+#endif
 			return -EINVAL;
 	}
 
@@ -982,30 +1046,50 @@ static void dtv_property_dump(struct dtv_property *tvp)
 	int i;
 
 	if (tvp->cmd <= 0 || tvp->cmd > DTV_MAX_COMMAND) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: tvp.cmd = 0x%08x undefined\n",
 			__func__, tvp->cmd);
+#else
+		;
+#endif
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() tvp.cmd    = 0x%08x (%s)\n"
 		,__func__
 		,tvp->cmd
 		,dtv_cmds[ tvp->cmd ].name);
+#else
+	d;
+#endif
 
 	if(dtv_cmds[ tvp->cmd ].buffer) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() tvp.u.buffer.len = 0x%02x\n"
 			,__func__
 			,tvp->u.buffer.len);
+#else
+		d;
+#endif
 
 		for(i = 0; i < tvp->u.buffer.len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s() tvp.u.buffer.data[0x%02x] = 0x%02x\n"
 				,__func__
 				,i
 				,tvp->u.buffer.data[i]);
+#else
+			d;
+#endif
 
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() tvp.u.data = 0x%08x\n", __func__, tvp->u.data);
+#else
+		d;
+#endif
 }
 
 static int is_legacy_delivery_system(fe_delivery_system_t s)
@@ -1085,18 +1169,30 @@ static void dtv_property_legacy_params_sync(struct dvb_frontend *fe)
 
 	switch (fe->ops.info.type) {
 	case FE_QPSK:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Preparing QPSK req\n", __func__);
+#else
+		d;
+#endif
 		p->u.qpsk.symbol_rate = c->symbol_rate;
 		p->u.qpsk.fec_inner = c->fec_inner;
 		break;
 	case FE_QAM:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Preparing QAM req\n", __func__);
+#else
+		d;
+#endif
 		p->u.qam.symbol_rate = c->symbol_rate;
 		p->u.qam.fec_inner = c->fec_inner;
 		p->u.qam.modulation = c->modulation;
 		break;
 	case FE_OFDM:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Preparing OFDM req\n", __func__);
+#else
+		d;
+#endif
 		if (c->bandwidth_hz == 6000000)
 			p->u.ofdm.bandwidth = BANDWIDTH_6_MHZ;
 		else if (c->bandwidth_hz == 7000000)
@@ -1113,7 +1209,11 @@ static void dtv_property_legacy_params_sync(struct dvb_frontend *fe)
 		p->u.ofdm.hierarchy_information = c->hierarchy;
 		break;
 	case FE_ATSC:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Preparing VSB req\n", __func__);
+#else
+		d;
+#endif
 		p->u.vsb.modulation = c->modulation;
 		break;
 	}
@@ -1173,11 +1273,19 @@ static void dtv_property_cache_submit(struct dvb_frontend *fe)
 	 */
 	if(is_legacy_delivery_system(c->delivery_system)) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() legacy, modulation = %d\n", __func__, c->modulation);
+#else
+		d;
+#endif
 		dtv_property_legacy_params_sync(fe);
 
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() adv, modulation = %d\n", __func__, c->modulation);
+#else
+		d;
+#endif
 
 		/* For advanced delivery systems / modulation types ...
 		 * we seed the lecacy dvb_frontend_parameters structure
@@ -1365,7 +1473,11 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
 		 * not effect hardware.
 		 */
 		dvb_frontend_clear_cache(fe);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Flushing property cache\n", __func__);
+#else
+		d;
+#endif
 		break;
 	case DTV_TUNE:
 		/* interpret the cache of data, build either a traditional frontend
@@ -1373,7 +1485,11 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
 		 * ioctl.
 		 */
 		c->state = tvp->cmd;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Finalised property cache\n", __func__);
+#else
+		d;
+#endif
 		dtv_property_cache_submit(fe);
 
 		r = dvb_frontend_ioctl_legacy(file, FE_SET_FRONTEND,
@@ -1509,7 +1625,11 @@ static int dvb_frontend_ioctl(struct file *file,
 	struct dvb_frontend_private *fepriv = fe->frontend_priv;
 	int err = -EOPNOTSUPP;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s (%d)\n", __func__, _IOC_NR(cmd));
+#else
+	d;
+#endif
 
 	if (fepriv->exit != DVB_FE_NO_EXIT)
 		return -ENODEV;
@@ -1545,13 +1665,25 @@ static int dvb_frontend_ioctl_properties(struct file *file,
 	struct dtv_property *tvp = NULL;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if(cmd == FE_SET_PROPERTY) {
 		tvps = (struct dtv_properties __user *)parg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() properties.num = %d\n", __func__, tvps->num);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() properties.props = %p\n", __func__, tvps->props);
+#else
+		d;
+#endif
 
 		/* Put an arbitrary limit on the number of messages that can
 		 * be sent at once */
@@ -1577,15 +1709,27 @@ static int dvb_frontend_ioctl_properties(struct file *file,
 		}
 
 		if (c->state == DTV_TUNE)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s() Property cache is full, tuning\n", __func__);
+#else
+			d;
+#endif
 
 	} else
 	if(cmd == FE_GET_PROPERTY) {
 
 		tvps = (struct dtv_properties __user *)parg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() properties.num = %d\n", __func__, tvps->num);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() properties.props = %p\n", __func__, tvps->props);
+#else
+		d;
+#endif
 
 		/* Put an arbitrary limit on the number of messages that can
 		 * be sent at once */
@@ -1762,7 +1906,11 @@ static int dvb_frontend_ioctl_legacy(struct file *file,
 			int i;
 			u8 last = 1;
 			if (dvb_frontend_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s switch command: 0x%04lx\n", __func__, swcmd);
+#else
+				;
+#endif
 			do_gettimeofday(&nexttime);
 			if (dvb_frontend_debug)
 				memcpy(&tv[0], &nexttime, sizeof(struct timeval));
@@ -1785,10 +1933,18 @@ static int dvb_frontend_ioctl_legacy(struct file *file,
 					dvb_frontend_sleep_until(&nexttime, 8000);
 			}
 			if (dvb_frontend_debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(%d): switch delay (should be 32k followed by all 8k\n",
 					__func__, fe->dvb->num);
+#else
+				;
+#endif
 				for (i = 1; i < 10; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%d: %d\n", i, timeval_usec_diff(tv[i-1] , tv[i]));
+#else
+					;
+#endif
 			}
 			err = 0;
 			fepriv->state = FESTATE_DISEQC;

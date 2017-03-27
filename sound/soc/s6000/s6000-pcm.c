@@ -154,18 +154,30 @@ static irqreturn_t s6000_pcm_irq(int irq, void *data)
 
 		if (unlikely(pending & ~7)) {
 			if (pending & (1 << 3))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "s6000-pcm: DMA %x Underflow\n",
 				       channel);
+#else
+				;
+#endif
 			if (pending & (1 << 4))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "s6000-pcm: DMA %x Overflow\n",
 				       channel);
+#else
+				;
+#endif
 			if (pending & 0x1e0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "s6000-pcm: DMA %x Master Error "
 				       "(mask %x)\n",
 				       channel, pending >> 5);
+#else
+				;
+#endif
 
 		}
 	}
@@ -383,7 +395,11 @@ static int s6000_pcm_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_pcm_lib_malloc_pages(substream,
 				       params_buffer_bytes(hw_params));
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "s6000-pcm: allocation of memory failed\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -485,7 +501,11 @@ static int s6000_pcm_new(struct snd_card *card,
 						    S6_PCM_PREALLOCATE_SIZE,
 						    S6_PCM_PREALLOCATE_MAX);
 	if (res)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "s6000-pcm: preallocation failed\n");
+#else
+		;
+#endif
 
 	spin_lock_init(&params->lock);
 	params->in_use = 0;

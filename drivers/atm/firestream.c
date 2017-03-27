@@ -290,6 +290,7 @@ static struct reginit_item PHY_NTC_INIT[] __devinitdata = {
 #define DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define fs_dprintk(f, str...) if (fs_debug & f) printk (str)
 #else
 #define fs_dprintk(f, str...) /* nothing */
@@ -297,6 +298,9 @@ static struct reginit_item PHY_NTC_INIT[] __devinitdata = {
 
 
 static int fs_keystream = 0;
+#else
+#define fs_d;
+#endif
 
 #ifdef DEBUG
 /* I didn't forget to set this to zero before shipping. Hit me with a stick 
@@ -332,11 +336,15 @@ module_param(fs_keystream, int, 0);
 #define FS_DEBUG_QSIZE   0x00001000
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define func_enter() fs_dprintk(FS_DEBUG_FLOW, "fs: enter %s\n", __func__)
 #define func_exit()  fs_dprintk(FS_DEBUG_FLOW, "fs: exit  %s\n", __func__)
 
 
 static struct fs_dev *fs_boards = NULL;
+#else
+#define func_enter() fs_d;
+#endif
 
 #ifdef DEBUG
 

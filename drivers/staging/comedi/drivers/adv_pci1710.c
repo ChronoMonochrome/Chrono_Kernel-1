@@ -60,88 +60,88 @@ Configuration options:
 
 #undef DPRINTK
 #ifdef PCI171X_EXTDEBUG
-#define DPRINTK(fmt, args...) printk(fmt, ## args)
-#else
-#define DPRINTK(fmt, args...)
-#endif
-
-#define PCI_VENDOR_ID_ADVANTECH		0x13fe
-
-/* hardware types of the cards */
-#define TYPE_PCI171X	0
-#define TYPE_PCI1713	2
-#define TYPE_PCI1720	3
-
-#define IORANGE_171x	32
-#define IORANGE_1720	16
-
-#define PCI171x_AD_DATA	 0	/* R:   A/D data */
-#define PCI171x_SOFTTRG	 0	/* W:   soft trigger for A/D */
-#define PCI171x_RANGE	 2	/* W:   A/D gain/range register */
-#define PCI171x_MUX	 4	/* W:   A/D multiplexor control */
-#define PCI171x_STATUS	 6	/* R:   status register */
-#define PCI171x_CONTROL	 6	/* W:   control register */
-#define PCI171x_CLRINT	 8	/* W:   clear interrupts request */
-#define PCI171x_CLRFIFO	 9	/* W:   clear FIFO */
-#define PCI171x_DA1	10	/* W:   D/A register */
-#define PCI171x_DA2	12	/* W:   D/A register */
-#define PCI171x_DAREF	14	/* W:   D/A reference control */
-#define PCI171x_DI	16	/* R:   digi inputs */
-#define PCI171x_DO	16	/* R:   digi inputs */
-#define PCI171x_CNT0	24	/* R/W: 8254 counter 0 */
-#define PCI171x_CNT1	26	/* R/W: 8254 counter 1 */
-#define PCI171x_CNT2	28	/* R/W: 8254 counter 2 */
-#define PCI171x_CNTCTRL	30	/* W:   8254 counter control */
-
-/* upper bits from status register (PCI171x_STATUS) (lower is same with control
- * reg) */
-#define	Status_FE	0x0100	/* 1=FIFO is empty */
-#define Status_FH	0x0200	/* 1=FIFO is half full */
-#define Status_FF	0x0400	/* 1=FIFO is full, fatal error */
-#define Status_IRQ	0x0800	/* 1=IRQ occurred */
-/* bits from control register (PCI171x_CONTROL) */
-#define Control_CNT0	0x0040	/* 1=CNT0 have external source,
-				 * 0=have internal 100kHz source */
-#define Control_ONEFH	0x0020	/* 1=IRQ on FIFO is half full, 0=every sample */
-#define Control_IRQEN	0x0010	/* 1=enable IRQ */
-#define Control_GATE	0x0008	/* 1=enable external trigger GATE (8254?) */
-#define Control_EXT	0x0004	/* 1=external trigger source */
-#define Control_PACER	0x0002	/* 1=enable internal 8254 trigger source */
-#define Control_SW	0x0001	/* 1=enable software trigger source */
-/* bits from counter control register (PCI171x_CNTCTRL) */
-#define Counter_BCD     0x0001	/* 0 = binary counter, 1 = BCD counter */
-#define Counter_M0      0x0002	/* M0-M2 select modes 0-5 */
-#define Counter_M1      0x0004	/* 000 = mode 0, 010 = mode 2 ... */
-#define Counter_M2      0x0008
-#define Counter_RW0     0x0010	/* RW0/RW1 select read/write mode */
-#define Counter_RW1     0x0020
-#define Counter_SC0     0x0040	/* Select Counter. Only 00 or 11 may */
-#define Counter_SC1     0x0080	/* be used, 00 for CNT0,
-				 * 11 for read-back command */
-
-#define PCI1720_DA0	 0	/* W:   D/A register 0 */
-#define PCI1720_DA1	 2	/* W:   D/A register 1 */
-#define PCI1720_DA2	 4	/* W:   D/A register 2 */
-#define PCI1720_DA3	 6	/* W:   D/A register 3 */
-#define PCI1720_RANGE	 8	/* R/W: D/A range register */
-#define PCI1720_SYNCOUT	 9	/* W:   D/A synchronized output register */
-#define PCI1720_SYNCONT	15	/* R/W: D/A synchronized control */
-
-/* D/A synchronized control (PCI1720_SYNCONT) */
-#define Syncont_SC0	 1	/* set synchronous output mode */
-
-static const struct comedi_lrange range_pci1710_3 = { 9, {
-							  BIP_RANGE(5),
-							  BIP_RANGE(2.5),
-							  BIP_RANGE(1.25),
-							  BIP_RANGE(0.625),
-							  BIP_RANGE(10),
-							  UNI_RANGE(10),
-							  UNI_RANGE(5),
-							  UNI_RANGE(2.5),
-							  UNI_RANGE(1.25)
-							  }
-};
+//#define DPRINTK(fmt, args...) printk(fmt, ## args)
+//#else
+//#define DPRINTK(fmt, args...)
+//#endif
+//
+//#define PCI_VENDOR_ID_ADVANTECH		0x13fe
+//
+///* hardware types of the cards */
+//#define TYPE_PCI171X	0
+//#define TYPE_PCI1713	2
+//#define TYPE_PCI1720	3
+//
+//#define IORANGE_171x	32
+//#define IORANGE_1720	16
+//
+//#define PCI171x_AD_DATA	 0	/* R:   A/D data */
+//#define PCI171x_SOFTTRG	 0	/* W:   soft trigger for A/D */
+//#define PCI171x_RANGE	 2	/* W:   A/D gain/range register */
+//#define PCI171x_MUX	 4	/* W:   A/D multiplexor control */
+//#define PCI171x_STATUS	 6	/* R:   status register */
+//#define PCI171x_CONTROL	 6	/* W:   control register */
+//#define PCI171x_CLRINT	 8	/* W:   clear interrupts request */
+//#define PCI171x_CLRFIFO	 9	/* W:   clear FIFO */
+//#define PCI171x_DA1	10	/* W:   D/A register */
+//#define PCI171x_DA2	12	/* W:   D/A register */
+//#define PCI171x_DAREF	14	/* W:   D/A reference control */
+//#define PCI171x_DI	16	/* R:   digi inputs */
+//#define PCI171x_DO	16	/* R:   digi inputs */
+//#define PCI171x_CNT0	24	/* R/W: 8254 counter 0 */
+//#define PCI171x_CNT1	26	/* R/W: 8254 counter 1 */
+//#define PCI171x_CNT2	28	/* R/W: 8254 counter 2 */
+//#define PCI171x_CNTCTRL	30	/* W:   8254 counter control */
+//
+///* upper bits from status register (PCI171x_STATUS) (lower is same with control
+// * reg) */
+//#define	Status_FE	0x0100	/* 1=FIFO is empty */
+//#define Status_FH	0x0200	/* 1=FIFO is half full */
+//#define Status_FF	0x0400	/* 1=FIFO is full, fatal error */
+//#define Status_IRQ	0x0800	/* 1=IRQ occurred */
+///* bits from control register (PCI171x_CONTROL) */
+//#define Control_CNT0	0x0040	/* 1=CNT0 have external source,
+//				 * 0=have internal 100kHz source */
+//#define Control_ONEFH	0x0020	/* 1=IRQ on FIFO is half full, 0=every sample */
+//#define Control_IRQEN	0x0010	/* 1=enable IRQ */
+//#define Control_GATE	0x0008	/* 1=enable external trigger GATE (8254?) */
+//#define Control_EXT	0x0004	/* 1=external trigger source */
+//#define Control_PACER	0x0002	/* 1=enable internal 8254 trigger source */
+//#define Control_SW	0x0001	/* 1=enable software trigger source */
+///* bits from counter control register (PCI171x_CNTCTRL) */
+//#define Counter_BCD     0x0001	/* 0 = binary counter, 1 = BCD counter */
+//#define Counter_M0      0x0002	/* M0-M2 select modes 0-5 */
+//#define Counter_M1      0x0004	/* 000 = mode 0, 010 = mode 2 ... */
+//#define Counter_M2      0x0008
+//#define Counter_RW0     0x0010	/* RW0/RW1 select read/write mode */
+//#define Counter_RW1     0x0020
+//#define Counter_SC0     0x0040	/* Select Counter. Only 00 or 11 may */
+//#define Counter_SC1     0x0080	/* be used, 00 for CNT0,
+//				 * 11 for read-back command */
+//
+//#define PCI1720_DA0	 0	/* W:   D/A register 0 */
+//#define PCI1720_DA1	 2	/* W:   D/A register 1 */
+//#define PCI1720_DA2	 4	/* W:   D/A register 2 */
+//#define PCI1720_DA3	 6	/* W:   D/A register 3 */
+//#define PCI1720_RANGE	 8	/* R/W: D/A range register */
+//#define PCI1720_SYNCOUT	 9	/* W:   D/A synchronized output register */
+//#define PCI1720_SYNCONT	15	/* R/W: D/A synchronized control */
+//
+///* D/A synchronized control (PCI1720_SYNCONT) */
+//#define Syncont_SC0	 1	/* set synchronous output mode */
+//
+//static const struct comedi_lrange range_pci1710_3 = { 9, {
+//							  BIP_RANGE(5),
+//							  BIP_RANGE(2.5),
+//							  BIP_RANGE(1.25),
+//							  BIP_RANGE(0.625),
+//							  BIP_RANGE(10),
+//							  UNI_RANGE(10),
+//							  UNI_RANGE(5),
+//							  UNI_RANGE(2.5),
+//							  UNI_RANGE(1.25)
+//							  }
+;
 
 static const char range_codes_pci1710_3[] = { 0x00, 0x01, 0x02, 0x03, 0x04,
 					      0x10, 0x11, 0x12, 0x13 };
@@ -617,7 +617,7 @@ static void interrupt_pci1710_every_sample(void *d)
 	DPRINTK("adv_pci1710 EDBG: BGN: interrupt_pci1710_every_sample(...)\n");
 	m = inw(dev->iobase + PCI171x_STATUS);
 	if (m & Status_FE) {
-		printk("comedi%d: A/D FIFO empty (%4x)\n", dev->minor, m);
+;
 		pci171x_ai_cancel(dev, s);
 		s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
 		comedi_event(dev, s);
@@ -749,8 +749,8 @@ static void interrupt_pci1710_half_fifo(void *d)
 	DPRINTK("adv_pci1710 EDBG: BGN: interrupt_pci1710_half_fifo(...)\n");
 	m = inw(dev->iobase + PCI171x_STATUS);
 	if (!(m & Status_FH)) {
-		printk("comedi%d: A/D FIFO not half full! (%4x)\n",
-		       dev->minor, m);
+//		printk("comedi%d: A/D FIFO not half full! (%4x)\n",
+;
 		pci171x_ai_cancel(dev, s);
 		s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
 		comedi_event(dev, s);
@@ -925,14 +925,14 @@ static int pci171x_ai_docmd_and_mode(int mode, struct comedi_device *dev,
 */
 static void pci171x_cmdtest_out(int e, struct comedi_cmd *cmd)
 {
-	printk("adv_pci1710 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
-	       cmd->start_src, cmd->scan_begin_src, cmd->convert_src);
-	printk("adv_pci1710 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
-	       cmd->start_arg, cmd->scan_begin_arg, cmd->convert_arg);
-	printk("adv_pci1710 e=%d stopsrc=%x scanend=%x\n", e, cmd->stop_src,
-	       cmd->scan_end_src);
-	printk("adv_pci1710 e=%d stoparg=%d scanendarg=%d chanlistlen=%d\n",
-	       e, cmd->stop_arg, cmd->scan_end_arg, cmd->chanlist_len);
+//	printk("adv_pci1710 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
+;
+//	printk("adv_pci1710 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
+;
+//	printk("adv_pci1710 e=%d stopsrc=%x scanend=%x\n", e, cmd->stop_src,
+;
+//	printk("adv_pci1710 e=%d stoparg=%d scanendarg=%d chanlistlen=%d\n",
+;
 }
 #endif
 
@@ -1382,14 +1382,14 @@ static int pci1710_attach(struct comedi_device *dev,
 	int i;
 	int board_index;
 
-	printk("comedi%d: adv_pci1710: ", dev->minor);
+;
 
 	opt_bus = it->options[0];
 	opt_slot = it->options[1];
 
 	ret = alloc_private(dev, sizeof(struct pci1710_private));
 	if (ret < 0) {
-		printk(" - Allocation failed!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1436,10 +1436,10 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	if (!pcidev) {
 		if (opt_bus || opt_slot) {
-			printk(" - Card at b:s %d:%d %s\n",
-			       opt_bus, opt_slot, errstr);
+//			printk(" - Card at b:s %d:%d %s\n",
+;
 		} else {
-			printk(" - Card %s\n", errstr);
+;
 		}
 		return -EIO;
 	}
@@ -1450,8 +1450,8 @@ static int pci1710_attach(struct comedi_device *dev,
 	irq = pcidev->irq;
 	iobase = pci_resource_start(pcidev, 2);
 
-	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
-	       iobase);
+//	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
+;
 
 	dev->iobase = iobase;
 
@@ -1472,7 +1472,7 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	ret = alloc_subdevices(dev, n_subdevices);
 	if (ret < 0) {
-		printk(" - Allocation failed!\n");
+;
 		return ret;
 	}
 
@@ -1488,10 +1488,10 @@ static int pci1710_attach(struct comedi_device *dev,
 				     irq);
 				irq = 0;	/* Can't use IRQ */
 			} else {
-				printk(", irq=%u", irq);
+;
 			}
 		} else {
-			printk(", IRQ disabled");
+;
 		}
 	} else {
 		irq = 0;
@@ -1499,7 +1499,7 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	dev->irq = irq;
 
-	printk(".\n");
+;
 
 	subdev = 0;
 

@@ -35,15 +35,23 @@
 #include "zl10036.h"
 
 static int zl10036_debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, args...) \
 	do { if (zl10036_debug & level) printk(KERN_DEBUG "zl10036: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...)  dprintk(0x01, args)
 #define deb_i2c(args...)  dprintk(0x02, args)
 
 struct zl10036_state {
 	struct i2c_adapter *i2c;
+#else
+#define deb_info(args...)  d;
+#endif
 	const struct zl10036_config *config;
 	u32 frequency;
 	u8 br, bf;
@@ -120,8 +128,16 @@ static int zl10036_write(struct zl10036_state *state, u8 buf[], u8 count)
 		{
 			int i;
 			for (i = 0; i < count; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT " %02x", buf[i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -501,8 +517,12 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
 
 	memcpy(&fe->ops.tuner_ops, &zl10036_tuner_ops,
 		sizeof(struct dvb_tuner_ops));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: tuner initialization (%s addr=0x%02x) ok\n",
 		__func__, fe->ops.tuner_ops.info.name, config->tuner_address);
+#else
+	;
+#endif
 
 	return fe;
 

@@ -177,8 +177,8 @@ static int saa7134_go7007_interface_reset(struct go7007 *go)
 	/* Wait for an interrupt to indicate successful hardware reset */
 	if (go7007_read_interrupt(go, &intr_val, &intr_data) < 0 ||
 			(intr_val & ~0x1) != 0x55aa) {
-		printk(KERN_ERR
-			"saa7134-go7007: unable to reset the GO7007\n");
+//		printk(KERN_ERR
+;
 		return -1;
 	}
 	return 0;
@@ -192,8 +192,8 @@ static int saa7134_go7007_write_interrupt(struct go7007 *go, int addr, int data)
 	u16 status_reg;
 
 #ifdef GO7007_HPI_DEBUG
-	printk(KERN_DEBUG
-		"saa7134-go7007: WriteInterrupt: %04x %04x\n", addr, data);
+//	printk(KERN_DEBUG
+;
 #endif
 
 	for (i = 0; i < 100; ++i) {
@@ -203,9 +203,9 @@ static int saa7134_go7007_write_interrupt(struct go7007 *go, int addr, int data)
 		msleep(10);
 	}
 	if (i == 100) {
-		printk(KERN_ERR
-			"saa7134-go7007: device is hung, status reg = 0x%04x\n",
-			status_reg);
+//		printk(KERN_ERR
+//			"saa7134-go7007: device is hung, status reg = 0x%04x\n",
+;
 		return -1;
 	}
 	gpio_write(dev, HPI_ADDR_INTR_WR_PARAM, data);
@@ -224,8 +224,8 @@ static int saa7134_go7007_read_interrupt(struct go7007 *go)
 	gpio_read(dev, HPI_ADDR_INTR_RET_VALUE, &go->interrupt_value);
 	gpio_read(dev, HPI_ADDR_INTR_RET_DATA, &go->interrupt_data);
 #ifdef GO7007_HPI_DEBUG
-	printk(KERN_DEBUG "saa7134-go7007: ReadInterrupt: %04x %04x\n",
-			go->interrupt_value, go->interrupt_data);
+//	printk(KERN_DEBUG "saa7134-go7007: ReadInterrupt: %04x %04x\n",
+;
 #endif
 	return 0;
 }
@@ -239,8 +239,8 @@ static void saa7134_go7007_irq_ts_done(struct saa7134_dev *dev,
 	if (!go->streaming)
 		return;
 	if (0 != (status & 0x000f0000))
-		printk(KERN_DEBUG "saa7134-go7007: irq: lost %ld\n",
-				(status >> 16) & 0x0f);
+//		printk(KERN_DEBUG "saa7134-go7007: irq: lost %ld\n",
+;
 	if (status & 0x100000) {
 		dma_sync_single_for_cpu(&dev->pci->dev,
 					saa->bottom_dma, PAGE_SIZE, DMA_FROM_DEVICE);
@@ -349,8 +349,8 @@ static int saa7134_go7007_send_firmware(struct go7007 *go, u8 *data, int len)
 	int i;
 
 #ifdef GO7007_HPI_DEBUG
-	printk(KERN_DEBUG "saa7134-go7007: DownloadBuffer "
-			"sending %d bytes\n", len);
+//	printk(KERN_DEBUG "saa7134-go7007: DownloadBuffer "
+;
 #endif
 
 	while (len > 0) {
@@ -372,8 +372,8 @@ static int saa7134_go7007_send_firmware(struct go7007 *go, u8 *data, int len)
 				break;
 		}
 		if (i == 100) {
-			printk(KERN_ERR "saa7134-go7007: device is hung, "
-					"status reg = 0x%04x\n", status_reg);
+//			printk(KERN_ERR "saa7134-go7007: device is hung, "
+;
 			return -1;
 		}
 	}
@@ -438,7 +438,7 @@ static int saa7134_go7007_init(struct saa7134_dev *dev)
 	struct go7007 *go;
 	struct saa7134_go7007 *saa;
 
-	printk(KERN_DEBUG "saa7134-go7007: probing new SAA713X board\n");
+;
 
 	saa = kzalloc(sizeof(struct saa7134_go7007), GFP_KERNEL);
 	if (saa == NULL)

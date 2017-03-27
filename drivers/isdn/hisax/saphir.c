@@ -147,7 +147,11 @@ saphir_interrupt(int intno, void *dev_id)
 	if (cs->hw.saphir.timer.function) 
 		mod_timer(&cs->hw.saphir.timer, jiffies+1*HZ);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "saphir: Spurious timer!\n");
+#else
+		;
+#endif
 	writereg(cs->hw.saphir.ale, cs->hw.saphir.hscx, HSCX_MASK, 0xFF);
 	writereg(cs->hw.saphir.ale, cs->hw.saphir.hscx, HSCX_MASK + 0x40, 0xFF);
 	writereg(cs->hw.saphir.ale, cs->hw.saphir.isac, ISAC_MASK, 0xFF);
@@ -200,8 +204,12 @@ saphir_reset(struct IsdnCardState *cs)
 			irq_val = 4;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: saphir wrong IRQ %d\n",
 				cs->irq);
+#else
+			;
+#endif
 			return (1);
 	}
 	byteout(cs->hw.saphir.cfg_reg + IRQ_REG, irq_val);
@@ -247,7 +255,11 @@ setup_saphir(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, saphir_rev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: HST Saphir driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_HSTSAPHIR)
 		return (0);
 
@@ -258,15 +270,23 @@ setup_saphir(struct IsdnCard *card)
 	cs->hw.saphir.ale = card->para[1] + ADDRESS_REG;
 	cs->irq = card->para[0];
 	if (!request_region(cs->hw.saphir.cfg_reg, 6, "saphir")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"HiSax: HST Saphir config port %x-%x already in use\n",
 			cs->hw.saphir.cfg_reg,
 			cs->hw.saphir.cfg_reg + 5);
+#else
+		;
+#endif
 		return (0);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: HST Saphir config irq:%d io:0x%X\n",
 	       cs->irq, cs->hw.saphir.cfg_reg);
+#else
+	;
+#endif
 
 	setup_isac(cs);
 	cs->hw.saphir.timer.function = (void *) SaphirWatchDog;
@@ -289,8 +309,12 @@ setup_saphir(struct IsdnCard *card)
 	cs->irq_func = &saphir_interrupt;
 	ISACVersion(cs, "saphir:");
 	if (HscxVersion(cs, "saphir:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		    "saphir: wrong HSCX versions check IO address\n");
+#else
+		;
+#endif
 		release_io_saphir(cs);
 		return (0);
 	}

@@ -321,21 +321,41 @@ static void test_backlight(void)
 	struct sabi_retval sretval;
 
 	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 
 	sabi_set_command(sabi_config->commands.set_backlight, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "backlight should be off\n");
+#else
+	;
+#endif
 
 	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 
 	msleep(1000);
 
 	sabi_set_command(sabi_config->commands.set_backlight, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "backlight should be on\n");
+#else
+	;
+#endif
 
 	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 }
 
 static void test_wireless(void)
@@ -343,21 +363,41 @@ static void test_wireless(void)
 	struct sabi_retval sretval;
 
 	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 
 	sabi_set_command(sabi_config->commands.set_wireless_button, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wireless led should be off\n");
+#else
+	;
+#endif
 
 	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 
 	msleep(1000);
 
 	sabi_set_command(sabi_config->commands.set_wireless_button, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wireless led should be on\n");
+#else
+	;
+#endif
 
 	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+#else
+	;
+#endif
 }
 
 static u8 read_brightness(void)
@@ -766,21 +806,53 @@ static int __init samsung_init(void)
 	sabi = (f0000_segment + loca);
 
 	if (debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "This computer supports SABI==%x\n",
 			loca + 0xf0000 - 6);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "SABI header:\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SMI Port Number = 0x%04x\n",
 			readw(sabi + sabi_config->header_offsets.port));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SMI Interface Function = 0x%02x\n",
 			readb(sabi + sabi_config->header_offsets.iface_func));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SMI enable memory buffer = 0x%02x\n",
 			readb(sabi + sabi_config->header_offsets.en_mem));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SMI restore memory buffer = 0x%02x\n",
 			readb(sabi + sabi_config->header_offsets.re_mem));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SABI data offset = 0x%04x\n",
 			readw(sabi + sabi_config->header_offsets.data_offset));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " SABI data segment = 0x%04x\n",
 			readw(sabi + sabi_config->header_offsets.data_segment));
+#else
+		;
+#endif
 	}
 
 	/* Get a pointer to the SABI Interface */
@@ -792,15 +864,27 @@ static int __init samsung_init(void)
 		goto error_no_signature;
 	}
 	if (debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "sabi_iface = %p\n", sabi_iface);
+#else
+		;
+#endif
 
 		test_backlight();
 		test_wireless();
 
 		retval = sabi_get_command(sabi_config->commands.get_brightness,
 					  &sretval);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "brightness = 0x%02x\n", sretval.retval[0]);
+#else
+		;
+#endif
 	}
 
 	/* Turn on "Linux" mode in the BIOS */

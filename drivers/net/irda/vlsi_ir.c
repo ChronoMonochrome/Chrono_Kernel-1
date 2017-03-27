@@ -128,10 +128,10 @@ static void vlsi_reg_debug(unsigned iobase, const char *s)
 {
 	int	i;
 
-	printk(KERN_DEBUG "%s: ", s);
+;
 	for (i = 0; i < 0x20; i++)
-		printk("%02x", (unsigned)inb((iobase+i)));
-	printk("\n");
+;
+;
 }
 
 static void vlsi_ring_debug(struct vlsi_ring *r)
@@ -139,17 +139,17 @@ static void vlsi_ring_debug(struct vlsi_ring *r)
 	struct ring_descr *rd;
 	unsigned i;
 
-	printk(KERN_DEBUG "%s - ring %p / size %u / mask 0x%04x / len %u / dir %d / hw %p\n",
-		__func__, r, r->size, r->mask, r->len, r->dir, r->rd[0].hw);
-	printk(KERN_DEBUG "%s - head = %d / tail = %d\n", __func__,
-		atomic_read(&r->head) & r->mask, atomic_read(&r->tail) & r->mask);
+//	printk(KERN_DEBUG "%s - ring %p / size %u / mask 0x%04x / len %u / dir %d / hw %p\n",
+;
+//	printk(KERN_DEBUG "%s - head = %d / tail = %d\n", __func__,
+;
 	for (i = 0; i < r->size; i++) {
 		rd = &r->rd[i];
-		printk(KERN_DEBUG "%s - ring descr %u: ", __func__, i);
-		printk("skb=%p data=%p hw=%p\n", rd->skb, rd->buf, rd->hw);
-		printk(KERN_DEBUG "%s - hw: status=%02x count=%u addr=0x%08x\n",
-			__func__, (unsigned) rd_get_status(rd),
-			(unsigned) rd_get_count(rd), (unsigned) rd_get_addr(rd));
+;
+;
+//		printk(KERN_DEBUG "%s - hw: status=%02x count=%u addr=0x%08x\n",
+//			__func__, (unsigned) rd_get_status(rd),
+;
 	}
 }
 

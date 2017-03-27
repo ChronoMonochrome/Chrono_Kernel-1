@@ -215,7 +215,7 @@ static inline int ip_finish_output2(struct sk_buff *skb)
 	rcu_read_unlock();
 
 	if (net_ratelimit())
-		printk(KERN_DEBUG "ip_finish_output2: No header cache and no neighbour!\n");
+;
 	kfree_skb(skb);
 	return -EINVAL;
 }

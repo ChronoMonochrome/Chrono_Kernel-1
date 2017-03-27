@@ -217,8 +217,8 @@ static void wait_for_scb_cmd(struct net_device *dev)
 		      break;
 		udelay(4);
 		if (i == 16383) {
-			printk(KERN_ERR "%s: scb_cmd timed out: %04x,%04x .. disabling i82586!!\n",
-				dev->name, readb(&p->scb->cmd_cuc), readb(&p->scb->cus));
+//			printk(KERN_ERR "%s: scb_cmd timed out: %04x,%04x .. disabling i82586!!\n",
+;
 			if (!p->reset) {
 				p->reset = 1;
 				ni_reset586();
@@ -236,9 +236,9 @@ static void wait_for_scb_cmd_ruc(struct net_device *dev)
 			break;
 		udelay(4);
 		if (i == 16383) {
-			printk(KERN_ERR "%s: scb_cmd (ruc) timed out: %04x,%04x .. disabling i82586!!\n",
-				dev->name, readb(&p->scb->cmd_ruc),
-				readb(&p->scb->rus));
+//			printk(KERN_ERR "%s: scb_cmd (ruc) timed out: %04x,%04x .. disabling i82586!!\n",
+//				dev->name, readb(&p->scb->cmd_ruc),
+;
 			if (!p->reset) {
 				p->reset = 1;
 				ni_reset586();
@@ -369,7 +369,7 @@ static void alloc586(struct net_device *dev)
 	mdelay(32);
 
 	if (readb(&p->iscp->busy))
-		printk(KERN_ERR "%s: Init-Problems (alloc).\n", dev->name);
+;
 
 	p->reset = 0;
 
@@ -481,8 +481,8 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 		goto out;
 	}
 
-	printk(KERN_INFO "%s: NI5210 found at %#3lx, ",
-				dev->name, dev->base_addr);
+//	printk(KERN_INFO "%s: NI5210 found at %#3lx, ",
+;
 
 	/*
 	 * check (or search) IO-Memory, 8K and 16K
@@ -490,13 +490,13 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 #ifdef MODULE
 	size = dev->mem_end - dev->mem_start;
 	if (size != 0x2000 && size != 0x4000) {
-		printk("\n");
-		printk(KERN_ERR "%s: Invalid memory size %d. Allowed is 0x2000 or 0x4000 bytes.\n", dev->name, size);
+;
+;
 		retval = -ENODEV;
 		goto out;
 	}
 	if (!check586(dev, size)) {
-		printk(KERN_ERR "?memcheck, Can't find memory at 0x%lx with size %d!\n", dev->mem_start, size);
+;
 		retval = -ENODEV;
 		goto out;
 	}
@@ -507,7 +507,7 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 		if (!check586(dev, size)) {
 			size = 0x2000; /* check for 8K mem */
 			if (!check586(dev, size)) {
-				printk(KERN_ERR "?memprobe, Can't find memory at 0x%lx!\n", dev->mem_start);
+;
 				retval = -ENODEV;
 				goto out;
 			}
@@ -519,7 +519,7 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 		};
 		for (i = 0;; i++) {
 			if (!memaddrs[i]) {
-				printk(KERN_ERR "?memprobe, Can't find io-memory!\n");
+;
 				retval = -ENODEV;
 				goto out;
 			}
@@ -546,8 +546,8 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 	else
 		priv->num_recv_buffs = NUM_RECV_BUFFS_16;
 
-	printk(KERN_DEBUG "Memaddr: 0x%lx, Memsize: %d, ",
-				dev->mem_start, size);
+//	printk(KERN_DEBUG "Memaddr: 0x%lx, Memsize: %d, ",
+;
 
 	if (dev->irq < 2) {
 		unsigned long irq_mask;
@@ -559,16 +559,16 @@ static int __init ni52_probe1(struct net_device *dev, int ioaddr)
 		mdelay(20);
 		dev->irq = probe_irq_off(irq_mask);
 		if (!dev->irq) {
-			printk("?autoirq, Failed to detect IRQ line!\n");
+;
 			retval = -EAGAIN;
 			iounmap(priv->mapped);
 			goto out;
 		}
-		printk("IRQ %d (autodetected).\n", dev->irq);
+;
 	} else {
 		if (dev->irq == 2)
 			dev->irq = 9;
-		printk("IRQ %d (assigned and not checked!).\n", dev->irq);
+;
 	}
 
 	dev->netdev_ops		= &ni52_netdev_ops;
@@ -620,8 +620,8 @@ static int init586(struct net_device *dev)
 	if (dev->flags & IFF_ALLMULTI) {
 		int len = ((char __iomem *)p->iscp - (char __iomem *)ptr - 8) / 6;
 		if (num_addrs > len) {
-			printk(KERN_ERR "%s: switching to promisc. mode\n",
-				dev->name);
+//			printk(KERN_ERR "%s: switching to promisc. mode\n",
+;
 			writeb(0x01, &cfg_cmd->promisc);
 		}
 	}
@@ -638,8 +638,8 @@ static int init586(struct net_device *dev)
 
 	if ((readw(&cfg_cmd->cmd_status) & (STAT_OK|STAT_COMPL)) !=
 							(STAT_COMPL|STAT_OK)) {
-		printk(KERN_ERR "%s: configure command failed: %x\n",
-				dev->name, readw(&cfg_cmd->cmd_status));
+//		printk(KERN_ERR "%s: configure command failed: %x\n",
+;
 		return 1;
 	}
 
@@ -664,7 +664,7 @@ static int init586(struct net_device *dev)
 
 	if ((readw(&ias_cmd->cmd_status) & (STAT_OK|STAT_COMPL)) !=
 							(STAT_OK|STAT_COMPL)) {
-		printk(KERN_ERR "%s (ni52): individual address setup command failed: %04x\n", dev->name, readw(&ias_cmd->cmd_status));
+;
 		return 1;
 	}
 
@@ -686,8 +686,8 @@ static int init586(struct net_device *dev)
 	wait_for_stat_compl(tdr_cmd);
 
 	if (!(readw(&tdr_cmd->cmd_status) & STAT_COMPL))
-		printk(KERN_ERR "%s: Problems while running the TDR.\n",
-				dev->name);
+//		printk(KERN_ERR "%s: Problems while running the TDR.\n",
+;
 	else {
 		udelay(16);
 		result = readw(&tdr_cmd->status);
@@ -697,19 +697,19 @@ static int init586(struct net_device *dev)
 		if (result & TDR_LNK_OK)
 			;
 		else if (result & TDR_XCVR_PRB)
-			printk(KERN_ERR "%s: TDR: Transceiver problem. Check the cable(s)!\n",
-				dev->name);
+//			printk(KERN_ERR "%s: TDR: Transceiver problem. Check the cable(s)!\n",
+;
 		else if (result & TDR_ET_OPN)
-			printk(KERN_ERR "%s: TDR: No correct termination %d clocks away.\n",
-				dev->name, result & TDR_TIMEMASK);
+//			printk(KERN_ERR "%s: TDR: No correct termination %d clocks away.\n",
+;
 		else if (result & TDR_ET_SRT) {
 			/* time == 0 -> strange :-) */
 			if (result & TDR_TIMEMASK)
-				printk(KERN_ERR "%s: TDR: Detected a short circuit %d clocks away.\n",
-					dev->name, result & TDR_TIMEMASK);
+//				printk(KERN_ERR "%s: TDR: Detected a short circuit %d clocks away.\n",
+;
 		} else
-			printk(KERN_ERR "%s: TDR: Unknown status %04x\n",
-						dev->name, result);
+//			printk(KERN_ERR "%s: TDR: Unknown status %04x\n",
+;
 	}
 
 	/*
@@ -734,7 +734,7 @@ static int init586(struct net_device *dev)
 
 		if ((readw(&mc_cmd->cmd_status) & (STAT_COMPL|STAT_OK))
 						 != (STAT_COMPL|STAT_OK))
-			printk(KERN_ERR "%s: Can't apply multicast-address-list.\n", dev->name);
+;
 	}
 
 	/*
@@ -772,8 +772,8 @@ static int init586(struct net_device *dev)
 		p->xmit_buffs[i] = ptr; /* TBD */
 		ptr = ptr + sizeof(struct tbd_struct);
 		if ((void __iomem *)ptr > (void __iomem *)p->iscp) {
-			printk(KERN_ERR "%s: not enough shared-mem for your configuration!\n",
-				dev->name);
+//			printk(KERN_ERR "%s: not enough shared-mem for your configuration!\n",
+;
 			return 1;
 		}
 		memset_io(p->xmit_cmds[i], 0,
@@ -882,7 +882,7 @@ static irqreturn_t ni52_interrupt(int irq, void *dev_id)
 	p = netdev_priv(dev);
 
 	if (debuglevel > 1)
-		printk("I");
+;
 
 	spin_lock(&p->spinlock);
 
@@ -896,7 +896,7 @@ static irqreturn_t ni52_interrupt(int irq, void *dev_id)
 			ni52_rcv_int(dev);
 
 		if (stat & STAT_RNR) { /* RU went 'not ready' */
-			printk("(R)");
+;
 			if (readb(&p->scb->rus) & RU_SUSPEND) {
 				/* special case: RU_SUSPEND */
 				wait_for_scb_cmd(dev);
@@ -904,8 +904,8 @@ static irqreturn_t ni52_interrupt(int irq, void *dev_id)
 				ni_attn586();
 				wait_for_scb_cmd_ruc(dev);
 			} else {
-				printk(KERN_ERR "%s: Receiver-Unit went 'NOT READY': %04x/%02x.\n",
-					dev->name, stat, readb(&p->scb->rus));
+//				printk(KERN_ERR "%s: Receiver-Unit went 'NOT READY': %04x/%02x.\n",
+;
 				ni52_rnr_int(dev);
 			}
 		}
@@ -917,19 +917,19 @@ static irqreturn_t ni52_interrupt(int irq, void *dev_id)
 #ifndef NO_NOPCOMMANDS
 		if (stat & STAT_CNA) {	/* CU went 'not ready' */
 			if (netif_running(dev))
-				printk(KERN_ERR "%s: oops! CU has left active state. stat: %04x/%02x.\n",
-					dev->name, stat, readb(&p->scb->cus));
+//				printk(KERN_ERR "%s: oops! CU has left active state. stat: %04x/%02x.\n",
+;
 		}
 #endif
 
 		if (debuglevel > 1)
-			printk("%d", cnt++);
+;
 
 		/* Wait for ack. (ni52_xmt_int can be faster than ack!!) */
 		wait_for_scb_cmd(dev);
 		if (readb(&p->scb->cmd_cuc)) {	 /* timed out? */
-			printk(KERN_ERR "%s: Acknowledge timed out.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: Acknowledge timed out.\n",
+;
 			ni_disint();
 			break;
 		}
@@ -937,7 +937,7 @@ static irqreturn_t ni52_interrupt(int irq, void *dev_id)
 	spin_unlock(&p->spinlock);
 
 	if (debuglevel > 1)
-		printk("i");
+;
 	return IRQ_HANDLED;
 }
 
@@ -954,7 +954,7 @@ static void ni52_rcv_int(struct net_device *dev)
 	struct priv *p = netdev_priv(dev);
 
 	if (debuglevel > 0)
-		printk("R");
+;
 
 	for (; (status = readb(&p->rfd_top->stat_high)) & RFD_COMPL;) {
 		rbd = make32(readw(&p->rfd_top->rbd_offset));
@@ -982,7 +982,7 @@ static void ni52_rcv_int(struct net_device *dev)
 				while (!((rstat = readw(&rbd->status)) & RBD_LAST)) {
 					totlen += rstat & RBD_MASK;
 					if (!rstat) {
-						printk(KERN_ERR "%s: Whoops .. no end mark in RBD list\n", dev->name);
+;
 						break;
 					}
 					writew(0, &rbd->status);
@@ -990,13 +990,13 @@ static void ni52_rcv_int(struct net_device *dev)
 				}
 				totlen += rstat & RBD_MASK;
 				writew(0, &rbd->status);
-				printk(KERN_ERR "%s: received oversized frame! length: %d\n",
-					dev->name, totlen);
+//				printk(KERN_ERR "%s: received oversized frame! length: %d\n",
+;
 				dev->stats.rx_dropped++;
 			 }
 		} else {/* frame !(ok), only with 'save-bad-frames' */
-			printk(KERN_ERR "%s: oops! rfd-error-status: %04x\n",
-				dev->name, status);
+//			printk(KERN_ERR "%s: oops! rfd-error-status: %04x\n",
+;
 			dev->stats.rx_errors++;
 		}
 		writeb(0, &p->rfd_top->stat_high);
@@ -1008,7 +1008,7 @@ static void ni52_rcv_int(struct net_device *dev)
 		writew(make16(p->rfd_top), &p->scb->rfa_offset);
 
 		if (debuglevel > 0)
-			printk("%d", cnt++);
+;
 	}
 
 	if (automatic_resume) {
@@ -1026,12 +1026,12 @@ static void ni52_rcv_int(struct net_device *dev)
 				break;
 			udelay(16);
 			if (i == 1023)
-				printk(KERN_ERR "%s: RU hasn't fetched next RFD (not busy/complete)\n", dev->name);
+;
 		}
 	}
 #endif
 	if (debuglevel > 0)
-		printk("r");
+;
 }
 
 /**********************************************************
@@ -1053,8 +1053,8 @@ static void ni52_rnr_int(struct net_device *dev)
 	/* maybe add a check here, before restarting the RU */
 	startrecv586(dev); /* restart RU */
 
-	printk(KERN_ERR "%s: Receive-Unit restarted. Status: %04x\n",
-		dev->name, readb(&p->scb->rus));
+//	printk(KERN_ERR "%s: Receive-Unit restarted. Status: %04x\n",
+;
 
 }
 
@@ -1068,11 +1068,11 @@ static void ni52_xmt_int(struct net_device *dev)
 	struct priv *p = netdev_priv(dev);
 
 	if (debuglevel > 0)
-		printk("X");
+;
 
 	status = readw(&p->xmit_cmds[p->xmit_last]->cmd_status);
 	if (!(status & STAT_COMPL))
-		printk(KERN_ERR "%s: strange .. xmit-int without a 'COMPLETE'\n", dev->name);
+;
 
 	if (status & STAT_OK) {
 		dev->stats.tx_packets++;
@@ -1080,23 +1080,23 @@ static void ni52_xmt_int(struct net_device *dev)
 	} else {
 		dev->stats.tx_errors++;
 		if (status & TCMD_LATECOLL) {
-			printk(KERN_ERR "%s: late collision detected.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: late collision detected.\n",
+;
 			dev->stats.collisions++;
 		} else if (status & TCMD_NOCARRIER) {
 			dev->stats.tx_carrier_errors++;
-			printk(KERN_ERR "%s: no carrier detected.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: no carrier detected.\n",
+;
 		} else if (status & TCMD_LOSTCTS)
-			printk(KERN_ERR "%s: loss of CTS detected.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: loss of CTS detected.\n",
+;
 		else if (status & TCMD_UNDERRUN) {
 			dev->stats.tx_fifo_errors++;
-			printk(KERN_ERR "%s: DMA underrun detected.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: DMA underrun detected.\n",
+;
 		} else if (status & TCMD_MAXCOLL) {
-			printk(KERN_ERR "%s: Max. collisions exceeded.\n",
-				dev->name);
+//			printk(KERN_ERR "%s: Max. collisions exceeded.\n",
+;
 			dev->stats.collisions += 16;
 		}
 	}
@@ -1131,13 +1131,13 @@ static void ni52_timeout(struct net_device *dev)
 	if (readb(&p->scb->cus) & CU_ACTIVE) { /* COMMAND-UNIT active? */
 		netif_wake_queue(dev);
 #ifdef DEBUG
-		printk(KERN_ERR "%s: strange ... timeout with CU active?!?\n",
-			dev->name);
-		printk(KERN_ERR "%s: X0: %04x N0: %04x N1: %04x %d\n",
-			dev->name, (int)p->xmit_cmds[0]->cmd_status,
-			readw(&p->nop_cmds[0]->cmd_status),
-			readw(&p->nop_cmds[1]->cmd_status),
-			p->nop_point);
+//		printk(KERN_ERR "%s: strange ... timeout with CU active?!?\n",
+;
+//		printk(KERN_ERR "%s: X0: %04x N0: %04x N1: %04x %d\n",
+//			dev->name, (int)p->xmit_cmds[0]->cmd_status,
+//			readw(&p->nop_cmds[0]->cmd_status),
+//			readw(&p->nop_cmds[1]->cmd_status),
+;
 #endif
 		writeb(CUC_ABORT, &p->scb->cmd_cuc);
 		ni_attn586();
@@ -1152,14 +1152,14 @@ static void ni52_timeout(struct net_device *dev)
 #endif
 	{
 #ifdef DEBUG
-		printk(KERN_ERR "%s: xmitter timed out, try to restart! stat: %02x\n",
-				dev->name, readb(&p->scb->cus));
-		printk(KERN_ERR "%s: command-stats: %04x %04x\n",
-				dev->name,
-				readw(&p->xmit_cmds[0]->cmd_status),
-				readw(&p->xmit_cmds[1]->cmd_status));
-		printk(KERN_ERR "%s: check, whether you set the right interrupt number!\n",
-				dev->name);
+//		printk(KERN_ERR "%s: xmitter timed out, try to restart! stat: %02x\n",
+;
+//		printk(KERN_ERR "%s: command-stats: %04x %04x\n",
+//				dev->name,
+//				readw(&p->xmit_cmds[0]->cmd_status),
+;
+//		printk(KERN_ERR "%s: check, whether you set the right interrupt number!\n",
+;
 #endif
 		ni52_close(dev);
 		ni52_open(dev);
@@ -1181,7 +1181,7 @@ static netdev_tx_t ni52_send_packet(struct sk_buff *skb,
 	struct priv *p = netdev_priv(dev);
 
 	if (skb->len > XMIT_BUFF_SIZE) {
-		printk(KERN_ERR "%s: Sorry, max. framelength is %d bytes. The length of your frame is %d bytes.\n", dev->name, XMIT_BUFF_SIZE, skb->len);
+;
 		return NETDEV_TX_OK;
 	}
 
@@ -1200,10 +1200,10 @@ static netdev_tx_t ni52_send_packet(struct sk_buff *skb,
 
 #ifdef DEBUG
 	if (readb(&p->scb->cus) & CU_ACTIVE) {
-		printk(KERN_ERR "%s: Hmmm .. CU is still running and we wanna send a new packet.\n", dev->name);
-		printk(KERN_ERR "%s: stat: %04x %04x\n",
-				dev->name, readb(&p->scb->cus),
-				readw(&p->xmit_cmds[0]->cmd_status));
+;
+//		printk(KERN_ERR "%s: stat: %04x %04x\n",
+//				dev->name, readb(&p->scb->cus),
+;
 	}
 #endif
 	writew(TBD_LAST | len, &p->xmit_buffs[0]->size);
@@ -1226,7 +1226,7 @@ static netdev_tx_t ni52_send_packet(struct sk_buff *skb,
 		if (readw(&p->xmit_cmds[0]->cmd_status))
 			break;
 		if (i == 15)
-			printk(KERN_WARNING "%s: Can't start transmit-command.\n", dev->name);
+;
 	}
 #	else
 	next_nop = (p->nop_point + 1) & 0x1;
@@ -1323,8 +1323,8 @@ MODULE_PARM_DESC(memend, "NI5210 memory end address,required");
 int __init init_module(void)
 {
 	if (io <= 0x0 || !memend || !memstart || irq < 2) {
-		printk(KERN_ERR "ni52: Autoprobing not allowed for modules.\n");
-		printk(KERN_ERR "ni52: Set symbols 'io' 'irq' 'memstart' and 'memend'\n");
+;
+;
 		return -ENODEV;
 	}
 	dev_ni52 = ni52_probe(-1);

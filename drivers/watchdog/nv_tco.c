@@ -169,8 +169,12 @@ static int nv_tco_release(struct inode *inode, struct file *file)
 	if (tco_expect_close == 42) {
 		tco_timer_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Unexpected close, not stopping "
 		       "watchdog!\n");
+#else
+		;
+#endif
 		tco_timer_keepalive();
 	}
 	clear_bit(0, &timer_alive);
@@ -387,8 +391,12 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 		return -ENODEV;
 
 	/* Check to see if last reboot was due to watchdog timeout */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog reboot %sdetected.\n",
 	       inl(TCO_STS(tcobase)) & TCO_STS_TCO2TO_STS ? "" : "not ");
+#else
+	;
+#endif
 
 	/* Clear out the old status */
 	outl(TCO_STS_RESET, TCO_STS(tcobase));
@@ -400,8 +408,12 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 	if (tco_timer_set_heartbeat(heartbeat)) {
 		heartbeat = WATCHDOG_HEARTBEAT;
 		tco_timer_set_heartbeat(heartbeat);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "heartbeat value must be 2<heartbeat<39, "
 		       "using %d\n", heartbeat);
+#else
+		;
+#endif
 	}
 
 	ret = misc_register(&nv_tco_miscdev);
@@ -415,8 +427,12 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 
 	tco_timer_stop();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized (0x%04x). heartbeat=%d sec "
 	       "(nowayout=%d)\n", tcobase, heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -439,8 +455,12 @@ static void __devexit nv_tco_cleanup(void)
 	pci_write_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, val);
 	pci_read_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, &val);
 	if (val & MCP51_SMBUS_SETUP_B_TCO_REBOOT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Couldn't unset REBOOT bit.  Machine may "
 		       "soon reset\n");
+#else
+		;
+#endif
 	}
 
 	/* Deregister */
@@ -475,8 +495,12 @@ static int __init nv_tco_init_module(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "NV TCO WatchDog Timer Driver v%s\n",
 	       TCO_VERSION);
+#else
+	;
+#endif
 
 	err = platform_driver_register(&nv_tco_driver);
 	if (err)
@@ -500,7 +524,11 @@ static void __exit nv_tco_cleanup_module(void)
 {
 	platform_device_unregister(nv_tco_platform_device);
 	platform_driver_unregister(&nv_tco_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "NV TCO Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(nv_tco_init_module);

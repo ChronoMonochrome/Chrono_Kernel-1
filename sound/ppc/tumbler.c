@@ -42,6 +42,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(fmt...) printk(KERN_DEBUG fmt)
 #else
 #define DBG(fmt...)
@@ -76,6 +77,9 @@ enum {
 	VOL_IDX_BASS, VOL_IDX_TREBLE,
 	VOL_IDX_LAST_MONO
 };
+#else
+#define DBG(fmt...) ;
+#endif
 
 /* stereo volumes for tas3004 */
 enum {

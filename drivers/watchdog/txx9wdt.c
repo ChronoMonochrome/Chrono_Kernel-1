@@ -96,8 +96,12 @@ static int txx9wdt_release(struct inode *inode, struct file *file)
 	if (expect_close)
 		txx9wdt_stop();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "txx9wdt: "
 		       "Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		txx9wdt_ping();
 	}
 	clear_bit(0, &txx9wdt_alive);
@@ -213,9 +217,13 @@ static int __init txx9wdt_probe(struct platform_device *dev)
 		goto exit;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Hardware Watchdog Timer for TXx9: "
 	       "timeout=%d sec (max %ld) (nowayout= %d)\n",
 	       timeout, WD_MAX_TIMEOUT, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 exit_busy:

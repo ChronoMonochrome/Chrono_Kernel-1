@@ -509,8 +509,8 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
 						data_offset, data,
 						data_reg_blk_size);
 			if (retval != data_reg_blk_size) {
-				printk(KERN_ERR "%s:read data failed\n",
-								__func__);
+//				printk(KERN_ERR "%s:read data failed\n",
+;
 				return 0;
 			} else {
 				x[touch_count]	=

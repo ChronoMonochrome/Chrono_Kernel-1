@@ -702,8 +702,8 @@ static void pci224_ao_handle_fifo(struct comedi_device *dev,
 			/* Nothing left to put in the FIFO. */
 			pci224_ao_stop(dev, s);
 			s->async->events |= COMEDI_CB_OVERFLOW;
-			printk(KERN_ERR "comedi%d: "
-			       "AO buffer underrun\n", dev->minor);
+//			printk(KERN_ERR "comedi%d: "
+;
 		}
 	}
 	/* Determine how many new scans can be put in the FIFO. */
@@ -1362,12 +1362,12 @@ pci224_find_pci(struct comedi_device *dev, int bus, int slot,
 	}
 	/* No match found. */
 	if (bus || slot) {
-		printk(KERN_ERR "comedi%d: error! "
-		       "no %s found at pci %02x:%02x!\n",
-		       dev->minor, thisboard->name, bus, slot);
+//		printk(KERN_ERR "comedi%d: error! "
+//		       "no %s found at pci %02x:%02x!\n",
+;
 	} else {
-		printk(KERN_ERR "comedi%d: error! no %s found!\n",
-		       dev->minor, thisboard->name);
+//		printk(KERN_ERR "comedi%d: error! no %s found!\n",
+;
 	}
 	return -EIO;
 }
@@ -1387,14 +1387,14 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned n;
 	int ret;
 
-	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor, DRIVER_NAME);
+;
 
 	bus = it->options[0];
 	slot = it->options[1];
 	ret = alloc_private(dev, sizeof(struct pci224_private));
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 
@@ -1405,9 +1405,9 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	devpriv->pci_dev = pci_dev;
 	ret = comedi_pci_enable(pci_dev, DRIVER_NAME);
 	if (ret < 0) {
-		printk(KERN_ERR
-		       "comedi%d: error! cannot enable PCI device "
-		       "and request regions!\n", dev->minor);
+//		printk(KERN_ERR
+//		       "comedi%d: error! cannot enable PCI device "
+;
 		return ret;
 	}
 	spin_lock_init(&devpriv->ao_spinlock);
@@ -1454,8 +1454,8 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/* Allocate subdevices.  There is only one!  */
 	ret = alloc_subdevices(dev, 1);
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 
@@ -1488,10 +1488,10 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 		for (n = 2; n < 3 + s->n_chan; n++) {
 			if (it->options[n] < 0 || it->options[n] > 1) {
-				printk(KERN_WARNING "comedi%d: %s: warning! "
-				       "bad options[%u]=%d\n",
-				       dev->minor, DRIVER_NAME, n,
-				       it->options[n]);
+//				printk(KERN_WARNING "comedi%d: %s: warning! "
+//				       "bad options[%u]=%d\n",
+//				       dev->minor, DRIVER_NAME, n,
+;
 			}
 		}
 		for (n = 0; n < s->n_chan; n++) {
@@ -1519,9 +1519,9 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			devpriv->hwrange = hwrange_pci224_external;
 		} else {
 			if (it->options[2] != 0) {
-				printk(KERN_WARNING "comedi%d: %s: warning! "
-				       "bad options[2]=%d\n",
-				       dev->minor, DRIVER_NAME, it->options[2]);
+//				printk(KERN_WARNING "comedi%d: %s: warning! "
+//				       "bad options[2]=%d\n",
+;
 			}
 			s->range_table = &range_pci224_internal;
 			devpriv->hwrange = hwrange_pci224_internal;
@@ -1534,23 +1534,23 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		ret = request_irq(irq, pci224_interrupt, IRQF_SHARED,
 				  DRIVER_NAME, dev);
 		if (ret < 0) {
-			printk(KERN_ERR "comedi%d: error! "
-			       "unable to allocate irq %u\n", dev->minor, irq);
+//			printk(KERN_ERR "comedi%d: error! "
+;
 			return ret;
 		} else {
 			dev->irq = irq;
 		}
 	}
 
-	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
-	printk("(pci %s) ", pci_name(pci_dev));
+;
+;
 	if (irq)
-		printk("(irq %u%s) ", irq, (dev->irq ? "" : " UNAVAILABLE"));
+;
 	else
-		printk("(no irq) ");
+;
 
 
-	printk("attached\n");
+;
 
 	return 1;
 }
@@ -1565,7 +1565,7 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pci224_detach(struct comedi_device *dev)
 {
-	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor, DRIVER_NAME);
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -1589,8 +1589,8 @@ static int pci224_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name) {
-		printk(KERN_INFO "comedi%d: %s removed\n",
-		       dev->minor, dev->board_name);
+//		printk(KERN_INFO "comedi%d: %s removed\n",
+;
 	}
 
 	return 0;

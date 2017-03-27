@@ -48,12 +48,16 @@
 #include "target_core_iblock.h"
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_IBLOCK(x...) printk(x)
 #else
 #define DEBUG_IBLOCK(x...)
 #endif
 
 static struct se_subsystem_api iblock_template;
+#else
+#define DEBUG_IBLOCK(x...) ;
+#endif
 
 static void iblock_bio_done(struct bio *, int);
 
@@ -78,13 +82,21 @@ static int iblock_attach_hba(struct se_hba *hba, u32 host_id)
 	atomic_set(&hba->max_queue_depth, IBLOCK_HBA_QUEUE_DEPTH);
 	hba->hba_ptr = (void *) ib_host;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - TCM iBlock HBA Driver %s on"
 		" Generic Target Core Stack %s\n", hba->hba_id,
 		IBLOCK_VERSION, TARGET_CORE_MOD_VERSION);
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Attached iBlock HBA: %u to Generic"
 		" Target Core TCQ Depth: %d\n", hba->hba_id,
 		ib_host->iblock_host_id, atomic_read(&hba->max_queue_depth));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -93,8 +105,12 @@ static void iblock_detach_hba(struct se_hba *hba)
 {
 	struct iblock_hba *ib_host = hba->hba_ptr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Detached iBlock HBA: %u from Generic"
 		" Target Core\n", hba->hba_id, ib_host->iblock_host_id);
+#else
+	;
+#endif
 
 	kfree(ib_host);
 	hba->hba_ptr = NULL;
@@ -112,7 +128,11 @@ static void *iblock_allocate_virtdevice(struct se_hba *hba, const char *name)
 	}
 	ib_dev->ibd_host = ib_host;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO  "IBLOCK: Allocated ib_dev for %s\n", name);
+#else
+	;
+#endif
 
 	return ib_dev;
 }
@@ -144,13 +164,21 @@ static struct se_device *iblock_create_virtdevice(
 		printk(KERN_ERR "IBLOCK: Unable to create bioset()\n");
 		return ERR_PTR(-ENOMEM);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IBLOCK: Created bio_set()\n");
+#else
+	;
+#endif
 	/*
 	 * iblock_check_configfs_dev_params() ensures that ib_dev->ibd_udev_path
 	 * must already have been set in order for echo 1 > $HBA/$DEV/enable to run.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
 			ib_dev->ibd_udev_path);
+#else
+	;
+#endif
 
 	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
 				FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
@@ -199,8 +227,12 @@ static struct se_device *iblock_create_virtdevice(
 		DEV_ATTRIB(dev)->unmap_granularity_alignment =
 				q->limits.discard_alignment;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IBLOCK: BLOCK Discard support available,"
 				" disabled by default\n");
+#else
+		;
+#endif
 	}
 
 	return dev;
@@ -499,15 +531,23 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
 			snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
 					"%s", arg_p);
 			kfree(arg_p);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
 					ib_dev->ibd_udev_path);
+#else
+			;
+#endif
 			ib_dev->ibd_flags |= IBDF_HAS_UDEV_PATH;
 			break;
 		case Opt_force:
 			match_int(args, &arg);
 			ib_dev->ibd_force = arg;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IBLOCK: Set force=%d\n",
 				ib_dev->ibd_force);
+#else
+			;
+#endif
 			break;
 		default:
 			break;

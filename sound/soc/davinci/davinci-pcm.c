@@ -35,10 +35,18 @@ static void print_buf_info(int slot, char *name)
 	if (slot < 0)
 		return;
 	edma_read_slot(slot, &p);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: 0x%x, opt=%x, src=%x, a_b_cnt=%x dst=%x\n",
 			name, slot, p.opt, p.src, p.a_b_cnt, p.dst);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "    src_dst_bidx=%x link_bcntrld=%x src_dst_cidx=%x ccnt=%x\n",
 			p.src_dst_bidx, p.link_bcntrld, p.src_dst_cidx, p.ccnt);
+#else
+	;
+#endif
 }
 #else
 static void print_buf_info(int slot, char *name)
@@ -492,8 +500,12 @@ static int davinci_pcm_dma_request(struct snd_pcm_substream *substream)
 	if (iram_dma) {
 		if (request_ping_pong(substream, prtd, iram_dma) == 0)
 			return 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: dma channel allocation failed,"
 				"not using sram\n", __func__);
+#else
+		;
+#endif
 	}
 
 	/* Issue transfer completion IRQ when the channel completes a

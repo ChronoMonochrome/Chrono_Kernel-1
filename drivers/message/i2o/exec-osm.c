@@ -507,8 +507,12 @@ static int i2o_exec_reply(struct i2o_controller *c, u32 m,
 	 * to aid in debugging.
 	 *
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: Unsolicited message reply sent to core!"
 	       "Message dumped to syslog\n", c->name);
+#else
+	;
+#endif
 	i2o_dump_message(msg);
 
 	return -EFAULT;

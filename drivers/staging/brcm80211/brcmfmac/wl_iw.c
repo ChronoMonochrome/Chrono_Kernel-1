@@ -35,23 +35,23 @@ typedef const struct si_pub si_t;
 #include <dngl_stats.h>
 #include <dhd.h>
 
-#define WL_ERROR(fmt, args...)	printk(fmt, ##args)
-#define WL_TRACE(fmt, args...)	no_printk(fmt, ##args)
-#define WL_INFORM(fmt, args...)	no_printk(fmt, ##args)
-#define WL_WSEC(fmt, args...)	no_printk(fmt, ##args)
-#define WL_SCAN(fmt, args...)	no_printk(fmt, ##args)
-
-#include <wl_iw.h>
-
-#define IW_WSEC_ENABLED(wsec)	((wsec) & (WEP_ENABLED |	\
-					 TKIP_ENABLED | AES_ENABLED))
-
-#include <linux/rtnetlink.h>
-
-#define WL_IW_USE_ISCAN  1
-#define ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS  1
-
-bool g_set_essid_before_scan = true;
+//#define WL_ERROR(fmt, args...)	printk(fmt, ##args)
+//#define WL_TRACE(fmt, args...)	no_printk(fmt, ##args)
+//#define WL_INFORM(fmt, args...)	no_printk(fmt, ##args)
+//#define WL_WSEC(fmt, args...)	no_printk(fmt, ##args)
+//#define WL_SCAN(fmt, args...)	no_printk(fmt, ##args)
+//
+//#include <wl_iw.h>
+//
+//#define IW_WSEC_ENABLED(wsec)	((wsec) & (WEP_ENABLED |	\
+//					 TKIP_ENABLED | AES_ENABLED))
+//
+//#include <linux/rtnetlink.h>
+//
+//#define WL_IW_USE_ISCAN  1
+//#define ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS  1
+//
+;
 
 #define WL_IW_IOCTL_CALL(func_call) \
 	do {				\
@@ -3669,8 +3669,8 @@ void osl_assert(char *exp, char *file, int line)
 	 */
 	if (!in_interrupt()) {
 		const int delay = 3;
-		printk(KERN_ERR "%s", tempbuf);
-		printk(KERN_ERR "panic in %d seconds\n", delay);
+;
+;
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule_timeout(delay * HZ);
 	}
@@ -3680,11 +3680,11 @@ void osl_assert(char *exp, char *file, int line)
 		panic(KERN_ERR "%s", tempbuf);
 		break;
 	case 1:
-		printk(KERN_ERR "%s", tempbuf);
+;
 		BUG();
 		break;
 	case 2:
-		printk(KERN_ERR "%s", tempbuf);
+;
 		break;
 	default:
 		break;

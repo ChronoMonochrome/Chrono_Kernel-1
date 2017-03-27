@@ -267,10 +267,10 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	iobase = it->options[0];
 	iorange = this_board->io_range;
-	printk(KERN_WARNING "comedi%d: pcl726: board=%s, 0x%03lx ", dev->minor,
-	       this_board->name, iobase);
+//	printk(KERN_WARNING "comedi%d: pcl726: board=%s, 0x%03lx ", dev->minor,
+;
 	if (!request_region(iobase, iorange, "pcl726")) {
-		printk(KERN_WARNING "I/O port conflict\n");
+;
 		return -EIO;
 	}
 
@@ -294,19 +294,19 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		devpriv->first_chan = 2;
 		if (irq) {	/* we want to use IRQ */
 			if (((1 << irq) & boardtypes[board].IRQbits) == 0) {
-				printk(KERN_WARNING
-					", IRQ %d is out of allowed range,"
-					" DISABLING IT", irq);
+//				printk(KERN_WARNING
+//					", IRQ %d is out of allowed range,"
+;
 				irq = 0;	/* Bad IRQ */
 			} else {
 				if (request_irq(irq, interrupt_pcl818, 0,
 						"pcl726", dev)) {
-					printk(KERN_WARNING
-						", unable to allocate IRQ %d,"
-						" DISABLING IT", irq);
+//					printk(KERN_WARNING
+//						", unable to allocate IRQ %d,"
+;
 					irq = 0;	/* Can't use IRQ */
 				} else {
-					printk(", irq=%d", irq);
+;
 				}
 			}
 		}
@@ -315,7 +315,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	dev->irq = irq;
 #endif
 
-	printk("\n");
+;
 
 	ret = alloc_subdevices(dev, 3);
 	if (ret < 0)

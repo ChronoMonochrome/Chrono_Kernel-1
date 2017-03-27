@@ -120,12 +120,12 @@ static int hfs_remount(struct super_block *sb, int *flags, char *data)
 		return 0;
 	if (!(*flags & MS_RDONLY)) {
 		if (!(HFS_SB(sb)->mdb->drAtrb & cpu_to_be16(HFS_SB_ATTRIB_UNMNT))) {
-			printk(KERN_WARNING "hfs: filesystem was not cleanly unmounted, "
-			       "running fsck.hfs is recommended.  leaving read-only.\n");
+//			printk(KERN_WARNING "hfs: filesystem was not cleanly unmounted, "
+;
 			sb->s_flags |= MS_RDONLY;
 			*flags |= MS_RDONLY;
 		} else if (HFS_SB(sb)->mdb->drAtrb & cpu_to_be16(HFS_SB_ATTRIB_SLOCK)) {
-			printk(KERN_WARNING "hfs: filesystem is marked locked, leaving read-only.\n");
+;
 			sb->s_flags |= MS_RDONLY;
 			*flags |= MS_RDONLY;
 		}
@@ -255,21 +255,21 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 		switch (token) {
 		case opt_uid:
 			if (match_int(&args[0], &tmp)) {
-				printk(KERN_ERR "hfs: uid requires an argument\n");
+;
 				return 0;
 			}
 			hsb->s_uid = (uid_t)tmp;
 			break;
 		case opt_gid:
 			if (match_int(&args[0], &tmp)) {
-				printk(KERN_ERR "hfs: gid requires an argument\n");
+;
 				return 0;
 			}
 			hsb->s_gid = (gid_t)tmp;
 			break;
 		case opt_umask:
 			if (match_octal(&args[0], &tmp)) {
-				printk(KERN_ERR "hfs: umask requires a value\n");
+;
 				return 0;
 			}
 			hsb->s_file_umask = (umode_t)tmp;
@@ -277,39 +277,39 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_file_umask:
 			if (match_octal(&args[0], &tmp)) {
-				printk(KERN_ERR "hfs: file_umask requires a value\n");
+;
 				return 0;
 			}
 			hsb->s_file_umask = (umode_t)tmp;
 			break;
 		case opt_dir_umask:
 			if (match_octal(&args[0], &tmp)) {
-				printk(KERN_ERR "hfs: dir_umask requires a value\n");
+;
 				return 0;
 			}
 			hsb->s_dir_umask = (umode_t)tmp;
 			break;
 		case opt_part:
 			if (match_int(&args[0], &hsb->part)) {
-				printk(KERN_ERR "hfs: part requires an argument\n");
+;
 				return 0;
 			}
 			break;
 		case opt_session:
 			if (match_int(&args[0], &hsb->session)) {
-				printk(KERN_ERR "hfs: session requires an argument\n");
+;
 				return 0;
 			}
 			break;
 		case opt_type:
 			if (match_fourchar(&args[0], &hsb->s_type)) {
-				printk(KERN_ERR "hfs: type requires a 4 character value\n");
+;
 				return 0;
 			}
 			break;
 		case opt_creator:
 			if (match_fourchar(&args[0], &hsb->s_creator)) {
-				printk(KERN_ERR "hfs: creator requires a 4 character value\n");
+;
 				return 0;
 			}
 			break;
@@ -318,14 +318,14 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_codepage:
 			if (hsb->nls_disk) {
-				printk(KERN_ERR "hfs: unable to change codepage\n");
+;
 				return 0;
 			}
 			p = match_strdup(&args[0]);
 			if (p)
 				hsb->nls_disk = load_nls(p);
 			if (!hsb->nls_disk) {
-				printk(KERN_ERR "hfs: unable to load codepage \"%s\"\n", p);
+;
 				kfree(p);
 				return 0;
 			}
@@ -333,14 +333,14 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_iocharset:
 			if (hsb->nls_io) {
-				printk(KERN_ERR "hfs: unable to change iocharset\n");
+;
 				return 0;
 			}
 			p = match_strdup(&args[0]);
 			if (p)
 				hsb->nls_io = load_nls(p);
 			if (!hsb->nls_io) {
-				printk(KERN_ERR "hfs: unable to load iocharset \"%s\"\n", p);
+;
 				kfree(p);
 				return 0;
 			}
@@ -354,7 +354,7 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 	if (hsb->nls_disk && !hsb->nls_io) {
 		hsb->nls_io = load_nls_default();
 		if (!hsb->nls_io) {
-			printk(KERN_ERR "hfs: unable to load default iocharset\n");
+;
 			return 0;
 		}
 	}
@@ -391,7 +391,7 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	res = -EINVAL;
 	if (!parse_options((char *)data, sbi)) {
-		printk(KERN_ERR "hfs: unable to parse mount options.\n");
+;
 		goto bail;
 	}
 
@@ -402,8 +402,8 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 	res = hfs_mdb_get(sb);
 	if (res) {
 		if (!silent)
-			printk(KERN_WARNING "hfs: can't find a HFS filesystem on dev %s.\n",
-				hfs_mdb_name(sb));
+//			printk(KERN_WARNING "hfs: can't find a HFS filesystem on dev %s.\n",
+;
 		res = -EINVAL;
 		goto bail;
 	}
@@ -438,7 +438,7 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 	return 0;
 
 bail_no_root:
-	printk(KERN_ERR "hfs: get root inode failed.\n");
+;
 bail:
 	hfs_mdb_put(sb);
 	return res;

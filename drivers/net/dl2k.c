@@ -265,15 +265,15 @@ rio_probe1 (struct pci_dev *pdev, const struct pci_device_id *ent)
 	printk (KERN_INFO "%s: %s, %pM, IRQ %d\n",
 		dev->name, np->name, dev->dev_addr, irq);
 	if (tx_coalesce > 1)
-		printk(KERN_INFO "tx_coalesce:\t%d packets\n",
-				tx_coalesce);
+//		printk(KERN_INFO "tx_coalesce:\t%d packets\n",
+;
 	if (np->coalesce)
-		printk(KERN_INFO
-		       "rx_coalesce:\t%d packets\n"
-		       "rx_timeout: \t%d ns\n",
-				np->rx_coalesce, np->rx_timeout*640);
+//		printk(KERN_INFO
+//		       "rx_coalesce:\t%d packets\n"
+//		       "rx_timeout: \t%d ns\n",
+;
 	if (np->vlan)
-		printk(KERN_INFO "vlan(id):\t%d\n", np->vlan);
+;
 	return 0;
 
       err_out_unmap_rx:
@@ -498,7 +498,7 @@ rio_timer (unsigned long data)
 	spin_lock_irqsave(&np->rx_lock, flags);
 	/* Recover rx ring exhausted error */
 	if (np->cur_rx - np->old_rx >= RX_RING_SIZE) {
-		printk(KERN_INFO "Try to recover rx ring exhausted...\n");
+;
 		/* Re-allocate skbuffs to fill the descriptor ring */
 		for (; np->cur_rx - np->old_rx > 0; np->old_rx++) {
 			struct sk_buff *skb;
@@ -1221,7 +1221,7 @@ static int rio_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 		if (np->speed == 1000) {
 			ethtool_cmd_speed_set(cmd, SPEED_100);
 			cmd->duplex = DUPLEX_FULL;
-			printk("Warning!! Can't disable Auto negotiation in 1000Mbps, change to Manual 100Mbps, Full duplex.\n");
+;
 		}
 		switch (ethtool_cmd_speed(cmd)) {
 		case SPEED_10:
@@ -1292,7 +1292,7 @@ rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
 		     np->old_rx);
 		break;
 	case SIOCDEVPRIVATE + 8:
-		printk("TX ring:\n");
+;
 		for (i = 0; i < TX_RING_SIZE; i++) {
 			desc = &np->tx_ring[i];
 			printk
@@ -1509,13 +1509,13 @@ mii_get_media (struct net_device *dev)
 		}
 	}
 	if (np->tx_flow)
-		printk(KERN_INFO "Enable Tx Flow Control\n");
+;
 	else
-		printk(KERN_INFO "Disable Tx Flow Control\n");
+;
 	if (np->rx_flow)
-		printk(KERN_INFO "Enable Rx Flow Control\n");
+;
 	else
-		printk(KERN_INFO "Disable Rx Flow Control\n");
+;
 
 	return 0;
 }
@@ -1656,13 +1656,13 @@ mii_get_media_pcs (struct net_device *dev)
 		}
 	}
 	if (np->tx_flow)
-		printk(KERN_INFO "Enable Tx Flow Control\n");
+;
 	else
-		printk(KERN_INFO "Disable Tx Flow Control\n");
+;
 	if (np->rx_flow)
-		printk(KERN_INFO "Enable Rx Flow Control\n");
+;
 	else
-		printk(KERN_INFO "Disable Rx Flow Control\n");
+;
 
 	return 0;
 }

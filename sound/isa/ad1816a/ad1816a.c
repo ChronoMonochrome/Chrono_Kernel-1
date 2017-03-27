@@ -113,7 +113,11 @@ static int __devinit snd_card_ad1816a_pnp(int dev, struct snd_card_ad1816a *acar
 	acard->devmpu = pnp_request_card_device(card, id->devs[1].id, NULL);
 	if (acard->devmpu == NULL) {
 		mpu_port[dev] = -1;
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING PFX "MPU401 device busy, skipping.\n");
+#else
+		;
+#endif
 	}
 
 	pdev = acard->dev;

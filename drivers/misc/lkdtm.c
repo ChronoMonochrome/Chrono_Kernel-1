@@ -357,8 +357,12 @@ static void lkdtm_handler(void)
 
 	spin_lock_irqsave(&count_lock, flags);
 	count--;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
 			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+#else
+	;
+#endif
 
 	if (count == 0) {
 		lkdtm_do_action(cptype);
@@ -412,18 +416,30 @@ static int lkdtm_register_cpoint(enum cname which)
 		lkdtm.kp.symbol_name = "generic_ide_ioctl";
 		lkdtm.entry = (kprobe_opcode_t*) jp_generic_ide_ioctl;
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: Crash point not available\n");
+#else
+		;
+#endif
 		return -EINVAL;
 #endif
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: Invalid Crash Point\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	cpoint = which;
 	if ((ret = register_jprobe(&lkdtm)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: Couldn't register jprobe\n");
+#else
+		;
+#endif
 		cpoint = CN_INVALID;
 	}
 
@@ -568,8 +584,12 @@ static ssize_t direct_entry(struct file *f, const char __user *user_buf,
 	if (type == CT_NONE)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lkdtm: Performing direct entry %s\n",
 			cp_type_to_str(type));
+#else
+	;
+#endif
 	lkdtm_do_action(type);
 	*off += count;
 
@@ -653,21 +673,37 @@ static int __init lkdtm_module_init(void)
 	}
 
 	if (lkdtm_parse_commandline() == -EINVAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: Invalid command\n");
+#else
+		;
+#endif
 		goto out_err;
 	}
 
 	if (cpoint != CN_INVALID && cptype != CT_NONE) {
 		ret = lkdtm_register_cpoint(cpoint);
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lkdtm: Invalid crash point %d\n",
 					cpoint);
+#else
+			;
+#endif
 			goto out_err;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: Crash point %s of type %s registered\n",
 				cpoint_name, cpoint_type);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lkdtm: No crash points registered, enable through debugfs\n");
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -682,7 +718,11 @@ static void __exit lkdtm_module_exit(void)
 	debugfs_remove_recursive(lkdtm_debugfs_root);
 
 	unregister_jprobe(&lkdtm);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lkdtm: Crash point unregistered\n");
+#else
+	;
+#endif
 }
 
 module_init(lkdtm_module_init);

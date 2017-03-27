@@ -42,6 +42,7 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info,2=xfer,4=setfe,8=getfe (|-able)).");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...) dprintk(0x01,args)
 #define deb_i2c(args...)  dprintk(0x02,args)
 #define deb_srch(args...) dprintk(0x04,args)
@@ -53,6 +54,9 @@ MODULE_PARM_DESC(debug, "set debugging level (1=info,2=xfer,4=setfe,8=getfe (|-a
 static int dib3000_read_reg(struct dib3000_state *state, u16 reg)
 {
 	u8 wb[] = { ((reg >> 8) | 0x80) & 0xff, reg & 0xff };
+#else
+#define deb_info(args...) d;
+#endif
 	u8 rb[2];
 	struct i2c_msg msg[] = {
 		{ .addr = state->config.demod_address, .flags = 0,        .buf = wb, .len = 2 },

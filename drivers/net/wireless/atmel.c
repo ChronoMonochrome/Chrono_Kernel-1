@@ -1189,7 +1189,7 @@ static irqreturn_t service_interrupt(int irq, void *dev_id)
 	while (1) {
 		if (!atmel_lock_mac(priv)) {
 			/* failed to contact card */
-			printk(KERN_ALERT "%s: failed to contact MAC.\n", dev->name);
+;
 			return IRQ_HANDLED;
 		}
 
@@ -1209,7 +1209,7 @@ static irqreturn_t service_interrupt(int irq, void *dev_id)
 
 		if (!atmel_lock_mac(priv)) {
 			/* failed to contact card */
-			printk(KERN_ALERT "%s: failed to contact MAC.\n", dev->name);
+;
 			return IRQ_HANDLED;
 		}
 
@@ -1256,7 +1256,7 @@ static irqreturn_t service_interrupt(int irq, void *dev_id)
 				build_wpa_mib(priv);
 			break;
 		case ISR_GENERIC_IRQ:
-			printk(KERN_INFO "%s: Generic_irq received.\n", dev->name);
+;
 			break;
 		}
 	}
@@ -1355,7 +1355,7 @@ int atmel_open(struct net_device *dev)
 				break;
 		if (i == ARRAY_SIZE(channel_table)) {
 			priv->reg_domain = REG_DOMAIN_MKK1;
-			printk(KERN_ALERT "%s: failed to get regulatory domain: assuming MKK1.\n", dev->name);
+;
 		}
 	}
 
@@ -1533,11 +1533,11 @@ struct net_device *init_atmel_card(unsigned short irq, unsigned long port,
 	/* Create the network device object. */
 	dev = alloc_etherdev(sizeof(*priv));
 	if (!dev) {
-		printk(KERN_ERR "atmel: Couldn't alloc_etherdev\n");
+;
 		return NULL;
 	}
 	if (dev_alloc_name(dev, dev->name) < 0) {
-		printk(KERN_ERR "atmel: Couldn't get name!\n");
+;
 		goto err_out_free;
 	}
 
@@ -1612,7 +1612,7 @@ struct net_device *init_atmel_card(unsigned short irq, unsigned long port,
 	SET_NETDEV_DEV(dev, sys_dev);
 
 	if ((rc = request_irq(dev->irq, service_interrupt, IRQF_SHARED, dev->name, dev))) {
-		printk(KERN_ERR "%s: register interrupt %d failed, rc %d\n", dev->name, irq, rc);
+;
 		goto err_out_free;
 	}
 
@@ -1633,10 +1633,10 @@ struct net_device *init_atmel_card(unsigned short irq, unsigned long port,
 
 	ent = create_proc_read_entry ("driver/atmel", 0, NULL, atmel_read_proc, priv);
 	if (!ent)
-		printk(KERN_WARNING "atmel: unable to create /proc entry.\n");
+;
 
-	printk(KERN_INFO "%s: Atmel at76c50x. Version %d.%d. MAC %pM\n",
-	       dev->name, DRIVER_MAJOR, DRIVER_MINOR, dev->dev_addr);
+//	printk(KERN_INFO "%s: Atmel at76c50x. Version %d.%d. MAC %pM\n",
+;
 
 	return dev;
 
@@ -3643,12 +3643,12 @@ static int atmel_wakeup_firmware(struct atmel_private *priv)
 	}
 
 	if (i == 0) {
-		printk(KERN_ALERT "%s: MAC failed to boot.\n", priv->dev->name);
+;
 		return -EIO;
 	}
 
 	if ((priv->host_info_base = atmel_read16(priv->dev, MR2)) == 0xffff) {
-		printk(KERN_ALERT "%s: card missing.\n", priv->dev->name);
+;
 		return -ENODEV;
 	}
 
@@ -3671,20 +3671,20 @@ static int atmel_wakeup_firmware(struct atmel_private *priv)
 	}
 
 	if (i == 0) {
-		printk(KERN_ALERT "%s: MAC failed to initialise.\n",
-				priv->dev->name);
+//		printk(KERN_ALERT "%s: MAC failed to initialise.\n",
+;
 		return -EIO;
 	}
 
 	/* Check for MAC_INIT_OK only on the register that the MAC_INIT_OK was set */
 	if ((mr3 & MAC_INIT_COMPLETE) &&
 	    !(atmel_read16(priv->dev, MR3) & MAC_INIT_OK)) {
-		printk(KERN_ALERT "%s: MAC failed MR3 self-test.\n", priv->dev->name);
+;
 		return -EIO;
 	}
 	if ((mr1 & MAC_INIT_COMPLETE) &&
 	    !(atmel_read16(priv->dev, MR1) & MAC_INIT_OK)) {
-		printk(KERN_ALERT "%s: MAC failed MR1 self-test.\n", priv->dev->name);
+;
 		return -EIO;
 	}
 
@@ -3736,7 +3736,7 @@ static int probe_atmel_card(struct net_device *dev)
 			if (atmel_read16(dev, MR3) & MAC_BOOT_COMPLETE)
 				break;
 		if (i == 0) {
-			printk(KERN_ALERT "%s: MAC failed to boot MAC address reader.\n", dev->name);
+;
 		} else {
 			atmel_copy_to_host(dev, dev->dev_addr, atmel_read16(dev, MR2), 6);
 			/* got address, now squash it again until the network
@@ -3927,19 +3927,19 @@ static int reset_atmel_card(struct net_device *dev)
 		if (!(fw = priv->firmware)) {
 			if (priv->firmware_type == ATMEL_FW_TYPE_NONE) {
 				if (strlen(priv->firmware_id) == 0) {
-					printk(KERN_INFO
-					       "%s: card type is unknown: assuming at76c502 firmware is OK.\n",
-					       dev->name);
-					printk(KERN_INFO
-					       "%s: if not, use the firmware= module parameter.\n",
-					       dev->name);
+//					printk(KERN_INFO
+//					       "%s: card type is unknown: assuming at76c502 firmware is OK.\n",
+;
+//					printk(KERN_INFO
+//					       "%s: if not, use the firmware= module parameter.\n",
+;
 					strcpy(priv->firmware_id, "atmel_at76c502.bin");
 				}
 				err = request_firmware(&fw_entry, priv->firmware_id, priv->sys_dev);
 				if (err != 0) {
-					printk(KERN_ALERT
-					       "%s: firmware %s is missing, cannot continue.\n",
-					       dev->name, priv->firmware_id);
+//					printk(KERN_ALERT
+//					       "%s: firmware %s is missing, cannot continue.\n",
+;
 					return err;
 				}
 			} else {
@@ -3965,9 +3965,9 @@ static int reset_atmel_card(struct net_device *dev)
 					}
 				}
 				if (!success) {
-					printk(KERN_ALERT
-					       "%s: firmware %s is missing, cannot start.\n",
-					       dev->name, priv->firmware_id);
+//					printk(KERN_ALERT
+//					       "%s: firmware %s is missing, cannot start.\n",
+;
 					priv->firmware_id[0] = '\0';
 					return -ENOENT;
 				}
@@ -4037,8 +4037,8 @@ static int reset_atmel_card(struct net_device *dev)
 	if (!priv->radio_on_broken) {
 		if (atmel_send_command_wait(priv, CMD_EnableRadio, NULL, 0) ==
 		    CMD_STATUS_REJECTED_RADIO_OFF) {
-			printk(KERN_INFO "%s: cannot turn the radio on.\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: cannot turn the radio on.\n",
+;
 			return -EIO;
 		}
 	}
@@ -4103,7 +4103,7 @@ static int atmel_send_command_wait(struct atmel_private *priv, int command,
 	}
 
 	if (i == 0) {
-		printk(KERN_ALERT "%s: failed to contact MAC.\n", priv->dev->name);
+;
 		status =  CMD_STATUS_HOST_ERROR;
 	} else {
 		if (command != CMD_EnableRadio)
@@ -4157,7 +4157,7 @@ static void atmel_set_mib(struct atmel_private *priv, u8 type, u8 index,
 	m.index = index;
 
 	if (data_len > MIB_MAX_DATA_BYTES)
-		printk(KERN_ALERT "%s: MIB buffer too small.\n", priv->dev->name);
+;
 
 	memcpy(m.data, data, data_len);
 	atmel_send_command_wait(priv, CMD_Set_MIB_Vars, &m, MIB_HEADER_SIZE + data_len);
@@ -4172,7 +4172,7 @@ static void atmel_get_mib(struct atmel_private *priv, u8 type, u8 index,
 	m.index = index;
 
 	if (data_len > MIB_MAX_DATA_BYTES)
-		printk(KERN_ALERT "%s: MIB buffer too small.\n", priv->dev->name);
+;
 
 	atmel_send_command_wait(priv, CMD_Get_MIB_Vars, &m, MIB_HEADER_SIZE + data_len);
 	atmel_copy_to_host(priv->dev, data,

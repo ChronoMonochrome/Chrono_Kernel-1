@@ -166,8 +166,12 @@ static int m54xx_wdt_release(struct inode *inode, struct file *file)
 	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
 		wdt_disable();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "WATCHDOG: Device closed unexpectedly - "
 					"timer will not stop\n");
+#else
+		;
+#endif
 		wdt_keepalive();
 	}
 	clear_bit(WDT_IN_USE, &wdt_status);
@@ -196,11 +200,19 @@ static int __init m54xx_wdt_init(void)
 {
 	if (!request_mem_region(MCF_MBAR + MCF_GPT_GCIR0, 4,
 						"Coldfire M54xx Watchdog")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 				"Coldfire M54xx Watchdog : I/O region busy\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ColdFire watchdog driver is loaded.\n");
+#else
+	;
+#endif
 
 	return misc_register(&m54xx_wdt_miscdev);
 }

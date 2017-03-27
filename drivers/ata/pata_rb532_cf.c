@@ -206,7 +206,11 @@ static struct platform_driver rb532_pata_platform_driver = {
 
 static int __init rb532_pata_module_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_INFO "\n");
+#else
+	;
+#endif
 
 	return platform_driver_register(&rb532_pata_platform_driver);
 }

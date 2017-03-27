@@ -714,16 +714,16 @@ netxen_setup_pci_map(struct netxen_adapter *adapter)
 	db_len = pci_resource_len(pdev, 4);
 
 	if (db_len == 0) {
-		printk(KERN_ERR "%s: doorbell is disabled\n",
-				netxen_nic_driver_name);
+//		printk(KERN_ERR "%s: doorbell is disabled\n",
+;
 		err = -EIO;
 		goto err_out;
 	}
 
 	db_ptr = ioremap(db_base, NETXEN_DB_MAPSIZE_BYTES);
 	if (!db_ptr) {
-		printk(KERN_ERR "%s: Failed to allocate doorbell map.",
-				netxen_nic_driver_name);
+//		printk(KERN_ERR "%s: Failed to allocate doorbell map.",
+;
 		err = -EIO;
 		goto err_out;
 	}
@@ -1003,8 +1003,8 @@ __netxen_nic_up(struct netxen_adapter *adapter, struct net_device *netdev)
 
 	err = adapter->init_port(adapter, adapter->physical_port);
 	if (err) {
-		printk(KERN_ERR "%s: Failed to initialize port %d\n",
-				netxen_nic_driver_name, adapter->portnum);
+//		printk(KERN_ERR "%s: Failed to initialize port %d\n",
+;
 		return err;
 	}
 	if (NX_IS_REVISION_P2(adapter->ahw.revision_id))
@@ -1116,15 +1116,15 @@ netxen_nic_attach(struct netxen_adapter *adapter)
 
 	err = netxen_alloc_sw_resources(adapter);
 	if (err) {
-		printk(KERN_ERR "%s: Error in setting sw resources\n",
-				netdev->name);
+//		printk(KERN_ERR "%s: Error in setting sw resources\n",
+;
 		return err;
 	}
 
 	err = netxen_alloc_hw_resources(adapter);
 	if (err) {
-		printk(KERN_ERR "%s: Error in setting hw resources\n",
-				netdev->name);
+//		printk(KERN_ERR "%s: Error in setting hw resources\n",
+;
 		goto err_out_free_sw;
 	}
 
@@ -1990,25 +1990,25 @@ static int netxen_nic_check_temp(struct netxen_adapter *adapter)
 	temp_val = nx_get_temp_val(temp);
 
 	if (temp_state == NX_TEMP_PANIC) {
-		printk(KERN_ALERT
-		       "%s: Device temperature %d degrees C exceeds"
-		       " maximum allowed. Hardware has been shut down.\n",
-		       netdev->name, temp_val);
+//		printk(KERN_ALERT
+//		       "%s: Device temperature %d degrees C exceeds"
+//		       " maximum allowed. Hardware has been shut down.\n",
+;
 		rv = 1;
 	} else if (temp_state == NX_TEMP_WARN) {
 		if (adapter->temp == NX_TEMP_NORMAL) {
-			printk(KERN_ALERT
-			       "%s: Device temperature %d degrees C "
-			       "exceeds operating range."
-			       " Immediate action needed.\n",
-			       netdev->name, temp_val);
+//			printk(KERN_ALERT
+//			       "%s: Device temperature %d degrees C "
+//			       "exceeds operating range."
+//			       " Immediate action needed.\n",
+;
 		}
 	} else {
 		if (adapter->temp == NX_TEMP_WARN) {
-			printk(KERN_INFO
-			       "%s: Device temperature is now %d degrees C"
-			       " in normal range.\n", netdev->name,
-			       temp_val);
+//			printk(KERN_INFO
+//			       "%s: Device temperature is now %d degrees C"
+//			       " in normal range.\n", netdev->name,
+;
 		}
 	}
 	adapter->temp = temp_state;
@@ -2020,8 +2020,8 @@ void netxen_advert_link_change(struct netxen_adapter *adapter, int linkup)
 	struct net_device *netdev = adapter->netdev;
 
 	if (adapter->ahw.linkup && !linkup) {
-		printk(KERN_INFO "%s: %s NIC Link is down\n",
-		       netxen_nic_driver_name, netdev->name);
+//		printk(KERN_INFO "%s: %s NIC Link is down\n",
+;
 		adapter->ahw.linkup = 0;
 		if (netif_running(netdev)) {
 			netif_carrier_off(netdev);
@@ -2029,8 +2029,8 @@ void netxen_advert_link_change(struct netxen_adapter *adapter, int linkup)
 		}
 		adapter->link_changed = !adapter->has_link_events;
 	} else if (!adapter->ahw.linkup && linkup) {
-		printk(KERN_INFO "%s: %s NIC Link is up\n",
-		       netxen_nic_driver_name, netdev->name);
+//		printk(KERN_INFO "%s: %s NIC Link is up\n",
+;
 		adapter->ahw.linkup = 1;
 		if (netif_running(netdev)) {
 			netif_carrier_on(netdev);
@@ -2984,7 +2984,7 @@ static struct pci_driver netxen_driver = {
 
 static int __init netxen_init_module(void)
 {
-	printk(KERN_INFO "%s\n", netxen_nic_driver_string);
+;
 
 #ifdef CONFIG_INET
 	register_netdevice_notifier(&netxen_netdev_cb);

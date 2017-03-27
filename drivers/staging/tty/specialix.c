@@ -114,32 +114,32 @@ static int sx_rxfifo = SPECIALIX_RXFIFO;
 static int sx_rtscts;
 
 #ifdef DEBUG
-#define dprintk(f, str...) if (sx_debug & f) printk(str)
-#else
-#define dprintk(f, str...) /* nothing */
-#endif
-
-#define SX_DEBUG_FLOW    0x0001
-#define SX_DEBUG_DATA    0x0002
-#define SX_DEBUG_PROBE   0x0004
-#define SX_DEBUG_CHAN    0x0008
-#define SX_DEBUG_INIT    0x0010
-#define SX_DEBUG_RX      0x0020
-#define SX_DEBUG_TX      0x0040
-#define SX_DEBUG_IRQ     0x0080
-#define SX_DEBUG_OPEN    0x0100
-#define SX_DEBUG_TERMIOS 0x0200
-#define SX_DEBUG_SIGNALS 0x0400
-#define SX_DEBUG_FIFO    0x0800
-
-
-#define func_enter() dprintk(SX_DEBUG_FLOW, "io8: enter %s\n", __func__)
-#define func_exit()  dprintk(SX_DEBUG_FLOW, "io8: exit  %s\n", __func__)
-
-
-/* Configurable options: */
-
-/* Am I paranoid or not ? ;-) */
+//#define dprintk(f, str...) if (sx_debug & f) printk(str)
+//#else
+//#define dprintk(f, str...) /* nothing */
+//#endif
+//
+//#define SX_DEBUG_FLOW    0x0001
+//#define SX_DEBUG_DATA    0x0002
+//#define SX_DEBUG_PROBE   0x0004
+//#define SX_DEBUG_CHAN    0x0008
+//#define SX_DEBUG_INIT    0x0010
+//#define SX_DEBUG_RX      0x0020
+//#define SX_DEBUG_TX      0x0040
+//#define SX_DEBUG_IRQ     0x0080
+//#define SX_DEBUG_OPEN    0x0100
+//#define SX_DEBUG_TERMIOS 0x0200
+//#define SX_DEBUG_SIGNALS 0x0400
+//#define SX_DEBUG_FIFO    0x0800
+//
+//
+//#define func_enter() dprintk(SX_DEBUG_FLOW, "io8: enter %s\n", __func__)
+//#define func_exit()  dprintk(SX_DEBUG_FLOW, "io8: exit  %s\n", __func__)
+//
+//
+///* Configurable options: */
+//
+;
 #define SPECIALIX_PARANOIA_CHECK
 
 /*
@@ -179,11 +179,11 @@ static int sx_paranoia_check(struct specialix_port const *port,
 	  "sx: Warning: null specialix port for device %s in %s\n";
 
 	if (!port) {
-		printk(badinfo, name, routine);
+;
 		return 1;
 	}
 	if (port->magic != SPECIALIX_MAGIC) {
-		printk(badmagic, name, routine);
+;
 		return 1;
 	}
 #endif
@@ -274,7 +274,7 @@ static void sx_wait_CCR(struct specialix_board  *bp)
 		udelay(1);
 	}
 
-	printk(KERN_ERR "sx%d: Timeout waiting for CCR.\n", board_No(bp));
+;
 }
 
 
@@ -294,7 +294,7 @@ static void sx_wait_CCR_off(struct specialix_board  *bp)
 		udelay(1);
 	}
 
-	printk(KERN_ERR "sx%d: Timeout waiting for CCR.\n", board_No(bp));
+;
 }
 
 
@@ -340,8 +340,8 @@ static int sx_set_irq(struct specialix_board *bp)
 	case 9:
 		virq = 3;
 		break;
-	default:printk(KERN_ERR
-			    "Speclialix: cannot set irq to %d.\n", bp->irq);
+//	default:printk(KERN_ERR
+;
 		return 0;
 	}
 	spin_lock_irqsave(&bp->lock, flags);
@@ -385,7 +385,7 @@ static int sx_init_CD186x(struct specialix_board  *bp)
 
 	if (!sx_set_irq(bp)) {
 		/* Figure out how to pass this along... */
-		printk(KERN_ERR "Cannot set irq to %d.\n", bp->irq);
+;
 		rv = 0;
 	}
 
@@ -437,9 +437,9 @@ static int sx_probe(struct specialix_board *bp)
 
 
 	if (val1 != 0x5a || val2 != 0xa5) {
-		printk(KERN_INFO
-			"sx%d: specialix IO8+ Board at 0x%03x not found.\n",
-						board_No(bp), bp->base);
+//		printk(KERN_INFO
+//			"sx%d: specialix IO8+ Board at 0x%03x not found.\n",
+;
 		sx_release_io_range(bp);
 		func_exit();
 		return 1;
@@ -449,9 +449,9 @@ static int sx_probe(struct specialix_board *bp)
 	   identification */
 	val1 = read_cross_byte(bp, CD186x_MSVR, MSVR_DSR);
 	val2 = read_cross_byte(bp, CD186x_MSVR, MSVR_RTS);
-	dprintk(SX_DEBUG_INIT,
-			"sx%d: DSR lines are: %02x, rts lines are: %02x\n",
-					board_No(bp), val1, val2);
+//	dprintk(SX_DEBUG_INIT,
+//			"sx%d: DSR lines are: %02x, rts lines are: %02x\n",
+;
 
 	/* They managed to switch the bit order between the docs and
 	   the IO8+ card. The new PCI card now conforms to old docs.
@@ -459,9 +459,9 @@ static int sx_probe(struct specialix_board *bp)
 	   old card. */
 	val2 = (bp->flags & SX_BOARD_IS_PCI)?0x4d : 0xb2;
 	if (val1 != val2) {
-		printk(KERN_INFO
-		  "sx%d: specialix IO8+ ID %02x at 0x%03x not found (%02x).\n",
-		       board_No(bp), val2, bp->base, val1);
+//		printk(KERN_INFO
+//		  "sx%d: specialix IO8+ ID %02x at 0x%03x not found (%02x).\n",
+;
 		sx_release_io_range(bp);
 		func_exit();
 		return 1;
@@ -510,11 +510,11 @@ static int sx_probe(struct specialix_board *bp)
 		rev = 'x';
 	}
 
-	dprintk(SX_DEBUG_INIT, " GFCR = 0x%02x\n", sx_in_off(bp, CD186x_GFRCR));
+;
 
-	printk(KERN_INFO
-    "sx%d: specialix IO8+ board detected at 0x%03x, IRQ %d, CD%d Rev. %c.\n",
-				board_No(bp), bp->base, bp->irq, chip, rev);
+//	printk(KERN_INFO
+//    "sx%d: specialix IO8+ board detected at 0x%03x, IRQ %d, CD%d Rev. %c.\n",
+;
 
 	func_exit();
 	return 0;
@@ -532,21 +532,21 @@ static struct specialix_port *sx_get_port(struct specialix_board *bp,
 	struct specialix_port *port = NULL;
 
 	channel = sx_in(bp, CD186x_GICR) >> GICR_CHAN_OFF;
-	dprintk(SX_DEBUG_CHAN, "channel: %d\n", channel);
+;
 	if (channel < CD186x_NCH) {
 		port = &sx_port[board_No(bp) * SX_NPORT + channel];
-		dprintk(SX_DEBUG_CHAN, "port: %d %p flags: 0x%lx\n",
-			board_No(bp) * SX_NPORT + channel,  port,
-			port->port.flags & ASYNC_INITIALIZED);
+//		dprintk(SX_DEBUG_CHAN, "port: %d %p flags: 0x%lx\n",
+//			board_No(bp) * SX_NPORT + channel,  port,
+;
 
 		if (port->port.flags & ASYNC_INITIALIZED) {
-			dprintk(SX_DEBUG_CHAN, "port: %d %p\n", channel, port);
+;
 			func_exit();
 			return port;
 		}
 	}
-	printk(KERN_INFO "sx%d: %s interrupt from invalid port %d\n",
-	       board_No(bp), what, channel);
+//	printk(KERN_INFO "sx%d: %s interrupt from invalid port %d\n",
+;
 	return NULL;
 }
 
@@ -562,7 +562,7 @@ static void sx_receive_exc(struct specialix_board *bp)
 
 	port = sx_get_port(bp, "Receive");
 	if (!port) {
-		dprintk(SX_DEBUG_RX, "Hmm, couldn't find port.\n");
+;
 		func_exit();
 		return;
 	}
@@ -570,21 +570,21 @@ static void sx_receive_exc(struct specialix_board *bp)
 
 	status = sx_in(bp, CD186x_RCSR);
 
-	dprintk(SX_DEBUG_RX, "status: 0x%x\n", status);
+;
 	if (status & RCSR_OE) {
 		port->overrun++;
-		dprintk(SX_DEBUG_FIFO,
-			"sx%d: port %d: Overrun. Total %ld overruns.\n",
-				board_No(bp), port_No(port), port->overrun);
+//		dprintk(SX_DEBUG_FIFO,
+//			"sx%d: port %d: Overrun. Total %ld overruns.\n",
+;
 	}
 	status &= port->mark_mask;
 
 	/* This flip buffer check needs to be below the reading of the
 	   status register to reset the chip's IRQ.... */
 	if (tty_buffer_request_room(tty, 1) == 0) {
-		dprintk(SX_DEBUG_FIFO,
-		    "sx%d: port %d: Working around flip buffer overflow.\n",
-					board_No(bp), port_No(port));
+//		dprintk(SX_DEBUG_FIFO,
+//		    "sx%d: port %d: Working around flip buffer overflow.\n",
+;
 		func_exit();
 		return;
 	}
@@ -595,15 +595,15 @@ static void sx_receive_exc(struct specialix_board *bp)
 		return;
 	}
 	if (status & RCSR_TOUT) {
-		printk(KERN_INFO
-		    "sx%d: port %d: Receiver timeout. Hardware problems ?\n",
-					board_No(bp), port_No(port));
+//		printk(KERN_INFO
+//		    "sx%d: port %d: Receiver timeout. Hardware problems ?\n",
+;
 		func_exit();
 		return;
 
 	} else if (status & RCSR_BREAK) {
-		dprintk(SX_DEBUG_RX, "sx%d: port %d: Handling break...\n",
-		       board_No(bp), port_No(port));
+//		dprintk(SX_DEBUG_RX, "sx%d: port %d: Handling break...\n",
+;
 		flag = TTY_BREAK;
 		if (port->port.flags & ASYNC_SAK)
 			do_SAK(tty);
@@ -636,14 +636,14 @@ static void sx_receive(struct specialix_board *bp)
 
 	port = sx_get_port(bp, "Receive");
 	if (port == NULL) {
-		dprintk(SX_DEBUG_RX, "Hmm, couldn't find port.\n");
+;
 		func_exit();
 		return;
 	}
 	tty = port->port.tty;
 
 	count = sx_in(bp, CD186x_RDCR);
-	dprintk(SX_DEBUG_RX, "port: %p: count: %d\n", port, count);
+;
 	port->hits[count > 8 ? 9 : count]++;
 
 	while (count--)
@@ -665,7 +665,7 @@ static void sx_transmit(struct specialix_board *bp)
 		func_exit();
 		return;
 	}
-	dprintk(SX_DEBUG_TX, "port: %p\n", port);
+;
 	tty = port->port.tty;
 
 	if (port->IER & IER_TXEMPTY) {
@@ -740,7 +740,7 @@ static void sx_check_modem(struct specialix_board *bp)
 	unsigned char mcr;
 	int msvr_cd;
 
-	dprintk(SX_DEBUG_SIGNALS, "Modem intr. ");
+;
 	port = sx_get_port(bp, "Modem");
 	if (port == NULL)
 		return;
@@ -750,13 +750,13 @@ static void sx_check_modem(struct specialix_board *bp)
 	mcr = sx_in(bp, CD186x_MCR);
 
 	if ((mcr & MCR_CDCHG)) {
-		dprintk(SX_DEBUG_SIGNALS, "CD just changed... ");
+;
 		msvr_cd = sx_in(bp, CD186x_MSVR) & MSVR_CD;
 		if (msvr_cd) {
-			dprintk(SX_DEBUG_SIGNALS, "Waking up guys in open.\n");
+;
 			wake_up_interruptible(&port->port.open_wait);
 		} else {
-			dprintk(SX_DEBUG_SIGNALS, "Sending HUP.\n");
+;
 			tty_hangup(tty);
 		}
 	}
@@ -807,12 +807,12 @@ static irqreturn_t sx_interrupt(int dummy, void *dev_id)
 
 	spin_lock_irqsave(&bp->lock, flags);
 
-	dprintk(SX_DEBUG_FLOW, "enter %s port %d room: %ld\n", __func__,
-		port_No(sx_get_port(bp, "INT")),
-		SERIAL_XMIT_SIZE - sx_get_port(bp, "ITN")->xmit_cnt - 1);
+//	dprintk(SX_DEBUG_FLOW, "enter %s port %d room: %ld\n", __func__,
+//		port_No(sx_get_port(bp, "INT")),
+;
 	if (!(bp->flags & SX_BOARD_ACTIVE)) {
-		dprintk(SX_DEBUG_IRQ, "sx: False interrupt. irq %d.\n",
-								bp->irq);
+//		dprintk(SX_DEBUG_IRQ, "sx: False interrupt. irq %d.\n",
+;
 		spin_unlock_irqrestore(&bp->lock, flags);
 		func_exit();
 		return IRQ_NONE;
@@ -833,9 +833,9 @@ static irqreturn_t sx_interrupt(int dummy, void *dev_id)
 			else if (ack == (SX_ID | GIVR_IT_REXC))
 				sx_receive_exc(bp);
 			else
-				printk(KERN_ERR
-				"sx%d: status: 0x%x Bad receive ack 0x%02x.\n",
-						board_No(bp), status, ack);
+//				printk(KERN_ERR
+//				"sx%d: status: 0x%x Bad receive ack 0x%02x.\n",
+;
 
 		} else if (status & SRSR_TREQint) {
 			ack = sx_in(bp, CD186x_TRAR);
@@ -843,18 +843,18 @@ static irqreturn_t sx_interrupt(int dummy, void *dev_id)
 			if (ack == (SX_ID | GIVR_IT_TX))
 				sx_transmit(bp);
 			else
-				printk(KERN_ERR "sx%d: status: 0x%x Bad transmit ack 0x%02x. port: %d\n",
-					board_No(bp), status, ack,
-					port_No(sx_get_port(bp, "Int")));
+//				printk(KERN_ERR "sx%d: status: 0x%x Bad transmit ack 0x%02x. port: %d\n",
+//					board_No(bp), status, ack,
+;
 		} else if (status & SRSR_MREQint) {
 			ack = sx_in(bp, CD186x_MRAR);
 
 			if (ack == (SX_ID | GIVR_IT_MODEM))
 				sx_check_modem(bp);
 			else
-				printk(KERN_ERR
-				  "sx%d: status: 0x%x Bad modem ack 0x%02x.\n",
-				       board_No(bp), status, ack);
+//				printk(KERN_ERR
+//				  "sx%d: status: 0x%x Bad modem ack 0x%02x.\n",
+;
 
 		}
 
@@ -935,8 +935,8 @@ static void sx_shutdown_board(struct specialix_board *bp)
 
 	bp->flags &= ~SX_BOARD_ACTIVE;
 
-	dprintk(SX_DEBUG_IRQ, "Freeing IRQ%d for board %d.\n",
-		 bp->irq, board_No(bp));
+//	dprintk(SX_DEBUG_IRQ, "Freeing IRQ%d for board %d.\n",
+;
 	free_irq(bp->irq, bp);
 	turn_ints_off(bp);
 	func_exit();
@@ -985,7 +985,7 @@ static void sx_change_speed(struct specialix_board *bp,
 	else
 		port->MSVR =  (sx_in(bp, CD186x_MSVR) & MSVR_RTS);
 	spin_unlock_irqrestore(&bp->lock, flags);
-	dprintk(SX_DEBUG_TERMIOS, "sx: got MSVR=%02x.\n", port->MSVR);
+;
 	baud = tty_get_baud_rate(tty);
 
 	if (baud == 38400) {
@@ -997,14 +997,14 @@ static void sx_change_speed(struct specialix_board *bp,
 
 	if (!baud) {
 		/* Drop DTR & exit */
-		dprintk(SX_DEBUG_TERMIOS, "Dropping DTR...  Hmm....\n");
+;
 		if (!sx_crtscts(tty)) {
 			port->MSVR &= ~MSVR_DTR;
 			spin_lock_irqsave(&bp->lock, flags);
 			sx_out(bp, CD186x_MSVR, port->MSVR);
 			spin_unlock_irqrestore(&bp->lock, flags);
 		} else
-			dprintk(SX_DEBUG_TERMIOS, "Can't drop DTR: no DTR.\n");
+;
 		return;
 	} else {
 		/* Set DTR on */
@@ -1019,10 +1019,10 @@ static void sx_change_speed(struct specialix_board *bp,
 	/* Set baud rate for port */
 	tmp = port->custom_divisor ;
 	if (tmp)
-		printk(KERN_INFO
-			"sx%d: Using custom baud rate divisor %ld. \n"
-			"This is an untested option, please be careful.\n",
-							port_No(port), tmp);
+//		printk(KERN_INFO
+//			"sx%d: Using custom baud rate divisor %ld. \n"
+//			"This is an untested option, please be careful.\n",
+;
 	else
 		tmp = (((SX_OSCFREQ + baud/2) / baud + CD186x_TPC/2) /
 								CD186x_TPC);
@@ -1031,14 +1031,14 @@ static void sx_change_speed(struct specialix_board *bp,
 		again = jiffies + HZ * 60;
 		/* Page 48 of version 2.0 of the CL-CD1865 databook */
 		if (tmp >= 12) {
-			printk(KERN_INFO "sx%d: Baud rate divisor is %ld. \n"
-				"Performance degradation is possible.\n"
-				"Read specialix.txt for more info.\n",
-						port_No(port), tmp);
+//			printk(KERN_INFO "sx%d: Baud rate divisor is %ld. \n"
+//				"Performance degradation is possible.\n"
+//				"Read specialix.txt for more info.\n",
+;
 		} else {
-			printk(KERN_INFO "sx%d: Baud rate divisor is %ld. \n"
-		"Warning: overstressing Cirrus chip. This might not work.\n"
-		"Read specialix.txt for more info.\n", port_No(port), tmp);
+//			printk(KERN_INFO "sx%d: Baud rate divisor is %ld. \n"
+//		"Warning: overstressing Cirrus chip. This might not work.\n"
+;
 		}
 	}
 	spin_lock_irqsave(&bp->lock, flags);
@@ -1155,8 +1155,8 @@ static void sx_change_speed(struct specialix_board *bp,
 	spin_lock_irqsave(&bp->lock, flags);
 	sx_out(bp, CD186x_CCR, CCR_CORCHG1 | CCR_CORCHG2 | CCR_CORCHG3);
 	/* Setting up modem option registers */
-	dprintk(SX_DEBUG_TERMIOS, "Mcor1 = %02x, mcor2 = %02x.\n",
-								mcor1, mcor2);
+//	dprintk(SX_DEBUG_TERMIOS, "Mcor1 = %02x, mcor2 = %02x.\n",
+;
 	sx_out(bp, CD186x_MCOR1, mcor1);
 	sx_out(bp, CD186x_MCOR2, mcor2);
 	spin_unlock_irqrestore(&bp->lock, flags);
@@ -1238,12 +1238,12 @@ static void sx_shutdown_port(struct specialix_board *bp,
 	}
 
 	if (sx_debug & SX_DEBUG_FIFO) {
-		dprintk(SX_DEBUG_FIFO,
-			"sx%d: port %d: %ld overruns, FIFO hits [ ",
-				board_No(bp), port_No(port), port->overrun);
+//		dprintk(SX_DEBUG_FIFO,
+//			"sx%d: port %d: %ld overruns, FIFO hits [ ",
+;
 		for (i = 0; i < 10; i++)
-			dprintk(SX_DEBUG_FIFO, "%ld ", port->hits[i]);
-		dprintk(SX_DEBUG_FIFO, "].\n");
+;
+;
 	}
 
 	if (port->xmit_buf) {
@@ -1411,9 +1411,9 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	for (i = 0; i < 10; i++)
 		port->hits[i] = 0;
 
-	dprintk(SX_DEBUG_OPEN,
-			"Board = %d, bp = %p, port = %p, portno = %d.\n",
-				 board, bp, port, SX_PORT(tty->index));
+//	dprintk(SX_DEBUG_OPEN,
+//			"Board = %d, bp = %p, port = %p, portno = %d.\n",
+;
 
 	if (sx_paranoia_check(port, tty->name, "sx_open")) {
 		func_exit();
@@ -1493,7 +1493,7 @@ static void sx_close(struct tty_struct *tty, struct file *filp)
 
 	bp = port_Board(port);
 	if (tty->count == 1 && port->port.count != 1) {
-		printk(KERN_ERR "sx%d: sx_close: bad port count;"
+;
 		       " tty->count is 1, port count is %d\n",
 		       board_No(bp), port->port.count);
 		port->port.count = 1;
@@ -1515,7 +1515,7 @@ static void sx_close(struct tty_struct *tty, struct file *filp)
 	 */
 	tty->closing = 1;
 	spin_unlock_irqrestore(&port->lock, flags);
-	dprintk(SX_DEBUG_OPEN, "Closing\n");
+;
 	if (port->port.closing_wait != ASYNC_CLOSING_WAIT_NONE)
 		tty_wait_until_sent(tty, port->port.closing_wait);
 	/*
@@ -1524,7 +1524,7 @@ static void sx_close(struct tty_struct *tty, struct file *filp)
 	 * interrupt driver to stop checking the data ready bit in the
 	 * line status register.
 	 */
-	dprintk(SX_DEBUG_OPEN, "Closed\n");
+;
 	port->IER &= ~IER_RXD;
 	if (port->port.flags & ASYNC_INITIALIZED) {
 		port->IER &= ~IER_TXRDY;
@@ -1543,7 +1543,7 @@ static void sx_close(struct tty_struct *tty, struct file *filp)
 			set_current_state(TASK_INTERRUPTIBLE);
 			msleep_interruptible(jiffies_to_msecs(port->timeout));
 			if (time_after(jiffies, timeout)) {
-				printk(KERN_INFO "Timeout waiting for close\n");
+;
 				break;
 			}
 		}
@@ -1551,15 +1551,15 @@ static void sx_close(struct tty_struct *tty, struct file *filp)
 	}
 
 	if (--bp->count < 0) {
-		printk(KERN_ERR
-		    "sx%d: sx_shutdown_port: bad board count: %d port: %d\n",
-				board_No(bp), bp->count, tty->index);
+//		printk(KERN_ERR
+//		    "sx%d: sx_shutdown_port: bad board count: %d port: %d\n",
+;
 		bp->count = 0;
 	}
 	if (--port->port.count < 0) {
-		printk(KERN_ERR
-			"sx%d: sx_close: bad port count for tty%d: %d\n",
-				board_No(bp), port_No(port), port->port.count);
+//		printk(KERN_ERR
+//			"sx%d: sx_close: bad port count for tty%d: %d\n",
+;
 		port->port.count = 0;
 	}
 
@@ -1648,7 +1648,7 @@ static int sx_put_char(struct tty_struct *tty, unsigned char ch)
 		func_exit();
 		return 0;
 	}
-	dprintk(SX_DEBUG_TX, "check tty: %p %p\n", tty, port->xmit_buf);
+;
 	if (!port->xmit_buf) {
 		func_exit();
 		return 0;
@@ -1656,15 +1656,15 @@ static int sx_put_char(struct tty_struct *tty, unsigned char ch)
 	bp = port_Board(port);
 	spin_lock_irqsave(&port->lock, flags);
 
-	dprintk(SX_DEBUG_TX, "xmit_cnt: %d xmit_buf: %p\n",
-					port->xmit_cnt, port->xmit_buf);
+//	dprintk(SX_DEBUG_TX, "xmit_cnt: %d xmit_buf: %p\n",
+;
 	if (port->xmit_cnt >= SERIAL_XMIT_SIZE - 1 || !port->xmit_buf) {
 		spin_unlock_irqrestore(&port->lock, flags);
-		dprintk(SX_DEBUG_TX, "Exit size\n");
+;
 		func_exit();
 		return 0;
 	}
-	dprintk(SX_DEBUG_TX, "Handle xmit: %p %p\n", port, port->xmit_buf);
+;
 	port->xmit_buf[port->xmit_head++] = ch;
 	port->xmit_head &= SERIAL_XMIT_SIZE - 1;
 	port->xmit_cnt++;
@@ -1757,9 +1757,9 @@ static int sx_tiocmget(struct tty_struct *tty)
 	sx_out(bp, CD186x_CAR, port_No(port));
 	status = sx_in(bp, CD186x_MSVR);
 	spin_unlock_irqrestore(&bp->lock, flags);
-	dprintk(SX_DEBUG_INIT, "Got msvr[%d] = %02x, car = %d.\n",
-			port_No(port), status, sx_in(bp, CD186x_CAR));
-	dprintk(SX_DEBUG_INIT, "sx_port = %p, port = %p\n", sx_port, port);
+//	dprintk(SX_DEBUG_INIT, "Got msvr[%d] = %02x, car = %d.\n",
+;
+;
 	if (sx_crtscts(port->port.tty)) {
 		result  = TIOCM_DTR | TIOCM_DSR
 			  |   ((status & MSVR_DTR) ? TIOCM_RTS : 0)
@@ -1980,9 +1980,9 @@ static void sx_throttle(struct tty_struct *tty)
 		/* Or maybe we're supposed (allowed?) to do our side of hw
 		   handshake anyway, even when hardware handshake is off.
 		   When you see this in your logs, please report.... */
-		printk(KERN_ERR
-		   "sx%d: Need to throttle, but can't (hardware hs is off)\n",
-							port_No(port));
+//		printk(KERN_ERR
+//		   "sx%d: Need to throttle, but can't (hardware hs is off)\n",
+;
 	}
 	spin_lock_irqsave(&bp->lock, flags);
 	sx_out(bp, CD186x_CAR, port_No(port));
@@ -2117,9 +2117,9 @@ static void sx_hangup(struct tty_struct *tty)
 	spin_lock_irqsave(&port->lock, flags);
 	bp->count -= port->port.count;
 	if (bp->count < 0) {
-		printk(KERN_ERR
-			"sx%d: sx_hangup: bad board count: %d port: %d\n",
-					board_No(bp), bp->count, tty->index);
+//		printk(KERN_ERR
+//			"sx%d: sx_hangup: bad board count: %d port: %d\n",
+;
 		bp->count = 0;
 	}
 	port->port.count = 0;
@@ -2184,7 +2184,7 @@ static int sx_init_drivers(void)
 
 	specialix_driver = alloc_tty_driver(SX_NBOARD * SX_NPORT);
 	if (!specialix_driver) {
-		printk(KERN_ERR "sx: Couldn't allocate tty_driver.\n");
+;
 		func_exit();
 		return 1;
 	}
@@ -2206,9 +2206,9 @@ static int sx_init_drivers(void)
 	error = tty_register_driver(specialix_driver);
 	if (error) {
 		put_tty_driver(specialix_driver);
-		printk(KERN_ERR
-		  "sx: Couldn't register specialix IO8+ driver, error = %d\n",
-								error);
+//		printk(KERN_ERR
+//		  "sx: Couldn't register specialix IO8+ driver, error = %d\n",
+;
 		func_exit();
 		return 1;
 	}
@@ -2242,13 +2242,13 @@ static int __init specialix_init(void)
 
 	func_enter();
 
-	printk(KERN_INFO "sx: Specialix IO8+ driver v" VERSION ", (c) R.E.Wolff 1997/1998.\n");
-	printk(KERN_INFO "sx: derived from work (c) D.Gorodchanin 1994-1996.\n");
+;
+;
 	if (sx_rtscts)
-		printk(KERN_INFO
-			"sx: DTR/RTS pin is RTS when CRTSCTS is on.\n");
+//		printk(KERN_INFO
+;
 	else
-		printk(KERN_INFO "sx: DTR/RTS pin is always RTS.\n");
+;
 
 	for (i = 0; i < SX_NBOARD; i++)
 		spin_lock_init(&sx_board[i].lock);
@@ -2296,7 +2296,7 @@ static int __init specialix_init(void)
 
 	if (!found) {
 		sx_release_drivers();
-		printk(KERN_INFO "sx: No specialix IO8+ boards detected.\n");
+;
 		func_exit();
 		return -EIO;
 	}

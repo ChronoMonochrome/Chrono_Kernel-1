@@ -102,7 +102,11 @@ static int __init igep2_soc_init(void)
 
 	if (!machine_is_igep0020())
 		return -ENODEV;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IGEP v2 SoC init\n");
+#else
+	;
+#endif
 
 	igep2_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!igep2_snd_device) {

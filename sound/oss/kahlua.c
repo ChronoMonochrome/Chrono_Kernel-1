@@ -85,19 +85,35 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 	io = 0x220 + 0x20 * (map & 3);	   
 	
 	if(map & (1<<2))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kahlua: XpressAudio at 0x%lx\n", io);
+#else
+		;
+#endif
 	else
 		return 1;
 		
 	if(map & (1<<5))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kahlua: MPU at 0x300\n");
+#else
+		;
+#endif
 	else if(map & (1<<6))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kahlua: MPU at 0x330\n");
+#else
+		;
+#endif
 	
 	irq = mixer_read(io, 0x80) & 0x0F;
 	dma8 = mixer_read(io, 0x81);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk("IRQ=%x MAP=%x DMA=%x\n", irq, map, dma8);
+#else
+	// ;
+#endif
 	
 	if(dma8 & 0x20)
 		dma16 = 5;
@@ -137,8 +153,12 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 		return 1;
 	}
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "kahlua: XpressAudio on IRQ %d, DMA %d, %d\n",
 		irq, dma8, dma16);
+#else
+	;
+#endif
 	
 	hw_config = kzalloc(sizeof(struct address_info), GFP_KERNEL);
 	if(hw_config == NULL)
@@ -216,7 +236,11 @@ static struct pci_driver kahlua_driver = {
 
 static int __init kahlua_init_module(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Cyrix Kahlua VSA1 XpressAudio support (c) Copyright 2003 Red Hat Inc\n");
+#else
+	;
+#endif
 	return pci_register_driver(&kahlua_driver);
 }
 

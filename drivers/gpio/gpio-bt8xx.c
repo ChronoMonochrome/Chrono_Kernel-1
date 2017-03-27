@@ -193,8 +193,12 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
 	if (!request_mem_region(pci_resource_start(dev, 0),
 				pci_resource_len(dev, 0),
 				"bt8xxgpio")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "bt8xxgpio: Can't request iomem (0x%llx).\n",
 		       (unsigned long long)pci_resource_start(dev, 0));
+#else
+		;
+#endif
 		err = -EBUSY;
 		goto err_disable;
 	}
@@ -223,8 +227,12 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
 		goto err_release_mem;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "bt8xxgpio: Abusing BT8xx card for GPIOs %d to %d\n",
 	       bg->gpio.base, bg->gpio.base + BT8XXGPIO_NR_GPIOS - 1);
+#else
+	;
+#endif
 
 	return 0;
 

@@ -271,9 +271,13 @@ static void icside_set_dma_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 
 	ide_set_drivedata(drive, (void *)cycle_time);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s selected (peak %dMB/s)\n", drive->name,
 		ide_xfer_verbose(xfer_mode),
 		2000 / (unsigned long)ide_get_drivedata(drive));
+#else
+	;
+#endif
 }
 
 static const struct ide_port_ops icside_v6_port_ops = {

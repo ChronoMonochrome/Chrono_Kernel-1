@@ -150,7 +150,7 @@ static int bfin_sir_set_speed(struct bfin_sir_port *port, int speed)
 		ret = 0;
 		break;
 	default:
-		printk(KERN_WARNING "bfin_sir: Invalid speed %d\n", speed);
+;
 		break;
 	}
 

@@ -105,8 +105,8 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
 	clnt = nsm_create(net);
 	if (IS_ERR(clnt)) {
 		status = PTR_ERR(clnt);
-		dprintk("lockd: failed to create NSM upcall transport, "
-				"status=%d\n", status);
+//		dprintk("lockd: failed to create NSM upcall transport, "
+;
 		goto out;
 	}
 
@@ -115,8 +115,8 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
 	msg.rpc_proc = &clnt->cl_procinfo[proc];
 	status = rpc_call_sync(clnt, &msg, 0);
 	if (status < 0)
-		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
-				status);
+//		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
+;
 	else
 		status = 0;
 	rpc_shutdown_client(clnt);
@@ -141,7 +141,7 @@ int nsm_monitor(const struct nlm_host *host)
 	struct nsm_res	res;
 	int		status;
 
-	dprintk("lockd: nsm_monitor(%s)\n", nsm->sm_name);
+;
 
 	if (nsm->sm_monitored)
 		return 0;
@@ -156,14 +156,14 @@ int nsm_monitor(const struct nlm_host *host)
 	if (unlikely(res.status != 0))
 		status = -EIO;
 	if (unlikely(status < 0)) {
-		printk(KERN_NOTICE "lockd: cannot monitor %s\n", nsm->sm_name);
+;
 		return status;
 	}
 
 	nsm->sm_monitored = 1;
 	if (unlikely(nsm_local_state != res.state)) {
 		nsm_local_state = res.state;
-		dprintk("lockd: NSM state changed to %d\n", nsm_local_state);
+;
 	}
 	return 0;
 }
@@ -184,14 +184,14 @@ void nsm_unmonitor(const struct nlm_host *host)
 
 	if (atomic_read(&nsm->sm_count) == 1
 	 && nsm->sm_monitored && !nsm->sm_sticky) {
-		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
+;
 
 		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
 		if (res.status != 0)
 			status = -EIO;
 		if (status < 0)
-			printk(KERN_NOTICE "lockd: cannot unmonitor %s\n",
-					nsm->sm_name);
+//			printk(KERN_NOTICE "lockd: cannot unmonitor %s\n",
+;
 		else
 			nsm->sm_monitored = 0;
 	}
@@ -327,18 +327,18 @@ retry:
 		atomic_inc(&cached->sm_count);
 		spin_unlock(&nsm_lock);
 		kfree(new);
-		dprintk("lockd: found nsm_handle for %s (%s), "
-				"cnt %d\n", cached->sm_name,
-				cached->sm_addrbuf,
-				atomic_read(&cached->sm_count));
+//		dprintk("lockd: found nsm_handle for %s (%s), "
+//				"cnt %d\n", cached->sm_name,
+//				cached->sm_addrbuf,
+;
 		return cached;
 	}
 
 	if (new != NULL) {
 		list_add(&new->sm_link, &nsm_handles);
 		spin_unlock(&nsm_lock);
-		dprintk("lockd: created nsm_handle for %s (%s)\n",
-				new->sm_name, new->sm_addrbuf);
+//		dprintk("lockd: created nsm_handle for %s (%s)\n",
+;
 		return new;
 	}
 
@@ -375,9 +375,9 @@ struct nsm_handle *nsm_reboot_lookup(const struct nlm_reboot *info)
 	atomic_inc(&cached->sm_count);
 	spin_unlock(&nsm_lock);
 
-	dprintk("lockd: host %s (%s) rebooted, cnt %d\n",
-			cached->sm_name, cached->sm_addrbuf,
-			atomic_read(&cached->sm_count));
+//	dprintk("lockd: host %s (%s) rebooted, cnt %d\n",
+//			cached->sm_name, cached->sm_addrbuf,
+;
 	return cached;
 }
 
@@ -391,8 +391,8 @@ void nsm_release(struct nsm_handle *nsm)
 	if (atomic_dec_and_lock(&nsm->sm_count, &nsm_lock)) {
 		list_del(&nsm->sm_link);
 		spin_unlock(&nsm_lock);
-		dprintk("lockd: destroyed nsm_handle for %s (%s)\n",
-				nsm->sm_name, nsm->sm_addrbuf);
+//		dprintk("lockd: destroyed nsm_handle for %s (%s)\n",
+;
 		kfree(nsm);
 	}
 }
@@ -487,8 +487,8 @@ static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,
 	resp->status = be32_to_cpup(p++);
 	resp->state = be32_to_cpup(p);
 
-	dprintk("lockd: %s status %d state %d\n",
-		__func__, resp->status, resp->state);
+//	dprintk("lockd: %s status %d state %d\n",
+;
 	return 0;
 }
 
@@ -503,7 +503,7 @@ static int nsm_xdr_dec_stat(struct rpc_rqst *rqstp,
 		return -EIO;
 	resp->state = be32_to_cpup(p);
 
-	dprintk("lockd: %s state %d\n", __func__, resp->state);
+;
 	return 0;
 }
 

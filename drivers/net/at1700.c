@@ -285,9 +285,9 @@ static int __init at1700_probe1(struct net_device *dev, int ioaddr)
 	   for.
 	 */
 #ifdef notdef
-	printk("at1700 probe at %#x, eeprom is %4.4x %4.4x %4.4x ctrl %4.4x.\n",
-		   ioaddr, read_eeprom(ioaddr, 4), read_eeprom(ioaddr, 5),
-		   read_eeprom(ioaddr, 6), inw(ioaddr + EEPROM_Ctrl));
+//	printk("at1700 probe at %#x, eeprom is %4.4x %4.4x %4.4x ctrl %4.4x.\n",
+//		   ioaddr, read_eeprom(ioaddr, 4), read_eeprom(ioaddr, 5),
+;
 #endif
 
 #ifdef CONFIG_MCA_LEGACY
@@ -390,8 +390,8 @@ found:
 		}
 	}
 
-	printk("%s: %s found at %#3x, IRQ %d, address ", dev->name,
-		   is_at1700 ? "AT1700" : "FMV-18X", ioaddr, irq);
+//	printk("%s: %s found at %#3x, IRQ %d, address ", dev->name,
+;
 
 	dev->base_addr = ioaddr;
 	dev->irq = irq;
@@ -407,7 +407,7 @@ found:
 			dev->dev_addr[i] = val;
 		}
 	}
-	printk("%pM", dev->dev_addr);
+;
 
 	/* The EEPROM word 12 bit 0x0400 means use regular 100 ohm 10baseT signals,
 	   rather than 150 ohm shielded twisted pair compensation.
@@ -432,7 +432,7 @@ found:
 				dev->if_port = 0x00; break;
 			}
 		}
-		printk(" %s interface.\n", porttype[(dev->if_port>>3) & 3]);
+;
 	}
 
 	/* Set the configuration register 0 to 32K 100ns. byte-wide memory, 16 bit
@@ -457,7 +457,7 @@ found:
 	outb(0x00, ioaddr + COL16CNTL);
 
 	if (net_debug)
-		printk(version);
+;
 
 	dev->netdev_ops = &at1700_netdev_ops;
 	dev->watchdog_timeo = TX_TIMEOUT;
@@ -469,9 +469,9 @@ found:
 	/* Snarf the interrupt vector now. */
 	ret = request_irq(irq, net_interrupt, 0, DRV_NAME, dev);
 	if (ret) {
-		printk(KERN_ERR "AT1700 at %#3x is unusable due to a "
-		       "conflict on IRQ %d.\n",
-		       ioaddr, irq);
+//		printk(KERN_ERR "AT1700 at %#3x is unusable due to a "
+//		       "conflict on IRQ %d.\n",
+;
 		goto err_mca;
 	}
 
@@ -669,7 +669,7 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
 	outw(status, ioaddr + TX_STATUS);
 
 	if (net_debug > 4)
-		printk("%s: Interrupt with status %04x.\n", dev->name, status);
+;
 	if (lp->rx_started == 0 &&
 	    (status & 0xff00 || (inb(ioaddr + RX_MODE) & 0x40) == 0)) {
 		/* Got a packet(s).
@@ -690,7 +690,7 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
 		if (status & 0x02) {
 			/* More than 16 collisions occurred */
 			if (net_debug > 4)
-				printk("%s: 16 Collision occur during Txing.\n", dev->name);
+;
 			/* Cancel sending a packet. */
 			outb(0x03, ioaddr + COL16CNTL);
 			dev->stats.collisions++;
@@ -729,8 +729,8 @@ net_rx(struct net_device *dev)
 		ushort pkt_len = inw(ioaddr + DATAPORT);
 
 		if (net_debug > 4)
-			printk("%s: Rxing packet mode %02x status %04x.\n",
-				   dev->name, inb(ioaddr + RX_MODE), status);
+//			printk("%s: Rxing packet mode %02x status %04x.\n",
+;
 #ifndef final_version
 		if (status == 0) {
 			outb(0x05, ioaddr + RX_CTRL);
@@ -749,8 +749,8 @@ net_rx(struct net_device *dev)
 			struct sk_buff *skb;
 
 			if (pkt_len > 1550) {
-				printk("%s: The AT1700 claimed a very large packet, size %d.\n",
-					   dev->name, pkt_len);
+//				printk("%s: The AT1700 claimed a very large packet, size %d.\n",
+;
 				/* Prime the FIFO and then flush the packet. */
 				inw(ioaddr + DATAPORT); inw(ioaddr + DATAPORT);
 				outb(0x05, ioaddr + RX_CTRL);
@@ -759,8 +759,8 @@ net_rx(struct net_device *dev)
 			}
 			skb = dev_alloc_skb(pkt_len+3);
 			if (skb == NULL) {
-				printk("%s: Memory squeeze, dropping packet (len %d).\n",
-					   dev->name, pkt_len);
+//				printk("%s: Memory squeeze, dropping packet (len %d).\n",
+;
 				/* Prime the FIFO and then flush the packet. */
 				inw(ioaddr + DATAPORT); inw(ioaddr + DATAPORT);
 				outb(0x05, ioaddr + RX_CTRL);
@@ -792,8 +792,8 @@ net_rx(struct net_device *dev)
 		}
 
 		if (net_debug > 5)
-			printk("%s: Exint Rx packet with mode %02x after %d ticks.\n",
-				   dev->name, inb(ioaddr + RX_MODE), i);
+//			printk("%s: Exint Rx packet with mode %02x after %d ticks.\n",
+;
 	}
 }
 
@@ -881,7 +881,7 @@ MODULE_PARM_DESC(net_debug, "AT1700/FMV18X debug level (0-6)");
 static int __init at1700_module_init(void)
 {
 	if (io == 0)
-		printk("at1700: You should not use auto-probing with insmod!\n");
+;
 	dev_at1700 = at1700_probe(-1);
 	if (IS_ERR(dev_at1700))
 		return PTR_ERR(dev_at1700);

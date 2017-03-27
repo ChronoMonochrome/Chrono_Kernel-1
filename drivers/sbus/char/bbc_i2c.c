@@ -342,8 +342,12 @@ static struct bbc_i2c_bus * __init attach_one_i2c(struct platform_device *op, in
 	writeb(I2C_PCF_PIN | I2C_PCF_ES1, bp->i2c_control_regs + 0x0);
 	bp->clock = readb(bp->i2c_control_regs + 0x01);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "i2c-%d: Regs at %p, %d devices, own %02x, clock %02x.\n",
 	       bp->index, bp->i2c_control_regs, entry, bp->own, bp->clock);
+#else
+	;
+#endif
 
 	reset_one_i2c(bp);
 

@@ -201,8 +201,12 @@ static int __devinit riowd_probe(struct platform_device *op)
 		goto out_iounmap;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Hardware watchdog [%i minutes], "
 	       "regs at %p\n", riowd_timeout, p->regs);
+#else
+	;
+#endif
 
 	dev_set_drvdata(&op->dev, p);
 	return 0;

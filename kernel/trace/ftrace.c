@@ -1565,10 +1565,18 @@ static void print_ip_ins(const char *fmt, unsigned char *p)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "%s", fmt);
+#else
+	;
+#endif
 
 	for (i = 0; i < MCOUNT_INSN_SIZE; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "%s%02x", i ? ":" : "", p[i]);
+#else
+		;
+#endif
 }
 
 /**
@@ -1596,7 +1604,11 @@ void ftrace_bug(int failed, unsigned long ip)
 		pr_info("ftrace failed to modify ");
 		print_ip_sym(ip);
 		print_ip_ins(" actual: ", (unsigned char *)ip);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\n");
+#else
+		;
+#endif
 		break;
 	case -EPERM:
 		FTRACE_WARN_ON_ONCE(1);
@@ -3349,8 +3361,12 @@ static void __init set_ftrace_early_graph(char *buf)
 		ret = ftrace_set_func(ftrace_graph_funcs, &ftrace_graph_count,
 				      func);
 		if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "ftrace: function %s not "
 					  "traceable\n", func);
+#else
+			;
+#endif
 	}
 }
 #endif /* CONFIG_FUNCTION_GRAPH_TRACER */

@@ -225,9 +225,13 @@ static void mtd_panic_erase(void)
 		add_wait_queue(&wait_q, &wait);
 
 		if (get_bb(erase.addr>>ctx->mtd->erasesize_shift, apanic_bbt)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "apanic: Skipping erase of bad "
 			       "block @%llx\n", erase.addr);
+#else
+			;
+#endif
 			set_current_state(TASK_RUNNING);
 			remove_wait_queue(&wait_q, &wait);
 			continue;
@@ -248,9 +252,13 @@ static void mtd_panic_erase(void)
 					       "apanic: Err marking blk bad\n");
 					goto out;
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "apanic: Marked a bad block"
 				       " @%llx\n", erase.addr);
+#else
+				;
+#endif
 				set_bb(erase.addr>>ctx->mtd->erasesize_shift,
 					apanic_bbt);
 				continue;
@@ -260,8 +268,12 @@ static void mtd_panic_erase(void)
 		schedule();
 		remove_wait_queue(&wait_q, &wait);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "apanic: %s partition erased\n",
 	       CONFIG_APANIC_PLABEL);
+#else
+	;
+#endif
 out:
 	return;
 }
@@ -315,8 +327,12 @@ static void mtd_panic_notify_add(struct mtd_info *mtd)
 	rc = mtd->read(mtd, phy_offset(mtd, 0), mtd->writesize,
 			&len, ctx->bounce);
 	if (rc && rc == -EBADMSG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "apanic: Bad ECC on block 0 (ignored)\n");
+#else
+		;
+#endif
 	} else if (rc && rc != -EUCLEAN) {
 		printk(KERN_ERR "apanic: Error reading block 0 (%d)\n", rc);
 		goto out_err;
@@ -327,26 +343,42 @@ static void mtd_panic_notify_add(struct mtd_info *mtd)
 		goto out_err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "apanic: Bound to mtd partition '%s'\n", mtd->name);
+#else
+	;
+#endif
 
 	if (hdr->magic != PANIC_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "apanic: No panic data available\n");
+#else
+		;
+#endif
 		mtd_panic_erase();
 		return;
 	}
 
 	if (hdr->version != PHDR_VERSION) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "apanic: Version mismatch (%d != %d)\n",
 		       hdr->version, PHDR_VERSION);
+#else
+		;
+#endif
 		mtd_panic_erase();
 		return;
 	}
 
 	memcpy(&ctx->curr, hdr, sizeof(struct panic_header));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "apanic: c(%u, %u) t(%u, %u)\n",
 	       hdr->console_offset, hdr->console_length,
 	       hdr->threads_offset, hdr->threads_length);
+#else
+	;
+#endif
 
 	if (hdr->console_length) {
 		ctx->apanic_console = create_proc_entry("apanic_console",
@@ -391,7 +423,11 @@ static void mtd_panic_notify_remove(struct mtd_info *mtd)
 	struct apanic_data *ctx = &drv_ctx;
 	if (mtd == ctx->mtd) {
 		ctx->mtd = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "apanic: Unbound from %s\n", mtd->name);
+#else
+		;
+#endif
 	}
 }
 
@@ -410,16 +446,28 @@ static int apanic_writeflashpage(struct mtd_info *mtd, loff_t to,
 	int panic = in_interrupt() | in_atomic();
 
 	if (panic && !mtd->panic_write) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "%s: No panic_write available\n", __func__);
+#else
+		;
+#endif
 		return 0;
 	} else if (!panic && !mtd->write) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "%s: No write available\n", __func__);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	to = phy_offset(mtd, to);
 	if (to == APANIC_INVALID_OFFSET) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "apanic: write to invalid address\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -429,9 +477,13 @@ static int apanic_writeflashpage(struct mtd_info *mtd, loff_t to,
 		rc = mtd->write(mtd, to, mtd->writesize, &wlen, buf);
 
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG
 		       "%s: Error writing data to flash (%d)\n",
 		       __func__, rc);
+#else
+		;
+#endif
 		return rc;
 	}
 
@@ -471,8 +523,12 @@ static int apanic_write_console(struct mtd_info *mtd, unsigned int off)
 
 		rc2 = apanic_writeflashpage(mtd, off, ctx->bounce);
 		if (rc2 <= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_EMERG
 			       "apanic: Flash write failed (%d)\n", rc2);
+#else
+			;
+#endif
 			return idx;
 		}
 		if (!last_chunk)
@@ -508,7 +564,11 @@ static int apanic(struct notifier_block *this, unsigned long event,
 		goto out;
 
 	if (ctx->curr.magic) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Crash partition in use!\n");
+#else
+		;
+#endif
 		goto out;
 	}
 	console_offset = ctx->mtd->writesize;
@@ -518,8 +578,12 @@ static int apanic(struct notifier_block *this, unsigned long event,
 	 */
 	console_len = apanic_write_console(ctx->mtd, console_offset);
 	if (console_len < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Error writing console to panic log! (%d)\n",
 		       console_len);
+#else
+		;
+#endif
 		console_len = 0;
 	}
 
@@ -537,8 +601,12 @@ static int apanic(struct notifier_block *this, unsigned long event,
 	show_state_filter(0);
 	threads_len = apanic_write_console(ctx->mtd, threads_offset);
 	if (threads_len < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Error writing threads to panic log! (%d)\n",
 		       threads_len);
+#else
+		;
+#endif
 		threads_len = 0;
 	}
 
@@ -557,12 +625,20 @@ static int apanic(struct notifier_block *this, unsigned long event,
 
 	rc = apanic_writeflashpage(ctx->mtd, 0, ctx->bounce);
 	if (rc <= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "apanic: Header write failed (%d)\n",
 		       rc);
+#else
+		;
+#endif
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "apanic: Panic dump sucessfully written to flash\n");
+#else
+	;
+#endif
 
  out:
 #ifdef CONFIG_PREEMPT
@@ -598,8 +674,12 @@ int __init apanic_init(void)
 	memset(&drv_ctx, 0, sizeof(drv_ctx));
 	drv_ctx.bounce = (void *) __get_free_page(GFP_KERNEL);
 	INIT_WORK(&proc_removal_work, apanic_remove_proc_work);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Android kernel panic handler initialized (bind=%s)\n",
 	       CONFIG_APANIC_PLABEL);
+#else
+	;
+#endif
 	return 0;
 }
 

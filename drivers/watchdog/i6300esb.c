@@ -213,8 +213,12 @@ static int esb_release(struct inode *inode, struct file *file)
 	if (esb_expect_close == 42)
 		esb_timer_stop();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 				"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		esb_timer_keepalive();
 	}
 	clear_bit(0, &timer_alive);
@@ -397,7 +401,11 @@ static void __devinit esb_initdevice(void)
 	/* Check that the WDT isn't already locked */
 	pci_read_config_byte(esb_pci, ESB_LOCK_REG, &val1);
 	if (val1 & ESB_WDT_LOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "nowayout already set\n");
+#else
+		;
+#endif
 
 	/* Set the timer to watchdog mode and disable it for now */
 	pci_write_config_byte(esb_pci, ESB_LOCK_REG, 0x00);
@@ -423,8 +431,12 @@ static int __devinit esb_probe(struct pci_dev *pdev,
 
 	cards_found++;
 	if (cards_found == 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Intel 6300ESB WatchDog Timer Driver v%s\n",
 			ESB_VERSION);
+#else
+		;
+#endif
 
 	if (cards_found > 1) {
 		printk(KERN_ERR PFX "This driver only supports 1 device\n");
@@ -439,9 +451,13 @@ static int __devinit esb_probe(struct pci_dev *pdev,
 	   if not reset to the default */
 	if (heartbeat < 0x1 || heartbeat > 2 * 0x03ff) {
 		heartbeat = WATCHDOG_HEARTBEAT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"heartbeat value must be 1<heartbeat<2046, using %d\n",
 								heartbeat);
+#else
+		;
+#endif
 	}
 
 	/* Initialize the watchdog and make sure it does not run */
@@ -455,9 +471,13 @@ static int __devinit esb_probe(struct pci_dev *pdev,
 							WATCHDOG_MINOR, ret);
 		goto err_unmap;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"initialized (0x%p). heartbeat=%d sec (nowayout=%d)\n",
 						BASEADDR, heartbeat, nowayout);
+#else
+	;
+#endif
 	return 0;
 
 err_unmap:
@@ -503,7 +523,11 @@ static int __init watchdog_init(void)
 static void __exit watchdog_cleanup(void)
 {
 	pci_unregister_driver(&esb_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(watchdog_init);

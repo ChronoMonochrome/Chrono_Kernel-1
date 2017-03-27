@@ -219,7 +219,11 @@ int __init early_irq_init(void)
 
 	/* Let arch update nr_irqs and return the nr of preallocated irqs */
 	initcnt = arch_probe_nr_irqs();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+#else
+	;
+#endif
 
 	if (WARN_ON(nr_irqs > IRQ_BITMAP_BITS))
 		nr_irqs = IRQ_BITMAP_BITS;
@@ -255,7 +259,11 @@ int __init early_irq_init(void)
 
 	init_irq_default_affinity();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "NR_IRQS:%d\n", NR_IRQS);
+#else
+	;
+#endif
 
 	desc = irq_desc;
 	count = ARRAY_SIZE(irq_desc);

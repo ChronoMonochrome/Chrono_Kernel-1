@@ -156,7 +156,11 @@ static int pas_audio_ioctl(int dev, unsigned int cmd, void __user *arg)
 	int val, ret;
 	int __user *p = arg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static int pas_audio_ioctl(unsigned int cmd = %X, unsigned int arg = %X)\n", cmd, arg));
+#else
+	DEB(;
+#endif
 
 	switch (cmd) 
 	{
@@ -204,7 +208,11 @@ static int pas_audio_ioctl(int dev, unsigned int cmd, void __user *arg)
 
 static void pas_audio_reset(int dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static void pas_audio_reset(void)\n"));
+#else
+	DEB(;
+#endif
 
 	pas_write(pas_read(0xF8A) & ~0x40, 0xF8A);	/* Disable PCM */
 }
@@ -214,7 +222,11 @@ static int pas_audio_open(int dev, int mode)
 	int             err;
 	unsigned long   flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static int pas_audio_open(int mode = %X)\n", mode));
+#else
+	DEB(;
+#endif
 
 	spin_lock_irqsave(&pas_lock, flags);
 	if (pcm_busy)
@@ -239,7 +251,11 @@ static void pas_audio_close(int dev)
 {
 	unsigned long   flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static void pas_audio_close(void)\n"));
+#else
+	DEB(;
+#endif
 
 	spin_lock_irqsave(&pas_lock, flags);
 
@@ -256,7 +272,11 @@ static void pas_audio_output_block(int dev, unsigned long buf, int count,
 {
 	unsigned long   flags, cnt;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static void pas_audio_output_block(char *buf = %P, int count = %X)\n", buf, count));
+#else
+	DEB(;
+#endif
 
 	cnt = count;
 	if (audio_devs[dev]->dmap_out->dma > 3)
@@ -303,7 +323,11 @@ static void pas_audio_start_input(int dev, unsigned long buf, int count,
 	unsigned long   flags;
 	int             cnt;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: static void pas_audio_start_input(char *buf = %P, int count = %X)\n", buf, count));
+#else
+	DEB(;
+#endif
 
 	cnt = count;
 	if (audio_devs[dev]->dmap_out->dma > 3)
@@ -388,7 +412,11 @@ static struct audio_driver pas_audio_driver =
 
 void __init pas_pcm_init(struct address_info *hw_config)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_pcm.c: long pas_pcm_init()\n"));
+#else
+	DEB(;
+#endif
 
 	pcm_bitsok = 8;
 	if (pas_read(0xEF8B) & 0x08)
@@ -405,7 +433,11 @@ void __init pas_pcm_init(struct address_info *hw_config)
 					NULL,
 					hw_config->dma,
 					hw_config->dma)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "PAS16: Too many PCM devices available\n");
+#else
+		;
+#endif
 }
 
 void pas_pcm_interrupt(unsigned char status, int cause)
@@ -431,7 +463,11 @@ void pas_pcm_interrupt(unsigned char status, int cause)
 				break;
 
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "PAS: Unexpected PCM interrupt\n");
+#else
+				;
+#endif
 		}
 	}
 }

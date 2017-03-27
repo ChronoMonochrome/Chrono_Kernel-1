@@ -458,13 +458,13 @@ static int state_check(u32 state, struct dscc4_dev_priv *dpriv,
 
 	if (debug > 1) {
 	if (SOURCE_ID(state) != dpriv->dev_id) {
-		printk(KERN_DEBUG "%s (%s): Source Id=%d, state=%08x\n",
-		       dev->name, msg, SOURCE_ID(state), state );
+//		printk(KERN_DEBUG "%s (%s): Source Id=%d, state=%08x\n",
+;
 			ret = -1;
 	}
 	if (state & 0x0df80c00) {
-		printk(KERN_DEBUG "%s (%s): state=%08x (UFO alert)\n",
-		       dev->name, msg, state);
+//		printk(KERN_DEBUG "%s (%s): state=%08x (UFO alert)\n",
+;
 			ret = -1;
 	}
 	}
@@ -475,8 +475,8 @@ static void dscc4_tx_print(struct net_device *dev,
 			   struct dscc4_dev_priv *dpriv,
 			   char *msg)
 {
-	printk(KERN_DEBUG "%s: tx_current=%02d tx_dirty=%02d (%s)\n",
-	       dev->name, dpriv->tx_current, dpriv->tx_dirty, msg);
+//	printk(KERN_DEBUG "%s: tx_current=%02d tx_dirty=%02d (%s)\n",
+;
 }
 
 static void dscc4_release_ring(struct dscc4_dev_priv *dpriv)
@@ -545,14 +545,14 @@ static int dscc4_wait_ack_cec(struct dscc4_dev_priv *dpriv,
 
 	do {
 		if (!(scc_readl_star(dpriv, dev) & SccBusy)) {
-			printk(KERN_DEBUG "%s: %s ack (%d try)\n", dev->name,
-			       msg, i);
+//			printk(KERN_DEBUG "%s: %s ack (%d try)\n", dev->name,
+;
 			goto done;
 		}
 		schedule_timeout_uninterruptible(10);
 		rmb();
 	} while (++i > 0);
-	printk(KERN_ERR "%s: %s timeout\n", dev->name, msg);
+;
 done:
 	return (i >= 0) ? i : -EAGAIN;
 }
@@ -568,18 +568,18 @@ static int dscc4_do_action(struct net_device *dev, char *msg)
 		u32 state = readl(ioaddr);
 
 		if (state & ArAck) {
-			printk(KERN_DEBUG "%s: %s ack\n", dev->name, msg);
+;
 			writel(ArAck, ioaddr);
 			goto done;
 		} else if (state & Arf) {
-			printk(KERN_ERR "%s: %s failed\n", dev->name, msg);
+;
 			writel(Arf, ioaddr);
 			i = -1;
 			goto done;
 	}
 		rmb();
 	} while (++i > 0);
-	printk(KERN_ERR "%s: %s timeout\n", dev->name, msg);
+;
 done:
 	return i;
 }
@@ -635,7 +635,7 @@ static void dscc4_tx_reset(struct dscc4_dev_priv *dpriv, struct net_device *dev)
 
 	writel(MTFi|Rdt, dpriv->base_addr + dpriv->dev_id*0x0c + CH0CFG);
 	if (dscc4_do_action(dev, "Rdt") < 0)
-		printk(KERN_ERR "%s: Tx reset failed\n", dev->name);
+;
 }
 #endif
 
@@ -650,7 +650,7 @@ static inline void dscc4_rx_skb(struct dscc4_dev_priv *dpriv,
 
 	skb = dpriv->rx_skbuff[dpriv->rx_current++%RX_RING_SIZE];
 	if (!skb) {
-		printk(KERN_DEBUG "%s: skb=0 (%s)\n", dev->name, __func__);
+;
 		goto refill;
 	}
 	pkt_len = TO_SIZE(le32_to_cpu(rx_fd->state2));
@@ -713,7 +713,7 @@ static int __devinit dscc4_init_one(struct pci_dev *pdev,
 	void __iomem *ioaddr;
 	int i, rc;
 
-	printk(KERN_DEBUG "%s", version);
+;
 
 	rc = pci_enable_device(pdev);
 	if (rc < 0)
@@ -721,28 +721,28 @@ static int __devinit dscc4_init_one(struct pci_dev *pdev,
 
 	rc = pci_request_region(pdev, 0, "registers");
 	if (rc < 0) {
-	        printk(KERN_ERR "%s: can't reserve MMIO region (regs)\n",
-			DRV_NAME);
+//	        printk(KERN_ERR "%s: can't reserve MMIO region (regs)\n",
+;
 	        goto err_disable_0;
 	}
 	rc = pci_request_region(pdev, 1, "LBI interface");
 	if (rc < 0) {
-	        printk(KERN_ERR "%s: can't reserve MMIO region (lbi)\n",
-			DRV_NAME);
+//	        printk(KERN_ERR "%s: can't reserve MMIO region (lbi)\n",
+;
 	        goto err_free_mmio_region_1;
 	}
 
 	ioaddr = pci_ioremap_bar(pdev, 0);
 	if (!ioaddr) {
-		printk(KERN_ERR "%s: cannot remap MMIO region %llx @ %llx\n",
-			DRV_NAME, (unsigned long long)pci_resource_len(pdev, 0),
-			(unsigned long long)pci_resource_start(pdev, 0));
+//		printk(KERN_ERR "%s: cannot remap MMIO region %llx @ %llx\n",
+//			DRV_NAME, (unsigned long long)pci_resource_len(pdev, 0),
+;
 		rc = -EIO;
 		goto err_free_mmio_regions_2;
 	}
-	printk(KERN_DEBUG "Siemens DSCC4, MMIO at %#llx (regs), %#llx (lbi), IRQ %d\n",
-	        (unsigned long long)pci_resource_start(pdev, 0),
-	        (unsigned long long)pci_resource_start(pdev, 1), pdev->irq);
+//	printk(KERN_DEBUG "Siemens DSCC4, MMIO at %#llx (regs), %#llx (lbi), IRQ %d\n",
+//	        (unsigned long long)pci_resource_start(pdev, 0),
+;
 
 	/* Cf errata DS5 p.2 */
 	pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 0xf8);
@@ -756,7 +756,7 @@ static int __devinit dscc4_init_one(struct pci_dev *pdev,
 
 	rc = request_irq(pdev->irq, dscc4_irq, IRQF_SHARED, DRV_NAME, priv->root);
 	if (rc < 0) {
-		printk(KERN_WARNING "%s: IRQ %d busy\n", DRV_NAME, pdev->irq);
+;
 		goto err_release_4;
 	}
 
@@ -903,7 +903,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
 
 	root = kcalloc(dev_per_card, sizeof(*root), GFP_KERNEL);
 	if (!root) {
-		printk(KERN_ERR "%s: can't allocate data\n", DRV_NAME);
+;
 		goto err_out;
 	}
 
@@ -915,7 +915,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
 
 	ppriv = kzalloc(sizeof(*ppriv), GFP_KERNEL);
 	if (!ppriv) {
-		printk(KERN_ERR "%s: can't allocate private data\n", DRV_NAME);
+;
 		goto err_free_dev;
 	}
 
@@ -951,7 +951,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
 
 		ret = register_hdlc_device(d);
 		if (ret < 0) {
-			printk(KERN_ERR "%s: unable to register\n", DRV_NAME);
+;
 			dscc4_release_ring(dpriv);
 			goto err_unregister;
 	        }
@@ -1004,7 +1004,7 @@ static int dscc4_loopback_check(struct dscc4_dev_priv *dpriv)
 	if (settings->loopback && (settings->clock_type != CLOCK_INT)) {
 		struct net_device *dev = dscc4_to_dev(dpriv);
 
-		printk(KERN_INFO "%s: loopback requires clock\n", dev->name);
+;
 		return -1;
 	}
 	return 0;
@@ -1077,7 +1077,7 @@ static int dscc4_open(struct net_device *dev)
 		scc_patchl(0, PowerUp, dpriv, dev, CCR0);
 		scc_patchl(0, 0x00050000, dpriv, dev, CCR2);
 		scc_writel(EventsMask, dpriv, dev, IMR);
-		printk(KERN_INFO "%s: up again.\n", dev->name);
+;
 		goto done;
 	}
 
@@ -1094,11 +1094,11 @@ static int dscc4_open(struct net_device *dev)
 	 * situations.
 	 */
 	if (scc_readl_star(dpriv, dev) & SccBusy) {
-		printk(KERN_ERR "%s busy. Try later\n", dev->name);
+;
 		ret = -EAGAIN;
 		goto err_out;
 	} else
-		printk(KERN_INFO "%s: available. Good\n", dev->name);
+;
 
 	scc_writel(EventsMask, dpriv, dev, IMR);
 
@@ -1116,7 +1116,7 @@ static int dscc4_open(struct net_device *dev)
 	 * reset is needed. Suggestions anyone ?
 	 */
 	if ((ret = dscc4_xpr_ack(dpriv)) < 0) {
-		printk(KERN_ERR "%s: %s timeout\n", DRV_NAME, "XPR");
+;
 		goto err_disable_scc_events;
 	}
 	
@@ -1341,8 +1341,8 @@ static int dscc4_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			return -EPERM;
 
 		if (dpriv->flags & FakeReset) {
-			printk(KERN_INFO "%s: please reset the device"
-			       " before this command\n", dev->name);
+//			printk(KERN_INFO "%s: please reset the device"
+;
 			return -EPERM;
 		}
 		if (copy_from_user(&dpriv->settings, line, size))
@@ -1384,15 +1384,15 @@ static int dscc4_clock_setting(struct dscc4_dev_priv *dpriv,
 	if (dscc4_set_clock(dev, &bps, &state) < 0)
 		goto done;
 	if (bps) { /* DCE */
-		printk(KERN_DEBUG "%s: generated RxClk (DCE)\n", dev->name);
+;
 		if (settings->clock_rate != bps) {
-			printk(KERN_DEBUG "%s: clock adjusted (%08d -> %08d)\n",
-				dev->name, settings->clock_rate, bps);
+//			printk(KERN_DEBUG "%s: clock adjusted (%08d -> %08d)\n",
+;
 			settings->clock_rate = bps;
 		}
 	} else { /* DTE */
 		state |= PowerUp | Vis;
-		printk(KERN_DEBUG "%s: external RxClk (DTE)\n", dev->name);
+;
 	}
 	scc_writel(state, dpriv, dev, CCR0);
 	ret = 0;
@@ -1429,10 +1429,10 @@ static int dscc4_loopback_setting(struct dscc4_dev_priv *dpriv,
 
 	state = scc_readl(dpriv, CCR1);
 	if (settings->loopback) {
-		printk(KERN_DEBUG "%s: loopback\n", dev->name);
+;
 		state |= 0x00000100;
 	} else {
-		printk(KERN_DEBUG "%s: normal\n", dev->name);
+;
 		state &= ~0x00000100;
 	}
 	scc_writel(state, dpriv, dev, CCR1);
@@ -1501,20 +1501,20 @@ static irqreturn_t dscc4_irq(int irq, void *token)
 		goto out;
 	}
 	if (debug > 3)
-		printk(KERN_DEBUG "%s: GSTAR = 0x%08x\n", DRV_NAME, state);
+;
 	writel(state, ioaddr + GSTAR);
 
 	if (state & Arf) {
-		printk(KERN_ERR "%s: failure (Arf). Harass the maintener\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: failure (Arf). Harass the maintener\n",
+;
 		goto out;
 	}
 	state &= ~ArAck;
 	if (state & Cfg) {
 		if (debug > 0)
-			printk(KERN_DEBUG "%s: CfgIV\n", DRV_NAME);
+;
 		if (priv->iqcfg[priv->cfg_cur++%IRQ_RING_SIZE] & cpu_to_le32(Arf))
-			printk(KERN_ERR "%s: %s failed\n", dev->name, "CFG");
+;
 		if (!(state &= ~Cfg))
 			goto out;
 	}
@@ -1549,10 +1549,10 @@ try:
 	state = le32_to_cpu(dpriv->iqtx[cur]);
 	if (!state) {
 		if (debug > 4)
-			printk(KERN_DEBUG "%s: Tx ISR = 0x%08x\n", dev->name,
-			       state);
+//			printk(KERN_DEBUG "%s: Tx ISR = 0x%08x\n", dev->name,
+;
 		if ((debug > 1) && (loop > 1))
-			printk(KERN_DEBUG "%s: Tx irq loop=%d\n", dev->name, loop);
+;
 		if (loop && netif_queue_stopped(dev))
 			if ((dpriv->tx_current - dpriv->tx_dirty)%TX_RING_SIZE)
 				netif_wake_queue(dev);
@@ -1595,8 +1595,8 @@ try:
 				++dpriv->tx_dirty;
 			} else {
 				if (debug > 1)
-					printk(KERN_ERR "%s Tx: NULL skb %d\n",
-						dev->name, cur);
+//					printk(KERN_ERR "%s Tx: NULL skb %d\n",
+;
 			}
 			/*
 			 * If the driver ends sending crap on the wire, it
@@ -1615,7 +1615,7 @@ try:
 		 * Transmit Data Underrun
 		 */
 		if (state & Xdu) {
-			printk(KERN_ERR "%s: XDU. Ask maintainer\n", DRV_NAME);
+;
 			dpriv->flags = NeedIDT;
 			/* Tx reset */
 			writel(MTFi | Rdt,
@@ -1624,13 +1624,13 @@ try:
 			return;
 		}
 		if (state & Cts) {
-			printk(KERN_INFO "%s: CTS transition\n", dev->name);
+;
 			if (!(state &= ~Cts)) /* DEBUG */
 				goto try;
 		}
 		if (state & Xmr) {
 			/* Frame needs to be sent again - FIXME */
-			printk(KERN_ERR "%s: Xmr. Ask maintainer\n", DRV_NAME);
+;
 			if (!(state &= ~Xmr)) /* DEBUG */
 				goto try;
 		}
@@ -1648,7 +1648,7 @@ try:
 					break;
 			}
 			if (!i)
-				printk(KERN_INFO "%s busy in irq\n", dev->name);
+;
 
 			scc_addr = dpriv->base_addr + 0x0c*dpriv->dev_id;
 			/* Keep this order: IDT before IDR */
@@ -1685,7 +1685,7 @@ try:
 		}
 		if (state & Cd) {
 			if (debug > 0)
-				printk(KERN_INFO "%s: CD transition\n", dev->name);
+;
 			if (!(state &= ~Cd)) /* DEBUG */
 				goto try;
 		}
@@ -1694,11 +1694,11 @@ try:
 #ifdef DSCC4_POLLING
 			while (!dscc4_tx_poll(dpriv, dev));
 #endif
-			printk(KERN_INFO "%s: Tx Hi\n", dev->name);
+;
 			state &= ~Hi;
 		}
 		if (state & Err) {
-			printk(KERN_INFO "%s: Tx ERR\n", dev->name);
+;
 			dev->stats.tx_errors++;
 			state &= ~Err;
 		}
@@ -1728,11 +1728,11 @@ try:
 		struct RxFD *rx_fd;
 
 		if (debug > 4)
-			printk(KERN_DEBUG "%s: Rx ISR = 0x%08x\n", dev->name,
-			       state);
+//			printk(KERN_DEBUG "%s: Rx ISR = 0x%08x\n", dev->name,
+;
 		state &= 0x00ffffff;
 		if (state & Err) { /* Hold or reset */
-			printk(KERN_DEBUG "%s: Rx ERR\n", dev->name);
+;
 			cur = dpriv->rx_current%RX_RING_SIZE;
 			rx_fd = dpriv->rx_fd + cur;
 			/*
@@ -1768,7 +1768,7 @@ try:
 			goto try;
 		}
 		if (state & Hi ) { /* HI bit */
-			printk(KERN_INFO "%s: Rx Hi\n", dev->name);
+;
 			state &= ~Hi;
 			goto try;
 		}
@@ -1788,8 +1788,8 @@ try:
 
 		for (evt = evts; evt->irq_name; evt++) {
 			if (state & evt->mask) {
-					printk(KERN_DEBUG "%s: %s\n",
-						dev->name, evt->irq_name);
+//					printk(KERN_DEBUG "%s: %s\n",
+;
 				if (!(state &= ~evt->mask))
 					goto try;
 			}
@@ -1799,7 +1799,7 @@ try:
 				goto try;
 		}
 		if (state & Cts) {
-			printk(KERN_INFO "%s: CTS transition\n", dev->name);
+;
 			if (!(state &= ~Cts)) /* DEBUG */
 				goto try;
 		}
@@ -1845,8 +1845,8 @@ try:
 
 			if (debug > 0) {
 				if (dpriv->flags & RdoSet)
-					printk(KERN_DEBUG
-					       "%s: no RDO in Rx data\n", DRV_NAME);
+//					printk(KERN_DEBUG
+;
 			}
 #ifdef DSCC4_RDO_EXPERIMENTAL_RECOVERY
 			/*
@@ -1858,14 +1858,14 @@ try:
 			       sizeof(struct RxFD), scc_addr + CH0BRDA);
 			writel(MTFi|Rdr|Idr, scc_addr + CH0CFG);
 			if (dscc4_do_action(dev, "RDR") < 0) {
-				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
-				       dev->name, "RDR");
+//				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
+;
 				goto rdo_end;
 			}
 			writel(MTFi|Idr, scc_addr + CH0CFG);
 			if (dscc4_do_action(dev, "IDR") < 0) {
-				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
-				       dev->name, "IDR");
+//				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
+;
 				goto rdo_end;
 			}
 		rdo_end:
@@ -1874,12 +1874,12 @@ try:
 			goto try;
 		}
 		if (state & Cd) {
-			printk(KERN_INFO "%s: CD transition\n", dev->name);
+;
 			if (!(state &= ~Cd)) /* DEBUG */
 				goto try;
 		}
 		if (state & Flex) {
-			printk(KERN_DEBUG "%s: Flex. Ttttt...\n", DRV_NAME);
+;
 			if (!(state &= ~Flex))
 				goto try;
 		}

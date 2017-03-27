@@ -30,9 +30,13 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off frontend debugging (default:off).");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do {					    \
 		if (debug) printk(KERN_DEBUG "tda827x: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 struct tda827x_priv {
@@ -83,9 +87,17 @@ static void tda827x_set_std(struct dvb_frontend *fe,
 
 	if (params->mode == V4L2_TUNER_RADIO) {
 		priv->sgIF = 88; /* if frequency is 5.5 MHz */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting tda827x to radio FM\n");
+#else
+		d;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("setting tda827x to system %s\n", mode);
+#else
+		d;
+#endif
 }
 
 
@@ -164,7 +176,11 @@ static int tda827xo_set_params(struct dvb_frontend *fe,
 	int i, tuner_freq, if_freq;
 	u32 N;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 	switch (params->u.ofdm.bandwidth) {
 	case BANDWIDTH_6_MHZ:
 		if_freq = 4000000;
@@ -236,7 +252,11 @@ static int tda827xo_sleep(struct dvb_frontend *fe)
 	struct i2c_msg msg = { .addr = priv->i2c_addr, .flags = 0,
 			       .buf = buf, .len = sizeof(buf) };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 	tuner_transfer(fe, &msg, 1);
 
 	if (priv->cfg && priv->cfg->sleep)
@@ -448,7 +468,11 @@ static int tda827xa_sleep(struct dvb_frontend *fe)
 	struct i2c_msg msg = { .addr = priv->i2c_addr, .flags = 0,
 			       .buf = buf, .len = sizeof(buf) };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	tuner_transfer(fe, &msg, 1);
 
@@ -468,15 +492,27 @@ static void tda827xa_lna_gain(struct dvb_frontend *fe, int high,
 	struct i2c_msg msg = { .flags = 0, .buf = buf, .len = sizeof(buf) };
 
 	if (NULL == priv->cfg) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("tda827x_config not defined, cannot set LNA gain!\n");
+#else
+		d;
+#endif
 		return;
 	}
 	msg.addr = priv->cfg->switch_addr;
 	if (priv->cfg->config) {
 		if (high)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("setting LNA to high gain\n");
+#else
+			d;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("setting LNA to low gain\n");
+#else
+			d;
+#endif
 	}
 	switch (priv->cfg->config) {
 	case 0: /* no LNA */
@@ -524,7 +560,11 @@ static int tda827xa_set_params(struct dvb_frontend *fe,
 	int i, tuner_freq, if_freq, rc;
 	u32 N;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	tda827xa_lna_gain(fe, 1, NULL);
 	msleep(20);
@@ -543,7 +583,11 @@ static int tda827xa_set_params(struct dvb_frontend *fe,
 	tuner_freq = params->frequency + if_freq;
 
 	if (fe->ops.info.type == FE_QAM) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s select tda827xa_dvbc\n", __func__);
+#else
+		d;
+#endif
 		frequency_map = tda827xa_dvbc;
 	}
 
@@ -597,7 +641,11 @@ static int tda827xa_set_params(struct dvb_frontend *fe,
 	msg.flags = 0;
 
 	buf[1] >>= 4;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("tda8275a AGC2 gain is: %d\n", buf[1]);
+#else
+	d;
+#endif
 	if ((buf[1]) < 2) {
 		tda827xa_lna_gain(fe, 0, NULL);
 		buf[0] = 0x60;
@@ -721,7 +769,11 @@ static int tda827xa_set_analog_params(struct dvb_frontend *fe,
 	tuner_transfer(fe, &msg, 1);
 	msg.flags = 0;
 	tuner_reg[1] >>= 4;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("AGC2 gain is: %d\n", tuner_reg[1]);
+#else
+	d;
+#endif
 	if (tuner_reg[1] < 1)
 		tda827xa_lna_gain(fe, 0, params);
 
@@ -787,7 +839,11 @@ static int tda827x_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 static int tda827x_init(struct dvb_frontend *fe)
 {
 	struct tda827x_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 	if (priv->cfg && priv->cfg->init)
 		priv->cfg->init(fe);
 
@@ -857,18 +913,30 @@ static int tda827x_probe_version(struct dvb_frontend *fe)
 	rc = tuner_transfer(fe, &msg, 1);
 
 	if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: could not read from tuner at addr: 0x%02x\n",
 		       __func__, msg.addr << 1);
+#else
+		;
+#endif
 		return rc;
 	}
 	if ((data & 0x3c) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("tda827x tuner found\n");
+#else
+		d;
+#endif
 		fe->ops.tuner_ops.init  = tda827x_init;
 		fe->ops.tuner_ops.sleep = tda827xo_sleep;
 		if (priv->cfg)
 			priv->cfg->agcf = tda827xo_agcf;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("tda827xa tuner found\n");
+#else
+		d;
+#endif
 		memcpy(&fe->ops.tuner_ops, &tda827xa_tuner_ops, sizeof(struct dvb_tuner_ops));
 		if (priv->cfg)
 			priv->cfg->agcf = tda827xa_agcf;
@@ -882,7 +950,11 @@ struct dvb_frontend *tda827x_attach(struct dvb_frontend *fe, int addr,
 {
 	struct tda827x_priv *priv = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 	priv = kzalloc(sizeof(struct tda827x_priv), GFP_KERNEL);
 	if (priv == NULL)
 		return NULL;
@@ -893,7 +965,11 @@ struct dvb_frontend *tda827x_attach(struct dvb_frontend *fe, int addr,
 	memcpy(&fe->ops.tuner_ops, &tda827xo_tuner_ops, sizeof(struct dvb_tuner_ops));
 	fe->tuner_priv = priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("type set to %s\n", fe->ops.tuner_ops.info.name);
+#else
+	d;
+#endif
 
 	return fe;
 }

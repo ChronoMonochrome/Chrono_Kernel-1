@@ -145,8 +145,8 @@ static int macsonic_open(struct net_device* dev)
 	retval = request_irq(dev->irq, sonic_interrupt, IRQ_FLG_FAST,
 				"sonic", dev);
 	if (retval) {
-		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
-				dev->name, dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
+;
 		goto err;
 	}
 	/* Under the A/UX interrupt scheme, the onboard SONIC interrupt comes
@@ -157,8 +157,8 @@ static int macsonic_open(struct net_device* dev)
 		retval = request_irq(IRQ_NUBUS_9, macsonic_interrupt,
 					IRQ_FLG_FAST, "sonic", dev);
 		if (retval) {
-			printk(KERN_ERR "%s: unable to get IRQ %d.\n",
-					dev->name, IRQ_NUBUS_9);
+//			printk(KERN_ERR "%s: unable to get IRQ %d.\n",
+;
 			goto err_irq;
 		}
 	}
@@ -207,8 +207,8 @@ static int __devinit macsonic_init(struct net_device *dev)
 	if ((lp->descriptors = dma_alloc_coherent(lp->device,
 	            SIZEOF_SONIC_DESC * SONIC_BUS_SCALE(lp->dma_bitmode),
 	            &lp->descriptors_laddr, GFP_KERNEL)) == NULL) {
-		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
-		       dev_name(lp->device));
+//		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
+;
 		return -ENOMEM;
 	}
 
@@ -279,11 +279,11 @@ static void __devinit mac_onboard_sonic_ethernet_addr(struct net_device *dev)
 		 * If we still have what seems to be a bogus address, we'll
 		 * look in the CAM. The top entry should be ours.
 		 */
-		printk(KERN_WARNING "macsonic: MAC address in PROM seems "
-		                    "to be invalid, trying CAM\n");
+//		printk(KERN_WARNING "macsonic: MAC address in PROM seems "
+;
 	} else {
-		printk(KERN_WARNING "macsonic: cannot read MAC address from "
-		                    "PROM, trying CAM\n");
+//		printk(KERN_WARNING "macsonic: cannot read MAC address from "
+;
 	}
 
 	/* This only works if MacOS has already initialized the card. */
@@ -306,8 +306,8 @@ static void __devinit mac_onboard_sonic_ethernet_addr(struct net_device *dev)
 
 	/* Still nonsense ... messed up someplace! */
 
-	printk(KERN_WARNING "macsonic: MAC address in CAM entry 15 "
-	                    "seems invalid, will use a random MAC\n");
+//	printk(KERN_WARNING "macsonic: MAC address in CAM entry 15 "
+;
 	random_ether_addr(dev->dev_addr);
 }
 
@@ -329,7 +329,7 @@ static int __devinit mac_onboard_sonic_probe(struct net_device *dev)
 	if (macintosh_config->ether_type != MAC_ETHER_SONIC)
 		return -ENODEV;
 
-	printk(KERN_INFO "Checking for internal Macintosh ethernet (SONIC).. ");
+;
 
 	/* Bogus probing, on the models which may or may not have
 	   Ethernet (BTW, the Ethernet *is* always at the same
@@ -347,13 +347,13 @@ static int __devinit mac_onboard_sonic_probe(struct net_device *dev)
 		local_irq_restore(flags);
 
 		if (!card_present) {
-			printk("none.\n");
+;
 			return -ENODEV;
 		}
 		commslot = 1;
 	}
 
-	printk("yes\n");
+;
 
 	/* Danger!  My arms are flailing wildly!  You *must* set lp->reg_offset
 	 * and dev->base_addr before using SONIC_READ() or SONIC_WRITE() */
@@ -364,11 +364,11 @@ static int __devinit mac_onboard_sonic_probe(struct net_device *dev)
 		dev->irq = IRQ_NUBUS_9;
 
 	if (!sonic_version_printed) {
-		printk(KERN_INFO "%s", version);
+;
 		sonic_version_printed = 1;
 	}
-	printk(KERN_INFO "%s: onboard / comm-slot SONIC at 0x%08lx\n",
-	       dev_name(lp->device), dev->base_addr);
+//	printk(KERN_INFO "%s: onboard / comm-slot SONIC at 0x%08lx\n",
+;
 
 	/* The PowerBook's SONIC is 16 bit always. */
 	if (macintosh_config->ident == MAC_MODEL_PB520) {
@@ -399,13 +399,13 @@ static int __devinit mac_onboard_sonic_probe(struct net_device *dev)
 		lp->dma_bitmode = SONIC_BITMODE32;
 		sr = SONIC_READ(SONIC_SR);
 	}
-	printk(KERN_INFO
-	       "%s: revision 0x%04x, using %d bit DMA and register offset %d\n",
-	       dev_name(lp->device), sr, lp->dma_bitmode?32:16, lp->reg_offset);
+//	printk(KERN_INFO
+//	       "%s: revision 0x%04x, using %d bit DMA and register offset %d\n",
+;
 
 #if 0 /* This is sometimes useful to find out how MacOS configured the card. */
-	printk(KERN_INFO "%s: DCR: 0x%04x, DCR2: 0x%04x\n", dev_name(lp->device),
-	       SONIC_READ(SONIC_DCR) & 0xffff, SONIC_READ(SONIC_DCR2) & 0xffff);
+//	printk(KERN_INFO "%s: DCR: 0x%04x, DCR2: 0x%04x\n", dev_name(lp->device),
+;
 #endif
 
 	/* Software reset, then initialize control registers. */
@@ -539,7 +539,7 @@ static int __devinit mac_nubus_sonic_probe(struct net_device *dev)
 		dma_bitmode = SONIC_BITMODE16;
 		break;
 	default:
-		printk(KERN_ERR "macsonic: WTF, id is %d\n", id);
+;
 		return -ENODEV;
 	}
 
@@ -551,17 +551,17 @@ static int __devinit mac_nubus_sonic_probe(struct net_device *dev)
 	dev->irq = SLOT2IRQ(ndev->board->slot);
 
 	if (!sonic_version_printed) {
-		printk(KERN_INFO "%s", version);
+;
 		sonic_version_printed = 1;
 	}
-	printk(KERN_INFO "%s: %s in slot %X\n",
-	       dev_name(lp->device), ndev->board->name, ndev->board->slot);
-	printk(KERN_INFO "%s: revision 0x%04x, using %d bit DMA and register offset %d\n",
-	       dev_name(lp->device), SONIC_READ(SONIC_SR), dma_bitmode?32:16, reg_offset);
+//	printk(KERN_INFO "%s: %s in slot %X\n",
+;
+//	printk(KERN_INFO "%s: revision 0x%04x, using %d bit DMA and register offset %d\n",
+;
 
 #if 0 /* This is sometimes useful to find out how MacOS configured the card. */
-	printk(KERN_INFO "%s: DCR: 0x%04x, DCR2: 0x%04x\n", dev_name(lp->device),
-	       SONIC_READ(SONIC_DCR) & 0xffff, SONIC_READ(SONIC_DCR2) & 0xffff);
+//	printk(KERN_INFO "%s: DCR: 0x%04x, DCR2: 0x%04x\n", dev_name(lp->device),
+;
 #endif
 
 	/* Software reset, then initialize control registers. */
@@ -613,7 +613,7 @@ found:
 	if (err)
 		goto out;
 
-	printk("%s: MAC %pM IRQ %d\n", dev->name, dev->dev_addr, dev->irq);
+;
 
 	return 0;
 

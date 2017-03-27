@@ -308,7 +308,11 @@ static void __init disable_l2_prefetch(void)
 	 */
 	u = read_extra_features();
 	if (!(u & 0x01000000)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Feroceon L2: Disabling L2 prefetch.\n");
+#else
+		;
+#endif
 		write_extra_features(u | 0x01000000);
 	}
 }
@@ -321,7 +325,11 @@ static void __init enable_l2(void)
 	if (!(u & 0x00400000)) {
 		int i, d;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Feroceon L2: Enabling L2\n");
+#else
+		;
+#endif
 
 		d = flush_and_disable_dcache();
 		i = invalidate_and_disable_icache();
@@ -347,6 +355,10 @@ void __init feroceon_l2_init(int __l2_wt_override)
 
 	enable_l2();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Feroceon L2: Cache support initialised%s.\n",
 			 l2_wt_override ? ", in WT override mode" : "");
+#else
+	;
+#endif
 }

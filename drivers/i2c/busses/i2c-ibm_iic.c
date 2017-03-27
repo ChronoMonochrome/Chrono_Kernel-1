@@ -70,6 +70,7 @@ MODULE_PARM_DESC(iic_force_fast, "Force fast mode (400 kHz)");
 #endif
 
 #if DBG_LEVEL > 0
+#ifdef CONFIG_DEBUG_PRINTK
 #  define DBG(f,x...)	printk(KERN_DEBUG "ibm-iic" f, ##x)
 #else
 #  define DBG(f,x...)	((void)0)
@@ -83,7 +84,15 @@ MODULE_PARM_DESC(iic_force_fast, "Force fast mode (400 kHz)");
 static void dump_iic_regs(const char* header, struct ibm_iic_private* dev)
 {
 	volatile struct iic_regs __iomem *iic = dev->vaddr;
+#else
+#  define DBG(f,x...)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "ibm-iic%d: %s\n", dev->idx, header);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "  cntl     = 0x%02x, mdcntl = 0x%02x\n"
 	       "  sts      = 0x%02x, extsts = 0x%02x\n"
@@ -92,6 +101,9 @@ static void dump_iic_regs(const char* header, struct ibm_iic_private* dev)
 		in_8(&iic->cntl), in_8(&iic->mdcntl), in_8(&iic->sts),
 		in_8(&iic->extsts), in_8(&iic->clkdiv), in_8(&iic->xfrcnt),
 		in_8(&iic->xtcntlss), in_8(&iic->directcntl));
+#else
+	;
+#endif
 }
 #  define DUMP_REGS(h,dev)	dump_iic_regs((h),(dev))
 #else
@@ -644,8 +656,12 @@ static inline u8 iic_clckdiv(unsigned int opb)
 	 * it corresponds to OPB frequency from the range (40, 50] MHz
 	 */
 	if (!opb){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ibm-iic: using compatibility value for OPB freq,"
 			" fix your board specific setup\n");
+#else
+		;
+#endif
 		opb = 50000000;
 	}
 
@@ -653,8 +669,12 @@ static inline u8 iic_clckdiv(unsigned int opb)
 	opb /= 1000000;
 
 	if (opb < 20 || opb > 150){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ibm-iic: invalid OPB clock frequency %u MHz\n",
 			opb);
+#else
+		;
+#endif
 		opb = opb < 20 ? 20 : 150;
 	}
 	return (u8)((opb + 9) / 10 - 1);

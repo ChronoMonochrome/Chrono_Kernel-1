@@ -435,15 +435,23 @@ static int add_mc_to_global_list(struct mem_ctl_info *mci)
 	return 0;
 
 fail0:
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_WARNING, EDAC_MC,
 		"%s (%s) %s %s already assigned %d\n", dev_name(p->dev),
 		edac_dev_name(mci), p->mod_name, p->ctl_name, p->mc_idx);
+#else
+	edac_;
+#endif
 	return 1;
 
 fail1:
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_WARNING, EDAC_MC,
 		"bug in low-level driver: attempt to assign\n"
 		"    duplicate mc_idx %d in %s()\n", p->mc_idx, __func__);
+#else
+	edac_;
+#endif
 	return 1;
 }
 
@@ -529,8 +537,12 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
 	mci->start_time = jiffies;
 
 	if (edac_create_sysfs_mci_device(mci)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_WARNING,
 			"failed to create sysfs device\n");
+#else
+		edac_mc_;
+#endif
 		goto fail1;
 	}
 
@@ -545,8 +557,12 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
 	}
 
 	/* Report action taken */
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_mc_printk(mci, KERN_INFO, "Giving out device to '%s' '%s':"
 		" DEV %s\n", mci->mod_name, mci->ctl_name, edac_dev_name(mci));
+#else
+	edac_mc_;
+#endif
 
 	mutex_unlock(&mem_ctls_mutex);
 	return 0;
@@ -594,9 +610,13 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
 	/* remove from sysfs */
 	edac_remove_sysfs_mci_device(mci);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_INFO, EDAC_MC,
 		"Removed device %d for %s %s: DEV %s\n", mci->mc_idx,
 		mci->mod_name, mci->ctl_name, edac_dev_name(mci));
+#else
+	edac_;
+#endif
 
 	return mci;
 }
@@ -704,12 +724,16 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
 
 	if (edac_mc_get_log_ce())
 		/* FIXME - put in DIMM location */
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_WARNING,
 			"CE page 0x%lx, offset 0x%lx, grain %d, syndrome "
 			"0x%lx, row %d, channel %d, label \"%s\": %s\n",
 			page_frame_number, offset_in_page,
 			mci->csrows[row].grain, syndrome, row, channel,
 			mci->csrows[row].channels[channel].label, msg);
+#else
+		edac_mc_;
+#endif
 
 	mci->ce_count++;
 	mci->csrows[row].ce_count++;
@@ -738,8 +762,12 @@ EXPORT_SYMBOL_GPL(edac_mc_handle_ce);
 void edac_mc_handle_ce_no_info(struct mem_ctl_info *mci, const char *msg)
 {
 	if (edac_mc_get_log_ce())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_WARNING,
 			"CE - no information available: %s\n", msg);
+#else
+		edac_mc_;
+#endif
 
 	mci->ce_noinfo_count++;
 	mci->ce_count++;
@@ -782,11 +810,15 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
 	}
 
 	if (edac_mc_get_log_ue())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_EMERG,
 			"UE page 0x%lx, offset 0x%lx, grain %d, row %d, "
 			"labels \"%s\": %s\n", page_frame_number,
 			offset_in_page, mci->csrows[row].grain, row,
 			labels, msg);
+#else
+		edac_mc_;
+#endif
 
 	if (edac_mc_get_panic_on_ue())
 		panic("EDAC MC%d: UE page 0x%lx, offset 0x%lx, grain %d, "
@@ -805,8 +837,12 @@ void edac_mc_handle_ue_no_info(struct mem_ctl_info *mci, const char *msg)
 		panic("EDAC MC%d: Uncorrected Error", mci->mc_idx);
 
 	if (edac_mc_get_log_ue())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_WARNING,
 			"UE - no information available: %s\n", msg);
+#else
+		edac_mc_;
+#endif
 	mci->ue_noinfo_count++;
 	mci->ue_count++;
 }
@@ -867,10 +903,14 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
 			 mci->csrows[csrow].channels[channelb].label);
 
 	if (edac_mc_get_log_ue())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_EMERG,
 			"UE row %d, channel-a= %d channel-b= %d "
 			"labels \"%s\": %s\n", csrow, channela, channelb,
 			labels, msg);
+#else
+		edac_mc_;
+#endif
 
 	if (edac_mc_get_panic_on_ue())
 		panic("UE row %d, channel-a= %d channel-b= %d "
@@ -907,10 +947,14 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
 
 	if (edac_mc_get_log_ce())
 		/* FIXME - put in DIMM location */
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_mc_printk(mci, KERN_WARNING,
 			"CE row %d, channel %d, label \"%s\": %s\n",
 			csrow, channel,
 			mci->csrows[csrow].channels[channel].label, msg);
+#else
+		edac_mc_;
+#endif
 
 	mci->ce_count++;
 	mci->csrows[csrow].ce_count++;

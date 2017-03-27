@@ -239,7 +239,7 @@ int logfs_load_object_aliases(struct super_block *sb,
 			BUG_ON(err); /* mempool empty */
 		}
 		if (test_and_set_bit(item->child_no, block->alias_map)) {
-			printk(KERN_ERR"LogFS: Alias collision detected\n");
+;
 			return -EIO;
 		}
 		list_move_tail(&block->alias_list, &super->s_object_alias);
@@ -443,9 +443,9 @@ static int read_seg_header(struct super_block *sb, u64 ofs,
 		return err;
 	crc = logfs_crc32(sh, sizeof(*sh), 4);
 	if (crc != sh->crc) {
-		printk(KERN_ERR"LOGFS: header crc error at %llx: expected %x, "
-				"got %x\n", ofs, be32_to_cpu(sh->crc),
-				be32_to_cpu(crc));
+//		printk(KERN_ERR"LOGFS: header crc error at %llx: expected %x, "
+//				"got %x\n", ofs, be32_to_cpu(sh->crc),
+;
 		return -EIO;
 	}
 	return 0;
@@ -463,9 +463,9 @@ static int read_obj_header(struct super_block *sb, u64 ofs,
 		return err;
 	crc = logfs_crc32(oh, sizeof(*oh) - 4, 4);
 	if (crc != oh->crc) {
-		printk(KERN_ERR"LOGFS: header crc error at %llx: expected %x, "
-				"got %x\n", ofs, be32_to_cpu(oh->crc),
-				be32_to_cpu(crc));
+//		printk(KERN_ERR"LOGFS: header crc error at %llx: expected %x, "
+//				"got %x\n", ofs, be32_to_cpu(oh->crc),
+;
 		return -EIO;
 	}
 	return 0;
@@ -581,10 +581,10 @@ static int __logfs_segment_read(struct inode *inode, void *buf,
 	err = -EIO;
 	if (be64_to_cpu(oh.ino) != inode->i_ino
 			|| check_pos(sb, be64_to_cpu(oh.bix), bix, level)) {
-		printk(KERN_ERR"LOGFS: (ino, bix) don't match at %llx: "
-				"expected (%lx, %llx), got (%llx, %llx)\n",
-				ofs, inode->i_ino, bix,
-				be64_to_cpu(oh.ino), be64_to_cpu(oh.bix));
+//		printk(KERN_ERR"LOGFS: (ino, bix) don't match at %llx: "
+//				"expected (%lx, %llx), got (%llx, %llx)\n",
+//				ofs, inode->i_ino, bix,
+;
 		goto out_err;
 	}
 
@@ -597,10 +597,10 @@ static int __logfs_segment_read(struct inode *inode, void *buf,
 			goto out_err;
 		crc = logfs_crc32(buf, len, 0);
 		if (crc != oh.data_crc) {
-			printk(KERN_ERR"LOGFS: uncompressed data crc error at "
-					"%llx: expected %x, got %x\n", ofs,
-					be32_to_cpu(oh.data_crc),
-					be32_to_cpu(crc));
+//			printk(KERN_ERR"LOGFS: uncompressed data crc error at "
+//					"%llx: expected %x, got %x\n", ofs,
+//					be32_to_cpu(oh.data_crc),
+;
 			goto out_err;
 		}
 		break;
@@ -614,17 +614,17 @@ static int __logfs_segment_read(struct inode *inode, void *buf,
 		}
 		crc = logfs_crc32(compressor_buf, len, 0);
 		if (crc != oh.data_crc) {
-			printk(KERN_ERR"LOGFS: compressed data crc error at "
-					"%llx: expected %x, got %x\n", ofs,
-					be32_to_cpu(oh.data_crc),
-					be32_to_cpu(crc));
+//			printk(KERN_ERR"LOGFS: compressed data crc error at "
+//					"%llx: expected %x, got %x\n", ofs,
+//					be32_to_cpu(oh.data_crc),
+;
 			mutex_unlock(&logfs_super(sb)->s_journal_mutex);
 			goto out_err;
 		}
 		err = logfs_uncompress(compressor_buf, buf, len, block_len);
 		mutex_unlock(&logfs_super(sb)->s_journal_mutex);
 		if (err) {
-			printk(KERN_ERR"LOGFS: uncompress error at %llx\n", ofs);
+;
 			goto out_err;
 		}
 		break;
@@ -637,7 +637,7 @@ static int __logfs_segment_read(struct inode *inode, void *buf,
 
 out_err:
 	logfs_set_ro(sb);
-	printk(KERN_ERR"LOGFS: device is read-only now\n");
+;
 	LOGFS_BUG(sb);
 	return err;
 }
@@ -757,8 +757,8 @@ again:
 	log_gc("logfs_open_area(%x, %x)\n", area->a_segno, area->a_level);
 	err = area->a_ops->erase_segment(area);
 	if (err) {
-		printk(KERN_WARNING "LogFS: Error erasing segment %x\n",
-				area->a_segno);
+//		printk(KERN_WARNING "LogFS: Error erasing segment %x\n",
+;
 		logfs_mark_segment_bad(sb, area->a_segno);
 		goto again;
 	}
@@ -801,7 +801,7 @@ static void ostore_get_free_segment(struct logfs_area *area)
 	struct logfs_super *super = logfs_super(sb);
 
 	if (super->s_free_list.count == 0) {
-		printk(KERN_ERR"LOGFS: ran out of free segments\n");
+;
 		LOGFS_BUG(sb);
 	}
 

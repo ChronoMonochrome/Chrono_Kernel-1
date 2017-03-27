@@ -120,8 +120,12 @@ static struct config_group *target_core_register_fabric(
 	struct target_fabric_configfs *tf;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> group: %p name:"
 			" %s\n", group, name);
+#else
+	;
+#endif
 	/*
 	 * Ensure that TCM subsystem plugins are loaded at this point for
 	 * using the RAMDISK_DR virtual LUN 0 and all other struct se_port
@@ -174,14 +178,22 @@ static struct config_group *target_core_register_fabric(
 			name);
 		return ERR_PTR(-EINVAL);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> Located fabric:"
 			" %s\n", tf->tf_name);
+#else
+	;
+#endif
 	/*
 	 * On a successful target_core_get_fabric() look, the returned
 	 * struct target_fabric_configfs *tf will contain a usage reference.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER tfc_wwn_cit -> %p\n",
 			&TF_CIT_TMPL(tf)->tfc_wwn_cit);
+#else
+	;
+#endif
 
 	tf->tf_group.default_groups = tf->tf_default_groups;
 	tf->tf_group.default_groups[0] = &tf->tf_disc_group;
@@ -192,15 +204,23 @@ static struct config_group *target_core_register_fabric(
 	config_group_init_type_name(&tf->tf_disc_group, "discovery_auth",
 			&TF_CIT_TMPL(tf)->tfc_discovery_cit);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> Allocated Fabric:"
 			" %s\n", tf->tf_group.cg_item.ci_name);
+#else
+	;
+#endif
 	/*
 	 * Setup tf_ops.tf_subsys pointer for usage with configfs_depend_item()
 	 */
 	tf->tf_ops.tf_subsys = tf->tf_subsys;
 	tf->tf_fabric = &tf->tf_group.cg_item;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> Set tf->tf_fabric"
 			" for %s\n", name);
+#else
+	;
+#endif
 
 	return &tf->tf_group;
 }
@@ -218,19 +238,35 @@ static void target_core_deregister_fabric(
 	struct config_item *df_item;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: DEREGISTER -> Looking up %s in"
 		" tf list\n", config_item_name(item));
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: DEREGISTER -> located fabric:"
 			" %s\n", tf->tf_name);
+#else
+	;
+#endif
 	atomic_dec(&tf->tf_access_cnt);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: DEREGISTER -> Releasing"
 			" tf->tf_fabric for %s\n", tf->tf_name);
+#else
+	;
+#endif
 	tf->tf_fabric = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: DEREGISTER -> Releasing ci"
 			" %s\n", config_item_name(item));
+#else
+	;
+#endif
 
 	tf_group = &tf->tf_group;
 	for (i = 0; tf_group->default_groups[i]; i++) {
@@ -330,10 +366,18 @@ struct target_fabric_configfs *target_fabric_configfs_init(
 	list_add_tail(&tf->tf_list, &g_tf_list);
 	mutex_unlock(&g_tf_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "<<<<<<<<<<<<<<<<<<<<<< BEGIN FABRIC API >>>>>>>>"
 			">>>>>>>>>>>>>>\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Initialized struct target_fabric_configfs: %p for"
 			" %s\n", tf, tf->tf_name);
+#else
+	;
+#endif
 	return tf;
 }
 EXPORT_SYMBOL(target_fabric_configfs_init);
@@ -556,8 +600,12 @@ int target_fabric_configfs_register(
 	if (ret < 0)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "<<<<<<<<<<<<<<<<<<<<<< END FABRIC API >>>>>>>>>>>>"
 		">>>>>>>>>>\n");
+#else
+	;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(target_fabric_configfs_register);
@@ -586,8 +634,12 @@ void target_fabric_configfs_deregister(
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "<<<<<<<<<<<<<<<<<<<<<< BEGIN FABRIC API >>>>>>>>>>"
 			">>>>>>>>>>>>\n");
+#else
+	;
+#endif
 	mutex_lock(&g_tf_lock);
 	if (atomic_read(&tf->tf_access_cnt)) {
 		mutex_unlock(&g_tf_lock);
@@ -598,14 +650,22 @@ void target_fabric_configfs_deregister(
 	list_del(&tf->tf_list);
 	mutex_unlock(&g_tf_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: DEREGISTER -> Releasing tf:"
 			" %s\n", tf->tf_name);
+#else
+	;
+#endif
 	tf->tf_module = NULL;
 	tf->tf_subsys = NULL;
 	kfree(tf);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("<<<<<<<<<<<<<<<<<<<<<< END FABRIC API >>>>>>>>>>>>>>>>>"
 			">>>>>\n");
+#else
+	;
+#endif
 	return;
 }
 EXPORT_SYMBOL(target_fabric_configfs_deregister);
@@ -883,8 +943,12 @@ static ssize_t target_core_dev_wwn_store_attr_vpd_unit_serial(
 			"%s", strstrip(buf));
 	su_dev->su_dev_flags |= SDF_EMULATED_VPD_UNIT_SERIAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Set emulated VPD Unit Serial:"
 			" %s\n", su_dev->t10_wwn.unit_serial);
+#else
+	;
+#endif
 
 	return count;
 }
@@ -1467,8 +1531,12 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
 		return 0;
 
 	if (atomic_read(&dev->dev_export_obj.obj_access_count)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unable to process APTPL metadata while"
 			" active fabric exports exist\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1735,10 +1803,14 @@ static ssize_t target_core_store_dev_alias(
 	read_bytes = snprintf(&se_dev->se_dev_alias[0], SE_DEV_ALIAS_LEN,
 			"%s", page);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: %s/%s set alias: %s\n",
 		config_item_name(&hba->hba_group.cg_item),
 		config_item_name(&se_dev->se_dev_group.cg_item),
 		se_dev->se_dev_alias);
+#else
+	;
+#endif
 
 	return read_bytes;
 }
@@ -1781,10 +1853,14 @@ static ssize_t target_core_store_dev_udev_path(
 	read_bytes = snprintf(&se_dev->se_dev_udev_path[0], SE_UDEV_PATH_LEN,
 			"%s", page);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: %s/%s set udev_path: %s\n",
 		config_item_name(&hba->hba_group.cg_item),
 		config_item_name(&se_dev->se_dev_group.cg_item),
 		se_dev->se_dev_udev_path);
+#else
+	;
+#endif
 
 	return read_bytes;
 }
@@ -1830,8 +1906,12 @@ static ssize_t target_core_store_dev_enable(
 		return -EINVAL;
 
 	se_dev->se_dev_ptr = dev;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Registered se_dev->se_dev_ptr:"
 		" %p\n", se_dev->se_dev_ptr);
+#else
+	;
+#endif
 
 	return count;
 }
@@ -1897,9 +1977,13 @@ static ssize_t target_core_store_alua_lu_gp(
 		return -ENODEV;
 
 	if (T10_ALUA(su_dev)->alua_type != SPC3_ALUA_EMULATED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SPC3_ALUA_EMULATED not enabled for %s/%s\n",
 			config_item_name(&hba->hba_group.cg_item),
 			config_item_name(&su_dev->se_dev_group.cg_item));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (count > LU_GROUP_NAME_BUF) {
@@ -1939,6 +2023,7 @@ static ssize_t target_core_store_alua_lu_gp(
 		 * with NULL
 		 */
 		if (!(lu_gp_new)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Target_Core_ConfigFS: Releasing %s/%s"
 				" from ALUA LU Group: core/alua/lu_gps/%s, ID:"
 				" %hu\n",
@@ -1946,6 +2031,9 @@ static ssize_t target_core_store_alua_lu_gp(
 				config_item_name(&su_dev->se_dev_group.cg_item),
 				config_item_name(&lu_gp->lu_gp_group.cg_item),
 				lu_gp->lu_gp_id);
+#else
+			;
+#endif
 
 			__core_alua_drop_lu_gp_mem(lu_gp_mem, lu_gp);
 			spin_unlock(&lu_gp_mem->lu_gp_mem_lock);
@@ -1964,6 +2052,7 @@ static ssize_t target_core_store_alua_lu_gp(
 	__core_alua_attach_lu_gp_mem(lu_gp_mem, lu_gp_new);
 	spin_unlock(&lu_gp_mem->lu_gp_mem_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: %s %s/%s to ALUA LU Group:"
 		" core/alua/lu_gps/%s, ID: %hu\n",
 		(move) ? "Moving" : "Adding",
@@ -1971,6 +2060,9 @@ static ssize_t target_core_store_alua_lu_gp(
 		config_item_name(&su_dev->se_dev_group.cg_item),
 		config_item_name(&lu_gp_new->lu_gp_group.cg_item),
 		lu_gp_new->lu_gp_id);
+#else
+	;
+#endif
 
 	core_alua_put_lu_gp_from_name(lu_gp_new);
 	return count;
@@ -2008,24 +2100,36 @@ static void target_core_dev_release(struct config_item *item)
 	 *`echo 1 > $CONFIGFS/core/$HBA/$DEV/dev_enable`
 	 */
 	if (se_dev->se_dev_ptr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Target_Core_ConfigFS: Calling se_free_"
 			"virtual_device() for se_dev_ptr: %p\n",
 			se_dev->se_dev_ptr);
+#else
+		;
+#endif
 
 		se_free_virtual_device(se_dev->se_dev_ptr, hba);
 	} else {
 		/*
 		 * Release struct se_subsystem_dev->se_dev_su_ptr..
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Target_Core_ConfigFS: Calling t->free_"
 			"device() for se_dev_su_ptr: %p\n",
 			se_dev->se_dev_su_ptr);
+#else
+		;
+#endif
 
 		t->free_device(se_dev->se_dev_su_ptr);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Deallocating se_subsystem"
 			"_dev_t: %p\n", se_dev);
+#else
+	;
+#endif
 	kfree(se_dev);
 }
 
@@ -2129,10 +2233,14 @@ static ssize_t target_core_alua_lu_gp_store_attr_lu_gp_id(
 	if (ret < 0)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Set ALUA Logical Unit"
 		" Group: core/alua/lu_gps/%s to ID: %hu\n",
 		config_item_name(&alua_lu_gp_cg->cg_item),
 		lu_gp->lu_gp_id);
+#else
+	;
+#endif
 
 	return count;
 }
@@ -2167,8 +2275,12 @@ static ssize_t target_core_alua_lu_gp_show_attr_members(
 		cur_len++; /* Extra byte for NULL terminator */
 
 		if ((cur_len + len) > PAGE_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Ran out of lu_gp_show_attr"
 				"_members buffer\n");
+#else
+			;
+#endif
 			break;
 		}
 		memcpy(page+len, buf, cur_len);
@@ -2231,9 +2343,13 @@ static struct config_group *target_core_alua_create_lu_gp(
 	config_group_init_type_name(alua_lu_gp_cg, name,
 			&target_core_alua_lu_gp_cit);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Allocated ALUA Logical Unit"
 		" Group: core/alua/lu_gps/%s\n",
 		config_item_name(alua_lu_gp_ci));
+#else
+	;
+#endif
 
 	return alua_lu_gp_cg;
 
@@ -2246,9 +2362,13 @@ static void target_core_alua_drop_lu_gp(
 	struct t10_alua_lu_gp *lu_gp = container_of(to_config_group(item),
 			struct t10_alua_lu_gp, lu_gp_group);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Releasing ALUA Logical Unit"
 		" Group: core/alua/lu_gps/%s, ID: %hu\n",
 		config_item_name(item), lu_gp->lu_gp_id);
+#else
+	;
+#endif
 	/*
 	 * core_alua_free_lu_gp() is called from target_core_alua_lu_gp_ops->release()
 	 * -> target_core_alua_lu_gp_release()
@@ -2313,8 +2433,12 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
 
 	ret = strict_strtoul(page, 0, &tmp);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to extract new ALUA access state from"
 				" %s\n", page);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	new_state = (int)tmp;
@@ -2538,10 +2662,14 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_tg_pt_gp_id(
 	if (ret < 0)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Set ALUA Target Port Group: "
 		"core/alua/tg_pt_gps/%s to ID: %hu\n",
 		config_item_name(&alua_tg_pt_gp_cg->cg_item),
 		tg_pt_gp->tg_pt_gp_id);
+#else
+	;
+#endif
 
 	return count;
 }
@@ -2579,8 +2707,12 @@ static ssize_t target_core_alua_tg_pt_gp_show_attr_members(
 		cur_len++; /* Extra byte for NULL terminator */
 
 		if ((cur_len + len) > PAGE_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Ran out of lu_gp_show_attr"
 				"_members buffer\n");
+#else
+			;
+#endif
 			break;
 		}
 		memcpy(page+len, buf, cur_len);
@@ -2654,9 +2786,13 @@ static struct config_group *target_core_alua_create_tg_pt_gp(
 	config_group_init_type_name(alua_tg_pt_gp_cg, name,
 			&target_core_alua_tg_pt_gp_cit);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Allocated ALUA Target Port"
 		" Group: alua/tg_pt_gps/%s\n",
 		config_item_name(alua_tg_pt_gp_ci));
+#else
+	;
+#endif
 
 	return alua_tg_pt_gp_cg;
 }
@@ -2668,9 +2804,13 @@ static void target_core_alua_drop_tg_pt_gp(
 	struct t10_alua_tg_pt_gp *tg_pt_gp = container_of(to_config_group(item),
 			struct t10_alua_tg_pt_gp, tg_pt_gp_group);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Releasing ALUA Target Port"
 		" Group: alua/tg_pt_gps/%s, ID: %hu\n",
 		config_item_name(item), tg_pt_gp->tg_pt_gp_id);
+#else
+	;
+#endif
 	/*
 	 * core_alua_free_tg_pt_gp() is called from target_core_alua_tg_pt_gp_ops->release()
 	 * -> target_core_alua_tg_pt_gp_release().
@@ -2855,8 +2995,12 @@ static struct config_group *target_core_make_subdev(
 	}
 	target_stat_setup_dev_default_groups(se_dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Target_Core_ConfigFS: Allocated struct se_subsystem_dev:"
 		" %p se_dev_su_ptr: %p\n", se_dev, se_dev->se_dev_su_ptr);
+#else
+	;
+#endif
 
 	mutex_unlock(&hba->hba_access_mutex);
 	return &se_dev->se_dev_group;
@@ -3135,9 +3279,13 @@ static int __init target_core_init_configfs(void)
 	struct t10_alua_lu_gp *lu_gp;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[0]: Loading Generic Kernel Storage"
 		" Engine: %s on %s/%s on "UTS_RELEASE"\n",
 		TARGET_CORE_VERSION, utsname()->sysname, utsname()->machine);
+#else
+	;
+#endif
 
 	subsys = target_core_subsystem[0];
 	config_group_init(&subsys->su_group);
@@ -3224,9 +3372,13 @@ static int __init target_core_init_configfs(void)
 			ret, subsys->su_group.cg_item.ci_namebuf);
 		goto out_global;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[0]: Initialized ConfigFS Fabric"
 		" Infrastructure: "TARGET_CORE_CONFIGFS_VERSION" on %s/%s"
 		" on "UTS_RELEASE"\n", utsname()->sysname, utsname()->machine);
+#else
+	;
+#endif
 	/*
 	 * Register built-in RAMDISK subsystem logic for virtual LUN 0
 	 */
@@ -3305,8 +3457,12 @@ static void __exit target_core_exit_configfs(void)
 	core_alua_free_lu_gp(se_global->default_lu_gp);
 	se_global->default_lu_gp = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[0]: Released ConfigFS Fabric"
 			" Infrastructure\n");
+#else
+	;
+#endif
 
 	core_dev_release_virtual_lun0();
 	rd_module_exit();

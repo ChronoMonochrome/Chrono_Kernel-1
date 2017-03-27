@@ -474,7 +474,11 @@ static int __init alsa_sound_init(void)
 	}
 	snd_info_minor_register();
 #ifndef MODULE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Advanced Linux Sound Architecture Driver Version " CONFIG_SND_VERSION CONFIG_SND_DATE ".\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 }

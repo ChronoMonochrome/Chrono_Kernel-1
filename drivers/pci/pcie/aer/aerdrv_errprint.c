@@ -141,11 +141,19 @@ static void __aer_print_error(const char *prefix,
 				aer_uncorrectable_error_string[i] : NULL;
 
 		if (errmsg)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
 				info->first_error == i ? " (First)" : "");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
 				info->first_error == i ? " (First)" : "");
+#else
+			;
+#endif
 	}
 }
 
@@ -159,27 +167,40 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
 		 dev_driver_string(&dev->dev), dev_name(&dev->dev));
 
 	if (info->status == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
 			"id=%04x(Unregistered Agent ID)\n", prefix,
 			aer_error_severity_string[info->severity], id);
+#else
+		;
+#endif
 	} else {
 		int layer, agent;
 
 		layer = AER_GET_LAYER_ERROR(info->severity, info->status);
 		agent = AER_GET_AGENT(info->severity, info->status);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
 			prefix, aer_error_severity_string[info->severity],
 			aer_error_layer[layer], id, aer_agent_string[agent]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
 			prefix, dev->vendor, dev->device,
 			info->status, info->mask);
+#else
+		;
+#endif
 
 		__aer_print_error(prefix, info);
 
 		if (info->tlp_header_valid) {
 			unsigned char *tlp = (unsigned char *) &info->tlp;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s""  TLP Header:"
 				" %02x%02x%02x%02x %02x%02x%02x%02x"
 				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
@@ -188,12 +209,19 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
 				*(tlp + 11), *(tlp + 10), *(tlp + 9),
 				*(tlp + 8), *(tlp + 15), *(tlp + 14),
 				*(tlp + 13), *(tlp + 12));
+#else
+			;
+#endif
 		}
 	}
 
 	if (info->id && info->error_dev_num > 1 && info->id == id)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""  Error of this Agent(%04x) is reported first\n",
 			prefix, id);
+#else
+		;
+#endif
 }
 
 void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
@@ -238,17 +266,30 @@ void cper_print_aer(const char *prefix, int cper_severity,
 	}
 	layer = AER_GET_LAYER_ERROR(aer_severity, status);
 	agent = AER_GET_AGENT(aer_severity, status);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
 	       prefix, status, mask);
+#else
+	;
+#endif
 	cper_print_bits(prefix, status, status_strs, status_strs_size);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
 	       aer_error_layer[layer], aer_agent_string[agent]);
+#else
+	;
+#endif
 	if (aer_severity != AER_CORRECTABLE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""aer_uncor_severity: 0x%08x\n",
 		       prefix, aer->uncor_severity);
+#else
+		;
+#endif
 	if (tlp_header_valid) {
 		const unsigned char *tlp;
 		tlp = (const unsigned char *)&aer->header_log;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s""aer_tlp_header:"
 			" %02x%02x%02x%02x %02x%02x%02x%02x"
 			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
@@ -257,6 +298,9 @@ void cper_print_aer(const char *prefix, int cper_severity,
 			*(tlp + 11), *(tlp + 10), *(tlp + 9),
 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
 			*(tlp + 13), *(tlp + 12));
+#else
+		;
+#endif
 	}
 }
 #endif

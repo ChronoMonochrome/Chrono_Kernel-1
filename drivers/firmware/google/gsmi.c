@@ -638,8 +638,12 @@ static int gsmi_shutdown_reason(int reason)
 	if (rc < 0)
 		printk(KERN_ERR "gsmi: Log Shutdown Reason failed\n");
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "gsmi: Log Shutdown Reason 0x%02x\n",
 		       reason);
+#else
+		;
+#endif
 
 	return rc;
 }
@@ -744,7 +748,11 @@ static __init int gsmi_system_valid(void)
 	 * whitewash our board names out of the public driver.
 	 */
 	if (!strncmp(acpi_gbl_FADT.header.oem_table_id, "FACP", 4)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Board is too old\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -863,38 +871,62 @@ static __init int gsmi_init(void)
 
 	/* Remove and clean up gsmi if the handshake could not complete. */
 	if (gsmi_dev.handshake_type == -ENXIO) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi version " DRIVER_VERSION
 		       " failed to load\n");
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
+#else
+	;
+#endif
 
 	/* Register in the firmware directory */
 	ret = -ENOMEM;
 	gsmi_kobj = kobject_create_and_add("gsmi", firmware_kobj);
 	if (!gsmi_kobj) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to create firmware kobj\n");
+#else
+		;
+#endif
 		goto out_err;
 	}
 
 	/* Setup eventlog access */
 	ret = sysfs_create_bin_file(gsmi_kobj, &eventlog_bin_attr);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to setup eventlog");
+#else
+		;
+#endif
 		goto out_err;
 	}
 
 	/* Other attributes */
 	ret = sysfs_create_files(gsmi_kobj, gsmi_attrs);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to add attrs");
+#else
+		;
+#endif
 		goto out_err;
 	}
 
 	if (register_efivars(&efivars, &efivar_ops, gsmi_kobj)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to register efivars\n");
+#else
+		;
+#endif
 		goto out_err;
 	}
 

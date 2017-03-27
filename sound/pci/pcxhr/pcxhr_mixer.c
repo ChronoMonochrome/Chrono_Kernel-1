@@ -72,9 +72,13 @@ static int pcxhr_update_analog_audio_level(struct snd_pcxhr *chip,
 	rmh.cmd_len = 3;
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "error update_analog_audio_level card(%d)"
 			   " is_capture(%d) err(%x)\n",
 			   chip->chip_idx, is_capture, err);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -284,8 +288,12 @@ static int pcxhr_update_playback_stream_level(struct snd_pcxhr* chip, int idx)
 
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "error update_playback_stream_level "
 			   "card(%d) err(%x)\n", chip->chip_idx, err);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -335,8 +343,12 @@ static int pcxhr_update_audio_pipe_level(struct snd_pcxhr *chip,
 
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "error update_audio_level(%d) err=%x\n",
 			   chip->chip_idx, err);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;

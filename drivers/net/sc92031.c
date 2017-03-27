@@ -537,10 +537,10 @@ static bool _sc92031_check_media(struct net_device *dev)
 		netif_carrier_on(dev);
 
 		if (printk_ratelimit())
-			printk(KERN_INFO "%s: link up, %sMbps, %s-duplex\n",
-				dev->name,
-				speed_100 ? "100" : "10",
-				duplex_full ? "full" : "half");
+//			printk(KERN_INFO "%s: link up, %sMbps, %s-duplex\n",
+//				dev->name,
+//				speed_100 ? "100" : "10",
+;
 		return true;
 	} else {
 		_sc92031_mii_scan(port_base);
@@ -550,7 +550,7 @@ static bool _sc92031_check_media(struct net_device *dev)
 		_sc92031_disable_tx_rx(dev);
 
 		if (printk_ratelimit())
-			printk(KERN_INFO "%s: link down\n", dev->name);
+;
 		return false;
 	}
 }
@@ -756,8 +756,8 @@ static void _sc92031_rx_tasklet(struct net_device *dev)
 
 	if (unlikely(rx_len > RX_BUF_LEN)) {
 		if (printk_ratelimit())
-			printk(KERN_ERR "%s: rx packets length > rx buffer\n",
-					dev->name);
+//			printk(KERN_ERR "%s: rx packets length > rx buffer\n",
+;
 		return;
 	}
 
@@ -787,7 +787,7 @@ static void _sc92031_rx_tasklet(struct net_device *dev)
 
 		if (unlikely(rx_size_align + 4 > rx_len)) {
 			if (printk_ratelimit())
-				printk(KERN_ERR "%s: rx_len is too small\n", dev->name);
+;
 			break;
 		}
 
@@ -796,8 +796,8 @@ static void _sc92031_rx_tasklet(struct net_device *dev)
 		skb = netdev_alloc_skb_ip_align(dev, pkt_size);
 		if (unlikely(!skb)) {
 			if (printk_ratelimit())
-				printk(KERN_ERR "%s: Couldn't allocate a skb_buff for a packet of size %u\n",
-						dev->name, pkt_size);
+//				printk(KERN_ERR "%s: Couldn't allocate a skb_buff for a packet of size %u\n",
+;
 			goto next;
 		}
 
@@ -1488,8 +1488,8 @@ static int __devinit sc92031_probe(struct pci_dev *pdev,
 #elif SC92031_USE_BAR == 1
 	base_addr = dev->base_addr;
 #endif
-	printk(KERN_INFO "%s: SC92031 at 0x%lx, %pM, IRQ %d\n", dev->name,
-			base_addr, dev->dev_addr, dev->irq);
+//	printk(KERN_INFO "%s: SC92031 at 0x%lx, %pM, IRQ %d\n", dev->name,
+;
 
 	return 0;
 

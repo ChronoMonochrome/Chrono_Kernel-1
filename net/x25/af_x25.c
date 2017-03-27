@@ -1814,7 +1814,7 @@ static int __init x25_init(void)
 	if (rc != 0)
 		goto out_sock;
 
-	printk(KERN_INFO "X.25 for Linux Version 0.2\n");
+;
 
 	x25_register_sysctl();
 	rc = x25_proc_init();

@@ -310,8 +310,12 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
 		}
 
 		if (pte_none(pte) || !pte_present(pte))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "%s: bad page in kernel page table\n",
 			       __func__);
+#else
+			;
+#endif
 	} while (size -= PAGE_SIZE);
 
 	flush_tlb_kernel_range(c->vm_start, c->vm_end);

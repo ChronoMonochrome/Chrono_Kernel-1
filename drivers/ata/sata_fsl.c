@@ -661,8 +661,12 @@ static int sata_fsl_port_start(struct ata_port *ap)
 	sata_fsl_scr_write(&ap->link, SCR_CONTROL, temp);
 
 	sata_fsl_scr_read(&ap->link, SCR_CONTROL, &temp);
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_WARNING, dev, "scr_control, speed limited to %x\n",
 			temp);
+#else
+	dev_;
+#endif
 #endif
 
 	return 0;
@@ -794,9 +798,13 @@ try_offline_again:
 
 	temp = ata_wait_register(ap, hcr_base + HSTATUS, 0xFF, 0, 1, 500);
 	if ((!(temp & 0x10)) || ata_link_offline(link)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 				"No Device OR PHYRDY change,Hstatus = 0x%x\n",
 				ioread32(hcr_base + HSTATUS));
+#else
+		ata_port_;
+#endif
 		*class = ATA_DEV_NONE;
 		return 0;
 	}
@@ -809,13 +817,21 @@ try_offline_again:
 			500, jiffies_to_msecs(deadline - start_jiffies));
 
 	if ((temp & 0xFF) != 0x18) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING, "No Signature Update\n");
+#else
+		ata_port_;
+#endif
 		*class = ATA_DEV_NONE;
 		goto do_followup_srst;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO,
 				"Signature Update detected @ %d msecs\n",
 				jiffies_to_msecs(jiffies - start_jiffies));
+#else
+		ata_port_;
+#endif
 		*class = sata_fsl_dev_classify(ap);
 		return 0;
 	}
@@ -890,7 +906,11 @@ static int sata_fsl_softreset(struct ata_link *link, unsigned int *class,
 
 	temp = ata_wait_register(ap, CQ + hcr_base, 0x1, 0x1, 1, 5000);
 	if (temp & 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING, "ATA_SRST issue failed\n");
+#else
+		ata_port_;
+#endif
 
 		DPRINTK("Softreset@5000,CQ=0x%x,CA=0x%x,CC=0x%x\n",
 			ioread32(CQ + hcr_base),
@@ -1202,8 +1222,12 @@ static irqreturn_t sata_fsl_interrupt(int irq, void *dev_instance)
 	if (ap) {
 		sata_fsl_host_intr(ap);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, host->dev,
 			   "interrupt on disabled port 0\n");
+#else
+		dev_;
+#endif
 	}
 
 	iowrite32(interrupt_enables, hcr_base + HSTATUS);
@@ -1317,8 +1341,12 @@ static int sata_fsl_probe(struct platform_device *ofdev)
 	struct ata_port_info pi = sata_fsl_port_info[0];
 	const struct ata_port_info *ppi[] = { &pi, NULL };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &ofdev->dev,
 		   "Sata FSL Platform/CSB Driver init\n");
+#else
+	dev_;
+#endif
 
 	hcr_base = of_iomap(ofdev->dev.of_node, 0);
 	if (!hcr_base)

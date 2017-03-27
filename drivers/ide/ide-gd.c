@@ -138,7 +138,11 @@ static void ide_gd_shutdown(ide_drive_t *drive)
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Shutdown: %s\n", drive->name);
+#else
+	;
+#endif
 
 	drive->gendev.bus->suspend(&drive->gendev, PMSG_SUSPEND);
 }
@@ -432,7 +436,11 @@ failed:
 
 static int __init ide_gd_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME " driver " IDE_GD_VERSION "\n");
+#else
+	;
+#endif
 	return driver_register(&ide_gd_driver.gen_driver);
 }
 

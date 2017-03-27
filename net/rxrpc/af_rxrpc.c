@@ -670,7 +670,7 @@ static void rxrpc_sock_destructor(struct sock *sk)
 	WARN_ON(sk->sk_socket);
 
 	if (!sock_flag(sk, SOCK_DEAD)) {
-		printk("Attempt to release alive rxrpc socket: %p\n", sk);
+;
 		return;
 	}
 }
@@ -804,37 +804,37 @@ static int __init af_rxrpc_init(void)
 		"rxrpc_call_jar", sizeof(struct rxrpc_call), 0,
 		SLAB_HWCACHE_ALIGN, NULL);
 	if (!rxrpc_call_jar) {
-		printk(KERN_NOTICE "RxRPC: Failed to allocate call jar\n");
+;
 		goto error_call_jar;
 	}
 
 	rxrpc_workqueue = alloc_workqueue("krxrpcd", 0, 1);
 	if (!rxrpc_workqueue) {
-		printk(KERN_NOTICE "RxRPC: Failed to allocate work queue\n");
+;
 		goto error_work_queue;
 	}
 
 	ret = proto_register(&rxrpc_proto, 1);
 	if (ret < 0) {
-		printk(KERN_CRIT "RxRPC: Cannot register protocol\n");
+;
 		goto error_proto;
 	}
 
 	ret = sock_register(&rxrpc_family_ops);
 	if (ret < 0) {
-		printk(KERN_CRIT "RxRPC: Cannot register socket family\n");
+;
 		goto error_sock;
 	}
 
 	ret = register_key_type(&key_type_rxrpc);
 	if (ret < 0) {
-		printk(KERN_CRIT "RxRPC: Cannot register client key type\n");
+;
 		goto error_key_type;
 	}
 
 	ret = register_key_type(&key_type_rxrpc_s);
 	if (ret < 0) {
-		printk(KERN_CRIT "RxRPC: Cannot register server key type\n");
+;
 		goto error_key_type_s;
 	}
 

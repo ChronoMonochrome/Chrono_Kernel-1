@@ -191,9 +191,13 @@ get_io_range(struct IsdnCardState *cs)
 	for (i=0;i<64;i++) {
 		adr = cs->hw.spt.cfg_reg + i *1024;
 		if (!request_region(adr, 8, "sportster")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: USR Sportster config port "
 				"%x-%x already in use\n",
 				adr, adr + 8);
+#else
+			;
+#endif
 			break;
 		} 
 	}
@@ -215,7 +219,11 @@ setup_sportster(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, sportster_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: USR Sportster driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_SPORTSTER)
 		return (0);
 
@@ -243,11 +251,19 @@ setup_sportster(struct IsdnCard *card)
 		case 15:cs->hw.spt.res_irq = 7;
 			break;
 		default:release_io_sportster(cs);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sportster: wrong IRQ\n");
+#else
+			;
+#endif
 			return(0);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: USR Sportster config irq:%d cfg:0x%X\n",
 		cs->irq, cs->hw.spt.cfg_reg);
+#else
+	;
+#endif
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -260,8 +276,12 @@ setup_sportster(struct IsdnCard *card)
 	cs->irq_func = &sportster_interrupt;
 	ISACVersion(cs, "Sportster:");
 	if (HscxVersion(cs, "Sportster:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "Sportster: wrong HSCX versions check IO address\n");
+#else
+		;
+#endif
 		release_io_sportster(cs);
 		return (0);
 	}

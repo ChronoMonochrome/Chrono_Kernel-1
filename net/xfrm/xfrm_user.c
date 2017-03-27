@@ -2543,8 +2543,8 @@ static int xfrm_send_state_notify(struct xfrm_state *x, const struct km_event *c
 	case XFRM_MSG_FLUSHSA:
 		return xfrm_notify_sa_flush(c);
 	default:
-		printk(KERN_NOTICE "xfrm_user: Unknown SA event %d\n",
-		       c->event);
+//		printk(KERN_NOTICE "xfrm_user: Unknown SA event %d\n",
+;
 		break;
 	}
 
@@ -2835,8 +2835,8 @@ static int xfrm_send_policy_notify(struct xfrm_policy *xp, int dir, const struct
 	case XFRM_MSG_POLEXPIRE:
 		return xfrm_exp_policy_notify(xp, dir, c);
 	default:
-		printk(KERN_NOTICE "xfrm_user: Unknown Policy event %d\n",
-		       c->event);
+//		printk(KERN_NOTICE "xfrm_user: Unknown Policy event %d\n",
+;
 	}
 
 	return 0;
@@ -2982,7 +2982,7 @@ static int __init xfrm_user_init(void)
 {
 	int rv;
 
-	printk(KERN_INFO "Initializing XFRM netlink socket\n");
+;
 
 	rv = register_pernet_subsys(&xfrm_user_net_ops);
 	if (rv < 0)

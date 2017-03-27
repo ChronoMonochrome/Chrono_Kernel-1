@@ -117,7 +117,11 @@ static int sb_register_oss(struct sb_card_config *scc, struct sb_module_options 
 	}
 	if(scc->mpucnf.io_base > 0) {
 		scc->mpu = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sb: Turning on MPU\n");
+#else
+		;
+#endif
 		if(!probe_sbmpu(&scc->mpucnf, THIS_MODULE))
 			scc->mpu = 0;
 	}
@@ -252,17 +256,25 @@ static int sb_pnp_probe(struct pnp_card_link *card, const struct pnp_card_device
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: PnP: Found Card Named = \"%s\", Card PnP id = " \
 	       "%s, Device PnP id = %s\n", card->card->name, card_id->id,
 	       dev->id->id);
+#else
+	;
+#endif
 
 	scc->card_id = card_id->id;
 	scc->dev_id = dev->id->id;
 	sb_dev2cfg(dev, scc);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: PnP:      Detected at: io=0x%x, irq=%d, " \
 	       "dma=%d, dma16=%d\n", scc->conf.io_base, scc->conf.irq,
 	       scc->conf.dma, scc->conf.dma2);
+#else
+	;
+#endif
 
 	pnp_set_card_drvdata(card, scc);
 	sb_pnp_devices++;
@@ -277,7 +289,11 @@ static void sb_pnp_remove(struct pnp_card_link *card)
 	if(!scc)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: PnP: Removing %s\n", scc->card_id);
+#else
+	;
+#endif
 
 	sb_unload(scc);
 }
@@ -304,11 +320,19 @@ static int __init sb_init(void)
 	int lres = 0;
 	int pres = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: Init: Starting Probe...\n");
+#else
+	;
+#endif
 
 	if(io != -1 && irq != -1 && dma != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sb: Probing legacy card with io=%x, "\
 		       "irq=%d, dma=%d, dma16=%d\n",io, irq, dma, dma16);
+#else
+		;
+#endif
 		lres = sb_init_legacy();
 	} else if((io != -1 || irq != -1 || dma != -1) ||
 		  (!pnp && (io == -1 && irq == -1 && dma == -1)))
@@ -323,7 +347,11 @@ static int __init sb_init(void)
 		pres = sb_pnp_devices;
 	}
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: Init: Done\n");
+#else
+	;
+#endif
 
 	/* If either PnP or Legacy registered a card then return
 	 * success */
@@ -336,7 +364,11 @@ static int __init sb_init(void)
 
 static void __exit sb_exit(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sb: Unloading...\n");
+#else
+	;
+#endif
 
 	/* Unload legacy card */
 	if (legacy) {

@@ -40,7 +40,7 @@ int pohmelfs_construct_path_string(struct pohmelfs_inode *pi, void *data, int le
 
 	d = d_find_alias(&pi->vfs_inode);
 	if (!d) {
-		printk("%s: no alias, list_empty: %d.\n", __func__, list_empty(&pi->vfs_inode.i_dentry));
+;
 		return -ENOENT;
 	}
 
@@ -70,8 +70,8 @@ int pohmelfs_construct_path_string(struct pohmelfs_inode *pi, void *data, int le
 
 	err = strlen;
 
-	dprintk("%s: dname: '%s', len: %u, maxlen: %u, name: '%s', strlen: %d.\n",
-			__func__, d->d_name.name, d->d_name.len, len, ptr, strlen);
+//	dprintk("%s: dname: '%s', len: %u, maxlen: %u, name: '%s', strlen: %d.\n",
+;
 
 out:
 	dput(d);
@@ -88,7 +88,7 @@ int pohmelfs_path_length(struct pohmelfs_inode *pi)
 
 	first = d_find_alias(&pi->vfs_inode);
 	if (!first) {
-		dprintk("%s: ino: %llu, mode: %o.\n", __func__, pi->ino, pi->vfs_inode.i_mode);
+;
 		return -ENOENT;
 	}
 

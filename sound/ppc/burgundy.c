@@ -35,7 +35,11 @@ snd_pmac_burgundy_busy_wait(struct snd_pmac *chip)
 	while ((in_le32(&chip->awacs->codec_ctrl) & MASK_NEWECMD) && timeout--)
 		udelay(1);
 	if (timeout < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "burgundy_busy_wait: timeout\n");
+#else
+		;
+#endif
 }
 
 static inline void
@@ -46,12 +50,20 @@ snd_pmac_burgundy_extend_wait(struct snd_pmac *chip)
 	while (!(in_le32(&chip->awacs->codec_stat) & MASK_EXTEND) && timeout--)
 		udelay(1);
 	if (timeout < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "burgundy_extend_wait: timeout #1\n");
+#else
+		;
+#endif
 	timeout = 50;
 	while ((in_le32(&chip->awacs->codec_stat) & MASK_EXTEND) && timeout--)
 		udelay(1);
 	if (timeout < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "burgundy_extend_wait: timeout #2\n");
+#else
+		;
+#endif
 }
 
 static void
@@ -624,7 +636,11 @@ int __devinit snd_pmac_burgundy_init(struct snd_pmac *chip)
 
 	/* Checks to see the chip is alive and kicking */
 	if ((in_le32(&chip->awacs->codec_ctrl) & MASK_ERRCODE) == 0xf0000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pmac burgundy: disabled by MacOS :-(\n");
+#else
+		;
+#endif
 		return 1;
 	}
 

@@ -19,8 +19,12 @@ void tomoyo_warn_oom(const char *function)
 	static pid_t tomoyo_last_pid;
 	const pid_t pid = current->pid;
 	if (tomoyo_last_pid != pid) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ERROR: Out of memory at %s.\n",
 		       function);
+#else
+		;
+#endif
 		tomoyo_last_pid = pid;
 	}
 	if (!tomoyo_policy_loaded)

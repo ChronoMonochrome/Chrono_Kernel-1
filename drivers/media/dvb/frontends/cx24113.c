@@ -31,14 +31,26 @@
 
 static int debug;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define info(args...) do { printk(KERN_INFO "CX24113: " args); } while (0)
+#else
+#define info(args...) do { ;
+#endif
 #define err(args...)  do { printk(KERN_ERR  "CX24113: " args); } while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) { \
 			printk(KERN_DEBUG "CX24113: %s: ", __func__); \
+#else
+#define d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(args); \
+#else
+			;
+#endif
 		} \
 	} while (0)
 
@@ -108,8 +120,12 @@ static int cx24113_writereg(struct cx24113_state *state, int reg, int data)
 		.flags = 0, .buf = buf, .len = 2 };
 	int err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: writereg error(err == %i, reg == 0x%02x,"
 			 " data == 0x%02x)\n", __func__, err, reg, data);
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -130,8 +146,12 @@ static int cx24113_readreg(struct cx24113_state *state, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: reg=0x%x (error=%d)\n",
 			__func__, reg, ret);
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -206,9 +226,13 @@ static int cx24113_set_gain_settings(struct cx24113_state *state,
 	   rfvga  = cx24113_readreg(state, 0x20) & 0xf3;
 	u8 gain_level = power_estimation >= state->tuner_gain_thres;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("power estimation: %d, thres: %d, gain_level: %d/%d\n",
 			power_estimation, state->tuner_gain_thres,
 			state->gain_level, gain_level);
+#else
+	d;
+#endif
 
 	if (gain_level == state->gain_level)
 		return 0; /* nothing to be done */
@@ -262,14 +286,22 @@ static int cx24113_set_bandwidth(struct cx24113_state *state, u32 bandwidth_khz)
 	else
 		r = 0x01 << 6;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("bandwidth to be set: %d\n", bandwidth_khz);
+#else
+	d;
+#endif
 	bandwidth_khz *= 10;
 	bandwidth_khz -= 10000;
 	bandwidth_khz /= 1000;
 	bandwidth_khz += 5;
 	bandwidth_khz /= 10;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("bandwidth: %d %d\n", r >> 6, bandwidth_khz);
+#else
+	d;
+#endif
 
 	r |= bandwidth_khz & 0x3f;
 
@@ -288,7 +320,11 @@ static int cx24113_get_status(struct dvb_frontend *fe, u32 *status)
 	u8 r = (cx24113_readreg(state, 0x10) & 0x02) >> 1;
 	if (r)
 		*status |= TUNER_STATUS_LOCKED;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("PLL locked: %d\n", r);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -327,7 +363,11 @@ static void cx24113_calc_pll_nf(struct cx24113_state *state, u16 *n, s32 *f)
 	}
 	state->vcodiv = vcodiv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("calculating N/F for %dHz with vcodiv %d\n", freq_hz, vcodiv);
+#else
+	d;
+#endif
 	R = 0;
 	do {
 		R = cx24113_set_ref_div(state, R + 1);
@@ -346,15 +386,27 @@ static void cx24113_calc_pll_nf(struct cx24113_state *state, u16 *n, s32 *f)
 	}
 	F = freq_hz;
 	F *= (u64) (R * vcodiv * 262144);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("1 N: %d, F: %lld, R: %d\n", N, (long long)F, R);
+#else
+	d;
+#endif
 	/* do_div needs an u64 as first argument */
 	dividend = F;
 	do_div(dividend, state->config->xtal_khz * 1000 * factor * 2);
 	F = dividend;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("2 N: %d, F: %lld, R: %d\n", N, (long long)F, R);
+#else
+	d;
+#endif
 	F -= (N + 32) * 262144;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("3 N: %d, F: %lld, R: %d\n", N, (long long)F, R);
+#else
+	d;
+#endif
 
 	if (state->Fwindow_enabled) {
 		if (F > (262144 / 2 - 1638))
@@ -367,7 +419,11 @@ static void cx24113_calc_pll_nf(struct cx24113_state *state, u16 *n, s32 *f)
 			cx24113_writereg(state, 0x10, r | (1 << 6));
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("4 N: %d, F: %lld, R: %d\n", N, (long long)F, R);
+#else
+	d;
+#endif
 
 	*n = (u16) N;
 	*f = (s32) F;
@@ -404,7 +460,11 @@ static int cx24113_set_frequency(struct cx24113_state *state, u32 frequency)
 
 	state->frequency = frequency;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("tuning to frequency: %d\n", frequency);
+#else
+	d;
+#endif
 
 	cx24113_calc_pll_nf(state, &n, &f);
 	cx24113_set_nfr(state, n, f, state->refdiv);
@@ -511,7 +571,11 @@ void cx24113_agc_callback(struct dvb_frontend *fe)
 		/* this only works with the current CX24123 implementation */
 		fe->ops.read_signal_strength(fe, (u16 *) &s);
 		s >>= 8;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("signal strength: %d\n", s);
+#else
+		d;
+#endif
 		for (i = 0; i < sizeof(cx24113_agc_table[0]); i++)
 			if (cx24113_agc_table[state->gain_level][i] > s)
 				break;
@@ -530,7 +594,11 @@ static int cx24113_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 static int cx24113_release(struct dvb_frontend *fe)
 {
 	struct cx24113_state *state = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 	fe->tuner_priv = NULL;
 	kfree(state);
 	return 0;

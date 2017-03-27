@@ -172,8 +172,12 @@ static int mmc328x_ioctl(struct inode *inode, struct file *file,
 		vec[1] = data[3] << 8 | data[2];
 		vec[2] = 8192-(data[5] << 8 | data[4]);
 	#if DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[X - %04x] [Y - %04x] [Z - %04x]\n", 
 			vec[0], vec[1], vec[2]);
+#else
+		;
+#endif
 	#endif
 		if (copy_to_user(pa, vec, sizeof(vec))) {
 			return -EFAULT;
@@ -221,7 +225,11 @@ static int mmc328x_ioctl(struct inode *inode, struct file *file,
 			MD_times++;
 			if (MD_times > 2) {
 		#if DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("TM not work!!");
+#else
+				;
+#endif
 		#endif
 				return -EFAULT;
 			}
@@ -237,8 +245,12 @@ static int mmc328x_ioctl(struct inode *inode, struct file *file,
 		vec[1] = data[3] << 8 | data[2];
 		vec[2] = 8192-(data[5] << 8 | data[4]);
 	#if DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[X - %04x] [Y - %04x] [Z - %04x]\n", 
 			vec[0], vec[1], vec[2]);
+#else
+		;
+#endif
 	#endif
 		if (copy_to_user(pa, vec, sizeof(vec))) {
 			return -EFAULT;
@@ -300,8 +312,12 @@ static ssize_t mmc328x_fs_read(struct device *dev, struct device_attribute *attr
 	vec[2] = data[5] << 8 | data[4];
 	
 #if DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[X - %04x] [Y - %04x] [Z - %04x]\n", 
 		vec[0], vec[1], vec[2]);
+#else
+	;
+#endif
 #endif
 
 	count = sprintf(buf,"%d,%d,%d\n", vec[0], vec[1], vec[2]);
@@ -312,7 +328,11 @@ static ssize_t mmc328x_fs_read(struct device *dev, struct device_attribute *attr
 static ssize_t mmc328x_fs_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	//buf[size]=0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("input data --> %s\n", buf);
+#else
+	;
+#endif
 
 	return size;
 }

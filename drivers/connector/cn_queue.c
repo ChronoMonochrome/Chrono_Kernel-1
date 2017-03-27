@@ -149,8 +149,12 @@ void cn_queue_free_dev(struct cn_queue_dev *dev)
 	spin_unlock_bh(&dev->queue_lock);
 
 	while (atomic_read(&dev->refcnt)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Waiting for %s to become free: refcnt=%d.\n",
 		       dev->name, atomic_read(&dev->refcnt));
+#else
+		;
+#endif
 		msleep(1000);
 	}
 

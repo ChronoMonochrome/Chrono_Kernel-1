@@ -31,10 +31,14 @@
 
 static int debug;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 /* as of March 2009 current DS3000 firmware version is 1.78 */
@@ -245,7 +249,11 @@ static int ds3000_writereg(struct ds3000_state *state, int reg, int data)
 		.flags = 0, .buf = buf, .len = 2 };
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: write reg 0x%02x, value 0x%02x\n", __func__, reg, data);
+#else
+	d;
+#endif
 
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
@@ -264,13 +272,21 @@ static int ds3000_tuner_writereg(struct ds3000_state *state, int reg, int data)
 		.flags = 0, .buf = buf, .len = 2 };
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: write reg 0x%02x, value 0x%02x\n", __func__, reg, data);
+#else
+	d;
+#endif
 
 	ds3000_writereg(state, 0x03, 0x11);
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: writereg error(err == %i, reg == 0x%02x,"
 			 " value == 0x%02x)\n", __func__, err, reg, data);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -302,7 +318,11 @@ static int ds3000_writeFW(struct ds3000_state *state, int reg,
 	for (i = 0; i < len; i += 32) {
 		memcpy(buf + 1, data + i, 32);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: write reg 0x%02x, len = %d\n", __func__, reg, len);
+#else
+		d;
+#endif
 
 		ret = i2c_transfer(state->i2c, &msg, 1);
 		if (ret != 1) {
@@ -344,7 +364,11 @@ static int ds3000_readreg(struct ds3000_state *state, u8 reg)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: read reg 0x%02x, value 0x%02x\n", __func__, reg, b1[0]);
+#else
+	d;
+#endif
 
 	return b1[0];
 }
@@ -376,7 +400,11 @@ static int ds3000_tuner_readreg(struct ds3000_state *state, u8 reg)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: read reg 0x%02x, value 0x%02x\n", __func__, reg, b1[0]);
+#else
+	d;
+#endif
 
 	return b1[0];
 }
@@ -390,7 +418,11 @@ static int ds3000_firmware_ondemand(struct dvb_frontend *fe)
 	const struct firmware *fw;
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (ds3000_readreg(state, 0xb2) <= 0)
 		return ret;
@@ -399,11 +431,19 @@ static int ds3000_firmware_ondemand(struct dvb_frontend *fe)
 		return 0;
 	/* Load firmware */
 	/* request the firmware, this will block until someone uploads it */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Waiting for firmware upload (%s)...\n", __func__,
 				DS3000_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 	ret = request_firmware(&fw, DS3000_DEFAULT_FIRMWARE,
 				state->i2c->dev.parent);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Waiting for firmware upload(2)...\n", __func__);
+#else
+	;
+#endif
 	if (ret) {
 		printk(KERN_ERR "%s: No firmware uploaded (timeout or file not "
 				"found?)\n", __func__);
@@ -415,12 +455,20 @@ static int ds3000_firmware_ondemand(struct dvb_frontend *fe)
 
 	ret = ds3000_load_firmware(fe, fw);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Writing firmware to device failed\n", __func__);
+#else
+		;
+#endif
 
 	release_firmware(fw);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Firmware upload %s\n", __func__,
 			ret == 0 ? "complete" : "failed");
+#else
+	d;
+#endif
 
 	/* Ensure firmware is always loaded if required */
 	state->skip_fw_load = 0;
@@ -433,13 +481,21 @@ static int ds3000_load_firmware(struct dvb_frontend *fe,
 {
 	struct ds3000_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Firmware is %zu bytes (%02x %02x .. %02x %02x)\n",
 			fw->size,
 			fw->data[0],
 			fw->data[1],
 			fw->data[fw->size - 2],
 			fw->data[fw->size - 1]);
+#else
+	d;
+#endif
 
 	/* Begin the firmware load process */
 	ds3000_writereg(state, 0xb2, 0x01);
@@ -455,7 +511,11 @@ static int ds3000_set_voltage(struct dvb_frontend *fe, fe_sec_voltage_t voltage)
 	struct ds3000_state *state = fe->demodulator_priv;
 	u8 data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, voltage);
+#else
+	d;
+#endif
 
 	data = ds3000_readreg(state, 0xa2);
 	data |= 0x03; /* bit0 V/H, bit1 off/on */
@@ -506,7 +566,11 @@ static int ds3000_read_status(struct dvb_frontend *fe, fe_status_t* status)
 		return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: status = 0x%02x\n", __func__, lock);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -519,7 +583,11 @@ static int ds3000_read_ber(struct dvb_frontend *fe, u32* ber)
 	u8 data;
 	u32 ber_reading, lpdc_frames;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
@@ -584,7 +652,11 @@ static int ds3000_read_signal_strength(struct dvb_frontend *fe,
 	u16 sig_reading, sig_strength;
 	u8 rfgain, bbgain;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	rfgain = ds3000_tuner_readreg(state, 0x3d) & 0x1f;
 	bbgain = ds3000_tuner_readreg(state, 0x21) & 0x1f;
@@ -601,8 +673,12 @@ static int ds3000_read_signal_strength(struct dvb_frontend *fe,
 	/* cook the value to be suitable for szap-s2 human readable output */
 	*signal_strength = sig_strength * 1000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: raw / cooked = 0x%04x / 0x%04x\n", __func__,
 			sig_reading, *signal_strength);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -634,7 +710,11 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
 		0x49e9, 0x4a20, 0x4a57
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
@@ -650,8 +730,12 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
 			human readable output */
 			*snr = snr_value * 8 * 655;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
 				snr_reading, *snr);
+#else
+		d;
+#endif
 		break;
 	case SYS_DVBS2:
 		dvbs2_noise_reading = (ds3000_readreg(state, 0x8c) & 0x3f) +
@@ -683,8 +767,12 @@ static int ds3000_read_snr(struct dvb_frontend *fe, u16 *snr)
 				snr_reading = 80;
 			*snr = -(dvbs2_snr_tab[snr_reading] / 1000);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
 				snr_reading, *snr);
+#else
+		d;
+#endif
 		break;
 	default:
 		return 1;
@@ -701,7 +789,11 @@ static int ds3000_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 	u8 data;
 	u16 _ucblocks;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
@@ -736,7 +828,11 @@ static int ds3000_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t tone)
 	struct ds3000_state *state = fe->demodulator_priv;
 	u8 data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, tone);
+#else
+	d;
+#endif
 	if ((tone != SEC_TONE_ON) && (tone != SEC_TONE_OFF)) {
 		printk(KERN_ERR "%s: Invalid, tone=%d\n", __func__, tone);
 		return -EINVAL;
@@ -748,14 +844,22 @@ static int ds3000_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t tone)
 
 	switch (tone) {
 	case SEC_TONE_ON:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting tone on\n", __func__);
+#else
+		d;
+#endif
 		data = ds3000_readreg(state, 0xa1);
 		data &= ~0x43;
 		data |= 0x04;
 		ds3000_writereg(state, 0xa1, data);
 		break;
 	case SEC_TONE_OFF:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting tone off\n", __func__);
+#else
+		d;
+#endif
 		data = ds3000_readreg(state, 0xa2);
 		data |= 0x80;
 		ds3000_writereg(state, 0xa2, data);
@@ -773,11 +877,23 @@ static int ds3000_send_diseqc_msg(struct dvb_frontend *fe,
 	u8 data;
 
 	/* Dump DiSEqC message */
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(", __func__);
+#else
+	d;
+#endif
 	for (i = 0 ; i < d->msg_len;) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("0x%02x", d->msg[i]);
+#else
+		d;
+#endif
 		if (++i < d->msg_len)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(", ");
+#else
+			d;
+#endif
 	}
 
 	/* enable DiSEqC message send pin */
@@ -837,7 +953,11 @@ static int ds3000_diseqc_send_burst(struct dvb_frontend *fe,
 	int i;
 	u8 data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	data = ds3000_readreg(state, 0xa2);
 	data &= ~0xc0;
@@ -886,7 +1006,11 @@ static int ds3000_diseqc_send_burst(struct dvb_frontend *fe,
 static void ds3000_release(struct dvb_frontend *fe)
 {
 	struct ds3000_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 	kfree(state);
 }
 
@@ -898,7 +1022,11 @@ struct dvb_frontend *ds3000_attach(const struct ds3000_config *config,
 	struct ds3000_state *state = NULL;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* allocate memory for the internal state */
 	state = kzalloc(sizeof(struct ds3000_state), GFP_KERNEL);
@@ -918,9 +1046,13 @@ struct dvb_frontend *ds3000_attach(const struct ds3000_config *config,
 		goto error3;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DS3000 chip version: %d.%d attached.\n",
 			ds3000_readreg(state, 0x02),
 			ds3000_readreg(state, 0x01));
+#else
+	;
+#endif
 
 	memcpy(&state->frontend.ops, &ds3000_ops,
 			sizeof(struct dvb_frontend_ops));
@@ -937,14 +1069,22 @@ EXPORT_SYMBOL(ds3000_attach);
 static int ds3000_set_property(struct dvb_frontend *fe,
 	struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
 static int ds3000_get_property(struct dvb_frontend *fe,
 	struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -980,7 +1120,11 @@ static int ds3000_set_frontend(struct dvb_frontend *fe,
 	u16 value, ndiv;
 	u32 f3db;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() ", __func__);
+#else
+	d;
+#endif
 
 	if (state->config->set_ts_params)
 		state->config->set_ts_params(fe, 0);
@@ -1238,7 +1382,11 @@ static int ds3000_tune(struct dvb_frontend *fe,
 
 static enum dvbfe_algo ds3000_get_algo(struct dvb_frontend *fe)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 	return DVBFE_ALGO_HW;
 }
 
@@ -1252,7 +1400,11 @@ static int ds3000_initfe(struct dvb_frontend *fe)
 	struct ds3000_state *state = fe->demodulator_priv;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 	/* hard reset */
 	ds3000_writereg(state, 0x08, 0x01 | ds3000_readreg(state, 0x08));
 	msleep(1);
@@ -1274,7 +1426,11 @@ static int ds3000_initfe(struct dvb_frontend *fe)
 /* Put device to sleep */
 static int ds3000_sleep(struct dvb_frontend *fe)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 

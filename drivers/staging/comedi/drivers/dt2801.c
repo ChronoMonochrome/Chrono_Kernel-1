@@ -389,7 +389,7 @@ static int dt2801_writecmd(struct comedi_device *dev, int command)
 		    ("dt2801: composite-error in dt2801_writecmd(), ignoring\n");
 	}
 	if (!(stat & DT_S_READY))
-		printk("dt2801: !ready in dt2801_writecmd(), ignoring\n");
+;
 	outb_p(command, dev->iobase + DT2801_CMD);
 
 	return 0;
@@ -424,7 +424,7 @@ static int dt2801_reset(struct comedi_device *dev)
 			break;
 	} while (timeout--);
 	if (!timeout)
-		printk("dt2801: timeout 1 status=0x%02x\n", stat);
+;
 
 	/* printk("dt2801: reading dummy\n"); */
 	/* dt2801_readdata(dev,&board_code); */
@@ -441,7 +441,7 @@ static int dt2801_reset(struct comedi_device *dev)
 			break;
 	} while (timeout--);
 	if (!timeout)
-		printk("dt2801: timeout 2 status=0x%02x\n", stat);
+;
 
 	DPRINTK("dt2801: reading code\n");
 	dt2801_readdata(dev, &board_code);
@@ -539,16 +539,16 @@ static int dt2801_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		if (boardtypes[type].boardcode == board_code)
 			goto havetype;
 	}
-	printk("dt2801: unrecognized board code=0x%02x, contact author\n",
-	       board_code);
+//	printk("dt2801: unrecognized board code=0x%02x, contact author\n",
+;
 	type = 0;
 
 havetype:
 	dev->board_ptr = boardtypes + type;
-	printk("dt2801: %s at port 0x%lx", boardtype.name, iobase);
+;
 
 	n_ai_chans = probe_number_of_ai_chans(dev);
-	printk(" (ai channels = %d)", n_ai_chans);
+;
 
 	ret = alloc_subdevices(dev, 4);
 	if (ret < 0)
@@ -610,7 +610,7 @@ havetype:
 
 	ret = 0;
 out:
-	printk("\n");
+;
 
 	return ret;
 }
@@ -627,12 +627,12 @@ static int dt2801_error(struct comedi_device *dev, int stat)
 {
 	if (stat < 0) {
 		if (stat == -ETIME)
-			printk("dt2801: timeout\n");
+;
 		else
-			printk("dt2801: error %d\n", stat);
+;
 		return stat;
 	}
-	printk("dt2801: error status 0x%02x, resetting...\n", stat);
+;
 
 	dt2801_reset(dev);
 	dt2801_reset(dev);

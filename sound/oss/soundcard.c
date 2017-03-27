@@ -154,7 +154,11 @@ static ssize_t sound_read(struct file *file, char __user *buf, size_t count, lof
 	 
 	mutex_lock(&soundcard_mutex);
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_read(dev=%d, count=%d)\n", dev, count));
+#else
+	DEB(;
+#endif
 	switch (dev & 0x0f) {
 	case SND_DEV_DSP:
 	case SND_DEV_DSP16:
@@ -180,7 +184,11 @@ static ssize_t sound_write(struct file *file, const char __user *buf, size_t cou
 	int ret = -EINVAL;
 	
 	mutex_lock(&soundcard_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_write(dev=%d, count=%d)\n", dev, count));
+#else
+	DEB(;
+#endif
 	switch (dev & 0x0f) {
 	case SND_DEV_SEQ:
 	case SND_DEV_SEQ2:
@@ -206,7 +214,11 @@ static int sound_open(struct inode *inode, struct file *file)
 	int dev = iminor(inode);
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_open(dev=%d)\n", dev));
+#else
+	DEB(;
+#endif
 	if ((dev >= SND_NDEVS) || (dev < 0)) {
 		printk(KERN_ERR "Invalid minor device %d\n", dev);
 		return -ENXIO;
@@ -257,7 +269,11 @@ static int sound_release(struct inode *inode, struct file *file)
 	int dev = iminor(inode);
 
 	mutex_lock(&soundcard_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_release(dev=%d)\n", dev));
+#else
+	DEB(;
+#endif
 	switch (dev & 0x0f) {
 	case SND_DEV_CTL:
 		module_put(mixer_devs[dev >> 4]->owner);
@@ -351,7 +367,11 @@ static long sound_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (!access_ok(VERIFY_WRITE, p, len))
 				return -EFAULT;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_ioctl(dev=%d, cmd=0x%x, arg=0x%x)\n", dev, cmd, arg));
+#else
+	DEB(;
+#endif
 	if (cmd == OSS_GETVERSION)
 		return __put_user(SOUND_VERSION, (int __user *)p);
 	
@@ -409,7 +429,11 @@ static unsigned int sound_poll(struct file *file, poll_table * wait)
 	struct inode *inode = file->f_path.dentry->d_inode;
 	int dev = iminor(inode);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sound_poll(dev=%d)\n", dev));
+#else
+	DEB(;
+#endif
 	switch (dev & 0x0f) {
 	case SND_DEV_SEQ:
 	case SND_DEV_SEQ2:
@@ -474,7 +498,11 @@ static int sound_mmap(struct file *file, struct vm_area_struct *vma)
 	size = vma->vm_end - vma->vm_start;
 
 	if (size != dmap->bytes_in_use) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound: mmap() size = %ld. Should be %d\n", size, dmap->bytes_in_use);
+#else
+		;
+#endif
 	}
 	if (remap_pfn_range(vma, vma->vm_start,
 			virt_to_phys(dmap->raw_buf) >> PAGE_SHIFT,
@@ -633,7 +661,11 @@ int sound_open_dma(int chn, char *deviceID)
 	}
 
 	if (dma_alloc_map[chn] != DMA_MAP_FREE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("sound_open_dma: DMA channel %d busy or not allocated (%d)\n", chn, dma_alloc_map[chn]);
+#else
+		;
+#endif
 		return 1;
 	}
 	dma_alloc_map[chn] = DMA_MAP_BUSY;
@@ -644,7 +676,11 @@ EXPORT_SYMBOL(sound_open_dma);
 void sound_free_dma(int chn)
 {
 	if (dma_alloc_map[chn] == DMA_MAP_UNAVAIL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk( "sound_free_dma: Bad access to DMA channel %d\n",  chn); */
+#else
+		/* ;
+#endif
 		return;
 	}
 	free_dma(chn);
@@ -700,18 +736,38 @@ void conf_printf(char *name, struct address_info *hw_config)
 #ifndef CONFIG_SOUND_TRACEINIT
 	return;
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("<%s> at 0x%03x", name, hw_config->io_base);
+#else
+	;
+#endif
 
 	if (hw_config->irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" irq %d", (hw_config->irq > 0) ? hw_config->irq : -hw_config->irq);
+#else
+		;
+#endif
 
 	if (hw_config->dma != -1 || hw_config->dma2 != -1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" dma %d", hw_config->dma);
+#else
+		;
+#endif
 		if (hw_config->dma2 != -1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(",%d", hw_config->dma2);
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 }
 EXPORT_SYMBOL(conf_printf);
@@ -721,18 +777,38 @@ void conf_printf2(char *name, int base, int irq, int dma, int dma2)
 #ifndef CONFIG_SOUND_TRACEINIT
 	return;
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("<%s> at 0x%03x", name, base);
+#else
+	;
+#endif
 
 	if (irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" irq %d", (irq > 0) ? irq : -irq);
+#else
+		;
+#endif
 
 	if (dma != -1 || dma2 != -1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(" dma %d", dma);
+#else
+		  ;
+#endif
 		  if (dma2 != -1)
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk(",%d", dma2);
+#else
+			  ;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 }
 EXPORT_SYMBOL(conf_printf2);

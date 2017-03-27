@@ -62,22 +62,22 @@ void hpfs_error(struct super_block *s, const char *fmt, ...)
 	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
 	va_end(args);
 
-	printk("HPFS: filesystem error: %s", err_buf);
+;
 	if (!hpfs_sb(s)->sb_was_error) {
 		if (hpfs_sb(s)->sb_err == 2) {
-			printk("; crashing the system because you wanted it\n");
+;
 			mark_dirty(s, 0);
 			panic("HPFS panic");
 		} else if (hpfs_sb(s)->sb_err == 1) {
-			if (s->s_flags & MS_RDONLY) printk("; already mounted read-only\n");
+;
 			else {
-				printk("; remounting read-only\n");
+;
 				mark_dirty(s, 0);
 				s->s_flags |= MS_RDONLY;
 			}
-		} else if (s->s_flags & MS_RDONLY) printk("; going on - but anything won't be destroyed because it's read-only\n");
-		else printk("; corrupted filesystem mounted read/write - your computer will explode within 20 seconds ... but you wanted it so!\n");
-	} else printk("\n");
+;
+;
+;
 	hpfs_sb(s)->sb_was_error = 1;
 }
 
@@ -352,28 +352,28 @@ static int parse_opts(char *opts, uid_t *uid, gid_t *gid, umode_t *umask,
 
 static inline void hpfs_help(void)
 {
-	printk("\n\
-HPFS filesystem options:\n\
-      help              do not mount and display this text\n\
-      uid=xxx           set uid of files that don't have uid specified in eas\n\
-      gid=xxx           set gid of files that don't have gid specified in eas\n\
-      umask=xxx         set mode of files that don't have mode specified in eas\n\
-      case=lower        lowercase all files\n\
-      case=asis         do not lowercase files (default)\n\
-      check=none        no fs checks - kernel may crash on corrupted filesystem\n\
-      check=normal      do some checks - it should not crash (default)\n\
-      check=strict      do extra time-consuming checks, used for debugging\n\
-      errors=continue   continue on errors\n\
-      errors=remount-ro remount read-only if errors found (default)\n\
-      errors=panic      panic on errors\n\
-      chkdsk=no         do not mark fs for chkdsking even if there were errors\n\
-      chkdsk=errors     mark fs dirty if errors found (default)\n\
-      chkdsk=always     always mark fs dirty - used for debugging\n\
-      eas=no            ignore extended attributes\n\
-      eas=ro            read but do not write extended attributes\n\
-      eas=rw            r/w eas => enables chmod, chown, mknod, ln -s (default)\n\
-      timeshift=nnn	add nnn seconds to file times\n\
-\n");
+//	printk("\n\
+//HPFS filesystem options:\n\
+//      help              do not mount and display this text\n\
+//      uid=xxx           set uid of files that don't have uid specified in eas\n\
+//      gid=xxx           set gid of files that don't have gid specified in eas\n\
+//      umask=xxx         set mode of files that don't have mode specified in eas\n\
+//      case=lower        lowercase all files\n\
+//      case=asis         do not lowercase files (default)\n\
+//      check=none        no fs checks - kernel may crash on corrupted filesystem\n\
+//      check=normal      do some checks - it should not crash (default)\n\
+//      check=strict      do extra time-consuming checks, used for debugging\n\
+//      errors=continue   continue on errors\n\
+//      errors=remount-ro remount read-only if errors found (default)\n\
+//      errors=panic      panic on errors\n\
+//      chkdsk=no         do not mark fs for chkdsking even if there were errors\n\
+//      chkdsk=errors     mark fs dirty if errors found (default)\n\
+//      chkdsk=always     always mark fs dirty - used for debugging\n\
+//      eas=no            ignore extended attributes\n\
+//      eas=ro            read but do not write extended attributes\n\
+//      eas=rw            r/w eas => enables chmod, chown, mknod, ln -s (default)\n\
+//      timeshift=nnn	add nnn seconds to file times\n\
+;
 }
 
 static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
@@ -398,7 +398,7 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
 
 	if (!(o = parse_opts(data, &uid, &gid, &umask, &lowercase,
 	    &eas, &chk, &errs, &chkdsk, &timeshift))) {
-		printk("HPFS: bad mount options.\n");
+;
 		goto out_err;
 	}
 	if (o == 2) {
@@ -406,7 +406,7 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
 		goto out_err;
 	}
 	if (timeshift != sbi->sb_timeshift) {
-		printk("HPFS: timeshift can't be changed using remount.\n");
+;
 		goto out_err;
 	}
 
@@ -492,7 +492,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
 
 	if (!(o = parse_opts(options, &uid, &gid, &umask, &lowercase,
 	    &eas, &chk, &errs, &chkdsk, &timeshift))) {
-		printk("HPFS: bad mount options.\n");
+;
 		goto bail0;
 	}
 	if (o==2) {
@@ -511,16 +511,16 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
 	if (/*le16_to_cpu(bootblock->magic) != BB_MAGIC
 	    ||*/ le32_to_cpu(superblock->magic) != SB_MAGIC
 	    || le32_to_cpu(spareblock->magic) != SP_MAGIC) {
-		if (!silent) printk("HPFS: Bad magic ... probably not HPFS\n");
+;
 		goto bail4;
 	}
 
 	/* Check version */
 	if (!(s->s_flags & MS_RDONLY) &&
 	      superblock->funcversion != 2 && superblock->funcversion != 3) {
-		printk("HPFS: Bad version %d,%d. Mount readonly to go around\n",
-			(int)superblock->version, (int)superblock->funcversion);
-		printk("HPFS: please try recent version of HPFS driver at http://artax.karlin.mff.cuni.cz/~mikulas/vyplody/hpfs/index-e.cgi and if it still can't understand this format, contact author - mikulas@artax.karlin.mff.cuni.cz\n");
+//		printk("HPFS: Bad version %d,%d. Mount readonly to go around\n",
+;
+;
 		goto bail4;
 	}
 
@@ -566,7 +566,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
 	/* Check for general fs errors*/
 	if (spareblock->dirty && !spareblock->old_wrote) {
 		if (errs == 2) {
-			printk("HPFS: Improperly stopped, not mounted\n");
+;
 			goto bail4;
 		}
 		hpfs_error(s, "improperly stopped");
@@ -580,22 +580,22 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
 
 	if (le32_to_cpu(spareblock->hotfixes_used) || le32_to_cpu(spareblock->n_spares_used)) {
 		if (errs >= 2) {
-			printk("HPFS: Hotfixes not supported here, try chkdsk\n");
+;
 			mark_dirty(s, 0);
 			goto bail4;
 		}
 		hpfs_error(s, "hotfixes not supported here, try chkdsk");
-		if (errs == 0) printk("HPFS: Proceeding, but your filesystem will be probably corrupted by this driver...\n");
-		else printk("HPFS: This driver may read bad files or crash when operating on disk with hotfixes.\n");
+;
+;
 	}
 	if (le32_to_cpu(spareblock->n_dnode_spares) != le32_to_cpu(spareblock->n_dnode_spares_free)) {
 		if (errs >= 2) {
-			printk("HPFS: Spare dnodes used, try chkdsk\n");
+;
 			mark_dirty(s, 0);
 			goto bail4;
 		}
 		hpfs_error(s, "warning: spare dnodes used, try chkdsk");
-		if (errs == 0) printk("HPFS: Proceeding, but your filesystem could be corrupted if you delete files or directories\n");
+;
 	}
 	if (chk) {
 		unsigned a;
@@ -614,12 +614,12 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
 			goto bail4;
 		}
 		sbi->sb_dirband_size = a;
-	} else printk("HPFS: You really don't want any checks? You are crazy...\n");
+;
 
 	/* Load code page table */
 	if (le32_to_cpu(spareblock->n_code_pages))
 		if (!(sbi->sb_cp_table = hpfs_load_code_page(s, le32_to_cpu(spareblock->code_page_dir))))
-			printk("HPFS: Warning: code page support is disabled\n");
+;
 
 	brelse(bh2);
 	brelse(bh1);

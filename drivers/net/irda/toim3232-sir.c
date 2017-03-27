@@ -300,7 +300,7 @@ static int toim3232_change_speed(struct sir_dev *dev, unsigned speed)
 		break;
 
 	default:
-		printk(KERN_ERR "%s - undefined state %d\n", __func__, state);
+;
 		ret = -EINVAL;
 		break;
 	}

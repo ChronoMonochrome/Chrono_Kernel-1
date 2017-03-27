@@ -94,7 +94,11 @@ static void uart401_input_loop(uart401_devc * devc)
 			devc->midi_input_intr(devc->my_dev, c);
 	}
 	if(work_limit==0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Too much work in interrupt on uart401 (0x%X). UART jabbering ??\n", devc->base);
+#else
+		;
+#endif
 }
 
 irqreturn_t uart401intr(int irq, void *dev_id)
@@ -171,7 +175,11 @@ static int uart401_out(int dev, unsigned char midi_byte)
 
 	if (!output_ready(devc))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_WARNING "uart401: Timeout - Device not responding\n");
+#else
+		  ;
+#endif
 		  devc->disabled = 1;
 		  reset_uart401(devc);
 		  enter_uart_mode(devc);
@@ -277,10 +285,18 @@ static int reset_uart401(uart401_devc * devc)
 
 	if (ok)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DEB(printk("Reset UART401 OK\n"));
+#else
+		DEB(;
+#endif
 	}
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("Reset UART401 failed - No hardware detected.\n"));
+#else
+		DDB(;
+#endif
 
 	if (ok)
 		uart401_input_loop(devc);	/*
@@ -297,19 +313,31 @@ int probe_uart401(struct address_info *hw_config, struct module *owner)
 	int ok = 0;
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("Entered probe_uart401()\n"));
+#else
+	DDB(;
+#endif
 
 	/* Default to "not found" */
 	hw_config->slots[4] = -1;
 
 	if (!request_region(hw_config->io_base, 4, "MPU-401 UART")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "uart401: could not request_region(%d, 4)\n", hw_config->io_base);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	devc = kmalloc(sizeof(uart401_devc), GFP_KERNEL);
 	if (!devc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "uart401: Can't allocate memory\n");
+#else
+		;
+#endif
 		goto cleanup_region;
 	}
 
@@ -341,14 +369,22 @@ int probe_uart401(struct address_info *hw_config, struct module *owner)
 
 	if (!devc->share_irq)
 		if (request_irq(devc->irq, uart401intr, 0, "MPU-401 UART", devc) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "uart401: Failed to allocate IRQ%d\n", devc->irq);
+#else
+			;
+#endif
 			devc->share_irq = 1;
 		}
 	devc->my_dev = sound_alloc_mididev();
 	enter_uart_mode(devc);
 
 	if (devc->my_dev == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "uart401: Too many midi devices detected\n");
+#else
+		;
+#endif
 		goto cleanup_irq;
 	}
 	conf_printf(name, hw_config);
@@ -365,7 +401,11 @@ int probe_uart401(struct address_info *hw_config, struct module *owner)
 	midi_devs[devc->my_dev]->devc = devc;
 	midi_devs[devc->my_dev]->converter = kmalloc(sizeof(struct synth_operations), GFP_KERNEL);
 	if (!midi_devs[devc->my_dev]->converter) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "uart401: Failed to allocate memory\n");
+#else
+		;
+#endif
 		goto cleanup_midi_devs;
 	}
 	memcpy(midi_devs[devc->my_dev]->converter, &std_midi_synth, sizeof(struct synth_operations));
@@ -446,7 +486,11 @@ static int __init init_uart401(void)
 	/* Can be loaded either for module use or to provide functions
 	   to others */
 	if (cfg_mpu.io_base != -1 && cfg_mpu.irq != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "MPU-401 UART driver Copyright (C) Hannu Savolainen 1993-1997");
+#else
+		;
+#endif
 		if (!probe_uart401(&cfg_mpu, THIS_MODULE))
 			return -ENODEV;
 	}

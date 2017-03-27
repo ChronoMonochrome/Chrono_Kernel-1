@@ -43,6 +43,7 @@
 // ----------------------------------------------------------------------------
 #define K1212_DEBUG_LEVEL		0
 #if K1212_DEBUG_LEVEL > 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define K1212_DEBUG_PRINTK(fmt,args...)	printk(KERN_DEBUG fmt,##args)
 #else
 #define K1212_DEBUG_PRINTK(fmt,...)
@@ -79,6 +80,9 @@ enum CardState {
 					//    are in the process of cleaning things up.
    K1212_STATE_MAX_STATE		// state values of this and beyond are invalid
 };
+#else
+#define K1212_DEBUG_PRINTK(fmt,args...)	;
+#endif
 
 // ----------------------------------------------------------------------------
 // The following enumeration defines the constants written to the card's
@@ -1290,8 +1294,12 @@ static int snd_korg1212_silence(struct snd_korg1212 *korg1212, int pos, int coun
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
 		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_silence KERNEL EFAULT dst=%p iter=%d\n",
 			       dst, i);
+#else
+			;
+#endif
 			return -EFAULT;
 		}
 #endif
@@ -1316,7 +1324,11 @@ static int snd_korg1212_copy_to(struct snd_korg1212 *korg1212, void __user *dst,
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) src < (void *) korg1212->recordDataBufsPtr ||
 		     (void *) src > (void *) korg1212->recordDataBufsPtr[8].bufferData ) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_to KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+#else
+			;
+#endif
 			return -EFAULT;
 		}
 #endif
@@ -1347,7 +1359,11 @@ static int snd_korg1212_copy_from(struct snd_korg1212 *korg1212, void __user *sr
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
 		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_from KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+#else
+			;
+#endif
 			return -EFAULT;
 		}
 #endif

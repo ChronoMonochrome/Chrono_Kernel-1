@@ -22,21 +22,21 @@
 #include "debug.h"
 
 #if defined(CONFIG_CW1200_WSM_DEBUG)
-#define wsm_printk(...) printk(__VA_ARGS__)
-#else
-#define wsm_printk(...)
-#endif
-
-#define WSM_CMD_TIMEOUT		(1 * HZ)
-#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW */
-#define WSM_CMD_START_TIMEOUT	(7 * HZ)
-#define WSM_TX_TIMEOUT		(1 * HZ)
-#define WSM_CMD_LAST_CHANCE_TIMEOUT (10 * HZ)
-
-#define WSM_SKIP(buf, size)						\
-	do {								\
-		if (unlikely(buf->data + size > buf->end))		\
-			goto underflow;					\
+//#define wsm_printk(...) printk(__VA_ARGS__)
+//#else
+//#define wsm_printk(...)
+//#endif
+//
+//#define WSM_CMD_TIMEOUT		(1 * HZ)
+//#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW */
+//#define WSM_CMD_START_TIMEOUT	(7 * HZ)
+//#define WSM_TX_TIMEOUT		(1 * HZ)
+//#define WSM_CMD_LAST_CHANCE_TIMEOUT (10 * HZ)
+//
+//#define WSM_SKIP(buf, size)						\
+//	do {								\
+//		if (unlikely(buf->data + size > buf->end))		\
+;
 		buf->data += size;					\
 	} while (0)
 
@@ -804,17 +804,17 @@ static int wsm_startup_indication(struct cw1200_common *priv,
 	if (WARN_ON(priv->wsm_caps.firmwareType > 4))
 		return -EINVAL;
 
-	printk(KERN_INFO "CW1200 WSM init done.\n"
-		"   Input buffers: %d x %d bytes\n"
-		"   Hardware: %d.%d\n"
-		"   %s firmware [%s], ver: %d, build: %d,"
-		    " api: %d, cap: 0x%.4X\n",
-		priv->wsm_caps.numInpChBufs, priv->wsm_caps.sizeInpChBuf,
-		priv->wsm_caps.hardwareId, priv->wsm_caps.hardwareSubId,
-		fw_types[priv->wsm_caps.firmwareType],
-		&fw_label[0], priv->wsm_caps.firmwareVersion,
-		priv->wsm_caps.firmwareBuildNumber,
-		priv->wsm_caps.firmwareApiVer, priv->wsm_caps.firmwareCap);
+//	printk(KERN_INFO "CW1200 WSM init done.\n"
+//		"   Input buffers: %d x %d bytes\n"
+//		"   Hardware: %d.%d\n"
+//		"   %s firmware [%s], ver: %d, build: %d,"
+//		    " api: %d, cap: 0x%.4X\n",
+//		priv->wsm_caps.numInpChBufs, priv->wsm_caps.sizeInpChBuf,
+//		priv->wsm_caps.hardwareId, priv->wsm_caps.hardwareSubId,
+//		fw_types[priv->wsm_caps.firmwareType],
+//		&fw_label[0], priv->wsm_caps.firmwareVersion,
+//		priv->wsm_caps.firmwareBuildNumber,
+;
 
 	priv->wsm_caps.firmwareReady = 1;
 
@@ -847,8 +847,8 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		if (!rx.status && unlikely(ieee80211_is_deauth(fctl))) {
 			if (priv->join_status == CW1200_JOIN_STATUS_STA) {
 				/* Shedule unjoin work */
-				wsm_printk(KERN_DEBUG \
-					"[WSM] Issue unjoin command (RX).\n");
+//				wsm_printk(KERN_DEBUG \
+;
 				wsm_lock_tx_async(priv);
 				if (queue_work(priv->workqueue,
 						&priv->unjoin_work) <= 0)
@@ -880,8 +880,8 @@ static int wsm_event_indication(struct cw1200_common *priv, struct wsm_buf *buf)
 	event->evt.eventId = __le32_to_cpu(WSM_GET32(buf));
 	event->evt.eventData = __le32_to_cpu(WSM_GET32(buf));
 
-	wsm_printk(KERN_DEBUG "[WSM] Event: %d(%d)\n",
-		event->evt.eventId, event->evt.eventData);
+//	wsm_printk(KERN_DEBUG "[WSM] Event: %d(%d)\n",
+;
 
 	spin_lock(&priv->event_queue_lock);
 	first = list_empty(&priv->event_queue);
@@ -978,11 +978,11 @@ int wsm_cmd_send(struct cw1200_common *priv,
 	int ret;
 
 	if (cmd == 0x0006) /* Write MIB */
-		wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X [MIB: 0x%.4X] (%d)\n",
-			cmd, __le16_to_cpu(((__le16 *)buf->begin)[2]),
-			buf_len);
+//		wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X [MIB: 0x%.4X] (%d)\n",
+//			cmd, __le16_to_cpu(((__le16 *)buf->begin)[2]),
+;
 	else
-		wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X (%d)\n", cmd, buf_len);
+;
 
 	/* Fill HI message header */
 	/* BH will add sequence number */
@@ -1059,7 +1059,7 @@ void wsm_lock_tx(struct cw1200_common *priv)
 	if (atomic_add_return(1, &priv->tx_lock) == 1) {
 		WARN_ON(wait_event_interruptible_timeout(priv->hw_bufs_used_wq,
 			!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
-		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+;
 	}
 	wsm_cmd_unlock(priv);
 }
@@ -1067,7 +1067,7 @@ void wsm_lock_tx(struct cw1200_common *priv)
 void wsm_lock_tx_async(struct cw1200_common *priv)
 {
 	if (atomic_add_return(1, &priv->tx_lock) == 1)
-		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+;
 }
 
 void wsm_flush_tx(struct cw1200_common *priv)
@@ -1085,7 +1085,7 @@ void wsm_unlock_tx(struct cw1200_common *priv)
 		BUG_ON(1);
 	} else if (tx_lock == 0) {
 		cw1200_bh_wakeup(priv);
-		wsm_printk(KERN_DEBUG "[WSM] TX is unlocked.\n");
+;
 	}
 }
 
@@ -1112,8 +1112,8 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 	wsm_buf.data = (u8 *)&wsm[1];
 	wsm_buf.end = &wsm_buf.begin[__le32_to_cpu(wsm->len)];
 
-	wsm_printk(KERN_DEBUG "[WSM] <<< 0x%.4X (%d)\n", id,
-			wsm_buf.end - wsm_buf.begin);
+//	wsm_printk(KERN_DEBUG "[WSM] <<< 0x%.4X (%d)\n", id,
+;
 
 	if (id == 0x404) {
 		ret = wsm_tx_confirm(priv, &wsm_buf);
@@ -1177,10 +1177,10 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			WARN_ON(wsm_arg != NULL);
 			ret = wsm_generic_confirm(priv, wsm_arg, &wsm_buf);
 			if (ret)
-				printk(KERN_ERR
-					"[WSM] wsm_generic_confirm "
-					"failed for request 0x%.4X.\n",
-					id);
+//				printk(KERN_ERR
+//					"[WSM] wsm_generic_confirm "
+//					"failed for request 0x%.4X.\n",
+;
 			break;
 		default:
 			BUG_ON(1);
@@ -1295,8 +1295,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
-		wsm_printk(KERN_DEBUG \
-			"[WSM] Convert probe request to scan.\n");
+//		wsm_printk(KERN_DEBUG \
+;
 		wsm_lock_tx_async(priv);
 		BUG_ON(priv->scan.probe_skb);
 		BUG_ON(cw1200_queue_get_skb(queue,
@@ -1320,8 +1320,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
-		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
-			" not joined.\n", fctl);
+//		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
+;
 		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID, &skb));
 		BUG_ON(cw1200_queue_remove(queue, priv, wsm->packetID));
 		/* Release used TX rate policy */
@@ -1341,7 +1341,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * in monitor mode.
 		 * priv->join_status is used only in bh thread and does
 		 * not require protection */
-		wsm_printk(KERN_DEBUG "[WSM] Issue join command.\n");
+;
 		wsm_lock_tx_async(priv);
 		BUG_ON(priv->join_pending_frame);
 		priv->join_pending_frame = wsm;
@@ -1352,7 +1352,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	break;
 	case doWep:
 	{
-		wsm_printk(KERN_DEBUG "[WSM] Issue set_default_wep_key.\n");
+;
 		wsm_lock_tx_async(priv);
 		priv->wep_default_key_id = tx_info->control.hw_key->keyidx;
 		if (queue_work(priv->workqueue, &priv->wep_key_work) <= 0)
@@ -1388,8 +1388,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		if (ieee80211_is_deauth(fctl) &&
 				priv->mode != NL80211_IFTYPE_AP) {
 			/* Shedule unjoin work */
-			wsm_printk(KERN_DEBUG "[WSM] Issue unjoin command"
-				" (TX).\n");
+//			wsm_printk(KERN_DEBUG "[WSM] Issue unjoin command"
+;
 #if 0
 			wsm->more = 0;
 #endif /* 0 */
@@ -1520,9 +1520,9 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 					&priv->multicast_stop_work);
 			}
 
-			wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X (%d) %p %c\n",
-				0x0004, *tx_len, *data,
-				wsm->more ? 'M' : ' ');
+//			wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X (%d) %p %c\n",
+//				0x0004, *tx_len, *data,
+;
 			++count;
 			break;
 		}

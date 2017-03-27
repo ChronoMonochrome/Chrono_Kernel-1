@@ -23,11 +23,11 @@
 #include <wlioctl.h>
 #include <wl_iw.h>
 
-#define WL_ERROR(fmt, args...) printk(fmt, ##args)
-#define WL_TRACE(fmt, args...) no_printk(fmt, ##args)
-
-#ifdef CUSTOMER_HW
-extern void bcm_wlan_power_off(int);
+//#define WL_ERROR(fmt, args...) printk(fmt, ##args)
+//#define WL_TRACE(fmt, args...) no_printk(fmt, ##args)
+//
+//#ifdef CUSTOMER_HW
+;
 extern void bcm_wlan_power_on(int);
 #endif				/* CUSTOMER_HW */
 #ifdef CUSTOMER_HW2

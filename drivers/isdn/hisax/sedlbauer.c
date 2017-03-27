@@ -269,7 +269,11 @@ sedlbauer_interrupt(int intno, void *dev_id)
 		/* The card tends to generate interrupts while being removed
 		   causing us to just crash the kernel. bad. */
 		spin_unlock_irqrestore(&cs->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sedlbauer: card not available!\n");
+#else
+		;
+#endif
 		return IRQ_NONE;
 	}
 
@@ -408,7 +412,11 @@ release_io_sedlbauer(struct IsdnCardState *cs)
 static void
 reset_sedlbauer(struct IsdnCardState *cs)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Sedlbauer: resetting card\n");
+#else
+	;
+#endif
 
 	if (!((cs->hw.sedl.bus == SEDL_BUS_PCMCIA) &&
 	   (cs->hw.sedl.chip == SEDL_CHIP_ISAC_HSCX))) {
@@ -547,13 +555,21 @@ setup_sedlbauer_isapnp(struct IsdnCard *card, int *bytecnt)
 				ipid->vendor, ipid->function, pnp_d))) {
 				int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "HiSax: %s detected\n",
 					(char *)ipid->driver_data);
+#else
+				;
+#endif
 				pnp_disable_dev(pnp_d);
 				err = pnp_activate_dev(pnp_d);
 				if (err<0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
 						__func__, err);
+#else
+					;
+#endif
 					return(0);
 				}
 				card->para[1] = pnp_port_start(pnp_d, 0);
@@ -586,7 +602,11 @@ setup_sedlbauer_isapnp(struct IsdnCard *card, int *bytecnt)
 		pnp_c = NULL;
 	} 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Sedlbauer PnP: no ISAPnP card found\n");
+#else
+	;
+#endif
 	return -1;
 }
 #else
@@ -613,22 +633,38 @@ setup_sedlbauer_pci(struct IsdnCard *card)
 			return(0);
 		cs->irq = dev_sedl->irq;
 		if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sedlbauer: No IRQ for PCI card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 		cs->hw.sedl.cfg_reg = pci_resource_start(dev_sedl, 0);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sedlbauer: No PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	cs->irq_flags |= IRQF_SHARED;
 	cs->hw.sedl.bus = SEDL_BUS_PCI;
 	sub_vendor_id = dev_sedl->subsystem_vendor;
 	sub_id = dev_sedl->subsystem_device;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Sedlbauer: PCI subvendor:%x subid %x\n",
 		sub_vendor_id, sub_id);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Sedlbauer: PCI base adr %#x\n",
 		cs->hw.sedl.cfg_reg);
+#else
+	;
+#endif
 	if (sub_id != PCI_SUB_ID_SEDLBAUER) {
 		printk(KERN_ERR "Sedlbauer: unknown sub id %#x\n", sub_id);
 		return(0);
@@ -683,7 +719,11 @@ setup_sedlbauer(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, Sedlbauer_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Sedlbauer driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	
  	if (cs->typ == ISDN_CTYPE_SEDLBAUER) {
  		cs->subtyp = SEDL_SPEED_CARD_WIN;
@@ -730,19 +770,27 @@ ready:
 	 */
 	if (cs->hw.sedl.bus != SEDL_BUS_PCMCIA &&
 		!request_region(cs->hw.sedl.cfg_reg, bytecnt, "sedlbauer isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"HiSax: %s config port %x-%x already in use\n",
 			CardType[card->typ],
 			cs->hw.sedl.cfg_reg,
 			cs->hw.sedl.cfg_reg + bytecnt);
+#else
+		;
+#endif
 			return (0);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Sedlbauer: defined at 0x%x-0x%x IRQ %d\n",
 	       cs->hw.sedl.cfg_reg,
 	       cs->hw.sedl.cfg_reg + bytecnt,
 	       cs->irq);
+#else
+	;
+#endif
 
 	cs->BC_Read_Reg = &ReadHSCX;
 	cs->BC_Write_Reg = &WriteHSCX;
@@ -757,7 +805,11 @@ ready:
 	if (cs->hw.sedl.bus != SEDL_BUS_PCI) {
 		val = readreg(cs->hw.sedl.cfg_reg + SEDL_IPAC_ANY_ADR,
 			cs->hw.sedl.cfg_reg + SEDL_IPAC_ANY_IPAC, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Sedlbauer: testing IPAC version %x\n", val);
+#else
+		;
+#endif
 	        if ((val == 1) || (val == 2)) {
 			/* IPAC */
 			cs->subtyp = SEDL_SPEED_WIN2_PC104;
@@ -776,8 +828,12 @@ ready:
 /*
  * hw.sedl.chip is now properly set
  */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Sedlbauer: %s detected\n",
 		Sedlbauer_Types[cs->subtyp]);
+#else
+	;
+#endif
 
 	setup_isac(cs);
 	if (cs->hw.sedl.chip == SEDL_CHIP_IPAC) {
@@ -797,7 +853,11 @@ ready:
 		cs->writeisacfifo = &WriteISACfifo_IPAC;
 		cs->irq_func = &sedlbauer_interrupt_ipac;
 		val = readreg(cs->hw.sedl.adr, cs->hw.sedl.isac, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Sedlbauer: IPAC version %x\n", val);
+#else
+		;
+#endif
 	} else {
 		/* ISAC_HSCX oder ISAC_ISAR */
 		cs->readisac = &ReadISAC;
@@ -837,8 +897,12 @@ ready:
 			while (bytecnt) {
 				ver = ISARVersion(cs, "Sedlbauer:");
 				if (ver < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 						"Sedlbauer: wrong ISAR version (ret = %d)\n", ver);
+#else
+					;
+#endif
 				else
 					break;
 				reset_sedlbauer(cs);
@@ -867,8 +931,12 @@ ready:
 			ISACVersion(cs, "Sedlbauer:");
 		
 			if (HscxVersion(cs, "Sedlbauer:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"Sedlbauer: wrong HSCX versions check IO address\n");
+#else
+				;
+#endif
 				release_io_sedlbauer(cs);
 				return (0);
 			}

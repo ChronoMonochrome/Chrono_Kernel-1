@@ -364,8 +364,8 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
 	probes -= neigh->parms->ucast_probes;
 	if (probes < 0) {
 		if (!(neigh->nud_state & NUD_VALID))
-			printk(KERN_DEBUG
-			       "trying to ucast probe in NUD_INVALID\n");
+//			printk(KERN_DEBUG
+;
 		dst_ha = neigh->ha;
 		read_lock_bh(&neigh->lock);
 	} else {
@@ -452,7 +452,7 @@ static int arp_set_predefined(int addr_hint, unsigned char *haddr,
 {
 	switch (addr_hint) {
 	case RTN_LOCAL:
-		printk(KERN_DEBUG "ARP: arp called for own IP address\n");
+;
 		memcpy(haddr, dev->dev_addr, dev->addr_len);
 		return 1;
 	case RTN_MULTICAST:
@@ -473,7 +473,7 @@ int arp_find(unsigned char *haddr, struct sk_buff *skb)
 	struct neighbour *n;
 
 	if (!skb_dst(skb)) {
-		printk(KERN_DEBUG "arp_find is called with dst==NULL\n");
+;
 		kfree_skb(skb);
 		return 1;
 	}

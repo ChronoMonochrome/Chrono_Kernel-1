@@ -418,19 +418,19 @@ static int ser12_open(struct net_device *dev)
 		return -ENXIO;
 	if (!dev->base_addr || dev->base_addr > 0xffff-SER12_EXTENT ||
 	    dev->irq < 2 || dev->irq > nr_irqs) {
-		printk(KERN_INFO "baycom_ser_fdx: invalid portnumber (max %u) "
-				"or irq (2 <= irq <= %d)\n",
-				0xffff-SER12_EXTENT, nr_irqs);
+//		printk(KERN_INFO "baycom_ser_fdx: invalid portnumber (max %u) "
+//				"or irq (2 <= irq <= %d)\n",
+;
 		return -ENXIO;
 	}
 	if (bc->baud < 300 || bc->baud > 4800) {
-		printk(KERN_INFO "baycom_ser_fdx: invalid baudrate "
-				"(300...4800)\n");
+//		printk(KERN_INFO "baycom_ser_fdx: invalid baudrate "
+;
 		return -EINVAL;
 	}
 	if (!request_region(dev->base_addr, SER12_EXTENT, "baycom_ser_fdx")) {
-		printk(KERN_WARNING "BAYCOM_SER_FSX: I/O port 0x%04lx busy\n",
-		       dev->base_addr);
+//		printk(KERN_WARNING "BAYCOM_SER_FSX: I/O port 0x%04lx busy\n",
+;
 		return -EACCES;
 	}
 	memset(&bc->modem, 0, sizeof(bc->modem));
@@ -468,8 +468,8 @@ static int ser12_open(struct net_device *dev)
 	 */
 	outb(0x00, THR(dev->base_addr));
 	hdlcdrv_setdcd(&bc->hdrv, 0);
-	printk(KERN_INFO "%s: ser_fdx at iobase 0x%lx irq %u baud %u uart %s\n",
-	       bc_drvname, dev->base_addr, dev->irq, bc->baud, uart_str[u]);
+//	printk(KERN_INFO "%s: ser_fdx at iobase 0x%lx irq %u baud %u uart %s\n",
+;
 	return 0;
 }
 
@@ -488,8 +488,8 @@ static int ser12_close(struct net_device *dev)
 	outb(1, MCR(dev->base_addr));
 	free_irq(dev->irq, dev);
 	release_region(dev->base_addr, SER12_EXTENT);
-	printk(KERN_INFO "%s: close ser_fdx at iobase 0x%lx irq %u\n",
-	       bc_drvname, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: close ser_fdx at iobase 0x%lx irq %u\n",
+;
 	return 0;
 }
 
@@ -629,7 +629,7 @@ static int __init init_baycomserfdx(void)
 	int i, found = 0;
 	char set_hw = 1;
 
-	printk(bc_drvinfo);
+;
 	/*
 	 * register net devices
 	 */

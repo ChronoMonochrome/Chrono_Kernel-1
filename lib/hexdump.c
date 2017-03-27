@@ -213,14 +213,26 @@ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
 
 		switch (prefix_type) {
 		case DUMP_PREFIX_ADDRESS:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%p: %s\n",
 			       level, prefix_str, ptr + i, linebuf);
+#else
+			;
+#endif
 			break;
 		case DUMP_PREFIX_OFFSET:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%.8x: %s\n", level, prefix_str, i, linebuf);
+#else
+			;
+#endif
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%s\n", level, prefix_str, linebuf);
+#else
+			;
+#endif
 			break;
 		}
 	}

@@ -902,7 +902,11 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
 	/* ECC enabled? */
 	pci_read_config_dword(pdev, I5100_MC, &dw);
 	if (!i5100_mc_errdeten(dw)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i5100_edac: ECC not enabled.\n");
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto bail_pdev;
 	}

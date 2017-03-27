@@ -3424,8 +3424,8 @@ static inline bool bnx2x_parity_attn(struct bnx2x *bp, u32 sig0, u32 sig1,
 			  sig1 & HW_PRTY_ASSERT_SET_1,
 			  sig2 & HW_PRTY_ASSERT_SET_2,
 			  sig3 & HW_PRTY_ASSERT_SET_3);
-		printk(KERN_ERR"%s: Parity errors detected in blocks: ",
-		       bp->dev->name);
+//		printk(KERN_ERR"%s: Parity errors detected in blocks: ",
+;
 		par_num = bnx2x_print_blocks_with_parity0(
 			sig0 & HW_PRTY_ASSERT_SET_0, par_num);
 		par_num = bnx2x_print_blocks_with_parity1(
@@ -3434,7 +3434,7 @@ static inline bool bnx2x_parity_attn(struct bnx2x *bp, u32 sig0, u32 sig1,
 			sig2 & HW_PRTY_ASSERT_SET_2, par_num);
 		par_num = bnx2x_print_blocks_with_parity3(
 			sig3 & HW_PRTY_ASSERT_SET_3, par_num);
-		printk("\n");
+;
 		return true;
 	} else
 		return false;
@@ -7473,8 +7473,8 @@ static int bnx2x_leader_reset(struct bnx2x *bp)
 	int rc = 0;
 	/* Try to recover after the failure */
 	if (bnx2x_process_kill(bp)) {
-		printk(KERN_ERR "%s: Something bad had happen! Aii!\n",
-		       bp->dev->name);
+//		printk(KERN_ERR "%s: Something bad had happen! Aii!\n",
+;
 		rc = -EAGAIN;
 		goto exit_leader_reset;
 	}
@@ -7537,9 +7537,9 @@ static void bnx2x_parity_recover(struct bnx2x *bp)
 					 */
 					if (bnx2x_leader_reset(bp) ||
 					bnx2x_nic_load(bp, LOAD_NORMAL)) {
-						printk(KERN_ERR"%s: Recovery "
-						"has failed. Power cycle is "
-						"needed.\n", bp->dev->name);
+//						printk(KERN_ERR"%s: Recovery "
+//						"has failed. Power cycle is "
+;
 						/* Disconnect this device */
 						netif_device_detach(bp->dev);
 						/* Block ifup for all function
@@ -8796,10 +8796,10 @@ static int bnx2x_open(struct net_device *dev)
 
 			bnx2x_set_power_state(bp, PCI_D3hot);
 
-			printk(KERN_ERR"%s: Recovery flow hasn't been properly"
-			" completed yet. Try again later. If u still see this"
-			" message after a few retries then power cycle is"
-			" required.\n", bp->dev->name);
+//			printk(KERN_ERR"%s: Recovery flow hasn't been properly"
+//			" completed yet. Try again later. If u still see this"
+//			" message after a few retries then power cycle is"
+;
 
 			return -EAGAIN;
 		} while (0);
@@ -9847,8 +9847,8 @@ static void bnx2x_io_resume(struct pci_dev *pdev)
 	struct bnx2x *bp = netdev_priv(dev);
 
 	if (bp->recovery_state != BNX2X_RECOVERY_DONE) {
-		printk(KERN_ERR "Handling parity error recovery. "
-				"Try again later\n");
+//		printk(KERN_ERR "Handling parity error recovery. "
+;
 		return;
 	}
 

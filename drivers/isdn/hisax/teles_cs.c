@@ -95,11 +95,19 @@ static int teles_cs_configcheck(struct pcmcia_device *p_dev, void *priv_data)
 	p_dev->resource[0]->flags |= IO_DATA_PATH_WIDTH_AUTO;
 
 	if ((p_dev->resource[0]->end) && p_dev->resource[0]->start) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "(teles_cs: looks like the 96 model)\n");
+#else
+		;
+#endif
 		if (!pcmcia_request_io(p_dev))
 			return 0;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "(teles_cs: looks like the 97 model)\n");
+#else
+		;
+#endif
 		for (j = 0x2f0; j > 0x100; j -= 0x10) {
 			p_dev->resource[0]->start = j;
 			if (!pcmcia_request_io(p_dev))

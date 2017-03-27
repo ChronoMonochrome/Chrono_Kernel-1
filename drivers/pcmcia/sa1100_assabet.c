@@ -65,8 +65,12 @@ assabet_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_stat
 		break;
 
 	case 50:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(): CS asked for 5V, applying 3.3V...\n",
 			__func__);
+#else
+		;
+#endif
 
 	case 33:  /* Can only apply 3.3V to the CF slot. */
 		mask = ASSABET_BCR_CF_PWR;

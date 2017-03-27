@@ -1214,8 +1214,8 @@ static int __must_check ax25_connect(struct socket *sock,
 	 */
 	if (sock_flag(sk, SOCK_ZAPPED)) {
 		/* check if we can remove this feature. It is broken. */
-		printk(KERN_WARNING "ax25_connect(): %s uses autobind, please contact jreuter@yaina.de\n",
-			current->comm);
+//		printk(KERN_WARNING "ax25_connect(): %s uses autobind, please contact jreuter@yaina.de\n",
+;
 		if ((err = ax25_rt_autobind(ax25, &fsa->fsa_ax25.sax25_call)) < 0) {
 			kfree(digi);
 			goto out_release;
@@ -1795,8 +1795,8 @@ static int ax25_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 		if (cmd == SIOCAX25GETINFOOLD) {
 			static int warned = 0;
 			if (!warned) {
-				printk(KERN_INFO "%s uses old SIOCAX25GETINFO\n",
-					current->comm);
+//				printk(KERN_INFO "%s uses old SIOCAX25GETINFO\n",
+;
 				warned=1;
 			}
 

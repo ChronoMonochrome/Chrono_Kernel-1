@@ -141,7 +141,11 @@ void smsg_unregister_callback(const char *prefix,
 static int smsg_pm_freeze(struct device *dev)
 {
 #ifdef CONFIG_PM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "smsg_pm_freeze\n");
+#else
+	;
+#endif
 #endif
 	if (smsg_path && iucv_path_connected) {
 		iucv_path_sever(smsg_path, NULL);
@@ -155,7 +159,11 @@ static int smsg_pm_restore_thaw(struct device *dev)
 	int rc;
 
 #ifdef CONFIG_PM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "smsg_pm_restore_thaw\n");
+#else
+	;
+#endif
 #endif
 	if (smsg_path && iucv_path_connected) {
 		memset(smsg_path, 0, sizeof(*smsg_path));

@@ -270,8 +270,8 @@ static ssize_t debug_level_proc_write(struct file *file,
 		return count;
 	buf[len] = 0;
 	if (sscanf(buf, "%li", &val) != 1)
-		printk(KERN_INFO DRV_NAME
-		       ": %s is not in hex or decimal form.\n", buf);
+//		printk(KERN_INFO DRV_NAME
+;
 	else
 		libipw_debug_level = val;
 
@@ -309,8 +309,8 @@ static int __init libipw_init(void)
 	}
 #endif				/* CONFIG_LIBIPW_DEBUG */
 
-	printk(KERN_INFO DRV_NAME ": " DRV_DESCRIPTION ", " DRV_VERSION "\n");
-	printk(KERN_INFO DRV_NAME ": " DRV_COPYRIGHT "\n");
+;
+;
 
 	return 0;
 }

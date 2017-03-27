@@ -138,6 +138,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
@@ -149,6 +150,9 @@
  */
 
 static struct platform_device *		of_dev;
+#else
+#define DBG(args...)	;
+#endif
 static struct i2c_adapter *		u3_0;
 static struct i2c_adapter *		u3_1;
 static struct i2c_adapter *		k2;
@@ -489,8 +493,12 @@ static int start_fcu(void)
 	if (rc < 0)
 		return -EIO;
 	fcu_rpm_shift = (buf == 1) ? 2 : 3;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "FCU Initialized, RPM fan shift is %d\n",
 	       fcu_rpm_shift);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -944,17 +952,29 @@ static void do_monitor_cpu_combined(void)
 	 * full blown immediately and try to trigger a shutdown
 	 */
 	if (temp_combi >= ((state0->mpu.tmax + 8) << 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning ! Temperature way above maximum (%d) !\n",
 		       temp_combi >> 16);
+#else
+		;
+#endif
 		state0->overtemp += CPU_MAX_OVERTEMP / 4;
 	} else if (temp_combi > (state0->mpu.tmax << 16)) {
 		state0->overtemp++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Temperature %d above max %d. overtemp %d\n",
 		       temp_combi >> 16, state0->mpu.tmax, state0->overtemp);
+#else
+		;
+#endif
 	} else {
 		if (state0->overtemp)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Temperature back down to %d\n",
 			       temp_combi >> 16);
+#else
+			;
+#endif
 		state0->overtemp = 0;
 	}
 	if (state0->overtemp >= CPU_MAX_OVERTEMP)
@@ -1024,18 +1044,30 @@ static void do_monitor_cpu_split(struct cpu_pid_state *state)
 	 * full blown immediately and try to trigger a shutdown
 	 */
 	if (temp >= ((state->mpu.tmax + 8) << 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning ! CPU %d temperature way above maximum"
 		       " (%d) !\n",
 		       state->index, temp >> 16);
+#else
+		;
+#endif
 		state->overtemp += CPU_MAX_OVERTEMP / 4;
 	} else if (temp > (state->mpu.tmax << 16)) {
 		state->overtemp++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "CPU %d temperature %d above max %d. overtemp %d\n",
 		       state->index, temp >> 16, state->mpu.tmax, state->overtemp);
+#else
+		;
+#endif
 	} else {
 		if (state->overtemp)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "CPU %d temperature back down to %d\n",
 			       state->index, temp >> 16);
+#else
+			;
+#endif
 		state->overtemp = 0;
 	}
 	if (state->overtemp >= CPU_MAX_OVERTEMP)
@@ -1092,18 +1124,30 @@ static void do_monitor_cpu_rack(struct cpu_pid_state *state)
 	 * full blown immediately and try to trigger a shutdown
 	 */
 	if (temp >= ((state->mpu.tmax + 8) << 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning ! CPU %d temperature way above maximum"
 		       " (%d) !\n",
 		       state->index, temp >> 16);
+#else
+		;
+#endif
 		state->overtemp = CPU_MAX_OVERTEMP / 4;
 	} else if (temp > (state->mpu.tmax << 16)) {
 		state->overtemp++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "CPU %d temperature %d above max %d. overtemp %d\n",
 		       state->index, temp >> 16, state->mpu.tmax, state->overtemp);
+#else
+		;
+#endif
 	} else {
 		if (state->overtemp)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "CPU %d temperature back down to %d\n",
 			       state->index, temp >> 16);
+#else
+			;
+#endif
 		state->overtemp = 0;
 	}
 	if (state->overtemp >= CPU_MAX_OVERTEMP)
@@ -1173,7 +1217,11 @@ static int init_processor_state(struct cpu_pid_state *state, int index)
 
 	state->count_power = state->mpu.tguardband;
 	if (state->count_power > CPU_POWER_HISTORY_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning ! too many power history slots\n");
+#else
+		;
+#endif
 		state->count_power = CPU_POWER_HISTORY_SIZE;
 	}
 	DBG("CPU %d Using %d power history entries\n", index, state->count_power);
@@ -1192,8 +1240,12 @@ static int init_processor_state(struct cpu_pid_state *state, int index)
 		err |= device_create_file(&of_dev->dev, &dev_attr_cpu1_intake_fan_rpm);
 	}
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to create some of the attribute"
 			"files for CPU %d\n", index);
+#else
+		;
+#endif
 
 	return 0;
  fail:
@@ -1245,7 +1297,11 @@ static void do_monitor_backside(struct backside_pid_state *state)
 	/* Check fan status */
 	rc = get_pwm_fan(BACKSIDE_FAN_PWM_INDEX);
 	if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error %d reading backside fan !\n", rc);
+#else
+		;
+#endif
 		/* XXX What do we do now ? */
 	} else
 		state->pwm = rc;
@@ -1381,8 +1437,12 @@ static int init_backside_state(struct backside_pid_state *state)
 	err = device_create_file(&of_dev->dev, &dev_attr_backside_temperature);
 	err |= device_create_file(&of_dev->dev, &dev_attr_backside_fan_pwm);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to create attribute file(s)"
 			" for backside fan\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -1419,7 +1479,11 @@ static void do_monitor_drives(struct drives_pid_state *state)
 	/* Check fan status */
 	rc = get_rpm_fan(DRIVES_FAN_RPM_INDEX, !RPM_PID_USE_ACTUAL_SPEED);
 	if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error %d reading drives fan !\n", rc);
+#else
+		;
+#endif
 		/* XXX What do we do now ? */
 	} else
 		state->rpm = rc;
@@ -1505,8 +1569,12 @@ static int init_drives_state(struct drives_pid_state *state)
 	err = device_create_file(&of_dev->dev, &dev_attr_drives_temperature);
 	err |= device_create_file(&of_dev->dev, &dev_attr_drives_fan_rpm);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to create attribute file(s)"
 			" for drives bay fan\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -1627,8 +1695,12 @@ static int init_dimms_state(struct dimm_pid_state *state)
 		return -ENODEV;
 
 	if (device_create_file(&of_dev->dev, &dev_attr_dimms_temperature))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to create attribute file"
 			" for DIMM temperature\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -1664,7 +1736,11 @@ static void do_monitor_slots(struct slots_pid_state *state)
 	/* Check fan status */
 	rc = get_pwm_fan(SLOTS_FAN_PWM_INDEX);
 	if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Error %d reading slots fan !\n", rc);
+#else
+		;
+#endif
 		/* XXX What do we do now ? */
 	} else
 		state->pwm = rc;
@@ -1750,8 +1826,12 @@ static int init_slots_state(struct slots_pid_state *state)
 	err = device_create_file(&of_dev->dev, &dev_attr_slots_temperature);
 	err |= device_create_file(&of_dev->dev, &dev_attr_slots_fan_pwm);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to create attribute file(s)"
 			" for slots bay fan\n");
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -1852,18 +1932,34 @@ static int main_control_loop(void *x)
 		mutex_unlock(&driver_lock);
 
 		if (critical_state == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Temperature control detected a critical condition\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Attempting to shut down...\n");
+#else
+			;
+#endif
 			if (call_critical_overtemp()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Can't call %s, power off now!\n",
 				       critical_overtemp_path);
+#else
+				;
+#endif
 				machine_power_off();
 			}
 		}
 		if (critical_state > 0)
 			critical_state++;
 		if (critical_state > MAX_CRITICAL_STATE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Shutdown timed out, power off now !\n");
+#else
+			;
+#endif
 			machine_power_off();
 		}
 
@@ -1920,7 +2016,11 @@ static int create_control_loops(void)
 	    && (cpu_count > 1)
 	    && fcu_fans[CPUA_PUMP_RPM_INDEX].id != FCU_FAN_ABSENT_ID
 	    && fcu_fans[CPUB_PUMP_RPM_INDEX].id != FCU_FAN_ABSENT_ID) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Liquid cooling pumps detected, using new algorithm !\n");
+#else
+		;
+#endif
 		cpu_pid_type = CPU_PID_TYPE_COMBINED;
 	} else
 		cpu_pid_type = CPU_PID_TYPE_SPLIT;
@@ -2181,8 +2281,12 @@ static void fcu_lookup_fans(struct device_node *fcu_node)
 			DBG(" location match, index: %d\n", i);
 			fcu_fans[i].id = FCU_FAN_ABSENT_ID;
 			if (type != fcu_fans[i].type) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "therm_pm72: Fan type mismatch "
 				       "in device-tree for %s\n", np->full_name);
+#else
+				;
+#endif
 				break;
 			}
 			if (type == FCU_FAN_RPM)
@@ -2190,8 +2294,12 @@ static void fcu_lookup_fans(struct device_node *fcu_node)
 			else
 				fan_id = ((*reg) - 0x30) / 2;
 			if (fan_id > 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "therm_pm72: Can't parse "
 				       "fan ID in device-tree for %s\n", np->full_name);
+#else
+				;
+#endif
 				break;
 			}
 			DBG(" fan id -> %d, type -> %d\n", fan_id, type);
@@ -2200,13 +2308,21 @@ static void fcu_lookup_fans(struct device_node *fcu_node)
 	}
 
 	/* Now dump the array */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Detected fan controls:\n");
+#else
+	;
+#endif
 	for (i = 0; i < FCU_FAN_COUNT; i++) {
 		if (fcu_fans[i].id == FCU_FAN_ABSENT_ID)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "  %d: %s fan, id %d, location: %s\n", i,
 		       fcu_fans[i].type == FCU_FAN_RPM ? "RPM" : "PWM",
 		       fcu_fans[i].id, fcu_fans[i].loc);
+#else
+		;
+#endif
 	}
 }
 

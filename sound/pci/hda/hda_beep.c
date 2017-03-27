@@ -132,7 +132,11 @@ static int snd_hda_do_attach(struct hda_beep *beep)
 
 	input_dev = input_allocate_device();
 	if (!input_dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_beep: unable to allocate input device\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -154,7 +158,11 @@ static int snd_hda_do_attach(struct hda_beep *beep)
 	err = input_register_device(input_dev);
 	if (err < 0) {
 		input_free_device(input_dev);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_beep: unable to register input device\n");
+#else
+		;
+#endif
 		return err;
 	}
 	beep->dev = input_dev;

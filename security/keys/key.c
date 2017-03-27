@@ -42,8 +42,12 @@ DEFINE_MUTEX(key_construction_mutex);
 #ifdef KEY_DEBUGGING
 void __key_check(const struct key *key)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("__key_check: key %p {%08x} should be {%08x}\n",
 	       key, key->magic, KEY_DEBUG_MAGIC);
+#else
+	;
+#endif
 	BUG();
 }
 #endif

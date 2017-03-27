@@ -215,13 +215,13 @@ static int __init ultramca_probe(struct device *gen_dev)
 	int irq = ultra_irq[ultra_found];
 
 	if (base_addr || irq) {
-		printk(KERN_INFO "Probing for SMC MCA adapter");
+;
 		if (base_addr) {
-			printk(KERN_INFO " at I/O address 0x%04x%c",
-			       base_addr, irq ? ' ' : '\n');
+//			printk(KERN_INFO " at I/O address 0x%04x%c",
+;
 		}
 		if (irq) {
-			printk(KERN_INFO "using irq %d\n", irq);
+;
 		}
 	}
 
@@ -285,8 +285,8 @@ static int __init ultramca_probe(struct device *gen_dev)
 	mca_device_set_name(mca_dev, smc_mca_adapter_names[adapter]);
 	mca_device_set_claim(mca_dev, 1);
 
-	printk(KERN_INFO "smc_mca: %s found in slot %d\n",
-		       smc_mca_adapter_names[adapter], slot + 1);
+//	printk(KERN_INFO "smc_mca: %s found in slot %d\n",
+;
 
 	ultra_found++;
 
@@ -350,8 +350,8 @@ static int __init ultramca_probe(struct device *gen_dev)
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = inb(ioaddr + 8 + i);
 
-	printk(KERN_INFO "smc_mca[%d]: Parameters: %#3x, %pM",
-	       slot + 1, ioaddr, dev->dev_addr);
+//	printk(KERN_INFO "smc_mca[%d]: Parameters: %#3x, %pM",
+;
 
 	/* Switch from the station address to the alternate register set
 	 * and read the useful registers there.
@@ -391,8 +391,8 @@ static int __init ultramca_probe(struct device *gen_dev)
 
 	dev->mem_end = dev->mem_start + (ei_status.stop_page - START_PG) * 256;
 
-	printk(", IRQ %d memory %#lx-%#lx.\n",
-	dev->irq, dev->mem_start, dev->mem_end - 1);
+//	printk(", IRQ %d memory %#lx-%#lx.\n",
+;
 
 	ei_status.reset_8390 = &ultramca_reset_8390;
 	ei_status.block_input = &ultramca_block_input;
@@ -452,14 +452,14 @@ static void ultramca_reset_8390(struct net_device *dev)
 
 	outb(ULTRA_RESET, ioaddr);
 	if (ei_debug > 1)
-		printk("resetting Ultra, t=%ld...", jiffies);
+;
 	ei_status.txing = 0;
 
 	outb(0x80, ioaddr + 5);     /* ??? */
 	outb(0x01, ioaddr + 6);     /* Enable interrupts and memory. */
 
 	if (ei_debug > 1)
-		printk("reset done\n");
+;
 }
 
 /* Grab the 8390 specific header. Similar to the block_input routine, but
@@ -514,7 +514,7 @@ static int ultramca_close_card(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (ei_debug > 1)
-		printk("%s: Shutting down ethercard.\n", dev->name);
+;
 
 	outb(0x00, ioaddr + 6);     /* Disable interrupts. */
 	free_irq(dev->irq, dev);

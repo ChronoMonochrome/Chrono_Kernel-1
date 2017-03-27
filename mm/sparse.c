@@ -162,16 +162,24 @@ void __meminit mminit_validate_memmodel_limits(unsigned long *start_pfn,
 	 * in larger pfns than the maximum scope of sparsemem:
 	 */
 	if (*start_pfn > max_sparsemem_pfn) {
+#ifdef CONFIG_DEBUG_PRINTK
 		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
 			"Start of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
 			*start_pfn, *end_pfn, max_sparsemem_pfn);
+#else
+		mminit_d;
+#endif
 		WARN_ON_ONCE(1);
 		*start_pfn = max_sparsemem_pfn;
 		*end_pfn = max_sparsemem_pfn;
 	} else if (*end_pfn > max_sparsemem_pfn) {
+#ifdef CONFIG_DEBUG_PRINTK
 		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
 			"End of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
 			*start_pfn, *end_pfn, max_sparsemem_pfn);
+#else
+		mminit_d;
+#endif
 		WARN_ON_ONCE(1);
 		*end_pfn = max_sparsemem_pfn;
 	}
@@ -313,9 +321,13 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
 
 	usemap_nid = sparse_early_nid(__nr_to_section(usemap_snr));
 	if (usemap_nid != nid) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "node %d must be removed before remove section %ld\n",
 		       nid, usemap_snr);
+#else
+		;
+#endif
 		return;
 	}
 	/*
@@ -324,10 +336,18 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
 	 * gather other removable sections for dynamic partitioning.
 	 * Just notify un-removable section's number here.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Section %ld and %ld (node %d)", usemap_snr,
 	       pgdat_snr, nid);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT
 	       " have a circular dependency on usemap and pgdat allocations\n");
+#else
+	;
+#endif
 }
 #else
 static unsigned long * __init
@@ -356,7 +376,11 @@ static void __init sparse_early_usemaps_alloc_node(unsigned long**usemap_map,
 	if (!usemap) {
 		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
 		if (!usemap) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: allocation failed\n", __func__);
+#else
+			;
+#endif
 			return;
 		}
 	}

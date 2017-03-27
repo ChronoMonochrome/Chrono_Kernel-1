@@ -63,6 +63,7 @@
 
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
 #else
 #define DPRINTK(format,args...)
@@ -107,6 +108,9 @@ static void event_dump(void)
 #define EV 64
 
 static const char *ev[EV];
+#else
+#define DPRINTK(format,args...) ;
+#endif
 static unsigned long ev_a[EV],ev_b[EV];
 static int ec = 0;
 
@@ -126,8 +130,16 @@ static void event_dump(void)
 
 	for (n = 0; n < EV; n++) {
 		i = (ec+n) % EV;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(ev[i] ? ev[i] : "(null)",ev_a[i],ev_b[i]);
+#else
+		;
+#endif
 	}
 }
 
@@ -172,9 +184,13 @@ static void dump_mem(struct eni_dev *eni_dev)
 	int i;
 
 	for (i = 0; i < eni_dev->free_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "  %d: %p %d\n",i,
 		    eni_dev->free_list[i].start,
 		    1 << eni_dev->free_list[i].order);
+#else
+		;
+#endif
 }
 
 
@@ -185,20 +201,44 @@ static void dump(struct atm_dev *dev)
 	int i;
 
 	eni_dev = ENI_DEV(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Free memory\n");
+#else
+	;
+#endif
 	dump_mem(eni_dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "TX buffers\n");
+#else
+	;
+#endif
 	for (i = 0; i < NR_CHAN; i++)
 		if (eni_dev->tx[i].send)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "  TX %d @ %p: %ld\n",i,
 			    eni_dev->tx[i].send,eni_dev->tx[i].words*4);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "RX buffers\n");
+#else
+	;
+#endif
 	for (i = 0; i < 1024; i++)
 		if (eni_dev->rx_map[i] && ENI_VCC(eni_dev->rx_map[i])->rx)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "  RX %d @ %p: %ld\n",i,
 			    ENI_VCC(eni_dev->rx_map[i])->recv,
 			    ENI_VCC(eni_dev->rx_map[i])->words*4);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "----\n");
+#else
+	;
+#endif
 }
 
 
@@ -214,14 +254,22 @@ static void eni_put_free(struct eni_dev *eni_dev, void __iomem *start,
 	len = eni_dev->free_len;
 	while (size) {
 		if (len >= eni_dev->free_list_size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "eni_put_free overflow (%p,%ld)\n",
 			    start,size);
+#else
+			;
+#endif
 			break;
 		}
 		for (order = 0; !(((unsigned long)start | size) & (1 << order)); order++);
 		if (MID_MIN_BUF_SIZE > (1 << order)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "eni_put_free: order %d too small\n",
 			    order);
+#else
+			;
+#endif
 			break;
 		}
 		list[len].start = (void __iomem *) start;
@@ -295,8 +343,12 @@ static void eni_free_mem(struct eni_dev *eni_dev, void __iomem *start,
 			continue;
 		}
 	if (len >= eni_dev->free_list_size) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "eni_free_mem overflow (%p,%d)\n",start,
 		    order);
+#else
+		;
+#endif
 		return;
 	}
 	list[len].start = start;
@@ -325,17 +377,37 @@ static void rx_ident_err(struct atm_vcc *vcc)
 	    ~(MID_DMA_ENABLE | MID_TX_ENABLE | MID_RX_ENABLE),MID_MC_S);
 	/* dump useful information */
 	eni_vcc = ENI_VCC(vcc);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT DEV_LABEL "(itf %d): driver error - RX ident "
 	    "mismatch\n",dev->number);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "  VCI %d, rxing %d, words %ld\n",vcc->vci,
 	    eni_vcc->rxing,eni_vcc->words);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "  host descr 0x%lx, rx pos 0x%lx, descr value "
 	    "0x%x\n",eni_vcc->descr,eni_vcc->rx_pos,
 	    (unsigned) readl(eni_vcc->recv+eni_vcc->descr*4));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "  last %p, servicing %d\n",eni_vcc->last,
 	    eni_vcc->servicing);
+#else
+	;
+#endif
 	EVENT("---dump ends here---\n",0,0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "---recent events---\n");
+#else
+	;
+#endif
 	event_dump();
 	ENI_DEV(dev)->fast = NULL; /* really stop it */
 	ENI_DEV(dev)->slow = NULL;
@@ -362,9 +434,13 @@ static int do_rx_dma(struct atm_vcc *vcc,struct sk_buff *skb,
 		    PCI_DMA_FROMDEVICE);
 		ENI_PRV_PADDR(skb) = paddr;
 		if (paddr & 3)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT DEV_LABEL "(itf %d): VCI %d has "
 			    "mis-aligned RX data (0x%lx)\n",vcc->dev->number,
 			    vcc->vci,(unsigned long) paddr);
+#else
+			;
+#endif
 		ENI_PRV_SIZE(skb) = size+skip;
 		    /* PDU plus descriptor */
 		ATM_SKB(skb)->vcc = vcc;
@@ -450,7 +526,11 @@ static int do_rx_dma(struct atm_vcc *vcc,struct sk_buff *skb,
 		j++;
 	}
 	if (!j || j > 2*RX_DMA_BUF) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "!j or j too big!!!\n");
+#else
+		;
+#endif
 		goto trouble;
 	}
 	dma[j-2] |= MID_DMA_END;
@@ -462,8 +542,12 @@ static int do_rx_dma(struct atm_vcc *vcc,struct sk_buff *skb,
 	 * data that hasn't been read (position of dma_rd) yet ?
 	 */
 	if (!NEPMOK(dma_wr,j+j+1,dma_rd,NR_DMA_RX)) { /* @@@ +1 is ugly */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL "(itf %d): RX DMA full\n",
 		    vcc->dev->number);
+#else
+		;
+#endif
 		goto trouble;
 	}
         for (i = 0; i < j; i++) {
@@ -571,9 +655,13 @@ static int rx_aal5(struct atm_vcc *vcc)
 			static unsigned long silence = 0;
 
 			if (time_after(jiffies, silence) || silence == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING DEV_LABEL "(itf %d): "
 				    "discarding PDU(s) with CRC error\n",
 				    vcc->dev->number);
+#else
+				;
+#endif
 				silence = (jiffies+2*HZ)|1;
 			}
 			size = (descr & MID_RED_COUNT)*(ATM_CELL_PAYLOAD >> 2);
@@ -691,8 +779,12 @@ static void get_service(struct atm_dev *dev)
 		eni_dev->serv_read = (eni_dev->serv_read+1) & (NR_SERVICE-1);
 		vcc = eni_dev->rx_map[vci & 1023];
 		if (!vcc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT DEV_LABEL "(itf %d): VCI %ld not "
 			    "found\n",dev->number,vci);
+#else
+			;
+#endif
 			continue; /* nasty but we try to go on anyway */
 			/* @@@ nope, doesn't work */
 		}
@@ -826,8 +918,12 @@ static int open_rx_second(struct atm_vcc *vcc)
 	writel(0,here+4); /* descr, read = 0 */
 	writel(0,here+8); /* write, state, count = 0 */
 	if (eni_dev->rx_map[vcc->vci])
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "(itf %d): BUG - VCI %d already "
 		    "in use\n",vcc->dev->number,vcc->vci);
+#else
+		;
+#endif
 	eni_dev->rx_map[vcc->vci] = vcc; /* now it counts */
 	writel(((vcc->qos.aal != ATM_AAL5 ? MID_MODE_RAW : MID_MODE_AAL5) <<
 	    MID_VCI_MODE_SHIFT) | MID_VCI_PTI_MODE |
@@ -872,8 +968,12 @@ static void close_rx(struct atm_vcc *vcc)
 			}
 			EVENT("drain PDUs (rx %ld, serv %ld)\n",eni_vcc->rxing,
 			    eni_vcc->servicing);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%d+%d RX left\n",eni_vcc->servicing,
 			    eni_vcc->rxing);
+#else
+			;
+#endif
 			schedule();
 			set_current_state(TASK_UNINTERRUPTIBLE);
 		}
@@ -888,8 +988,12 @@ static void close_rx(struct atm_vcc *vcc)
 			if (at_end) break;
 			EVENT("drain discard (host 0x%lx, nic 0x%lx)\n",
 			    eni_vcc->rx_pos,tmp);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "draining RX: host 0x%lx, nic 0x%x\n",
 			    eni_vcc->rx_pos,tmp);
+#else
+			;
+#endif
 			schedule();
 			set_current_state(TASK_UNINTERRUPTIBLE);
 		}
@@ -1103,14 +1207,22 @@ DPRINTK("iovcnt = %d\n",skb_shinfo(skb)->nr_frags);
 	if (!skb_shinfo(skb)->nr_frags) dma_size += 5;
 	else dma_size += 5*(skb_shinfo(skb)->nr_frags+1);
 	if (dma_size > TX_DMA_BUF) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "(itf %d): needs %d DMA entries "
 		    "(got only %d)\n",vcc->dev->number,dma_size,TX_DMA_BUF);
+#else
+		;
+#endif
 	}
 	DPRINTK("dma_wr is %d, tx_pos is %ld\n",dma_wr,tx->tx_pos);
 	if (dma_wr != dma_rd && ((dma_rd+NR_DMA_TX-dma_wr) & (NR_DMA_TX-1)) <
 	     dma_size) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL "(itf %d): TX DMA full\n",
 		    vcc->dev->number);
+#else
+		;
+#endif
 		return enq_jam;
 	}
 	paddr = pci_map_single(eni_dev->pci_dev,skb->data,skb->len,
@@ -1150,7 +1262,11 @@ DPRINTK("doing direct send\n"); /* @@@ well, this doesn't work anyway */
 	    (aal5 ? MID_SEG_AAL5 : 0) | (tx->prescaler << MID_SEG_PR_SHIFT) |
 	    (tx->resolution << MID_SEG_RATE_SHIFT) |
 	    (size/(ATM_CELL_PAYLOAD/4)),tx->send+tx->tx_pos*4);
+#ifdef CONFIG_DEBUG_PRINTK
 /*printk("dsc = 0x%08lx\n",(unsigned long) readl(tx->send+tx->tx_pos*4));*/
+#else
+/*;
+#endif
 	writel((vcc->vci << MID_SEG_VCI_SHIFT) |
             (aal5 ? 0 : (skb->data[3] & 0xf)) |
 	    (ATM_SKB(skb)->atm_options & ATM_ATMOPT_CLP ? MID_SEG_CLP : 0),
@@ -1456,12 +1572,20 @@ static int start_tx(struct atm_dev *dev)
 
 static void foo(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO
   "tx_complete=%d,dma_complete=%d,queued=%d,requeued=%d,sub=%d,\n"
   "backlogged=%d,rx_enqueued=%d,rx_dequeued=%d,putting=%d,pushed=%d\n",
   tx_complete,dma_complete,queued,requeued,submitted,backlogged,
   rx_enqueued,rx_dequeued,putting,pushed);
+#else
+;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 if (eni_boards) printk(KERN_INFO "loss: %ld\n",ENI_DEV(eni_boards)->lost);
+#else
+if (eni_boards) ;
+#endif
 }
 
 #endif
@@ -1471,16 +1595,32 @@ static void bug_int(struct atm_dev *dev,unsigned long reason)
 {
 	DPRINTK(">bug_int\n");
 	if (reason & MID_DMA_ERR_ACK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "(itf %d): driver error - DMA "
 		    "error\n",dev->number);
+#else
+		;
+#endif
 	if (reason & MID_TX_IDENT_MISM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "(itf %d): driver error - ident "
 		    "mismatch\n",dev->number);
+#else
+		;
+#endif
 	if (reason & MID_TX_DMA_OVFL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DEV_LABEL "(itf %d): driver error - DMA "
 		    "overflow\n",dev->number);
+#else
+		;
+#endif
 	EVENT("---dump ends here---\n",0,0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "---recent events---\n");
+#else
+	;
+#endif
 	event_dump();
 }
 
@@ -1719,10 +1859,18 @@ static int __devinit eni_do_init(struct atm_dev *dev)
 		    "(0x%02x)\n",dev->number,error);
 		return -EIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d,base=0x%lx,irq=%d,",
 	    dev->number,pci_dev->revision,real_base,eni_dev->irq);
+#else
+	;
+#endif
 	if (!(base = ioremap_nocache(real_base,MAP_MAX_SIZE))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		printk(KERN_ERR DEV_LABEL "(itf %d): can't set up page "
 		    "mapping\n",dev->number);
 		return error;
@@ -1732,7 +1880,11 @@ static int __devinit eni_do_init(struct atm_dev *dev)
 	if (!eni_dev->asic) {
 		eprom = (base+EPROM_SIZE-sizeof(struct midway_eprom));
 		if (readl(&eprom->magic) != ENI155_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 			printk(KERN_ERR DEV_LABEL
 			       "(itf %d): bad magic - expected 0x%x, got 0x%x\n",
 			       dev->number, ENI155_MAGIC,
@@ -1759,10 +1911,18 @@ static int __devinit eni_do_init(struct atm_dev *dev)
 	eni_dev->mem = i;
 	memset_io(eni_dev->ram,0,eni_dev->mem);
 	/* TODO: should shrink allocation now */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("mem=%dkB (",eni_dev->mem >> 10);
+#else
+	;
+#endif
 	/* TODO: check for non-SUNI, check for TAXI ? */
 	if (!(eni_in(MID_RES_ID_MCON) & 0x200) != !eni_dev->asic) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(")\n");
+#else
+		;
+#endif
 		printk(KERN_ERR DEV_LABEL "(itf %d): ERROR - wrong id 0x%x\n",
 		    dev->number,(unsigned) eni_in(MID_RES_ID_MCON));
 		error = -EINVAL;
@@ -1772,11 +1932,23 @@ static int __devinit eni_do_init(struct atm_dev *dev)
 	if (error)
 		goto unmap;
 	for (i = 0; i < ESI_LEN; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%02X",i ? "-" : "",dev->esi[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(")\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE DEV_LABEL "(itf %d): %s,%s\n",dev->number,
 	    eni_in(MID_RES_ID_MCON) & 0x200 ? "ASIC" : "FPGA",
 	    media_name[eni_in(MID_RES_ID_MCON) & DAUGTHER_ID]);
+#else
+	;
+#endif
 
 	error = suni_init(dev);
 	if (error)
@@ -1986,8 +2158,12 @@ static int eni_ioctl(struct atm_dev *dev,unsigned int cmd,void __user *arg)
 
 	if (cmd == ENI_MEMDUMP) {
 		if (!capable(CAP_NET_ADMIN)) return -EPERM;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Please use /proc/atm/" DEV_LABEL ":%d "
 		    "instead of obsolete ioctl ENI_MEMDUMP\n",dev->number);
+#else
+		;
+#endif
 		dump(dev);
 		return 0;
 	}
@@ -2045,7 +2221,11 @@ static int eni_send(struct atm_vcc *vcc,struct sk_buff *skb)
 		return -EINVAL;
 	}
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "!skb in eni_send ?\n");
+#else
+		;
+#endif
 		if (vcc->pop) vcc->pop(vcc,skb);
 		return -EINVAL;
 	}

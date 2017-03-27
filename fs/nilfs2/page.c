@@ -172,17 +172,17 @@ void nilfs_page_bug(struct page *page)
 	unsigned long ino;
 
 	if (unlikely(!page)) {
-		printk(KERN_CRIT "NILFS_PAGE_BUG(NULL)\n");
+;
 		return;
 	}
 
 	m = page->mapping;
 	ino = m ? m->host->i_ino : 0;
 
-	printk(KERN_CRIT "NILFS_PAGE_BUG(%p): cnt=%d index#=%llu flags=0x%lx "
-	       "mapping=%p ino=%lu\n",
-	       page, atomic_read(&page->_count),
-	       (unsigned long long)page->index, page->flags, m, ino);
+//	printk(KERN_CRIT "NILFS_PAGE_BUG(%p): cnt=%d index#=%llu flags=0x%lx "
+//	       "mapping=%p ino=%lu\n",
+//	       page, atomic_read(&page->_count),
+;
 
 	if (page_has_buffers(page)) {
 		struct buffer_head *bh, *head;
@@ -190,10 +190,10 @@ void nilfs_page_bug(struct page *page)
 
 		bh = head = page_buffers(page);
 		do {
-			printk(KERN_CRIT
-			       " BH[%d] %p: cnt=%d block#=%llu state=0x%lx\n",
-			       i++, bh, atomic_read(&bh->b_count),
-			       (unsigned long long)bh->b_blocknr, bh->b_state);
+//			printk(KERN_CRIT
+//			       " BH[%d] %p: cnt=%d block#=%llu state=0x%lx\n",
+//			       i++, bh, atomic_read(&bh->b_count),
+;
 			bh = bh->b_this_page;
 		} while (bh != head);
 	}

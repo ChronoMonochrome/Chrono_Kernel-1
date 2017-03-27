@@ -79,7 +79,11 @@ static int __init edac_init(void)
 {
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_INFO, EDAC_MC, EDAC_VERSION "\n");
+#else
+	edac_;
+#endif
 
 	/*
 	 * Harvest and clear any boot/initialization PCI parity errors

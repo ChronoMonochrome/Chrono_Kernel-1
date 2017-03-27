@@ -173,8 +173,12 @@ static int ep93xx_wdt_release(struct inode *inode, struct file *file)
 	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
 		wdt_shutdown();
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Device closed unexpectedly - timer will not stop\n");
+#else
+		;
+#endif
 
 	clear_bit(WDT_IN_USE, &wdt_status);
 	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
@@ -214,16 +218,24 @@ static int __init ep93xx_wdt_init(void)
 
 	boot_status = __raw_readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "EP93XX watchdog, driver version "
 		WDT_VERSION "%s\n",
 		(__raw_readl(EP93XX_WDT_WATCHDOG) & 0x08)
 		? " (nCS1 disable detected)" : "");
+#else
+	;
+#endif
 
 	if (timeout < 1 || timeout > 3600) {
 		timeout = WDT_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1<=x<=3600, using %d\n",
 			timeout);
+#else
+		;
+#endif
 	}
 
 	setup_timer(&timer, ep93xx_timer_ping, 1);

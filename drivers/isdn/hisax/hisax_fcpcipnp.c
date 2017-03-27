@@ -492,7 +492,11 @@ static inline void hdlc_rpr_irq(struct fritz_bcs *bcs, u32 stat)
 		    (bcs->mode == L1_MODE_TRANS)) {
 			skb = dev_alloc_skb(bcs->rcvidx);
 			if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HDLC: receive out of memory\n");
+#else
+				;
+#endif
 			} else {
 				memcpy(skb_put(skb, bcs->rcvidx), bcs->rcvbuf,
 				       bcs->rcvidx);
@@ -900,8 +904,12 @@ static int __devinit fcpci_probe(struct pci_dev *pdev,
 	adapter->io = pci_resource_start(pdev, 1);
 	adapter->irq = pdev->irq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_fcpcipnp: found adapter %s at %s\n",
 	       (char *) ent->driver_data, pci_name(pdev));
+#else
+	;
+#endif
 
 	retval = fcpcipnp_setup(adapter);
 	if (retval)
@@ -936,15 +944,23 @@ static int __devinit fcpnp_probe(struct pnp_dev *pdev, const struct pnp_device_i
 	pnp_disable_dev(pdev);
 	retval = pnp_activate_dev(pdev);
 	if (retval < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: pnp_activate_dev(%s) ret(%d)\n", __func__,
 			(char *)dev_id->driver_data, retval);
+#else
+		;
+#endif
 		goto err_free;
 	}
 	adapter->io = pnp_port_start(pdev, 0);
 	adapter->irq = pnp_irq(pdev, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_fcpcipnp: found adapter %s at IO %#x irq %d\n",
 	       (char *) dev_id->driver_data, adapter->io, adapter->irq);
+#else
+	;
+#endif
 
 	retval = fcpcipnp_setup(adapter);
 	if (retval)
@@ -997,7 +1013,11 @@ static int __init hisax_fcpcipnp_init(void)
 {
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_fcpcipnp: Fritz!Card PCI/PCIv2/PnP ISDN driver v0.0.1\n");
+#else
+	;
+#endif
 
 	retval = pci_register_driver(&fcpci_driver);
 	if (retval)

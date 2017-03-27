@@ -218,8 +218,12 @@ static inline void print_dropped_signal(int sig)
 	if (!__ratelimit(&ratelimit_state))
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s/%d: reached RLIMIT_SIGPENDING, dropped signal %d\n",
 				current->comm, current->pid, sig);
+#else
+	;
+#endif
 }
 
 /**
@@ -1164,11 +1168,19 @@ static int send_signal(int sig, struct siginfo *info, struct task_struct *t,
 
 static void print_fatal_signal(struct pt_regs *regs, int signr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s/%d: potentially unexpected fatal signal %d.\n",
 		current->comm, task_pid_nr(current), signr);
+#else
+	;
+#endif
 
 #if defined(__i386__) && !defined(__arch_um__)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("code at %08lx: ", regs->ip);
+#else
+	;
+#endif
 	{
 		int i;
 		for (i = 0; i < 16; i++) {
@@ -1176,11 +1188,19 @@ static void print_fatal_signal(struct pt_regs *regs, int signr)
 
 			if (get_user(insn, (unsigned char *)(regs->ip + i)))
 				break;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", insn);
+#else
+			;
+#endif
 		}
 	}
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	preempt_disable();
 	show_regs(regs);
 	preempt_enable();

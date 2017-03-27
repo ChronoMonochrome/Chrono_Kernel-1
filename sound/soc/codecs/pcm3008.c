@@ -63,7 +63,11 @@ static int pcm3008_soc_probe(struct snd_soc_codec *codec)
 	struct pcm3008_setup_data *setup = codec->dev->platform_data;
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PCM3008 SoC Audio Codec %s\n", PCM3008_VERSION);
+#else
+	;
+#endif
 
 	/* DEM1  DEM0  DE-EMPHASIS_MODE
 	 * Low   Low   De-emphasis 44.1 kHz ON

@@ -153,7 +153,7 @@ struct workqueue_struct *cxgb3_wq;
 static void link_report(struct net_device *dev)
 {
 	if (!netif_carrier_ok(dev))
-		printk(KERN_INFO "%s: link down\n", dev->name);
+;
 	else {
 		const char *s = "10Mbps";
 		const struct port_info *p = netdev_priv(dev);
@@ -170,8 +170,8 @@ static void link_report(struct net_device *dev)
 			break;
 		}
 
-		printk(KERN_INFO "%s: link up, %s, %s-duplex\n", dev->name, s,
-		       p->link_config.duplex == DUPLEX_FULL ? "full" : "half");
+//		printk(KERN_INFO "%s: link up, %s, %s-duplex\n", dev->name, s,
+;
 	}
 }
 
@@ -318,10 +318,10 @@ void t3_os_phymod_changed(struct adapter *adap, int port_id)
 	const struct port_info *pi = netdev_priv(dev);
 
 	if (pi->phy.modtype == phy_modtype_none)
-		printk(KERN_INFO "%s: PHY module unplugged\n", dev->name);
+;
 	else
-		printk(KERN_INFO "%s: %s PHY module inserted\n", dev->name,
-		       mod_str[pi->phy.modtype]);
+//		printk(KERN_INFO "%s: %s PHY module inserted\n", dev->name,
+;
 }
 
 static void cxgb_set_rxmode(struct net_device *dev)
@@ -1377,8 +1377,8 @@ static int cxgb_open(struct net_device *dev)
 	if (is_offload(adapter) && !ofld_disable) {
 		err = offload_open(dev);
 		if (err)
-			printk(KERN_WARNING
-			       "Could not initialize offload capabilities\n");
+//			printk(KERN_WARNING
+;
 	}
 
 	netif_set_real_num_tx_queues(dev, pi->nqsets);
@@ -3106,18 +3106,18 @@ static void __devinit print_port_info(struct adapter *adap,
 
 		if (!test_bit(i, &adap->registered_device_map))
 			continue;
-		printk(KERN_INFO "%s: %s %s %sNIC (rev %d) %s%s\n",
-		       dev->name, ai->desc, pi->phy.desc,
-		       is_offload(adap) ? "R" : "", adap->params.rev, buf,
-		       (adap->flags & USING_MSIX) ? " MSI-X" :
-		       (adap->flags & USING_MSI) ? " MSI" : "");
+//		printk(KERN_INFO "%s: %s %s %sNIC (rev %d) %s%s\n",
+//		       dev->name, ai->desc, pi->phy.desc,
+//		       is_offload(adap) ? "R" : "", adap->params.rev, buf,
+//		       (adap->flags & USING_MSIX) ? " MSI-X" :
+;
 		if (adap->name == dev->name && adap->params.vpd.mclk)
-			printk(KERN_INFO
-			       "%s: %uMB CM, %uMB PMTX, %uMB PMRX, S/N: %s\n",
-			       adap->name, t3_mc7_size(&adap->cm) >> 20,
-			       t3_mc7_size(&adap->pmtx) >> 20,
-			       t3_mc7_size(&adap->pmrx) >> 20,
-			       adap->params.vpd.sn);
+//			printk(KERN_INFO
+//			       "%s: %uMB CM, %uMB PMTX, %uMB PMRX, S/N: %s\n",
+//			       adap->name, t3_mc7_size(&adap->cm) >> 20,
+//			       t3_mc7_size(&adap->pmtx) >> 20,
+//			       t3_mc7_size(&adap->pmrx) >> 20,
+;
 	}
 }
 
@@ -3157,15 +3157,15 @@ static int __devinit init_one(struct pci_dev *pdev,
 	struct port_info *pi;
 
 	if (!version_printed) {
-		printk(KERN_INFO "%s - version %s\n", DRV_DESC, DRV_VERSION);
+;
 		++version_printed;
 	}
 
 	if (!cxgb3_wq) {
 		cxgb3_wq = create_singlethread_workqueue(DRV_NAME);
 		if (!cxgb3_wq) {
-			printk(KERN_ERR DRV_NAME
-			       ": cannot initialize work queue\n");
+//			printk(KERN_ERR DRV_NAME
+;
 			return -ENOMEM;
 		}
 	}

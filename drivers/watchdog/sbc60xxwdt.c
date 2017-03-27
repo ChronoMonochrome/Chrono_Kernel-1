@@ -132,8 +132,12 @@ static void wdt_timer_ping(unsigned long data)
 		/* Re-set the timer interval */
 		mod_timer(&timer, jiffies + WDT_INTERVAL);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Heartbeat lost! Will not ping the watchdog\n");
+#else
+		;
+#endif
 }
 
 /*
@@ -146,7 +150,11 @@ static void wdt_startup(void)
 
 	/* Start the timer */
 	mod_timer(&timer, jiffies + WDT_INTERVAL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now enabled.\n");
+#else
+	;
+#endif
 }
 
 static void wdt_turnoff(void)
@@ -154,7 +162,11 @@ static void wdt_turnoff(void)
 	/* Stop the timer */
 	del_timer(&timer);
 	inb_p(wdt_stop);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now disabled...\n");
+#else
+	;
+#endif
 }
 
 static void wdt_keepalive(void)
@@ -217,8 +229,12 @@ static int fop_close(struct inode *inode, struct file *file)
 		wdt_turnoff();
 	else {
 		del_timer(&timer);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		  "device file closed unexpectedly. Will not stop the WDT!\n");
+#else
+		;
+#endif
 	}
 	clear_bit(0, &wdt_is_open);
 	wdt_expect_close = 0;
@@ -335,9 +351,13 @@ static int __init sbc60xxwdt_init(void)
 
 	if (timeout < 1 || timeout > 3600) { /* arbitrary upper limit */
 		timeout = WATCHDOG_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1 <= x <= 3600, using %d\n",
 								timeout);
+#else
+		;
+#endif
 	}
 
 	if (!request_region(wdt_start, 1, "SBC 60XX WDT")) {
@@ -372,9 +392,13 @@ static int __init sbc60xxwdt_init(void)
 						wdt_miscdev.minor, rc);
 		goto err_out_reboot;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"WDT driver for 60XX single board computer initialised. "
 		"timeout=%d sec (nowayout=%d)\n", timeout, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 

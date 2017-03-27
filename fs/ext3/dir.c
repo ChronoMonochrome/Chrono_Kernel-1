@@ -398,7 +398,7 @@ static int call_filldir(struct file * filp, void * dirent,
 	sb = inode->i_sb;
 
 	if (!fname) {
-		printk("call_filldir: called with null fname?!?\n");
+;
 		return 0;
 	}
 	curr_pos = hash2pos(fname->hash, fname->minor_hash);

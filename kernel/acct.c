@@ -141,12 +141,20 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
 	if (acct->active) {
 		if (act < 0) {
 			acct->active = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Process accounting paused\n");
+#else
+			;
+#endif
 		}
 	} else {
 		if (act > 0) {
 			acct->active = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Process accounting resumed\n");
+#else
+			;
+#endif
 		}
 	}
 

@@ -102,7 +102,7 @@ static int __devinit tms_pci_attach(struct pci_dev *pdev, const struct pci_devic
 	struct card_info *cardinfo = &card_info_table[ent->driver_data];
 
 	if (versionprinted++ == 0)
-		printk("%s", version);
+;
 
 	if (pci_enable_device(pdev))
 		return -EIO;

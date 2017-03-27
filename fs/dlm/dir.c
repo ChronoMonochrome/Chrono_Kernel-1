@@ -105,8 +105,8 @@ int dlm_hash2nodeid(struct dlm_ls *ls, uint32_t hash)
 		break;
 	}
 
-	DLM_ASSERT(memb , printk("num_nodes=%u n=%u node=%u\n",
-				 ls->ls_num_nodes, n, node););
+//	DLM_ASSERT(memb , printk("num_nodes=%u n=%u node=%u\n",
+;
 	nodeid = memb->nodeid;
  out:
 	return nodeid;

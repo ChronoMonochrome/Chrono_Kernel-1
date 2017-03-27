@@ -397,8 +397,8 @@ void rtl_init_rfkill(struct ieee80211_hw *hw)
 	radio_state = rtlpriv->cfg->ops->radio_onoff_checking(hw, &valid);
 
 	if (valid) {
-		printk(KERN_INFO "rtlwifi: wireless switch is %s\n",
-				rtlpriv->rfkill.rfkill_state ? "on" : "off");
+//		printk(KERN_INFO "rtlwifi: wireless switch is %s\n",
+;
 
 		rtlpriv->rfkill.rfkill_state = radio_state;
 
@@ -1366,11 +1366,11 @@ static ssize_t rtl_store_debug_level(struct device *d,
 
 	ret = strict_strtoul(buf, 0, &val);
 	if (ret) {
-		printk(KERN_DEBUG "%s is not in hex or decimal form.\n", buf);
+;
 	} else {
 		rtlpriv->dbg.global_debuglevel = val;
-		printk(KERN_DEBUG "debuglevel:%x\n",
-		       rtlpriv->dbg.global_debuglevel);
+//		printk(KERN_DEBUG "debuglevel:%x\n",
+;
 	}
 
 	return strnlen(buf, count);
@@ -1406,8 +1406,8 @@ MODULE_DESCRIPTION("Realtek 802.11n PCI wireless core");
 static int __init rtl_core_module_init(void)
 {
 	if (rtl_rate_control_register())
-		printk(KERN_ERR "rtlwifi: Unable to register rtl_rc,"
-		       "use default RC !!\n");
+//		printk(KERN_ERR "rtlwifi: Unable to register rtl_rc,"
+;
 
 	return 0;
 }

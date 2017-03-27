@@ -550,7 +550,11 @@ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	if (ret)
 		goto eecb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "geode-aes: GEODE AES engine enabled.\n");
+#else
+	;
+#endif
 	return 0;
 
  eecb:

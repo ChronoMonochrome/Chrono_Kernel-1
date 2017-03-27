@@ -84,7 +84,7 @@ static int sa1100_irda_rx_alloc(struct sa1100_irda *si)
 	si->rxskb = alloc_skb(HPSIR_MAX_RXLEN + 1, GFP_ATOMIC);
 
 	if (!si->rxskb) {
-		printk(KERN_ERR "sa1100_ir: out of memory for RX SKB\n");
+;
 		return -ENOMEM;
 	}
 
@@ -107,7 +107,7 @@ static int sa1100_irda_rx_alloc(struct sa1100_irda *si)
 static void sa1100_irda_rx_dma_start(struct sa1100_irda *si)
 {
 	if (!si->rxskb) {
-		printk(KERN_ERR "sa1100_ir: rx buffer went missing\n");
+;
 		return;
 	}
 
@@ -462,7 +462,7 @@ static void sa1100_irda_fir_error(struct sa1100_irda *si, struct net_device *dev
 	unsigned int len, stat, data;
 
 	if (!skb) {
-		printk(KERN_ERR "sa1100_ir: SKB is NULL!\n");
+;
 		return;
 	}
 
@@ -736,7 +736,7 @@ sa1100_irda_ioctl(struct net_device *dev, struct ifreq *ifreq, int cmd)
 				ret = sa1100_irda_set_speed(si,
 						rq->ifr_baudrate);
 			} else {
-				printk("sa1100_irda_ioctl: SIOCSBANDWIDTH: !netif_running\n");
+;
 				ret = 0;
 			}
 		}

@@ -177,23 +177,23 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 	}
 
 #ifndef final_version
-	printk(KERN_DEBUG "AC3200 ethercard configuration register is %#02x,"
-		   " EISA ID %02x %02x %02x %02x.\n", inb(ioaddr + AC_CONFIG),
-		   inb(ioaddr + AC_ID_PORT + 0), inb(ioaddr + AC_ID_PORT + 1),
-		   inb(ioaddr + AC_ID_PORT + 2), inb(ioaddr + AC_ID_PORT + 3));
+//	printk(KERN_DEBUG "AC3200 ethercard configuration register is %#02x,"
+//		   " EISA ID %02x %02x %02x %02x.\n", inb(ioaddr + AC_CONFIG),
+//		   inb(ioaddr + AC_ID_PORT + 0), inb(ioaddr + AC_ID_PORT + 1),
+;
 #endif
 
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = inb(ioaddr + AC_SA_PROM + i);
 
-	printk(KERN_DEBUG "AC3200 in EISA slot %d, node %pM",
-	       ioaddr/0x1000, dev->dev_addr);
+//	printk(KERN_DEBUG "AC3200 in EISA slot %d, node %pM",
+;
 #if 0
 	/* Check the vendor ID/prefix. Redundant after checking the EISA ID */
 	if (inb(ioaddr + AC_SA_PROM + 0) != AC_ADDR0
 		|| inb(ioaddr + AC_SA_PROM + 1) != AC_ADDR1
 		|| inb(ioaddr + AC_SA_PROM + 2) != AC_ADDR2 ) {
-		printk(", not found (invalid prefix).\n");
+;
 		retval = -ENODEV;
 		goto out;
 	}
@@ -202,10 +202,10 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 	/* Assign and allocate the interrupt now. */
 	if (dev->irq == 0) {
 		dev->irq = config2irq(inb(ioaddr + AC_CONFIG));
-		printk(", using");
+;
 	} else {
 		dev->irq = irq_canonicalize(dev->irq);
-		printk(", assigning");
+;
 	}
 
 	retval = request_irq(dev->irq, ei_interrupt, 0, DRV_NAME, dev);
@@ -214,7 +214,7 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 		goto out;
 	}
 
-	printk(" IRQ %d, %s port\n", dev->irq, port_name[dev->if_port]);
+;
 
 	dev->base_addr = ioaddr;
 
@@ -232,8 +232,8 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 	dev->if_port = inb(ioaddr + AC_CONFIG) >> 6;
 	dev->mem_start = config2mem(inb(ioaddr + AC_CONFIG));
 
-	printk("%s: AC3200 at %#3x with %dkB memory at physical address %#lx.\n",
-			dev->name, ioaddr, AC_STOP_PG/4, dev->mem_start);
+//	printk("%s: AC3200 at %#3x with %dkB memory at physical address %#lx.\n",
+;
 
 	/*
 	 *  BEWARE!! Some dain-bramaged EISA SCUs will allow you to put
@@ -243,14 +243,14 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 	 */
 	ei_status.mem = ioremap(dev->mem_start, AC_STOP_PG*0x100);
 	if (!ei_status.mem) {
-		printk(KERN_ERR "ac3200.c: Unable to remap card memory above 1MB !!\n");
-		printk(KERN_ERR "ac3200.c: Try using EISA SCU to set memory below 1MB.\n");
-		printk(KERN_ERR "ac3200.c: Driver NOT installed.\n");
+;
+;
+;
 		retval = -EINVAL;
 		goto out1;
 	}
-	printk("ac3200.c: remapped %dkB card memory to virtual address %p\n",
-			AC_STOP_PG/4, ei_status.mem);
+//	printk("ac3200.c: remapped %dkB card memory to virtual address %p\n",
+;
 
 	dev->mem_start = (unsigned long)ei_status.mem;
 	dev->mem_end = dev->mem_start + (AC_STOP_PG - AC_START_PG)*256;
@@ -262,7 +262,7 @@ static int __init ac_probe1(int ioaddr, struct net_device *dev)
 	ei_status.word16 = 1;
 
 	if (ei_debug > 0)
-		printk(version);
+;
 
 	ei_status.reset_8390 = &ac_reset_8390;
 	ei_status.block_input = &ac_block_input;
@@ -302,11 +302,11 @@ static void ac_reset_8390(struct net_device *dev)
 	ushort ioaddr = dev->base_addr;
 
 	outb(AC_RESET, ioaddr + AC_RESET_PORT);
-	if (ei_debug > 1) printk("resetting AC3200, t=%ld...", jiffies);
+;
 
 	ei_status.txing = 0;
 	outb(AC_ENABLE, ioaddr + AC_RESET_PORT);
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /* Grab the 8390 specific header. Similar to the block_input routine, but
@@ -351,7 +351,7 @@ static void ac_block_output(struct net_device *dev, int count,
 static int ac_close_card(struct net_device *dev)
 {
 	if (ei_debug > 1)
-		printk("%s: Shutting down ethercard.\n", dev->name);
+;
 
 #ifdef notyet
 	/* We should someday disable shared memory and interrupts. */
@@ -397,7 +397,7 @@ static int __init ac3200_module_init(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "ac3200.c: No ac3200 card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

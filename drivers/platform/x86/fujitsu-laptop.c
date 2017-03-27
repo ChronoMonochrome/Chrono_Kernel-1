@@ -130,11 +130,16 @@
 #define FUJLAPTOP_DBG_INFO	  0x0004
 #define FUJLAPTOP_DBG_TRACE	  0x0008
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dbg_printk(a_dbg_level, format, arg...) \
 	do { if (dbg_level & a_dbg_level) \
 		printk(FUJLAPTOP_DEBUG "%s: " format, __func__ , ## arg); \
+#else
+#define dbg_;
+#endif
 	} while (0)
 #ifdef CONFIG_FUJITSU_LAPTOP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define vdbg_printk(a_dbg_level, format, arg...) \
 	dbg_printk(a_dbg_level, format, ## arg)
 #else
@@ -144,6 +149,9 @@
 /* Device controlling the backlight and associated keys */
 struct fujitsu_t {
 	acpi_handle acpi_handle;
+#else
+#define vdbg_;
+#endif
 	struct acpi_device *dev;
 	struct input_dev *input;
 	char phys[32];
@@ -225,8 +233,12 @@ static int call_fext_func(int cmd, int arg0, int arg1, int arg2)
 
 	status = acpi_get_handle(fujitsu_hotkey->acpi_handle, "FUNC", &handle);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_ERROR,
 				"FUNC interface is not present\n");
+#else
+		vdbg_;
+#endif
 		return -ENODEV;
 	}
 
@@ -240,23 +252,35 @@ static int call_fext_func(int cmd, int arg0, int arg1, int arg2)
 
 	status = acpi_evaluate_object(handle, NULL, &arg_list, &output);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_WARN,
 			"FUNC 0x%x (args 0x%x, 0x%x, 0x%x) call failed\n",
 				cmd, arg0, arg1, arg2);
+#else
+		vdbg_;
+#endif
 		return -ENODEV;
 	}
 
 	if (out_obj.type != ACPI_TYPE_INTEGER) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_WARN,
 			"FUNC 0x%x (args 0x%x, 0x%x, 0x%x) did not "
 			"return an integer\n",
 			cmd, arg0, arg1, arg2);
+#else
+		vdbg_;
+#endif
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_TRACE,
 		"FUNC 0x%x (args 0x%x, 0x%x, 0x%x) returned 0x%x\n",
 			cmd, arg0, arg1, arg2, (int)out_obj.integer.value);
+#else
+	vdbg_;
+#endif
 	return out_obj.integer.value;
 }
 
@@ -321,15 +345,23 @@ static int set_lcd_level(int level)
 	struct acpi_object_list arg_list = { 1, &arg0 };
 	acpi_handle handle = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_TRACE, "set lcd level via SBLL [%d]\n",
 		    level);
+#else
+	vdbg_;
+#endif
 
 	if (level < 0 || level >= fujitsu->max_brightness)
 		return -EINVAL;
 
 	status = acpi_get_handle(fujitsu->acpi_handle, "SBLL", &handle);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_ERROR, "SBLL not present\n");
+#else
+		vdbg_;
+#endif
 		return -ENODEV;
 	}
 
@@ -349,15 +381,23 @@ static int set_lcd_level_alt(int level)
 	struct acpi_object_list arg_list = { 1, &arg0 };
 	acpi_handle handle = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_TRACE, "set lcd level via SBL2 [%d]\n",
 		    level);
+#else
+	vdbg_;
+#endif
 
 	if (level < 0 || level >= fujitsu->max_brightness)
 		return -EINVAL;
 
 	status = acpi_get_handle(fujitsu->acpi_handle, "SBL2", &handle);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_ERROR, "SBL2 not present\n");
+#else
+		vdbg_;
+#endif
 		return -ENODEV;
 	}
 
@@ -375,7 +415,11 @@ static int get_lcd_level(void)
 	unsigned long long state = 0;
 	acpi_status status = AE_OK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_TRACE, "get lcd level via GBLL\n");
+#else
+	vdbg_;
+#endif
 
 	status =
 	    acpi_evaluate_integer(fujitsu->acpi_handle, "GBLL", NULL, &state);
@@ -397,7 +441,11 @@ static int get_max_brightness(void)
 	unsigned long long state = 0;
 	acpi_status status = AE_OK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_TRACE, "get max lcd level via RBLL\n");
+#else
+	vdbg_;
+#endif
 
 	status =
 	    acpi_evaluate_integer(fujitsu->acpi_handle, "RBLL", NULL, &state);
@@ -424,18 +472,26 @@ static int bl_update_status(struct backlight_device *b)
 	else
 		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x0);
 	if (ret != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_ERROR,
 			"Unable to adjust backlight power, error code %i\n",
 			ret);
+#else
+		vdbg_;
+#endif
 
 	if (use_alt_lcd_levels)
 		ret = set_lcd_level_alt(b->props.brightness);
 	else
 		ret = set_lcd_level(b->props.brightness);
 	if (ret != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_ERROR,
 			"Unable to adjust LCD brightness, error code %i\n",
 			ret);
+#else
+		vdbg_;
+#endif
 	return ret;
 }
 
@@ -594,8 +650,12 @@ static void dmi_check_cb_common(const struct dmi_system_id *id)
 			use_alt_lcd_levels = 1;
 		else
 			use_alt_lcd_levels = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_TRACE, "auto-detected usealt as "
 			"%i\n", use_alt_lcd_levels);
+#else
+		vdbg_;
+#endif
 	}
 }
 
@@ -704,7 +764,11 @@ static int acpi_fujitsu_add(struct acpi_device *device)
 
 	if (ACPI_SUCCESS
 	    (acpi_get_handle(device->handle, METHOD_NAME__INI, &handle))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_INFO, "Invoking _INI\n");
+#else
+		vdbg_;
+#endif
 		if (ACPI_FAILURE
 		    (acpi_evaluate_object
 		     (device->handle, METHOD_NAME__INI, NULL, NULL)))
@@ -714,9 +778,13 @@ static int acpi_fujitsu_add(struct acpi_device *device)
 	/* do config (detect defaults) */
 	use_alt_lcd_levels = use_alt_lcd_levels == 1 ? 1 : 0;
 	disable_brightness_adjust = disable_brightness_adjust == 1 ? 1 : 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_INFO,
 		    "config: [alt interface: %d], [adjust disable: %d]\n",
 		    use_alt_lcd_levels, disable_brightness_adjust);
+#else
+	vdbg_;
+#endif
 
 	if (get_max_brightness() <= 0)
 		fujitsu->max_brightness = FUJITSU_LCD_N_LEVELS;
@@ -762,9 +830,13 @@ static void acpi_fujitsu_notify(struct acpi_device *device, u32 event)
 		get_lcd_level();
 		newb = fujitsu->brightness_level;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_TRACE,
 			    "brightness button event [%i -> %i (%i)]\n",
 			    oldb, newb, fujitsu->brightness_changed);
+#else
+		vdbg_;
+#endif
 
 		if (oldb < newb) {
 			if (disable_brightness_adjust != 1) {
@@ -790,8 +862,12 @@ static void acpi_fujitsu_notify(struct acpi_device *device, u32 event)
 		break;
 	default:
 		keycode = KEY_UNKNOWN;
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_WARN,
 			    "unsupported event [0x%x]\n", event);
+#else
+		vdbg_;
+#endif
 		break;
 	}
 
@@ -872,7 +948,11 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
 
 	if (ACPI_SUCCESS
 	    (acpi_get_handle(device->handle, METHOD_NAME__INI, &handle))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_INFO, "Invoking _INI\n");
+#else
+		vdbg_;
+#endif
 		if (ACPI_FAILURE
 		    (acpi_evaluate_object
 		     (device->handle, METHOD_NAME__INI, NULL, NULL)))
@@ -883,7 +963,11 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
 	while (call_fext_func(FUNC_BUTTONS, 0x1, 0x0, 0x0) != 0
 		&& (i++) < MAX_HOTKEY_RINGBUFFER_SIZE)
 		; /* No action, result is discarded */
+#ifdef CONFIG_DEBUG_PRINTK
 	vdbg_printk(FUJLAPTOP_DBG_INFO, "Discarded %i ringbuffer entries\n", i);
+#else
+	vdbg_;
+#endif
 
 	fujitsu_hotkey->rfkill_supported =
 		call_fext_func(FUNC_RFKILL, 0x0, 0x0, 0x0);
@@ -996,23 +1080,35 @@ static void acpi_fujitsu_hotkey_notify(struct acpi_device *device, u32 event)
 				keycode = 0;
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				vdbg_printk(FUJLAPTOP_DBG_WARN,
 					    "Unknown GIRB result [%x]\n", irb);
+#else
+				vdbg_;
+#endif
 				keycode = -1;
 				break;
 			}
 			if (keycode > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				vdbg_printk(FUJLAPTOP_DBG_TRACE,
 					"Push keycode into ringbuffer [%d]\n",
 					keycode);
+#else
+				vdbg_;
+#endif
 				status = kfifo_in_locked(&fujitsu_hotkey->fifo,
 						   (unsigned char *)&keycode,
 						   sizeof(keycode),
 						   &fujitsu_hotkey->fifo_lock);
 				if (status != sizeof(keycode)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					vdbg_printk(FUJLAPTOP_DBG_WARN,
 					    "Could not push keycode [0x%x]\n",
 					    keycode);
+#else
+					vdbg_;
+#endif
 				} else {
 					input_report_key(input, keycode, 1);
 					input_sync(input);
@@ -1027,9 +1123,13 @@ static void acpi_fujitsu_hotkey_notify(struct acpi_device *device, u32 event)
 					 == sizeof(keycode_r)) {
 					input_report_key(input, keycode_r, 0);
 					input_sync(input);
+#ifdef CONFIG_DEBUG_PRINTK
 					vdbg_printk(FUJLAPTOP_DBG_TRACE,
 					  "Pop keycode from ringbuffer [%d]\n",
 					  keycode_r);
+#else
+					vdbg_;
+#endif
 				}
 			}
 		}
@@ -1037,8 +1137,12 @@ static void acpi_fujitsu_hotkey_notify(struct acpi_device *device, u32 event)
 		break;
 	default:
 		keycode = KEY_UNKNOWN;
+#ifdef CONFIG_DEBUG_PRINTK
 		vdbg_printk(FUJLAPTOP_DBG_WARN,
 			    "Unsupported event [0x%x]\n", event);
+#else
+		vdbg_;
+#endif
 		input_report_key(input, keycode, 1);
 		input_sync(input);
 		input_report_key(input, keycode, 0);

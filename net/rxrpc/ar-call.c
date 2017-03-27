@@ -479,8 +479,8 @@ void rxrpc_release_call(struct rxrpc_call *call)
 			       conn->channels[3] == NULL);
 			break;
 		default:
-			printk(KERN_ERR "RxRPC: conn->avail_calls=%d\n",
-			       conn->avail_calls);
+//			printk(KERN_ERR "RxRPC: conn->avail_calls=%d\n",
+;
 			BUG();
 		}
 	}
@@ -743,16 +743,16 @@ void __exit rxrpc_destroy_all_calls(void)
 			if (call->state != RXRPC_CALL_DEAD)
 				break;
 		default:
-			printk(KERN_ERR "RXRPC:"
-			       " Call %p still in use (%d,%d,%s,%lx,%lx)!\n",
-			       call, atomic_read(&call->usage),
-			       atomic_read(&call->ackr_not_idle),
-			       rxrpc_call_states[call->state],
-			       call->flags, call->events);
+//			printk(KERN_ERR "RXRPC:"
+//			       " Call %p still in use (%d,%d,%s,%lx,%lx)!\n",
+//			       call, atomic_read(&call->usage),
+//			       atomic_read(&call->ackr_not_idle),
+//			       rxrpc_call_states[call->state],
+;
 			if (!skb_queue_empty(&call->rx_queue))
-				printk(KERN_ERR"RXRPC: Rx queue occupied\n");
+;
 			if (!skb_queue_empty(&call->rx_oos_queue))
-				printk(KERN_ERR"RXRPC: OOS queue occupied\n");
+;
 			break;
 		}
 

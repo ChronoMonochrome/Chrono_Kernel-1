@@ -18,11 +18,11 @@ void lmcConsoleLog(char *type, unsigned char *ucData, int iLen)
   pstr = str+strlen(str);
   
   if(iLen > 240){
-      printk(KERN_DEBUG "lmc: Printing 240 chars... out of: %d\n", iLen);
+;
     iLen = 240;
   }
   else{
-      printk(KERN_DEBUG "lmc: Printing %d chars\n", iLen);
+;
   }
 
   while(iLen > 0) 
@@ -33,7 +33,7 @@ void lmcConsoleLog(char *type, unsigned char *ucData, int iLen)
       if( !(iNewLine % 20))
 	{
 	  sprintf(pstr, "\n");
-	  printk(str);
+;
 	  sprintf(str, KERN_DEBUG "lmc: %s: ", type);
 	  pstr=str+strlen(str);
 	}
@@ -41,7 +41,7 @@ void lmcConsoleLog(char *type, unsigned char *ucData, int iLen)
       iLen--;
     }
   sprintf(pstr, "\n");
-  printk(str);
+;
 }
 #endif
 #endif
@@ -71,7 +71,7 @@ void lmc_trace(struct net_device *dev, char *msg){
 //            ;
     }
     else {
-        printk("%s: %s\n", dev->name, msg);
+;
         while(time_before(jiffies, j))
             schedule();
     }

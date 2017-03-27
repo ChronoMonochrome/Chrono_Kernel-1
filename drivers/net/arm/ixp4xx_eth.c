@@ -428,7 +428,7 @@ static int ixp4xx_mdio_cmd(struct mii_bus *bus, int phy_id, int location,
 	int cycles = 0;
 
 	if (__raw_readl(&mdio_regs->mdio_command[3]) & 0x80) {
-		printk(KERN_ERR "%s: MII not ready to transmit\n", bus->name);
+;
 		return -1;
 	}
 
@@ -448,14 +448,14 @@ static int ixp4xx_mdio_cmd(struct mii_bus *bus, int phy_id, int location,
 	}
 
 	if (cycles == MAX_MDIO_RETRIES) {
-		printk(KERN_ERR "%s #%i: MII write failed\n", bus->name,
-		       phy_id);
+//		printk(KERN_ERR "%s #%i: MII write failed\n", bus->name,
+;
 		return -1;
 	}
 
 #if DEBUG_MDIO
-	printk(KERN_DEBUG "%s #%i: mdio_%s() took %i cycles\n", bus->name,
-	       phy_id, write ? "write" : "read", cycles);
+//	printk(KERN_DEBUG "%s #%i: mdio_%s() took %i cycles\n", bus->name,
+;
 #endif
 
 	if (write)
@@ -463,8 +463,8 @@ static int ixp4xx_mdio_cmd(struct mii_bus *bus, int phy_id, int location,
 
 	if (__raw_readl(&mdio_regs->mdio_status[3]) & 0x80) {
 #if DEBUG_MDIO
-		printk(KERN_DEBUG "%s #%i: MII read failed\n", bus->name,
-		       phy_id);
+//		printk(KERN_DEBUG "%s #%i: MII read failed\n", bus->name,
+;
 #endif
 		return 0xFFFF; /* don't return error */
 	}
@@ -482,8 +482,8 @@ static int ixp4xx_mdio_read(struct mii_bus *bus, int phy_id, int location)
 	ret = ixp4xx_mdio_cmd(bus, phy_id, location, 0, 0);
 	spin_unlock_irqrestore(&mdio_lock, flags);
 #if DEBUG_MDIO
-	printk(KERN_DEBUG "%s #%i: MII read [%i] -> 0x%X\n", bus->name,
-	       phy_id, location, ret);
+//	printk(KERN_DEBUG "%s #%i: MII read [%i] -> 0x%X\n", bus->name,
+;
 #endif
 	return ret;
 }
@@ -498,8 +498,8 @@ static int ixp4xx_mdio_write(struct mii_bus *bus, int phy_id, int location,
 	ret = ixp4xx_mdio_cmd(bus, phy_id, location, 1, val);
 	spin_unlock_irqrestore(&mdio_lock, flags);
 #if DEBUG_MDIO
-	printk(KERN_DEBUG "%s #%i: MII write [%i] <- 0x%X, err = %i\n",
-	       bus->name, phy_id, location, val, ret);
+//	printk(KERN_DEBUG "%s #%i: MII write [%i] <- 0x%X, err = %i\n",
+;
 #endif
 	return ret;
 }
@@ -550,7 +550,7 @@ static void ixp4xx_adjust_link(struct net_device *dev)
 	if (!phydev->link) {
 		if (port->speed) {
 			port->speed = 0;
-			printk(KERN_INFO "%s: link down\n", dev->name);
+;
 		}
 		return;
 	}
@@ -568,8 +568,8 @@ static void ixp4xx_adjust_link(struct net_device *dev)
 		__raw_writel(DEFAULT_TX_CNTRL0 | TX_CNTRL0_HALFDUPLEX,
 			     &port->regs->tx_control[0]);
 
-	printk(KERN_INFO "%s: link up, speed %u Mb/s, %s duplex\n",
-	       dev->name, port->speed, port->duplex ? "full" : "half");
+//	printk(KERN_INFO "%s: link up, speed %u Mb/s, %s duplex\n",
+;
 }
 
 
@@ -579,15 +579,15 @@ static inline void debug_pkt(struct net_device *dev, const char *func,
 #if DEBUG_PKT_BYTES
 	int i;
 
-	printk(KERN_DEBUG "%s: %s(%i) ", dev->name, func, len);
+;
 	for (i = 0; i < len; i++) {
 		if (i >= DEBUG_PKT_BYTES)
 			break;
-		printk("%s%02X",
-		       ((i == 6) || (i == 12) || (i >= 14)) ? " " : "",
-		       data[i]);
+//		printk("%s%02X",
+//		       ((i == 6) || (i == 12) || (i >= 14)) ? " " : "",
+;
 	}
-	printk("\n");
+;
 #endif
 }
 
@@ -595,15 +595,15 @@ static inline void debug_pkt(struct net_device *dev, const char *func,
 static inline void debug_desc(u32 phys, struct desc *desc)
 {
 #if DEBUG_DESC
-	printk(KERN_DEBUG "%X: %X %3X %3X %08X %2X < %2X %4X %X"
-	       " %X %X %02X%02X%02X%02X%02X%02X < %02X%02X%02X%02X%02X%02X\n",
-	       phys, desc->next, desc->buf_len, desc->pkt_len,
-	       desc->data, desc->dest_id, desc->src_id, desc->flags,
-	       desc->qos, desc->padlen, desc->vlan_tci,
-	       desc->dst_mac_0, desc->dst_mac_1, desc->dst_mac_2,
-	       desc->dst_mac_3, desc->dst_mac_4, desc->dst_mac_5,
-	       desc->src_mac_0, desc->src_mac_1, desc->src_mac_2,
-	       desc->src_mac_3, desc->src_mac_4, desc->src_mac_5);
+//	printk(KERN_DEBUG "%X: %X %3X %3X %08X %2X < %2X %4X %X"
+//	       " %X %X %02X%02X%02X%02X%02X%02X < %02X%02X%02X%02X%02X%02X\n",
+//	       phys, desc->next, desc->buf_len, desc->pkt_len,
+//	       desc->data, desc->dest_id, desc->src_id, desc->flags,
+//	       desc->qos, desc->padlen, desc->vlan_tci,
+//	       desc->dst_mac_0, desc->dst_mac_1, desc->dst_mac_2,
+//	       desc->dst_mac_3, desc->dst_mac_4, desc->dst_mac_5,
+//	       desc->src_mac_0, desc->src_mac_1, desc->src_mac_2,
+;
 #endif
 }
 
@@ -656,7 +656,7 @@ static void eth_rx_irq(void *pdev)
 	struct port *port = netdev_priv(dev);
 
 #if DEBUG_RX
-	printk(KERN_DEBUG "%s: eth_rx_irq\n", dev->name);
+;
 #endif
 	qmgr_disable_irq(port->plat->rxq);
 	napi_schedule(&port->napi);
@@ -670,7 +670,7 @@ static int eth_poll(struct napi_struct *napi, int budget)
 	int received = 0;
 
 #if DEBUG_RX
-	printk(KERN_DEBUG "%s: eth_poll\n", dev->name);
+;
 #endif
 
 	while (received < budget) {
@@ -684,24 +684,24 @@ static int eth_poll(struct napi_struct *napi, int budget)
 
 		if ((n = queue_get_desc(rxq, port, 0)) < 0) {
 #if DEBUG_RX
-			printk(KERN_DEBUG "%s: eth_poll napi_complete\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: eth_poll napi_complete\n",
+;
 #endif
 			napi_complete(napi);
 			qmgr_enable_irq(rxq);
 			if (!qmgr_stat_below_low_watermark(rxq) &&
 			    napi_reschedule(napi)) { /* not empty again */
 #if DEBUG_RX
-				printk(KERN_DEBUG "%s: eth_poll"
-				       " napi_reschedule successed\n",
-				       dev->name);
+//				printk(KERN_DEBUG "%s: eth_poll"
+//				       " napi_reschedule successed\n",
+;
 #endif
 				qmgr_disable_irq(rxq);
 				continue;
 			}
 #if DEBUG_RX
-			printk(KERN_DEBUG "%s: eth_poll all done\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: eth_poll all done\n",
+;
 #endif
 			return received; /* all work done */
 		}
@@ -766,7 +766,7 @@ static int eth_poll(struct napi_struct *napi, int budget)
 	}
 
 #if DEBUG_RX
-	printk(KERN_DEBUG "eth_poll(): end, not all work done\n");
+;
 #endif
 	return received;		/* not all work done */
 }
@@ -777,7 +777,7 @@ static void eth_txdone_irq(void *unused)
 	u32 phys;
 
 #if DEBUG_TX
-	printk(KERN_DEBUG DRV_NAME ": eth_txdone_irq\n");
+;
 #endif
 	while ((phys = qmgr_get_entry(TXDONE_QUEUE)) != 0) {
 		u32 npe_id, n_desc;
@@ -801,8 +801,8 @@ static void eth_txdone_irq(void *unused)
 
 			dma_unmap_tx(port, desc);
 #if DEBUG_TX
-			printk(KERN_DEBUG "%s: eth_txdone_irq free %p\n",
-			       port->netdev->name, port->tx_buff_tab[n_desc]);
+//			printk(KERN_DEBUG "%s: eth_txdone_irq free %p\n",
+;
 #endif
 			free_buffer_irq(port->tx_buff_tab[n_desc]);
 			port->tx_buff_tab[n_desc] = NULL;
@@ -812,8 +812,8 @@ static void eth_txdone_irq(void *unused)
 		queue_put_desc(port->plat->txreadyq, phys, desc);
 		if (start) { /* TX-ready queue was empty */
 #if DEBUG_TX
-			printk(KERN_DEBUG "%s: eth_txdone_irq xmit ready\n",
-			       port->netdev->name);
+//			printk(KERN_DEBUG "%s: eth_txdone_irq xmit ready\n",
+;
 #endif
 			netif_wake_queue(port->netdev);
 		}
@@ -830,7 +830,7 @@ static int eth_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct desc *desc;
 
 #if DEBUG_TX
-	printk(KERN_DEBUG "%s: eth_xmit\n", dev->name);
+;
 #endif
 
 	if (unlikely(skb->len > MAX_MRU)) {
@@ -885,22 +885,22 @@ static int eth_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	if (qmgr_stat_below_low_watermark(txreadyq)) { /* empty */
 #if DEBUG_TX
-		printk(KERN_DEBUG "%s: eth_xmit queue full\n", dev->name);
+;
 #endif
 		netif_stop_queue(dev);
 		/* we could miss TX ready interrupt */
 		/* really empty in fact */
 		if (!qmgr_stat_below_low_watermark(txreadyq)) {
 #if DEBUG_TX
-			printk(KERN_DEBUG "%s: eth_xmit ready again\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: eth_xmit ready again\n",
+;
 #endif
 			netif_wake_queue(dev);
 		}
 	}
 
 #if DEBUG_TX
-	printk(KERN_DEBUG "%s: eth_xmit end\n", dev->name);
+;
 #endif
 
 	ixp_tx_timestamp(port, skb);
@@ -1051,8 +1051,8 @@ rel_rx:
 	qmgr_release_queue(port->plat->rxq);
 rel_rxfree:
 	qmgr_release_queue(RXFREE_QUEUE(port->id));
-	printk(KERN_DEBUG "%s: unable to request hardware queues\n",
-	       port->netdev->name);
+//	printk(KERN_DEBUG "%s: unable to request hardware queues\n",
+;
 	return err;
 }
 
@@ -1157,8 +1157,8 @@ static int eth_open(struct net_device *dev)
 			return err;
 
 		if (npe_recv_message(npe, &msg, "ETH_GET_STATUS")) {
-			printk(KERN_ERR "%s: %s not responding\n", dev->name,
-			       npe_name(npe));
+//			printk(KERN_ERR "%s: %s not responding\n", dev->name,
+;
 			return -EIO;
 		}
 		port->firmware[0] = msg.byte4;
@@ -1270,7 +1270,7 @@ static int eth_close(struct net_device *dev)
 	msg.eth_id = port->id;
 	msg.byte3 = 1;
 	if (npe_send_recv_message(port->npe, &msg, "ETH_ENABLE_LOOPBACK"))
-		printk(KERN_CRIT "%s: unable to enable loopback\n", dev->name);
+;
 
 	i = 0;
 	do {			/* drain RX buffers */
@@ -1294,11 +1294,11 @@ static int eth_close(struct net_device *dev)
 	} while (++i < MAX_CLOSE_WAIT);
 
 	if (buffs)
-		printk(KERN_CRIT "%s: unable to drain RX queue, %i buffer(s)"
-		       " left in NPE\n", dev->name, buffs);
+//		printk(KERN_CRIT "%s: unable to drain RX queue, %i buffer(s)"
+;
 #if DEBUG_CLOSE
 	if (!buffs)
-		printk(KERN_DEBUG "Draining RX queue took %i cycles\n", i);
+;
 #endif
 
 	buffs = TX_DESCS;
@@ -1314,17 +1314,17 @@ static int eth_close(struct net_device *dev)
 	} while (++i < MAX_CLOSE_WAIT);
 
 	if (buffs)
-		printk(KERN_CRIT "%s: unable to drain TX queue, %i buffer(s) "
-		       "left in NPE\n", dev->name, buffs);
+//		printk(KERN_CRIT "%s: unable to drain TX queue, %i buffer(s) "
+;
 #if DEBUG_CLOSE
 	if (!buffs)
-		printk(KERN_DEBUG "Draining TX queues took %i cycles\n", i);
+;
 #endif
 
 	msg.byte3 = 0;
 	if (npe_send_recv_message(port->npe, &msg, "ETH_DISABLE_LOOPBACK"))
-		printk(KERN_CRIT "%s: unable to disable loopback\n",
-		       dev->name);
+//		printk(KERN_CRIT "%s: unable to disable loopback\n",
+;
 
 	phy_stop(port->phydev);
 
@@ -1428,8 +1428,8 @@ static int __devinit eth_init_one(struct platform_device *pdev)
 	if ((err = register_netdev(dev)))
 		goto err_phy_dis;
 
-	printk(KERN_INFO "%s: MII PHY %i on %s\n", dev->name, plat->phy,
-	       npe_name(port->npe));
+//	printk(KERN_INFO "%s: MII PHY %i on %s\n", dev->name, plat->phy,
+;
 
 	return 0;
 

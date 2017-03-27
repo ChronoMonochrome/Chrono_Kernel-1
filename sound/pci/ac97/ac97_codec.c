@@ -1672,8 +1672,12 @@ static int snd_ac97_modem_build(struct snd_card *card, struct snd_ac97 * ac97)
 	int err, idx;
 
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "AC97_GPIO_CFG = %x\n",
 	       snd_ac97_read(ac97,AC97_GPIO_CFG));
+#else
+	;
+#endif
 	*/
 	snd_ac97_write(ac97, AC97_GPIO_CFG, 0xffff & ~(AC97_GPIO_LINE1_OH));
 	snd_ac97_write(ac97, AC97_GPIO_POLARITY, 0xffff & ~(AC97_GPIO_LINE1_OH));
@@ -2088,7 +2092,11 @@ int snd_ac97_mixer(struct snd_ac97_bus *bus, struct snd_ac97_template *template,
 						      msecs_to_jiffies(500), 1);
 		}
 		if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "AC'97 %d does not respond - RESET\n", ac97->num);
+#else
+			;
+#endif
 			/* proceed anyway - it's often non-critical */
 		}
 	}
@@ -2155,7 +2163,11 @@ int snd_ac97_mixer(struct snd_ac97_bus *bus, struct snd_ac97_template *template,
 				goto __ready_ok;
 			schedule_timeout_uninterruptible(1);
 		} while (time_after_eq(end_time, jiffies));
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "AC'97 %d analog subsections not ready\n", ac97->num);
+#else
+		;
+#endif
 	}
 
 	/* FIXME: add powerdown control */
@@ -2187,7 +2199,11 @@ int snd_ac97_mixer(struct snd_ac97_bus *bus, struct snd_ac97_template *template,
 				goto __ready_ok;
 			schedule_timeout_uninterruptible(1);
 		} while (time_after_eq(end_time, jiffies));
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "MC'97 %d converters and GPIO not ready (0x%x)\n", ac97->num, snd_ac97_read(ac97, AC97_EXTENDED_MSTATUS));
+#else
+		;
+#endif
 	}
 	
       __ready_ok:

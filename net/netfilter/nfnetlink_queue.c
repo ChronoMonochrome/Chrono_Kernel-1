@@ -365,7 +365,7 @@ nfqnl_build_packet_message(struct nfqnl_instance *queue,
 		int sz = nla_attr_size(data_len);
 
 		if (skb_tailroom(skb) < nla_total_size(data_len)) {
-			printk(KERN_WARNING "nf_queue: no tailroom!\n");
+;
 			goto nlmsg_failure;
 		}
 
@@ -385,7 +385,7 @@ nla_put_failure:
 	if (skb)
 		kfree_skb(skb);
 	if (net_ratelimit())
-		printk(KERN_ERR "nf_queue: error creating packet message\n");
+;
 	return NULL;
 }
 
@@ -423,9 +423,9 @@ nfqnl_enqueue_packet(struct nf_queue_entry *entry, unsigned int queuenum)
 	if (queue->queue_total >= queue->queue_maxlen) {
 		queue->queue_dropped++;
 		if (net_ratelimit())
-			  printk(KERN_WARNING "nf_queue: full at %d entries, "
-				 "dropping packets(s).\n",
-				 queue->queue_total);
+//			  printk(KERN_WARNING "nf_queue: full at %d entries, "
+//				 "dropping packets(s).\n",
+;
 		goto err_out_free_nskb;
 	}
 	entry->id = ++queue->id_sequence;
@@ -468,8 +468,8 @@ nfqnl_mangle(void *data, int data_len, struct nf_queue_entry *e)
 			nskb = skb_copy_expand(e->skb, skb_headroom(e->skb),
 					       diff, GFP_ATOMIC);
 			if (!nskb) {
-				printk(KERN_WARNING "nf_queue: OOM "
-				      "in mangle, dropping packet\n");
+//				printk(KERN_WARNING "nf_queue: OOM "
+;
 				return -ENOMEM;
 			}
 			kfree_skb(e->skb);
@@ -984,7 +984,7 @@ static int __init nfnetlink_queue_init(void)
 	netlink_register_notifier(&nfqnl_rtnl_notifier);
 	status = nfnetlink_subsys_register(&nfqnl_subsys);
 	if (status < 0) {
-		printk(KERN_ERR "nf_queue: failed to create netlink socket\n");
+;
 		goto cleanup_netlink_notifier;
 	}
 

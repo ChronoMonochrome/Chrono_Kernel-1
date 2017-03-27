@@ -109,14 +109,22 @@ static void ams_worker(struct work_struct *work)
 
 	if (ams_info.worker_irqs & AMS_IRQ_FREEFALL) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ams: freefall detected!\n");
+#else
+			;
+#endif
 
 		ams_info.worker_irqs &= ~AMS_IRQ_FREEFALL;
 	}
 
 	if (ams_info.worker_irqs & AMS_IRQ_SHOCK) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ams: shock detected!\n");
+#else
+			;
+#endif
 
 		ams_info.worker_irqs &= ~AMS_IRQ_SHOCK;
 	}

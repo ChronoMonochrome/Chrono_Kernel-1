@@ -268,9 +268,13 @@ static int printk_cmp(const void *a, const void *b)
 	return 0;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 static struct printk_map *find_printk(unsigned long long addr)
 {
 	struct printk_map *printk;
+#else
+static struct printk_map *find_;
+#endif
 	struct printk_map key;
 
 	key.addr = addr;
@@ -281,10 +285,14 @@ static struct printk_map *find_printk(unsigned long long addr)
 	return printk;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 void parse_ftrace_printk(char *file, unsigned int size __unused)
 {
 	struct printk_list {
 		struct printk_list	*next;
+#else
+void parse_ftrace_;
+#endif
 		unsigned long long	addr;
 		char			*printk;
 	} *list = NULL, *item;
@@ -325,9 +333,13 @@ void parse_ftrace_printk(char *file, unsigned int size __unused)
 	qsort(printk_list, printk_count, sizeof(*printk_list), printk_cmp);
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 void print_printk(void)
 {
 	int i;
+#else
+void print_;
+#endif
 
 	for (i = 0; i < (int)printk_count; i++) {
 		printf("%016llx %s\n",
@@ -2443,7 +2455,11 @@ static char *get_bprint_format(void *data, int size __unused, struct event *even
 
 	addr = read_size(data + field->offset, field->size);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk = find_printk(addr);
+#else
+	printk = find_;
+#endif
 	if (!printk) {
 		format = malloc_or_die(45);
 		sprintf(format, "%%pf : (NO FORMAT FOUND at %llx)\n",

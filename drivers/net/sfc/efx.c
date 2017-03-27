@@ -1157,8 +1157,8 @@ static int efx_wanted_channels(void)
 		return rss_cpus;
 
 	if (unlikely(!zalloc_cpumask_var(&core_mask, GFP_KERNEL))) {
-		printk(KERN_WARNING
-		       "sfc: RSS disabled due to allocation failure\n");
+//		printk(KERN_WARNING
+;
 		return 1;
 	}
 
@@ -2668,7 +2668,7 @@ static int __init efx_init_module(void)
 {
 	int rc;
 
-	printk(KERN_INFO "Solarflare NET driver v" EFX_DRIVER_VERSION "\n");
+;
 
 	rc = register_netdevice_notifier(&efx_netdev_notifier);
 	if (rc)
@@ -2696,7 +2696,7 @@ static int __init efx_init_module(void)
 
 static void __exit efx_exit_module(void)
 {
-	printk(KERN_INFO "Solarflare NET driver unloading\n");
+;
 
 	pci_unregister_driver(&efx_pci_driver);
 	destroy_workqueue(reset_workqueue);

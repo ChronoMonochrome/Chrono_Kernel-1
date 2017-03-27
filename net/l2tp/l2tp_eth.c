@@ -122,14 +122,14 @@ static void l2tp_eth_dev_recv(struct l2tp_session *session, struct sk_buff *skb,
 		if (!pskb_may_pull(skb, length))
 			goto error;
 
-		printk(KERN_DEBUG "%s: eth recv: ", session->name);
+;
 
 		offset = 0;
 		do {
-			printk(" %02X", ptr[offset]);
+;
 		} while (++offset < length);
 
-		printk("\n");
+;
 	}
 
 	if (!pskb_may_pull(skb, ETH_HLEN))
@@ -311,7 +311,7 @@ static int __init l2tp_eth_init(void)
 	if (err)
 		goto out_unreg;
 
-	printk(KERN_INFO "L2TP ethernet pseudowire support (L2TPv3)\n");
+;
 
 	return 0;
 

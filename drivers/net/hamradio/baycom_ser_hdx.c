@@ -504,8 +504,8 @@ static int ser12_open(struct net_device *dev)
 	 * depending on the usage of the software DCD routine
 	 */
 	ser12_set_divisor(dev, bc->opt_dcd ? 6 : 4);
-	printk(KERN_INFO "%s: ser12 at iobase 0x%lx irq %u uart %s\n", 
-	       bc_drvname, dev->base_addr, dev->irq, uart_str[u]);
+//	printk(KERN_INFO "%s: ser12 at iobase 0x%lx irq %u uart %s\n", 
+;
 	return 0;
 }
 
@@ -524,8 +524,8 @@ static int ser12_close(struct net_device *dev)
 	outb(1, MCR(dev->base_addr));
 	free_irq(dev->irq, dev);
 	release_region(dev->base_addr, SER12_EXTENT);
-	printk(KERN_INFO "%s: close ser12 at iobase 0x%lx irq %u\n",
-	       bc_drvname, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: close ser12 at iobase 0x%lx irq %u\n",
+;
 	return 0;
 }
 
@@ -657,7 +657,7 @@ static int __init init_baycomserhdx(void)
 	int i, found = 0;
 	char set_hw = 1;
 
-	printk(bc_drvinfo);
+;
 	/*
 	 * register net devices
 	 */

@@ -68,8 +68,12 @@ static irqreturn_t kirkwood_dma_irq(int irq, void *dev_id)
 
 	cause = readl(priv->io + KIRKWOOD_ERR_CAUSE);
 	if (unlikely(cause)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: got err interrupt 0x%lx\n",
 				__func__, cause);
+#else
+		;
+#endif
 		writel(cause, priv->io + KIRKWOOD_ERR_CAUSE);
 		return IRQ_HANDLED;
 	}
@@ -77,8 +81,12 @@ static irqreturn_t kirkwood_dma_irq(int irq, void *dev_id)
 	/* we've enabled only bytes interrupts ... */
 	if (status & ~(KIRKWOOD_INT_CAUSE_PLAY_BYTES | \
 			KIRKWOOD_INT_CAUSE_REC_BYTES)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: unexpected interrupt %lx\n",
 			__func__, status);
+#else
+		;
+#endif
 		return IRQ_NONE;
 	}
 

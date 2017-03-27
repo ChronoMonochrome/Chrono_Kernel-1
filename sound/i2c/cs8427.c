@@ -219,8 +219,12 @@ int snd_cs8427_create(struct snd_i2c_bus *bus,
 	err = snd_cs8427_reg_read(device, CS8427_REG_ID_AND_VER);
 	if (err != CS8427_VER8427A) {
 		/* give second chance */
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "invalid CS8427 signature 0x%x: "
 			   "let me try again...\n", err);
+#else
+		;
+#endif
 		err = snd_cs8427_reg_read(device, CS8427_REG_ID_AND_VER);
 	}
 	if (err != CS8427_VER8427A) {
@@ -276,7 +280,11 @@ int snd_cs8427_create(struct snd_i2c_bus *bus,
 	snd_i2c_sendbytes(device, buf, 1);
 	snd_i2c_readbytes(device, buf, 127);
 	for (xx = 0; xx < 127; xx++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "reg[0x%x] = 0x%x\n", xx+1, buf[xx]);
+#else
+		;
+#endif
 	}
 #endif
 	

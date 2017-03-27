@@ -347,7 +347,7 @@ static struct rds_ib_mr *rds_ib_alloc_fmr(struct rds_ib_device *rds_ibdev)
 	if (IS_ERR(ibmr->fmr)) {
 		err = PTR_ERR(ibmr->fmr);
 		ibmr->fmr = NULL;
-		printk(KERN_WARNING "RDS/IB: ib_alloc_fmr failed (err=%d)\n", err);
+;
 		goto out_no_cigar;
 	}
 
@@ -379,7 +379,7 @@ static int rds_ib_map_fmr(struct rds_ib_device *rds_ibdev, struct rds_ib_mr *ibm
 	sg_dma_len = ib_dma_map_sg(dev, sg, nents,
 				 DMA_BIDIRECTIONAL);
 	if (unlikely(!sg_dma_len)) {
-		printk(KERN_WARNING "RDS/IB: dma_map_sg failed!\n");
+;
 		return -EBUSY;
 	}
 
@@ -634,7 +634,7 @@ static int rds_ib_flush_mr_pool(struct rds_ib_mr_pool *pool,
 
 	ret = ib_unmap_fmr(&fmr_list);
 	if (ret)
-		printk(KERN_WARNING "RDS/IB: ib_unmap_fmr failed (err=%d)\n", ret);
+;
 
 	/* Now we can destroy the DMA mapping and unpin any pages */
 	list_for_each_entry_safe(ibmr, next, &unmap_list, unmap_list) {
@@ -766,7 +766,7 @@ void *rds_ib_get_mr(struct scatterlist *sg, unsigned long nents,
 	if (ret == 0)
 		*key_ret = ibmr->fmr->rkey;
 	else
-		printk(KERN_WARNING "RDS/IB: map_fmr failed (errno=%d)\n", ret);
+;
 
 	ibmr->device = rds_ibdev;
 	rds_ibdev = NULL;

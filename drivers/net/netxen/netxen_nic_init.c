@@ -280,9 +280,9 @@ int netxen_alloc_sw_resources(struct netxen_adapter *adapter)
 		}
 		rds_ring->rx_buf_arr = vzalloc(RCV_BUFF_RINGSIZE(rds_ring));
 		if (rds_ring->rx_buf_arr == NULL) {
-			printk(KERN_ERR "%s: Failed to allocate "
-				"rx buffer ring %d\n",
-				netdev->name, ring);
+//			printk(KERN_ERR "%s: Failed to allocate "
+//				"rx buffer ring %d\n",
+;
 			/* free whatever was already allocated */
 			goto err_out;
 		}
@@ -376,7 +376,7 @@ static int do_rom_fast_read(struct netxen_adapter *adapter,
 	NXWR32(adapter, NETXEN_ROMUSB_ROM_ABYTE_CNT, 3);
 	NXWR32(adapter, NETXEN_ROMUSB_ROM_INSTR_OPCODE, 0xb);
 	if (netxen_wait_rom_done(adapter)) {
-		printk("Error waiting for rom done\n");
+;
 		return -EIO;
 	}
 	/* reset abyte_cnt and dummy_byte_cnt */
@@ -455,8 +455,8 @@ int netxen_pinit_from_rom(struct netxen_adapter *adapter)
 		if (netxen_rom_fast_read(adapter, 0, &n) != 0 ||
 			(n != 0xcafecafe) ||
 			netxen_rom_fast_read(adapter, 4, &n) != 0) {
-			printk(KERN_ERR "%s: ERROR Reading crb_init area: "
-					"n: %08x\n", netxen_nic_driver_name, n);
+//			printk(KERN_ERR "%s: ERROR Reading crb_init area: "
+;
 			return -EIO;
 		}
 		offset = n & 0xffffU;
@@ -464,8 +464,8 @@ int netxen_pinit_from_rom(struct netxen_adapter *adapter)
 	} else {
 		if (netxen_rom_fast_read(adapter, 0, &n) != 0 ||
 			!(n & 0x80000000)) {
-			printk(KERN_ERR "%s: ERROR Reading crb_init area: "
-					"n: %08x\n", netxen_nic_driver_name, n);
+//			printk(KERN_ERR "%s: ERROR Reading crb_init area: "
+;
 			return -EIO;
 		}
 		offset = 1;
@@ -473,15 +473,15 @@ int netxen_pinit_from_rom(struct netxen_adapter *adapter)
 	}
 
 	if (n >= 1024) {
-		printk(KERN_ERR "%s:n=0x%x Error! NetXen card flash not"
-		       " initialized.\n", __func__, n);
+//		printk(KERN_ERR "%s:n=0x%x Error! NetXen card flash not"
+;
 		return -EIO;
 	}
 
 	buf = kcalloc(n, sizeof(struct crb_addr_pair), GFP_KERNEL);
 	if (buf == NULL) {
-		printk("%s: netxen_pinit_from_rom: Unable to calloc memory.\n",
-				netxen_nic_driver_name);
+//		printk("%s: netxen_pinit_from_rom: Unable to calloc memory.\n",
+;
 		return -ENOMEM;
 	}
 
@@ -501,8 +501,8 @@ int netxen_pinit_from_rom(struct netxen_adapter *adapter)
 
 		off = netxen_decode_crb_addr(buf[i].addr);
 		if (off == NETXEN_ADDR_ERROR) {
-			printk(KERN_ERR"CRB init value out of range %x\n",
-					buf[i].addr);
+//			printk(KERN_ERR"CRB init value out of range %x\n",
+;
 			continue;
 		}
 		off += NETXEN_PCI_CRBSPACE;
@@ -1341,8 +1341,8 @@ netxen_receive_peg_ready(struct netxen_adapter *adapter)
 	} while (--retries);
 
 	if (!retries) {
-		printk(KERN_ERR "Receive Peg initialization not "
-			      "complete, state: 0x%x.\n", val);
+//		printk(KERN_ERR "Receive Peg initialization not "
+;
 		return -EIO;
 	}
 
@@ -1388,11 +1388,11 @@ netxen_handle_linkevent(struct netxen_adapter *adapter, nx_fw_msg_t *msg)
 
 	module = (msg->body[2] >> 8) & 0xff;
 	if (module == LINKEVENT_MODULE_TWINAX_UNSUPPORTED_CABLE) {
-		printk(KERN_INFO "%s: unsupported cable: OUI 0x%x, length %d\n",
-				netdev->name, cable_OUI, cable_len);
+//		printk(KERN_INFO "%s: unsupported cable: OUI 0x%x, length %d\n",
+;
 	} else if (module == LINKEVENT_MODULE_TWINAX_UNSUPPORTED_CABLELEN) {
-		printk(KERN_INFO "%s: unsupported cable length %d\n",
-				netdev->name, cable_len);
+//		printk(KERN_INFO "%s: unsupported cable length %d\n",
+;
 	}
 
 	netxen_advert_link_change(adapter, link_status);

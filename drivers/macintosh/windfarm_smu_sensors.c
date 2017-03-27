@@ -29,6 +29,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
@@ -39,6 +40,9 @@
  * keep pointers here for use by bits & pieces of the driver
  */
 static struct smu_sdbp_cpuvcp *cpuvcp;
+#else
+#define DBG(args...)	;
+#endif
 static int  cpuvcp_version;
 static struct smu_sdbp_cpudiode *cpudiode;
 static struct smu_sdbp_slotspow *slotspow;
@@ -353,8 +357,12 @@ smu_cpu_power_create(struct wf_sensor *volts, struct wf_sensor *amps)
 
 	/* Some early machines need a faked voltage */
 	if (debugswitches && ((*debugswitches) & 0x80)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "windfarm: CPU Power sensor using faked"
 		       " voltage !\n");
+#else
+		;
+#endif
 		pow->fake_volts = 1;
 	} else
 		pow->fake_volts = 0;

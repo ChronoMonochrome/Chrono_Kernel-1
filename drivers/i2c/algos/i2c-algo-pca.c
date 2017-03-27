@@ -29,11 +29,23 @@
 #include <linux/i2c-algo-pca.h>
 
 #define DEB1(fmt, args...) do { if (i2c_debug >= 1)			\
+#ifdef CONFIG_DEBUG_PRINTK
 				 printk(KERN_DEBUG fmt, ## args); } while (0)
+#else
+				 ;
+#endif
 #define DEB2(fmt, args...) do { if (i2c_debug >= 2)			\
+#ifdef CONFIG_DEBUG_PRINTK
 				 printk(KERN_DEBUG fmt, ## args); } while (0)
+#else
+				 ;
+#endif
 #define DEB3(fmt, args...) do { if (i2c_debug >= 3)			\
+#ifdef CONFIG_DEBUG_PRINTK
 				 printk(KERN_DEBUG fmt, ## args); } while (0)
+#else
+				 ;
+#endif
 
 static int i2c_debug;
 
@@ -210,15 +222,31 @@ static int pca_xfer(struct i2c_adapter *i2c_adap,
 			addr = (0x7f & msg->addr) ;
 
 			if (msg->flags & I2C_M_RD)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "    [%02d] RD %d bytes from %#02x [%#02x, ...]\n",
 				       curmsg, msg->len, addr, (addr << 1) | 1);
+#else
+				;
+#endif
 			else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "    [%02d] WR %d bytes to %#02x [%#02x%s",
 				       curmsg, msg->len, addr, addr << 1,
 				       msg->len == 0 ? "" : ", ");
+#else
+				;
+#endif
 				for (i = 0; i < msg->len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%#04x%s", msg->buf[i], i == msg->len - 1 ? "" : ", ");
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("]\n");
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -374,10 +402,18 @@ static unsigned int pca_probe_chip(struct i2c_adapter *adap)
 	pca_outw(pca_data, I2C_PCA_IND, 0x00);
 	pca_outw(pca_data, I2C_PCA_INDPTR, I2C_PCA_IADR);
 	if (pca_inw(pca_data, I2C_PCA_IND) == 0xAA) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: PCA9665 detected.\n", adap->name);
+#else
+		;
+#endif
 		return I2C_PCA_CHIP_9665;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: PCA9564 detected.\n", adap->name);
+#else
+		;
+#endif
 		return I2C_PCA_CHIP_9564;
 	}
 }
@@ -419,23 +455,35 @@ static int pca_init(struct i2c_adapter *adap)
 				pca_data->i2c_clock = I2C_PCA_CON_36kHz;
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"%s: Invalid I2C clock speed selected."
 					" Using default 59kHz.\n", adap->name);
+#else
+				;
+#endif
 			pca_data->i2c_clock = I2C_PCA_CON_59kHz;
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: "
 				"Choosing the clock frequency based on "
 				"index is deprecated."
 				" Use the nominal frequency.\n", adap->name);
+#else
+			;
+#endif
 		}
 
 		pca_reset(pca_data);
 
 		clock = pca_clock(pca_data);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Clock frequency is %dkHz\n",
 		     adap->name, freqs[clock]);
+#else
+		;
+#endif
 
 		pca_set_con(pca_data, I2C_PCA_CON_ENSIO | clock);
 	} else {
@@ -459,14 +507,22 @@ static int pca_init(struct i2c_adapter *adap)
 		pca_data->reset_chip = pca9665_reset;
 
 		if (pca_data->i2c_clock > 1265800) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: I2C clock speed too high."
 				" Using 1265.8kHz.\n", adap->name);
+#else
+			;
+#endif
 			pca_data->i2c_clock = 1265800;
 		}
 
 		if (pca_data->i2c_clock < 60300) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: I2C clock speed too low."
 				" Using 60.3kHz.\n", adap->name);
+#else
+			;
+#endif
 			pca_data->i2c_clock = 60300;
 		}
 
@@ -511,8 +567,12 @@ static int pca_init(struct i2c_adapter *adap)
 
 		pca_reset(pca_data);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		     "%s: Clock frequency is %dHz\n", adap->name, clock * 100);
+#else
+		;
+#endif
 
 		pca_outw(pca_data, I2C_PCA_INDPTR, I2C_PCA_IMODE);
 		pca_outw(pca_data, I2C_PCA_IND, mode);

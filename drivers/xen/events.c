@@ -543,8 +543,12 @@ static unsigned int __startup_pirq(unsigned int irq)
 	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
 	if (rc != 0) {
 		if (!probing_irq(irq))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Failed to obtain physical IRQ %d\n",
 			       irq);
+#else
+			;
+#endif
 		return 0;
 	}
 	evtchn = bind_pirq.port;
@@ -640,8 +644,12 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
 
 	irq = find_irq_by_gsi(gsi);
 	if (irq != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
 		       irq, gsi);
+#else
+		;
+#endif
 		goto out;	/* XXX need refcount? */
 	}
 
@@ -760,10 +768,18 @@ int xen_destroy_irq(int irq)
 		 * (free_domain_pirqs).
 		 */
 		if ((rc == -ESRCH && info->u.pirq.domid != DOMID_SELF))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "domain %d does not have %d anymore\n",
 				info->u.pirq.domid, info->u.pirq.pirq);
+#else
+			;
+#endif
 		else if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "unmap irq failed %d\n", rc);
+#else
+			;
+#endif
 			goto out;
 		}
 	}
@@ -1062,7 +1078,11 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 
 	spin_lock_irqsave(&debug_lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nvcpu %d\n  ", cpu);
+#else
+	;
+#endif
 
 	for_each_online_cpu(i) {
 		int pending;
@@ -1070,50 +1090,99 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 		pending = (get_irq_regs() && i == cpu)
 			? xen_irqs_disabled(get_irq_regs())
 			: v->evtchn_upcall_mask;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d: masked=%d pending=%d event_sel %0*lx\n  ", i,
 		       pending, v->evtchn_upcall_pending,
 		       (int)(sizeof(v->evtchn_pending_sel)*2),
 		       v->evtchn_pending_sel);
+#else
+		;
+#endif
 	}
 	v = per_cpu(xen_vcpu, cpu);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\npending:\n   ");
+#else
+	;
+#endif
 	for (i = ARRAY_SIZE(sh->evtchn_pending)-1; i >= 0; i--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0*lx%s", (int)sizeof(sh->evtchn_pending[0])*2,
 		       sh->evtchn_pending[i],
 		       i % 8 == 0 ? "\n   " : " ");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nglobal mask:\n   ");
+#else
+	;
+#endif
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0*lx%s",
 		       (int)(sizeof(sh->evtchn_mask[0])*2),
 		       sh->evtchn_mask[i],
 		       i % 8 == 0 ? "\n   " : " ");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nglobally unmasked:\n   ");
+#else
+	;
+#endif
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0*lx%s", (int)(sizeof(sh->evtchn_mask[0])*2),
 		       sh->evtchn_pending[i] & ~sh->evtchn_mask[i],
 		       i % 8 == 0 ? "\n   " : " ");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nlocal cpu%d mask:\n   ", cpu);
+#else
+	;
+#endif
 	for (i = (NR_EVENT_CHANNELS/BITS_PER_LONG)-1; i >= 0; i--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0*lx%s", (int)(sizeof(cpu_evtchn[0])*2),
 		       cpu_evtchn[i],
 		       i % 8 == 0 ? "\n   " : " ");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nlocally unmasked:\n   ");
+#else
+	;
+#endif
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--) {
 		unsigned long pending = sh->evtchn_pending[i]
 			& ~sh->evtchn_mask[i]
 			& cpu_evtchn[i];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0*lx%s", (int)(sizeof(sh->evtchn_mask[0])*2),
 		       pending, i % 8 == 0 ? "\n   " : " ");
+#else
+		;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\npending list:\n");
+#else
+	;
+#endif
 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
 		if (sync_test_bit(i, sh->evtchn_pending)) {
 			int word_idx = i / BITS_PER_LONG;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  %d: event %d -> irq %d%s%s%s\n",
 			       cpu_from_evtchn(i), i,
 			       evtchn_to_irq[i],
@@ -1123,6 +1192,9 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 					     ? "" : " globally-masked",
 			       sync_test_bit(i, cpu_evtchn)
 					     ? "" : " locally-masked");
+#else
+			;
+#endif
 		}
 	}
 
@@ -1435,13 +1507,21 @@ static void restore_pirqs(void)
 
 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
 		if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "xen map irq failed gsi=%d irq=%d pirq=%d rc=%d\n",
 					gsi, irq, pirq, rc);
+#else
+			;
+#endif
 			xen_free_irq(irq);
 			continue;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
+#else
+		;
+#endif
 
 		__startup_pirq(irq);
 	}
@@ -1658,8 +1738,12 @@ void xen_callback_vector(void)
 			xen_have_vector_callback = 0;
 			return;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
 				"enabled\n");
+#else
+		;
+#endif
 		/* in the restore case the vector has already been allocated */
 		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
 			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);

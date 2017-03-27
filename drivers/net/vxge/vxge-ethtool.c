@@ -1096,14 +1096,14 @@ static int vxge_fw_flash(struct net_device *dev, struct ethtool_flash *parms)
 	struct vxgedev *vdev = netdev_priv(dev);
 
 	if (vdev->max_vpath_supported != VXGE_HW_MAX_VIRTUAL_PATHS) {
-		printk(KERN_INFO "Single Function Mode is required to flash the"
-		       " firmware\n");
+//		printk(KERN_INFO "Single Function Mode is required to flash the"
+;
 		return -EINVAL;
 	}
 
 	if (netif_running(dev)) {
-		printk(KERN_INFO "Interface %s must be down to flash the "
-		       "firmware\n", dev->name);
+//		printk(KERN_INFO "Interface %s must be down to flash the "
+;
 		return -EBUSY;
 	}
 

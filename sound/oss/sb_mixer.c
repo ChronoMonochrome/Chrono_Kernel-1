@@ -728,7 +728,11 @@ int sb_mixer_init(sb_devc * devc, struct module *owner)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "sb_mixer: Unsupported mixer type %d\n", devc->model);
+#else
+			;
+#endif
 			return 0;
 	}
 

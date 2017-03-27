@@ -75,7 +75,11 @@ MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
 static int debug;
 module_param(debug, int, 0644);
 #define verbose_debug(fmt, args...)			\
+#ifdef CONFIG_DEBUG_PRINTK
 	do { if (debug > 1) printk(KERN_DEBUG SFX fmt, ##args); } while (0)
+#else
+	do { if (debug > 1) ;
+#endif
 #else
 #define verbose_debug(fmt, args...)
 #endif
@@ -168,11 +172,15 @@ static int rirb_get_response(struct lola *chip, unsigned int *val,
 			verbose_debug("get_response: %x, %x\n",
 				      chip->res, chip->res_ex);
 			if (chip->res_ex & LOLA_RIRB_EX_ERROR) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING SFX "RIRB ERROR: "
 				       "NID=%x, verb=%x, data=%x, ext=%x\n",
 				       chip->last_cmd_nid,
 				       chip->last_verb, chip->last_data,
 				       chip->last_extdata);
+#else
+				;
+#endif
 				return -EIO;
 			}
 			return 0;
@@ -182,9 +190,17 @@ static int rirb_get_response(struct lola *chip, unsigned int *val,
 		udelay(20);
 		cond_resched();
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING SFX "RIRB response error\n");
+#else
+	;
+#endif
 	if (!chip->polling_mode) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING SFX "switching to polling mode\n");
+#else
+		;
+#endif
 		chip->polling_mode = 1;
 		goto again;
 	}
@@ -609,18 +625,26 @@ static int __devinit lola_create(struct snd_card *card, struct pci_dev *pci,
 		chip->sample_rate_max = 192000;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SFX
 			   "Invalid granularity %d, reset to %d\n",
 			   chip->granularity, LOLA_GRANULARITY_MAX);
+#else
+		;
+#endif
 		chip->granularity = LOLA_GRANULARITY_MAX;
 		chip->sample_rate_max = 192000;
 		break;
 	}
 	chip->sample_rate_min = sample_rate_min[dev];
 	if (chip->sample_rate_min > chip->sample_rate_max) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SFX
 			   "Invalid sample_rate_min %d, reset to 16000\n",
 			   chip->sample_rate_min);
+#else
+		;
+#endif
 		chip->sample_rate_min = 16000;
 	}
 

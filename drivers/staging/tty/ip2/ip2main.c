@@ -269,24 +269,24 @@ static int tracewrap;
 /**********/
 
 #ifdef IP2DEBUG_OPEN
-#define DBG_CNT(s) printk(KERN_DEBUG "(%s): [%x] ttyc=%d, modc=%x -> %s\n", \
-		    tty->name,(pCh->flags), \
-		    tty->count,/*GET_USE_COUNT(module)*/0,s)
-#else
-#define DBG_CNT(s)
-#endif
-
-/********/
-/* Code */
-/********/
-
-#include "i2ellis.c"    /* Extremely low-level interface services */
-#include "i2cmd.c"      /* Standard loadware command definitions */
-#include "i2lib.c"      /* High level interface services */
-
-/* Configuration area for modprobe */
-
-MODULE_AUTHOR("Doug McNash");
+//#define DBG_CNT(s) printk(KERN_DEBUG "(%s): [%x] ttyc=%d, modc=%x -> %s\n", \
+//		    tty->name,(pCh->flags), \
+//		    tty->count,/*GET_USE_COUNT(module)*/0,s)
+//#else
+//#define DBG_CNT(s)
+//#endif
+//
+///********/
+///* Code */
+///********/
+//
+//#include "i2ellis.c"    /* Extremely low-level interface services */
+//#include "i2cmd.c"      /* Standard loadware command definitions */
+//#include "i2lib.c"      /* High level interface services */
+//
+///* Configuration area for modprobe */
+//
+;
 MODULE_DESCRIPTION("Computone IntelliPort Plus Driver");
 MODULE_LICENSE("GPL");
 
@@ -410,8 +410,8 @@ static void __exit ip2_cleanup_module(void)
 	class_destroy(ip2_class);
 	err = tty_unregister_driver(ip2_tty_driver);
 	if (err)
-		printk(KERN_ERR "IP2: failed to unregister tty driver (%d)\n",
-				err);
+//		printk(KERN_ERR "IP2: failed to unregister tty driver (%d)\n",
+;
 	put_tty_driver(ip2_tty_driver);
 	unregister_chrdev(IP2_IPL_MAJOR, pcIpl);
 	remove_proc_entry("ip2mem", NULL);
@@ -487,11 +487,11 @@ static const struct firmware *ip2_request_firmware(void)
 
 	pdev = platform_device_register_simple("ip2", 0, NULL, 0);
 	if (IS_ERR(pdev)) {
-		printk(KERN_ERR "Failed to register platform device for ip2\n");
+;
 		return NULL;
 	}
 	if (request_firmware(&fw, "intelliport2.bin", &pdev->dev)) {
-		printk(KERN_ERR "Failed to load firmware 'intelliport2.bin'\n");
+;
 		fw = NULL;
 	}
 	platform_device_unregister(pdev);
@@ -591,7 +591,7 @@ static int __init ip2_loadmain(void)
 	poll_only = !poll_only;
 
 	/* Announce our presence */
-	printk(KERN_INFO "%s version %s\n", pcName, pcVersion);
+;
 
 	ip2_tty_driver = alloc_tty_driver(IP2_MAX_PORTS);
 	if (!ip2_tty_driver)
@@ -606,9 +606,9 @@ static int __init ip2_loadmain(void)
 		   /* ISA address must be specified */
 			if (ip2config.addr[i] < 0x100 ||
 					ip2config.addr[i] > 0x3f8) {
-				printk(KERN_ERR "IP2: Bad ISA board %d "
-						"address %x\n", i,
-						ip2config.addr[i]);
+//				printk(KERN_ERR "IP2: Bad ISA board %d "
+//						"address %x\n", i,
+;
 				ip2config.addr[i] = 0;
 				break;
 			}
@@ -618,8 +618,8 @@ static int __init ip2_loadmain(void)
 			 * invalid */
 			if (ip2config.irq[i] &&
 					!is_valid_irq(ip2config.irq[i])) {
-				printk(KERN_ERR "IP2: Bad IRQ(%d) specified\n",
-						ip2config.irq[i]);
+//				printk(KERN_ERR "IP2: Bad IRQ(%d) specified\n",
+;
 				/* 0 is polling and is valid in that sense */
 				ip2config.irq[i] = 0;
 			}
@@ -635,8 +635,8 @@ static int __init ip2_loadmain(void)
 					PCI_DEVICE_ID_COMPUTONE_IP2EX, pdev);
 			if (pdev == NULL) {
 				ip2config.addr[i] = 0;
-				printk(KERN_ERR "IP2: PCI board %d not "
-						"found\n", i);
+//				printk(KERN_ERR "IP2: PCI board %d not "
+;
 				break;
 			}
 
@@ -658,10 +658,10 @@ out:
 			pci_dev_put(pdev);
 		}
 #else
-			printk(KERN_ERR "IP2: PCI card specified but PCI "
-					"support not enabled.\n");
-			printk(KERN_ERR "IP2: Recompile kernel with CONFIG_PCI "
-					"defined!\n");
+//			printk(KERN_ERR "IP2: PCI card specified but PCI "
+;
+//			printk(KERN_ERR "IP2: Recompile kernel with CONFIG_PCI "
+;
 #endif /* CONFIG_PCI */
 			break;
 		case EISA:
@@ -684,8 +684,8 @@ out:
 						ii2DelayTimer);
 				iiReset(pB);
 			} else
-				printk(KERN_ERR "IP2: board memory allocation "
-						"error\n");
+//				printk(KERN_ERR "IP2: board memory allocation "
+;
 		}
 	}
 	for (i = 0; i < IP2_MAX_BOARDS; ++i) {
@@ -728,15 +728,15 @@ out:
 
 	err = tty_register_driver(ip2_tty_driver);
 	if (err) {
-		printk(KERN_ERR "IP2: failed to register tty driver\n");
+;
 		put_tty_driver(ip2_tty_driver);
 		return err; /* leaking resources */
 	}
 
 	err = register_chrdev(IP2_IPL_MAJOR, pcIpl, &ip2_ipl);
 	if (err) {
-		printk(KERN_ERR "IP2: failed to register IPL device (%d)\n",
-				err);
+//		printk(KERN_ERR "IP2: failed to register IPL device (%d)\n",
+;
 	} else {
 		/* create the sysfs class */
 		ip2_class = class_create(THIS_MODULE, "ip2");
@@ -747,7 +747,7 @@ out:
 	}
 	/* Register the read_procmem thing */
 	if (!proc_create("ip2mem",0,NULL,&ip2mem_proc_fops)) {
-		printk(KERN_ERR "IP2: failed to register read_procmem\n");
+;
 		return -EIO; /* leaking resources */
 	}
 
@@ -788,7 +788,7 @@ out:
 retry:
 			if (!timer_pending(&PollTimer)) {
 				mod_timer(&PollTimer, POLL_TIMEOUT);
-				printk(KERN_INFO "IP2: polling\n");
+;
 			}
 		} else {
 			if (have_requested_irq(ip2config.irq[i]))
@@ -798,11 +798,11 @@ retry:
 				(ip2config.type[i] == PCI ? IRQF_SHARED : 0),
 				pcName, i2BoardPtrTable[i]);
 			if (rc) {
-				printk(KERN_ERR "IP2: request_irq failed: "
-						"error %d\n", rc);
+//				printk(KERN_ERR "IP2: request_irq failed: "
+;
 				ip2config.irq[i] = CIR_POLL;
-				printk(KERN_INFO "IP2: Polling %ld/sec.\n",
-						(POLL_TIMEOUT - jiffies));
+//				printk(KERN_INFO "IP2: Polling %ld/sec.\n",
+;
 				goto retry;
 			}
 			mark_requested_irq(ip2config.irq[i]);
@@ -852,11 +852,11 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 			 pB->i2eBase, pB->i2eError );
 		goto err_initialize;
 	}
-	printk(KERN_INFO "IP2: Board %d: addr=0x%x irq=%d\n", boardnum + 1,
-	       ip2config.addr[boardnum], ip2config.irq[boardnum] );
+//	printk(KERN_INFO "IP2: Board %d: addr=0x%x irq=%d\n", boardnum + 1,
+;
 
 	if (!request_region( ip2config.addr[boardnum], 8, pcName )) {
-		printk(KERN_ERR "IP2: bad addr=0x%x\n", ip2config.addr[boardnum]);
+;
 		goto err_initialize;
 	}
 
@@ -875,8 +875,8 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 	switch ( pB->i2ePom.e.porID & ~POR_ID_RESERVED ) {
 
 	default:
-		printk( KERN_ERR "IP2: Unknown board type, ID = %x\n",
-				pB->i2ePom.e.porID );
+//		printk( KERN_ERR "IP2: Unknown board type, ID = %x\n",
+;
 		nports = 0;
 		goto err_release_region;
 		break;
@@ -918,7 +918,7 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 			goto err_release_region;
 		}
 		if ( !i2InitChannels( pB, nports, pCh ) ) {
-			printk(KERN_ERR "IP2: i2InitChannels failed: %d\n",pB->i2eError);
+;
 			kfree ( pCh );
 			goto err_release_region;
 		}
@@ -934,8 +934,8 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 				}
 			}
 		}
-		printk(KERN_INFO "IP2: EX box=%d ports=%d %d bit\n",
-			nboxes, nports, pB->i2eDataWidth16 ? 16 : 8 );
+//		printk(KERN_INFO "IP2: EX box=%d ports=%d %d bit\n",
+;
 		}
 		goto ex_exit;
 	}
@@ -948,7 +948,7 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 	pB->i2eChannelPtr = pCh;
 	pB->i2eChannelCnt = nports;
 	if ( !i2InitChannels( pB, nports, pCh ) ) {
-		printk(KERN_ERR "IP2: i2InitChannels failed: %d\n",pB->i2eError);
+;
 		kfree ( pCh );
 		goto err_release_region;
 	}
@@ -1050,13 +1050,13 @@ find_eisa_board( int start_slot )
 	}
 
 #ifdef IP2DEBUG_INIT
-printk(KERN_DEBUG "Computone EISA board in slot %d, I.D. 0x%x%x, Address 0x%x",
-	       base >> 12, idm, idp, setup_address);
+//printk(KERN_DEBUG "Computone EISA board in slot %d, I.D. 0x%x%x, Address 0x%x",
+;
 	if ( Eisa_irq ) {
-		printk(KERN_DEBUG ", Interrupt %d %s\n",
-		       setup_irq, (ismine & 2) ? "(edge)" : "(level)");
+//		printk(KERN_DEBUG ", Interrupt %d %s\n",
+;
 	} else {
-		printk(KERN_DEBUG ", (polled)\n");
+;
 	}
 #endif
 	return setup_address;
@@ -1426,15 +1426,15 @@ static void
 open_sanity_check( i2ChanStrPtr pCh, i2eBordStrPtr pBrd )
 {
 	if ( pBrd->i2eValid != I2E_MAGIC ) {
-		printk(KERN_ERR "IP2: invalid board structure\n" );
+;
 	} else if ( pBrd != pCh->pMyBord ) {
-		printk(KERN_ERR "IP2: board structure pointer mismatch (%p)\n",
-			 pCh->pMyBord );
+//		printk(KERN_ERR "IP2: board structure pointer mismatch (%p)\n",
+;
 	} else if ( pBrd->i2eChannelCnt < pCh->port_index ) {
-		printk(KERN_ERR "IP2: bad device index (%d)\n", pCh->port_index );
+;
 	} else if (&((i2ChanStrPtr)pBrd->i2eChannelPtr)[pCh->port_index] != pCh) {
 	} else {
-		printk(KERN_INFO "IP2: all pointers check out!\n" );
+;
 	}
 }
 #endif
@@ -1470,9 +1470,9 @@ ip2_open( PTTY tty, struct file *pFile )
 	tty->driver_data = pCh;
 
 #ifdef IP2DEBUG_OPEN
-	printk(KERN_DEBUG \
-			"IP2:open(tty=%p,pFile=%p):dev=%s,ch=%d,idx=%d\n",
-	       tty, pFile, tty->name, pCh->infl.hd.i2sChannel, pCh->port_index);
+//	printk(KERN_DEBUG \
+//			"IP2:open(tty=%p,pFile=%p):dev=%s,ch=%d,idx=%d\n",
+;
 	open_sanity_check ( pCh, pCh->pMyBord );
 #endif
 
@@ -1519,7 +1519,7 @@ ip2_open( PTTY tty, struct file *pFile )
 		do_clocal = 1;
 
 #ifdef IP2DEBUG_OPEN
-	printk(KERN_DEBUG "OpenBlock: do_clocal = %d\n", do_clocal);
+;
 #endif
 
 	++pCh->wopen;
@@ -1544,9 +1544,9 @@ ip2_open( PTTY tty, struct file *pFile )
 		}
 
 #ifdef IP2DEBUG_OPEN
-		printk(KERN_DEBUG "ASYNC_CLOSING = %s\n",
-			(pCh->flags & ASYNC_CLOSING)?"True":"False");
-		printk(KERN_DEBUG "OpenBlock: waiting for CD or signal\n");
+//		printk(KERN_DEBUG "ASYNC_CLOSING = %s\n",
+;
+;
 #endif
 		ip2trace (CHANN, ITRC_OPEN, 3, 2, 0,
 				(pCh->flags & ASYNC_CLOSING) );
@@ -1618,7 +1618,7 @@ ip2_close( PTTY tty, struct file *pFile )
 	ip2trace (CHANN, ITRC_CLOSE, ITRC_ENTER, 0 );
 
 #ifdef IP2DEBUG_OPEN
-	printk(KERN_DEBUG "IP2:close %s:\n",tty->name);
+;
 #endif
 
 	if ( tty_hung_up_p ( pFile ) ) {
@@ -2145,7 +2145,7 @@ ip2_ioctl ( PTTY tty, UINT cmd, ULONG arg )
 	ip2trace (CHANN, ITRC_IOCTL, ITRC_ENTER, 2, cmd, arg );
 
 #ifdef IP2DEBUG_IOCTL
-	printk(KERN_DEBUG "IP2: ioctl cmd (%x), arg (%lx)\n", cmd, arg );
+;
 #endif
 
 	switch(cmd) {
@@ -2809,7 +2809,7 @@ DumpFifoBuffer ( char __user *pData, int count )
 	int rc;
 	rc = copy_to_user(pData, DBGBuf, count);
 
-	printk(KERN_DEBUG "Last index %d\n", I );
+;
 
 	return count;
 #endif	/* DEBUG_FIFO */

@@ -270,9 +270,9 @@ static int __init ni5010_probe1(struct net_device *dev, int ioaddr)
 	PRINTK2((KERN_DEBUG "%s: I/O #3 passed!\n", dev->name));
 
 	if (NI5010_DEBUG && version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 
-	printk("NI5010 ethercard probe at 0x%x: ", ioaddr);
+;
 
 	dev->base_addr = ioaddr;
 
@@ -280,7 +280,7 @@ static int __init ni5010_probe1(struct net_device *dev, int ioaddr)
 		outw(i, IE_GP);
 		dev->dev_addr[i] = inb(IE_SAPROM);
 	}
-	printk("%pM ", dev->dev_addr);
+;
 
 	PRINTK2((KERN_DEBUG "%s: I/O #4 passed!\n", dev->name));
 
@@ -301,7 +301,7 @@ static int __init ni5010_probe1(struct net_device *dev, int ioaddr)
 
 		if (dev->irq == 0) {
 			err = -EAGAIN;
-			printk(KERN_WARNING "%s: no IRQ found!\n", dev->name);
+;
 			goto out;
 		}
 		PRINTK2((KERN_DEBUG "%s: I/O #7 passed!\n", dev->name));
@@ -337,7 +337,7 @@ static int __init ni5010_probe1(struct net_device *dev, int ioaddr)
         	outw(0, IE_GP);		/* Point GP at start of packet */
         	outb(0, IE_RBUF);	/* set buffer byte 0 to 0 again */
 	}
-        printk("-> bufsize rcv/xmt=%d/%d\n", bufsize_rcv, NI5010_BUFSIZE);
+;
 
 	dev->netdev_ops		= &ni5010_netdev_ops;
 	dev->watchdog_timeo	= HZ/20;
@@ -350,10 +350,10 @@ static int __init ni5010_probe1(struct net_device *dev, int ioaddr)
 	outb(0xff, EDLC_RCLR);	/* Kill all pending rcv interrupts */
 	outb(0xff, EDLC_XCLR); 	/* Kill all pending xmt interrupts */
 
-	printk(KERN_INFO "%s: NI5010 found at 0x%x, using IRQ %d", dev->name, ioaddr, dev->irq);
+;
 	if (dev->dma)
-		printk(" & DMA %d", dev->dma);
-	printk(".\n");
+;
+;
 	return 0;
 out:
 	release_region(dev->base_addr, NI5010_IO_EXTENT);
@@ -377,7 +377,7 @@ static int ni5010_open(struct net_device *dev)
 	PRINTK2((KERN_DEBUG "%s: entering ni5010_open()\n", dev->name));
 
 	if (request_irq(dev->irq, ni5010_interrupt, 0, boardname, dev)) {
-		printk(KERN_WARNING "%s: Cannot get irq %#2x\n", dev->name, dev->irq);
+;
 		return -EAGAIN;
 	}
 	PRINTK3((KERN_DEBUG "%s: passed open() #1\n", dev->name));
@@ -387,7 +387,7 @@ static int ni5010_open(struct net_device *dev)
          */
 #ifdef JUMPERED_DMA
         if (request_dma(dev->dma, cardname)) {
-		printk(KERN_WARNING "%s: Cannot get dma %#2x\n", dev->name, dev->dma);
+;
                 free_irq(dev->irq, NULL);
                 return -EAGAIN;
         }
@@ -439,8 +439,8 @@ static void reset_receiver(struct net_device *dev)
 
 static void ni5010_timeout(struct net_device *dev)
 {
-	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
-		   tx_done(dev) ? "IRQ conflict" : "network cable problem");
+//	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
+;
 	/* Try to restart the adaptor. */
 	/* FIXME: Give it a real kick here */
 	chipset_init(dev, 1);
@@ -506,14 +506,14 @@ static void dump_packet(void *buf, int len)
 {
 	int i;
 
-	printk(KERN_DEBUG "Packet length = %#4x\n", len);
+;
 	for (i = 0; i < len; i++){
-		if (i % 16 == 0) printk(KERN_DEBUG "%#4.4x", i);
-		if (i % 2 == 0) printk(" ");
+;
+;
 		printk("%2.2x", ((unsigned char *)buf)[i]);
-		if (i % 16 == 15) printk("\n");
+;
 	}
-	printk("\n");
+;
 }
 
 /* We have a good packet, get it out of the buffer. */
@@ -554,7 +554,7 @@ static void ni5010_rx(struct net_device *dev)
 	/* Malloc up new buffer. */
 	skb = dev_alloc_skb(i_pkt_size + 3);
 	if (skb == NULL) {
-		printk(KERN_WARNING "%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -742,13 +742,13 @@ static int __init ni5010_init_module(void)
 	PRINTK2((KERN_DEBUG "%s: entering init_module\n", boardname));
 	/*
 	if(io <= 0 || irq == 0){
-	   	printk(KERN_WARNING "%s: Autoprobing not allowed for modules.\n", boardname);
-		printk(KERN_WARNING "%s: Set symbols 'io' and 'irq'\n", boardname);
+;
+;
 	   	return -EINVAL;
 	}
 	*/
 	if (io <= 0){
-		printk(KERN_WARNING "%s: Autoprobing for modules is hazardous, trying anyway..\n", boardname);
+;
 	}
 
 	PRINTK2((KERN_DEBUG "%s: init_module irq=%#2x, io=%#3x\n", boardname, irq, io));

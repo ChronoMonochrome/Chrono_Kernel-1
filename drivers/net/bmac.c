@@ -423,13 +423,13 @@ bmac_init_phy(struct net_device *dev)
 	unsigned int addr;
 	struct bmac_data *bp = netdev_priv(dev);
 
-	printk(KERN_DEBUG "phy registers:");
+;
 	for (addr = 0; addr < 32; ++addr) {
 		if ((addr & 7) == 0)
-			printk(KERN_DEBUG);
-		printk(KERN_CONT " %.4x", bmac_mif_read(dev, addr));
+;
+;
 	}
-	printk(KERN_CONT "\n");
+;
 
 	if (bp->is_bmac_plus) {
 		unsigned int capable, ctrl;
@@ -1258,7 +1258,7 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 	int is_bmac_plus = ((int)match->data) != 0;
 
 	if (macio_resource_count(mdev) != 3 || macio_irq_count(mdev) != 3) {
-		printk(KERN_ERR "BMAC: can't use, need 3 addrs and 3 intrs\n");
+;
 		return -ENODEV;
 	}
 	prop_addr = of_get_property(macio_get_of_node(mdev),
@@ -1267,7 +1267,7 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 		prop_addr = of_get_property(macio_get_of_node(mdev),
 				"local-mac-address", NULL);
 		if (prop_addr == NULL) {
-			printk(KERN_ERR "BMAC: Can't get mac-address\n");
+;
 			return -ENODEV;
 		}
 	}
@@ -1275,7 +1275,7 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 
 	dev = alloc_etherdev(PRIV_BYTES);
 	if (!dev) {
-		printk(KERN_ERR "BMAC: alloc_etherdev failed, out of memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1287,7 +1287,7 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 	spin_lock_init(&bp->lock);
 
 	if (macio_request_resources(mdev, "bmac")) {
-		printk(KERN_ERR "BMAC: can't request IO resource !\n");
+;
 		goto out_free;
 	}
 
@@ -1336,17 +1336,17 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 
 	ret = request_irq(dev->irq, bmac_misc_intr, 0, "BMAC-misc", dev);
 	if (ret) {
-		printk(KERN_ERR "BMAC: can't get irq %d\n", dev->irq);
+;
 		goto err_out_iounmap_rx;
 	}
 	ret = request_irq(bp->tx_dma_intr, bmac_txdma_intr, 0, "BMAC-txdma", dev);
 	if (ret) {
-		printk(KERN_ERR "BMAC: can't get irq %d\n", bp->tx_dma_intr);
+;
 		goto err_out_irq0;
 	}
 	ret = request_irq(bp->rx_dma_intr, bmac_rxdma_intr, 0, "BMAC-rxdma", dev);
 	if (ret) {
-		printk(KERN_ERR "BMAC: can't get irq %d\n", bp->rx_dma_intr);
+;
 		goto err_out_irq1;
 	}
 
@@ -1357,14 +1357,14 @@ static int __devinit bmac_probe(struct macio_dev *mdev, const struct of_device_i
 	pmac_call_feature(PMAC_FTR_BMAC_ENABLE, macio_get_of_node(bp->mdev), 0, 0);
 
 	if (register_netdev(dev) != 0) {
-		printk(KERN_ERR "BMAC: Ethernet registration failed\n");
+;
 		goto err_out_irq2;
 	}
 
-	printk(KERN_INFO "%s: BMAC%s at %pM",
-	       dev->name, (is_bmac_plus ? "+" : ""), dev->dev_addr);
+//	printk(KERN_INFO "%s: BMAC%s at %pM",
+;
 	XXDEBUG((", base_addr=%#0lx", dev->base_addr));
-	printk("\n");
+;
 
 	return 0;
 
@@ -1511,7 +1511,7 @@ static void bmac_tx_timeout(unsigned long data)
 	config = bmread(dev, TXCFG);
 	bmwrite(dev, TXCFG, (config & ~TxMACEnable));
 	out_le32(&td->control, DBDMA_CLEAR(RUN|PAUSE|FLUSH|WAKE|ACTIVE|DEAD));
-	printk(KERN_ERR "bmac: transmit timeout - resetting\n");
+;
 	bmac_enable_and_reset_chip(dev);
 
 	/* restart rx dma */
@@ -1561,11 +1561,11 @@ static void dump_dbdma(volatile struct dbdma_cmd *cp,int count)
 	for (i=0;i< count;i++) {
 		ip = (int*)(cp+i);
 
-		printk("dbdma req 0x%x addr 0x%x baddr 0x%x xfer/res 0x%x\n",
-		       ld_le32(ip+0),
-		       ld_le32(ip+1),
-		       ld_le32(ip+2),
-		       ld_le32(ip+3));
+//		printk("dbdma req 0x%x addr 0x%x baddr 0x%x xfer/res 0x%x\n",
+//		       ld_le32(ip+0),
+//		       ld_le32(ip+1),
+//		       ld_le32(ip+2),
+;
 	}
 
 }
@@ -1666,7 +1666,7 @@ static int __init bmac_init(void)
 	if (bmac_emergency_rxbuf == NULL) {
 		bmac_emergency_rxbuf = kmalloc(RX_BUFLEN, GFP_KERNEL);
 		if (bmac_emergency_rxbuf == NULL) {
-			printk(KERN_ERR "BMAC: can't allocate emergency RX buffer\n");
+;
 			return -ENOMEM;
 		}
 	}

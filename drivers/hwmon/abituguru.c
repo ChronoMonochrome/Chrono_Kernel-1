@@ -90,6 +90,7 @@
 #define ABIT_UGURU_NAME				"abituguru"
 #define ABIT_UGURU_DEBUG(level, format, arg...)				\
 	if (level <= verbose)						\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG ABIT_UGURU_NAME ": "	format , ## arg)
 /* Macros to help calculate the sysfs_names array length */
 /* sum of strlen of: in??_input\0, in??_{min,max}\0, in??_{min,max}_alarm\0,
@@ -130,6 +131,9 @@
 /* Constants */
 /* in (Volt) sensors go up to 3494 mV, temp to 255000 millidegrees Celsius */
 static const int abituguru_bank1_max_value[2] = { 3494, 255000 };
+#else
+		;
+#endif
 /* Min / Max allowed values for sensor2 (fan) alarm threshold, these values
    correspond to 300-3000 RPM */
 static const u8 abituguru_bank2_min_threshold = 5;

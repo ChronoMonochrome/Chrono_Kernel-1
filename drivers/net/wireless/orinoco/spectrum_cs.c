@@ -208,9 +208,9 @@ spectrum_cs_config(struct pcmcia_device *link)
 	ret = pcmcia_loop_config(link, spectrum_cs_config_check, NULL);
 	if (ret) {
 		if (!ignore_cis_vcc)
-			printk(KERN_ERR PFX "GetNextTuple(): No matching "
-			       "CIS configuration.  Maybe you need the "
-			       "ignore_cis_vcc=1 parameter.\n");
+//			printk(KERN_ERR PFX "GetNextTuple(): No matching "
+//			       "CIS configuration.  Maybe you need the "
+;
 		goto failed;
 	}
 
@@ -239,14 +239,14 @@ spectrum_cs_config(struct pcmcia_device *link)
 
 	/* Initialise the main driver */
 	if (orinoco_init(priv) != 0) {
-		printk(KERN_ERR PFX "orinoco_init() failed\n");
+;
 		goto failed;
 	}
 
 	/* Register an interface with the stack */
 	if (orinoco_if_add(priv, link->resource[0]->start,
 			   link->irq, NULL) != 0) {
-		printk(KERN_ERR PFX "orinoco_if_add() failed\n");
+;
 		goto failed;
 	}
 

@@ -133,7 +133,11 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 	unsigned char *erased_page;
 
 	if (!eccsize || !eccbytes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ecc parameters not supplied\n");
+#else
+		;
+#endif
 		goto fail;
 	}
 
@@ -150,8 +154,12 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 	/* verify that eccbytes has the expected value */
 	if (nbc->bch->ecc_bytes != eccbytes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "invalid eccbytes %u, should be %u\n",
 		       eccbytes, nbc->bch->ecc_bytes);
+#else
+		;
+#endif
 		goto fail;
 	}
 
@@ -162,8 +170,12 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 		/* handle large page devices only */
 		if (mtd->oobsize < 64) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "must provide an oob scheme for "
 			       "oobsize %d\n", mtd->oobsize);
+#else
+			;
+#endif
 			goto fail;
 		}
 
@@ -172,9 +184,13 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 		/* reserve 2 bytes for bad block marker */
 		if (layout->eccbytes+2 > mtd->oobsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "no suitable oob scheme available "
 			       "for oobsize %d eccbytes %u\n", mtd->oobsize,
 			       eccbytes);
+#else
+			;
+#endif
 			goto fail;
 		}
 		/* put ecc bytes at oob tail */
@@ -189,11 +205,19 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 	/* sanity checks */
 	if (8*(eccsize+eccbytes) >= (1 << m)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "eccsize %u is too large\n", eccsize);
+#else
+		;
+#endif
 		goto fail;
 	}
 	if ((*ecclayout)->eccbytes != (eccsteps*eccbytes)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "invalid ecc layout\n");
+#else
+		;
+#endif
 		goto fail;
 	}
 

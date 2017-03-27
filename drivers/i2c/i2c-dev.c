@@ -608,7 +608,11 @@ static int __init i2c_dev_init(void)
 {
 	int res;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "i2c /dev entries driver\n");
+#else
+	;
+#endif
 
 	res = register_chrdev(I2C_MAJOR, "i2c", &i2cdev_fops);
 	if (res)

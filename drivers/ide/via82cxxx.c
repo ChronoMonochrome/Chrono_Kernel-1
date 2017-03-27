@@ -435,11 +435,15 @@ static int __devinit via_init_one(struct pci_dev *dev, const struct pci_device_i
 	/*
 	 * Print the boot message.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME " %s: VIA %s (rev %02x) IDE %sDMA%s\n",
 		pci_name(dev), via_config->name, isa->revision,
 		via_config->udma_mask ? "U" : "MW",
 		via_dma[via_config->udma_mask ?
 			(fls(via_config->udma_mask) - 1) : 0]);
+#else
+	;
+#endif
 
 	pci_dev_put(isa);
 
@@ -455,8 +459,12 @@ static int __devinit via_init_one(struct pci_dev *dev, const struct pci_device_i
 	}
 
 	if (via_clock < 20000 || via_clock > 50000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRV_NAME ": User given PCI clock speed "
 			"impossible (%d), using 33 MHz instead.\n", via_clock);
+#else
+		;
+#endif
 		via_clock = 33333;
 	}
 

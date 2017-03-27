@@ -188,14 +188,14 @@ static int hydra_open(struct net_device *dev)
 static int hydra_close(struct net_device *dev)
 {
     if (ei_debug > 1)
-	printk(KERN_DEBUG "%s: Shutting down ethercard.\n", dev->name);
+;
     __ei_close(dev);
     return 0;
 }
 
 static void hydra_reset_8390(struct net_device *dev)
 {
-    printk(KERN_INFO "Hydra hw reset not there\n");
+;
 }
 
 static void hydra_get_8390_hdr(struct net_device *dev,

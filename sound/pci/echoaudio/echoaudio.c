@@ -2187,7 +2187,11 @@ static int __devinit snd_echo_probe(struct pci_dev *pci,
 	err = snd_card_register(card);
 	if (err < 0)
 		goto ctl_error;
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "Card registered: %s\n", card->longname);
+#else
+	;
+#endif
 
 	pci_set_drvdata(pci, chip);
 	dev++;

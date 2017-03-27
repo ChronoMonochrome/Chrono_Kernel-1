@@ -627,10 +627,10 @@ dump_smb(void *buf, int smb_buf_length)
 	for (i = 0, j = 0; i < smb_buf_length; i++, j++) {
 		if (i % 8 == 0) {
 			/* have reached the beginning of line */
-			printk(KERN_DEBUG "| ");
+;
 			j = 0;
 		}
-		printk("%0#4x ", buffer[i]);
+;
 		debug_line[2 * j] = ' ';
 		if (isprint(buffer[i]))
 			debug_line[1 + (2 * j)] = buffer[i];
@@ -640,15 +640,15 @@ dump_smb(void *buf, int smb_buf_length)
 		if (i % 8 == 7) {
 			/* reached end of line, time to print ascii */
 			debug_line[16] = 0;
-			printk(" | %s\n", debug_line);
+;
 		}
 	}
 	for (; j < 8; j++) {
-		printk("     ");
+;
 		debug_line[2 * j] = ' ';
 		debug_line[1 + (2 * j)] = ' ';
 	}
-	printk(" | %s\n", debug_line);
+;
 	return;
 }
 

@@ -60,10 +60,14 @@ struct lgs8gl5_state {
 
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_DEBUG "lgs8gl5: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 
@@ -82,8 +86,12 @@ lgs8gl5_write_reg(struct lgs8gl5_state *state, u8 reg, u8 data)
 
 	ret = i2c_transfer(state->i2c, &msg, 1);
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: error (reg=0x%02x, val=0x%02x, ret=%i)\n",
 			__func__, reg, data, ret);
+#else
+		d;
+#endif
 	return (ret != 1) ? -1 : 0;
 }
 
@@ -167,7 +175,11 @@ lgs8gl5_soft_reset(struct lgs8gl5_state *state)
 {
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	val = lgs8gl5_read_reg(state, REG_RESET);
 	lgs8gl5_write_reg(state, REG_RESET, val & ~REG_RESET_OFF);
@@ -183,7 +195,11 @@ lgs8gl5_start_demod(struct lgs8gl5_state *state)
 	u8  val;
 	int n;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lgs8gl5_update_alt_reg(state, 0xc2, 0x28);
 	lgs8gl5_soft_reset(state);
@@ -204,7 +220,11 @@ lgs8gl5_start_demod(struct lgs8gl5_state *state)
 	/* Wait for carrier */
 	for (n = 0;  n < 10;  n++) {
 		val = lgs8gl5_read_reg(state, REG_STRENGTH);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Wait for carrier[%d] 0x%02X\n", n, val);
+#else
+		d;
+#endif
 		if (val & REG_STRENGTH_CARRIER)
 			break;
 		msleep(4);
@@ -215,7 +235,11 @@ lgs8gl5_start_demod(struct lgs8gl5_state *state)
 	/* Wait for lock */
 	for (n = 0;  n < 20;  n++) {
 		val = lgs8gl5_read_reg(state, REG_STATUS);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Wait for lock[%d] 0x%02X\n", n, val);
+#else
+		d;
+#endif
 		if (val & REG_STATUS_LOCK)
 			break;
 		msleep(12);
@@ -233,7 +257,11 @@ lgs8gl5_init(struct dvb_frontend *fe)
 {
 	struct lgs8gl5_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lgs8gl5_update_alt_reg(state, 0xc2, 0x28);
 	lgs8gl5_soft_reset(state);
@@ -316,7 +344,11 @@ lgs8gl5_set_frontend(struct dvb_frontend *fe,
 {
 	struct lgs8gl5_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (p->u.ofdm.bandwidth != BANDWIDTH_8_MHZ)
 		return -EINVAL;
@@ -384,7 +416,11 @@ lgs8gl5_attach(const struct lgs8gl5_config *config, struct i2c_adapter *i2c)
 {
 	struct lgs8gl5_state *state = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* Allocate memory for the internal state */
 	state = kzalloc(sizeof(struct lgs8gl5_state), GFP_KERNEL);

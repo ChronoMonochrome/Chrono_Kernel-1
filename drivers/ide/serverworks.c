@@ -175,8 +175,12 @@ static int init_chipset_svwks(struct pci_dev *dev)
 			pci_read_config_dword(isa_dev, 0x64, &reg);
 			reg &= ~0x00002000; /* disable 600ns interrupt mask */
 			if(!(reg & 0x00004000))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG DRV_NAME " %s: UDMA not BIOS "
 					"enabled.\n", pci_name(dev));
+#else
+				;
+#endif
 			reg |=  0x00004000; /* enable UDMA/33 support */
 			pci_write_config_dword(isa_dev, 0x64, reg);
 			pci_dev_put(isa_dev);

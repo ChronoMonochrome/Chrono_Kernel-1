@@ -1575,10 +1575,10 @@ dm9000_probe(struct platform_device *pdev)
 	ret = register_netdev(ndev);
 
 	if (ret == 0)
-		printk(KERN_INFO "%s: dm9000%c at %p,%p IRQ %d MAC: %pM (%s)\n",
-		       ndev->name, dm9000_type_to_char(db->type),
-		       db->io_addr, db->io_data, ndev->irq,
-		       ndev->dev_addr, mac_src);
+//		printk(KERN_INFO "%s: dm9000%c at %p,%p IRQ %d MAC: %pM (%s)\n",
+//		       ndev->name, dm9000_type_to_char(db->type),
+//		       db->io_addr, db->io_data, ndev->irq,
+;
 	return 0;
 
 out:
@@ -1670,7 +1670,7 @@ static struct platform_driver dm9000_driver = {
 static int __init
 dm9000_init(void)
 {
-	printk(KERN_INFO "%s Ethernet Driver, V%s\n", CARDNAME, DRV_VERSION);
+;
 
 	return platform_driver_register(&dm9000_driver);
 }

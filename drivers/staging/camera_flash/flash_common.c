@@ -18,11 +18,11 @@
 #include <linux/miscdevice.h>
 #include "flash_common.h"
 
-#define DEBUG_LOG(...) printk(KERN_DEBUG "Camera Flash driver: " __VA_ARGS__)
-
-#define PRIMARY_CAMERA		(0)
-#define SECONDARY_CAMERA	(1)
-static struct miscdevice misc_dev;
+//#define DEBUG_LOG(...) printk(KERN_DEBUG "Camera Flash driver: " __VA_ARGS__)
+//
+//#define PRIMARY_CAMERA		(0)
+//#define SECONDARY_CAMERA	(1)
+;
 struct flash_chip *flash_chips[2];
 struct fasync_struct * async_queue;
 struct task_struct* ptaskStruct;
@@ -55,7 +55,7 @@ static long flash_ioctl(struct file *file_p, unsigned int cmd, unsigned long arg
 	struct flash_ioctl_args_t flash_arg;
 
 	if (_IOC_TYPE(cmd) != FLASH_MAGIC_NUMBER) {
-                printk(KERN_ALERT "Flash driver: Not an ioctl for this module\n");
+;
 		err =  -EINVAL;
 	}
 
@@ -436,11 +436,11 @@ static int __init flash_init(void)
     	misc_dev.fops = &flash_fops;
     	err = misc_register(&misc_dev);
 	if (err < 0) {
-                printk(KERN_INFO "camera_flash driver misc_register failed (%d)\n", err);
+;
                 return err;
 	} else {
                 major_device_number = err;
-		printk(KERN_INFO "camera_flash driver initialized with minor=%d\n", misc_dev.minor);
+;
 	}
 out:
 	return err;
@@ -449,7 +449,7 @@ out:
 static void __exit flash_exit(void)
 {
 	misc_deregister(&misc_dev);
-	printk(KERN_INFO"Camera flash driver unregistered\n");
+;
 }
 
 module_init(flash_init);

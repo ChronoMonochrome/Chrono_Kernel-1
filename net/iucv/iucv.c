@@ -1838,7 +1838,7 @@ static int iucv_pm_prepare(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_INFO "iucv_pm_prepare\n");
+;
 #endif
 	if (dev->driver && dev->driver->pm && dev->driver->pm->prepare)
 		rc = dev->driver->pm->prepare(dev);
@@ -1848,7 +1848,7 @@ static int iucv_pm_prepare(struct device *dev)
 static void iucv_pm_complete(struct device *dev)
 {
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_INFO "iucv_pm_complete\n");
+;
 #endif
 	if (dev->driver && dev->driver->pm && dev->driver->pm->complete)
 		dev->driver->pm->complete(dev);
@@ -1886,7 +1886,7 @@ static int iucv_pm_freeze(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "iucv_pm_freeze\n");
+;
 #endif
 	if (iucv_pm_state != IUCV_PM_FREEZING) {
 		for_each_cpu(cpu, &iucv_irq_cpumask)
@@ -1921,7 +1921,7 @@ static int iucv_pm_thaw(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "iucv_pm_thaw\n");
+;
 #endif
 	iucv_pm_state = IUCV_PM_THAWING;
 	if (!iucv_path_table) {
@@ -1956,7 +1956,7 @@ static int iucv_pm_restore(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "iucv_pm_restore %p\n", iucv_path_table);
+;
 #endif
 	if ((iucv_pm_state != IUCV_PM_RESTORING) && iucv_path_table)
 		pr_warning("Suspending Linux did not completely close all IUCV "

@@ -980,8 +980,12 @@ EXPORT_SYMBOL(c2port_device_unregister);
 
 static int __init c2port_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Silicon Labs C2 port support v. " DRIVER_VERSION
 		" - (C) 2007 Rodolfo Giometti\n");
+#else
+	;
+#endif
 
 	c2port_class = class_create(THIS_MODULE, "c2port");
 	if (!c2port_class) {

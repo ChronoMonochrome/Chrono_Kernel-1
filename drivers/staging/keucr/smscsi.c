@@ -49,7 +49,7 @@ int SM_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb)
 //----- SM_SCSI_Test_Unit_Ready() --------------------------------------------------
 int SM_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
 {
-	//printk("SM_SCSI_Test_Unit_Ready\n");
+;
 	if (us->SM_Status.Insert && us->SM_Status.Ready)
 		return USB_STOR_TRANSPORT_GOOD;
 	else
@@ -64,7 +64,7 @@ int SM_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
 //----- SM_SCSI_Inquiry() --------------------------------------------------
 int SM_SCSI_Inquiry(struct us_data *us, struct scsi_cmnd *srb)
 {
-	//printk("SM_SCSI_Inquiry\n");
+;
 	BYTE data_ptr[36] = {0x00, 0x80, 0x02, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x32, 0x2E, 0x30, 0x20, 0x20, 0x43, 0x61, 0x72, 0x64, 0x52, 0x65, 0x61, 0x64, 0x65, 0x72, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x31, 0x30, 0x30};
 
 	usb_stor_set_xfer_buf(us, data_ptr, 36, srb, TO_XFER_BUF);
@@ -96,18 +96,18 @@ int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
 	WORD    bl_len;
 	BYTE    buf[8];
 
-	printk("SM_SCSI_Read_Capacity\n");
+;
 
 	bl_len = 0x200;
 	bl_num = Ssfdc.MaxLogBlocks * Ssfdc.MaxSectors * Ssfdc.MaxZones - 1;
-	//printk("MaxLogBlocks = %x\n", Ssfdc.MaxLogBlocks);
-	//printk("MaxSectors   = %x\n", Ssfdc.MaxSectors);
-	//printk("MaxZones     = %x\n", Ssfdc.MaxZones);
-	//printk("bl_num       = %x\n", bl_num);
+;
+;
+;
+;
 
 	us->bl_num = bl_num;
-	printk("bl_len = %x\n", bl_len);
-	printk("bl_num = %x\n", bl_num);
+;
+;
 
 	//srb->request_bufflen = 8;
 	buf[0] = (bl_num>>24) & 0xff;
@@ -137,7 +137,7 @@ int SM_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
 	DWORD	blenByte = blen * 0x200;
 	void	*buf;
 
-	//printk("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n", bn, blen, srb->use_sg);
+;
 	
 	if (bn > us->bl_num)
 		return USB_STOR_TRANSPORT_ERROR;
@@ -169,7 +169,7 @@ int SM_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
 	DWORD	blenByte = blen * 0x200;
 	void	*buf;
 
-	//printk("SCSIOP_Write --- bn = %X, blen = %X, srb->use_sg = %X\n", bn, blen, srb->use_sg);
+;
 
 	if (bn > us->bl_num)
 		return USB_STOR_TRANSPORT_ERROR;

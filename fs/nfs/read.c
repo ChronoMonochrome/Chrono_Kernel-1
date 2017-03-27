@@ -161,11 +161,11 @@ static void nfs_readpage_release(struct nfs_page *req)
 
 	unlock_page(req->wb_page);
 
-	dprintk("NFS: read done (%s/%Ld %d@%Ld)\n",
-			req->wb_context->dentry->d_inode->i_sb->s_id,
-			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
-			req->wb_bytes,
-			(long long)req_offset(req));
+//	dprintk("NFS: read done (%s/%Ld %d@%Ld)\n",
+//			req->wb_context->dentry->d_inode->i_sb->s_id,
+//			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
+//			req->wb_bytes,
+;
 	nfs_release_request(req);
 }
 
@@ -193,13 +193,13 @@ int nfs_initiate_read(struct nfs_read_data *data, struct rpc_clnt *clnt,
 	/* Set up the initial task struct. */
 	NFS_PROTO(inode)->read_setup(data, &msg);
 
-	dprintk("NFS: %5u initiated read call (req %s/%lld, %u bytes @ "
-			"offset %llu)\n",
-			data->task.tk_pid,
-			inode->i_sb->s_id,
-			(long long)NFS_FILEID(inode),
-			data->args.count,
-			(unsigned long long)data->args.offset);
+//	dprintk("NFS: %5u initiated read call (req %s/%lld, %u bytes @ "
+//			"offset %llu)\n",
+//			data->task.tk_pid,
+//			inode->i_sb->s_id,
+//			(long long)NFS_FILEID(inode),
+//			data->args.count,
+;
 
 	task = rpc_run_task(&task_setup_data);
 	if (IS_ERR(task))
@@ -391,8 +391,8 @@ int nfs_readpage_result(struct rpc_task *task, struct nfs_read_data *data)
 {
 	int status;
 
-	dprintk("NFS: %s: %5u, (status %d)\n", __func__, task->tk_pid,
-			task->tk_status);
+//	dprintk("NFS: %s: %5u, (status %d)\n", __func__, task->tk_pid,
+;
 
 	status = NFS_PROTO(data->inode)->read_done(task, data);
 	if (status != 0)
@@ -551,8 +551,8 @@ int nfs_readpage(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	int		error;
 
-	dprintk("NFS: nfs_readpage (%p %ld@%lu)\n",
-		page, PAGE_CACHE_SIZE, page->index);
+//	dprintk("NFS: nfs_readpage (%p %ld@%lu)\n",
+;
 	nfs_inc_stats(inode, NFSIOS_VFSREADPAGE);
 	nfs_add_stats(inode, NFSIOS_READPAGES, 1);
 
@@ -644,10 +644,10 @@ int nfs_readpages(struct file *filp, struct address_space *mapping,
 	unsigned long npages;
 	int ret = -ESTALE;
 
-	dprintk("NFS: nfs_readpages (%s/%Ld %d)\n",
-			inode->i_sb->s_id,
-			(long long)NFS_FILEID(inode),
-			nr_pages);
+//	dprintk("NFS: nfs_readpages (%s/%Ld %d)\n",
+//			inode->i_sb->s_id,
+//			(long long)NFS_FILEID(inode),
+;
 	nfs_inc_stats(inode, NFSIOS_VFSREADPAGES);
 
 	if (NFS_STALE(inode))

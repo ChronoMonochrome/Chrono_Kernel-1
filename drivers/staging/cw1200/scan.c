@@ -48,8 +48,8 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	if (req->n_ssids == 1 && !req->ssids[0].ssid_len)
 		req->n_ssids = 0;
 
-	printk(KERN_DEBUG "[SCAN] Scan request for %d SSIDs.\n",
-		req->n_ssids);
+//	printk(KERN_DEBUG "[SCAN] Scan request for %d SSIDs.\n",
+;
 
 	if (req->n_ssids > WSM_SCAN_MAX_NUM_OF_SSIDS)
 		return -EINVAL;
@@ -143,9 +143,9 @@ void cw1200_scan_work(struct work_struct *work)
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 
 		if (priv->scan.req)
-			printk(KERN_DEBUG "[SCAN] Scan completed.\n");
+;
 		else
-			printk(KERN_DEBUG "[SCAN] Scan canceled.\n");
+;
 
 		priv->scan.req = NULL;
 
@@ -153,9 +153,9 @@ void cw1200_scan_work(struct work_struct *work)
 			priv->delayed_link_loss = 0;
 			/* Restart beacon loss timer and requeue
 			   BSS loss work. */
-			printk(KERN_DEBUG "[CQM] Requeue BSS loss in %d " \
-					"beacons.\n",
-				priv->cqm_beacon_loss_count);
+//			printk(KERN_DEBUG "[CQM] Requeue BSS loss in %d " \
+//					"beacons.\n",
+;
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			queue_delayed_work(priv->workqueue,
 					&priv->bss_loss_work,
@@ -229,14 +229,14 @@ fail:
 static void cw1200_scan_complete(struct cw1200_common *priv)
 {
 	if (priv->scan.direct_probe) {
-		printk(KERN_DEBUG "[SCAN] Direct probe complete.\n");
+;
 		priv->scan.direct_probe = 0;
 
 		if (priv->delayed_link_loss) {
 			priv->delayed_link_loss = 0;
 			/* Requeue BSS loss work now. Direct probe does not
 			 * affect BSS loss subscription. */
-			printk(KERN_DEBUG "[CQM] Requeue BSS loss now.\n");
+;
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			queue_delayed_work(priv->workqueue,
 						&priv->bss_loss_work, 0);
@@ -305,7 +305,7 @@ void cw1200_probe_work(struct work_struct *work)
 	size_t ies_len;
 	int ret;
 
-	printk(KERN_DEBUG "[SCAN] Direct probe work.\n");
+;
 
 	if (!priv->channel) {
 		dev_kfree_skb(priv->scan.probe_skb);

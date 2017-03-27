@@ -125,7 +125,11 @@ static int accsns_power_on(void)
 {
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", __func__);
+#else
+	;
+#endif
 
 	if (accsns_power.regulator_vdd) {
 		err = regulator_enable(accsns_power.regulator_vdd);
@@ -151,7 +155,11 @@ static int accsns_power_off(void)
 {
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", __func__);
+#else
+	;
+#endif
 
 	if (accsns_power.regulator_vdd) {
 		err = regulator_disable(accsns_power.regulator_vdd);
@@ -301,8 +309,12 @@ static int accel_open_calibration(void)
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %d, %d, %d\n", __func__,
 			caldata.x, caldata.y, caldata.z);
+#else
+	;
+#endif
 	return err;
 }
 
@@ -338,8 +350,12 @@ static int accel_do_calibrate(int enable)
 		caldata.z = 0xffff;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: cal data (%d,%d,%d)\n", __func__,
 			caldata.x, caldata.y, caldata.z);
+#else
+	;
+#endif
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -378,8 +394,12 @@ static ssize_t accel_calibration_show(struct device *dev,
 	if (err < 0)
 		pr_err("%s: accel_open_calibration() failed\n", __func__);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%d %d %d %d\n",
 			err, caldata.x, caldata.y, caldata.z);
+#else
+	;
+#endif
 
 	count = sprintf(buf, "%d %d %d %d\n",
 					err, caldata.x, caldata.y, caldata.z);

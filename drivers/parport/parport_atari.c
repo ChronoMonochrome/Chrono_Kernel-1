@@ -208,7 +208,11 @@ static int __init parport_atari_init(void)
 		}
 
 		this_port = p;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Atari built-in port using irq\n", p->name);
+#else
+		;
+#endif
 		parport_announce_port (p);
 
 		return 0;

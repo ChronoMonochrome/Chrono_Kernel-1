@@ -413,7 +413,11 @@ void __print_symbol(const char *fmt, unsigned long address)
 
 	sprint_symbol(buffer, address);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(fmt, buffer);
+#else
+	;
+#endif
 }
 EXPORT_SYMBOL(__print_symbol);
 

@@ -643,7 +643,7 @@ static int __devinit adis16260_probe(struct spi_device *spi)
 					  st->indio_dev->channels,
 					  ARRAY_SIZE(adis16260_channels_x));
 	if (ret) {
-		printk(KERN_ERR "failed to initialize the ring\n");
+;
 		goto error_unreg_ring_funcs;
 	}
 

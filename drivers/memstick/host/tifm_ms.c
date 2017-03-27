@@ -560,8 +560,12 @@ static int tifm_ms_probe(struct tifm_dev *sock)
 
 	if (!(TIFM_SOCK_STATE_OCCUPIED
 	      & readl(sock->addr + SOCK_PRESENT_STATE))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s : card gone, unexpectedly\n",
 		       dev_name(&sock->dev));
+#else
+		;
+#endif
 		return rc;
 	}
 

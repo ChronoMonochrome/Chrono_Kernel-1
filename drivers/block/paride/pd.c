@@ -278,11 +278,23 @@ static void pd_print_error(struct pd_unit *disk, char *msg, int status)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s: status = 0x%x =", disk->name, msg, status);
+#else
+	;
+#endif
 	for (i = 0; i < ARRAY_SIZE(pd_errs); i++)
 		if (status & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %s", pd_errs[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static void pd_reset(struct pd_unit *disk)
@@ -687,12 +699,16 @@ static enum action pd_identify(struct pd_unit *disk)
 
 	disk->removable = pd_scratch[0] & 0x80;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s, %s, %d blocks [%dM], (%d/%d/%d), %s media\n",
 	       disk->name, id,
 	       disk->drive ? "slave" : "master",
 	       disk->capacity, disk->capacity / 2048,
 	       disk->cylinders, disk->heads, disk->sectors,
 	       disk->removable ? "removable" : "fixed");
+#else
+	;
+#endif
 
 	if (disk->capacity)
 		pd_init_dev_parms(disk);
@@ -903,7 +919,11 @@ static int pd_detect(void)
 		}
 	}
 	if (!found)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: no valid drive found\n", name);
+#else
+		;
+#endif
 	return found;
 }
 
@@ -921,8 +941,12 @@ static int __init pd_init(void)
 	if (register_blkdev(major, name))
 		goto out2;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s version %s, major %d, cluster %d, nice %d\n",
 	       name, name, PD_VERSION, major, cluster, nice);
+#else
+	;
+#endif
 	if (!pd_detect())
 		goto out3;
 

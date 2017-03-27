@@ -154,7 +154,7 @@ static int au1k_irda_init(void)
 	struct net_device *dev;
 	int err;
 
-	if (version_printed++ == 0) printk(version);
+;
 
 	dev = alloc_irdadev(sizeof(struct au1k_private));
 	if (!dev)
@@ -168,7 +168,7 @@ static int au1k_irda_init(void)
 	if (err)
 		goto out1;
 	ir_devs[0] = dev;
-	printk(KERN_INFO "IrDA: Registered device %s\n", dev->name);
+;
 	return 0;
 
 out1:
@@ -291,7 +291,7 @@ out3:
 out2:
 	kfree(aup->rx_buff.head);
 out1:
-	printk(KERN_ERR "au1k_init_module failed.  Returns %d\n", retval);
+;
 	return retval;
 }
 
@@ -345,21 +345,21 @@ static int au1k_irda_start(struct net_device *dev)
 	struct au1k_private *aup = netdev_priv(dev);
 
 	if ((retval = au1k_init(dev))) {
-		printk(KERN_ERR "%s: error in au1k_init\n", dev->name);
+;
 		return retval;
 	}
 
 	if ((retval = request_irq(AU1000_IRDA_TX_INT, au1k_irda_interrupt, 
 					0, dev->name, dev))) {
-		printk(KERN_ERR "%s: unable to get IRQ %d\n", 
-				dev->name, dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d\n", 
+;
 		return retval;
 	}
 	if ((retval = request_irq(AU1000_IRDA_RX_INT, au1k_irda_interrupt, 
 					0, dev->name, dev))) {
 		free_irq(AU1000_IRDA_TX_INT, dev);
-		printk(KERN_ERR "%s: unable to get IRQ %d\n", 
-				dev->name, dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d\n", 
+;
 		return retval;
 	}
 
@@ -501,13 +501,13 @@ static int au1k_irda_hard_xmit(struct sk_buff *skb, struct net_device *dev)
 	flags = ptxd->flags;
 
 	if (flags & AU_OWN) {
-		printk(KERN_DEBUG "%s: tx_full\n", dev->name);
+;
 		netif_stop_queue(dev);
 		aup->tx_full = 1;
 		return NETDEV_TX_BUSY;
 	}
 	else if (((aup->tx_head + 1) & (NUM_IR_DESC - 1)) == aup->tx_tail) {
-		printk(KERN_DEBUG "%s: tx_full\n", dev->name);
+;
 		netif_stop_queue(dev);
 		aup->tx_full = 1;
 		return NETDEV_TX_BUSY;
@@ -517,8 +517,8 @@ static int au1k_irda_hard_xmit(struct sk_buff *skb, struct net_device *dev)
 
 #if 0
 	if (read_ir_reg(IR_RX_BYTE_CNT) != 0) {
-		printk("tx warning: rx byte cnt %x\n", 
-				read_ir_reg(IR_RX_BYTE_CNT));
+//		printk("tx warning: rx byte cnt %x\n", 
+;
 	}
 #endif
 	
@@ -645,7 +645,7 @@ static void au1k_tx_timeout(struct net_device *dev)
 	u32 speed;
 	struct au1k_private *aup = netdev_priv(dev);
 
-	printk(KERN_ERR "%s: tx timeout\n", dev->name);
+;
 	speed = aup->speed;
 	aup->speed = 0;
 	au1k_irda_set_speed(dev, speed);
@@ -684,8 +684,8 @@ au1k_irda_set_speed(struct net_device *dev, int speed)
 	while (read_ir_reg(IR_ENABLE) & (IR_RX_STATUS | IR_TX_STATUS)) {
 		mdelay(1);
 		if (!timeout--) {
-			printk(KERN_ERR "%s: rx/tx disable timeout\n",
-					dev->name);
+//			printk(KERN_ERR "%s: rx/tx disable timeout\n",
+;
 			break;
 		}
 	}
@@ -754,7 +754,7 @@ au1k_irda_set_speed(struct net_device *dev, int speed)
 		writel(IR_FIR|IR_DMA_ENABLE|IR_RX_ENABLE, IR_CONFIG_1); 
 		break;
 	default:
-		printk(KERN_ERR "%s unsupported speed %x\n", dev->name, speed);
+;
 		ret = -EINVAL;
 		break;
 	}
@@ -768,19 +768,19 @@ au1k_irda_set_speed(struct net_device *dev, int speed)
 	au_sync();
 
 	if (control & (1<<14)) {
-		printk(KERN_ERR "%s: configuration error\n", dev->name);
+;
 	}
 	else {
 		if (control & (1<<11))
-			printk(KERN_DEBUG "%s Valid SIR config\n", dev->name);
+;
 		if (control & (1<<12))
-			printk(KERN_DEBUG "%s Valid MIR config\n", dev->name);
+;
 		if (control & (1<<13))
-			printk(KERN_DEBUG "%s Valid FIR config\n", dev->name);
+;
 		if (control & (1<<10))
-			printk(KERN_DEBUG "%s TX enabled\n", dev->name);
+;
 		if (control & (1<<9))
-			printk(KERN_DEBUG "%s RX enabled\n", dev->name);
+;
 	}
 
 	spin_unlock_irqrestore(&ir_lock, flags);
@@ -805,8 +805,8 @@ au1k_irda_ioctl(struct net_device *dev, struct ifreq *ifreq, int cmd)
 				ret = au1k_irda_set_speed(dev,
 						rq->ifr_baudrate);
 			else {
-				printk(KERN_ERR "%s ioctl: !netif_running\n",
-						dev->name);
+//				printk(KERN_ERR "%s ioctl: !netif_running\n",
+;
 				ret = 0;
 			}
 		}

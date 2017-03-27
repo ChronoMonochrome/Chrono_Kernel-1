@@ -157,12 +157,12 @@ static int pcmda12_attach(struct comedi_device *dev,
 	unsigned long iobase;
 
 	iobase = it->options[0];
-	printk(KERN_INFO
-	       "comedi%d: %s: io: %lx %s ", dev->minor, driver.driver_name,
-	       iobase, it->options[1] ? "simultaneous xfer mode enabled" : "");
+//	printk(KERN_INFO
+//	       "comedi%d: %s: io: %lx %s ", dev->minor, driver.driver_name,
+;
 
 	if (!request_region(iobase, IOSIZE, driver.driver_name)) {
-		printk("I/O port conflict\n");
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -178,7 +178,7 @@ static int pcmda12_attach(struct comedi_device *dev,
  * convenient macro defined in comedidev.h.
  */
 	if (alloc_private(dev, sizeof(struct pcmda12_private)) < 0) {
-		printk(KERN_ERR "cannot allocate private data structure\n");
+;
 		return -ENOMEM;
 	}
 
@@ -192,7 +192,7 @@ static int pcmda12_attach(struct comedi_device *dev,
 	 * 96-channel version of the board.
 	 */
 	if (alloc_subdevices(dev, 1) < 0) {
-		printk(KERN_ERR "cannot allocate subdevice data structures\n");
+;
 		return -ENOMEM;
 	}
 
@@ -208,7 +208,7 @@ static int pcmda12_attach(struct comedi_device *dev,
 
 	zero_chans(dev);	/* clear out all the registers, basically */
 
-	printk(KERN_INFO "attached\n");
+;
 
 	return 1;
 }
@@ -223,8 +223,8 @@ static int pcmda12_attach(struct comedi_device *dev,
  */
 static int pcmda12_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO
-	       "comedi%d: %s: remove\n", dev->minor, driver.driver_name);
+//	printk(KERN_INFO
+;
 	if (dev->iobase)
 		release_region(dev->iobase, IOSIZE);
 	return 0;

@@ -30,26 +30,26 @@
 /* needed for logical [in,out]-dev filtering */
 #include "../br_private.h"
 
-#define BUGPRINT(format, args...) printk("kernel msg: ebtables bug: please "\
-					 "report to author: "format, ## args)
-/* #define BUGPRINT(format, args...) */
-
-/*
- * Each cpu has its own set of counters, so there is no need for write_lock in
- * the softirq
- * For reading or updating the counters, the user context needs to
- * get a write_lock
- */
-
-/* The size of each set of counters is altered to get cache alignment */
-#define SMP_ALIGN(x) (((x) + SMP_CACHE_BYTES-1) & ~(SMP_CACHE_BYTES-1))
-#define COUNTER_OFFSET(n) (SMP_ALIGN(n * sizeof(struct ebt_counter)))
-#define COUNTER_BASE(c, n, cpu) ((struct ebt_counter *)(((char *)c) + \
-   COUNTER_OFFSET(n) * cpu))
-
-
-
-static DEFINE_MUTEX(ebt_mutex);
+//#define BUGPRINT(format, args...) printk("kernel msg: ebtables bug: please "\
+//					 "report to author: "format, ## args)
+///* #define BUGPRINT(format, args...) */
+//
+///*
+// * Each cpu has its own set of counters, so there is no need for write_lock in
+// * the softirq
+// * For reading or updating the counters, the user context needs to
+// * get a write_lock
+// */
+//
+///* The size of each set of counters is altered to get cache alignment */
+//#define SMP_ALIGN(x) (((x) + SMP_CACHE_BYTES-1) & ~(SMP_CACHE_BYTES-1))
+//#define COUNTER_OFFSET(n) (SMP_ALIGN(n * sizeof(struct ebt_counter)))
+//#define COUNTER_BASE(c, n, cpu) ((struct ebt_counter *)(((char *)c) + \
+//   COUNTER_OFFSET(n) * cpu))
+//
+//
+//
+;
 
 #ifdef CONFIG_COMPAT
 static void ebt_standard_compat_from_user(void *dst, const void *src)
@@ -2402,7 +2402,7 @@ static int __init ebtables_init(void)
 		return ret;
 	}
 
-	printk(KERN_INFO "Ebtables v2.0 registered\n");
+;
 	return 0;
 }
 
@@ -2410,7 +2410,7 @@ static void __exit ebtables_fini(void)
 {
 	nf_unregister_sockopt(&ebt_sockopts);
 	xt_unregister_target(&ebt_standard_target);
-	printk(KERN_INFO "Ebtables v2.0 unregistered\n");
+;
 }
 
 EXPORT_SYMBOL(ebt_register_table);

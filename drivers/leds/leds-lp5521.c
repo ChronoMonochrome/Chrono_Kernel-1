@@ -810,7 +810,11 @@ static int __init lp5521_init(void)
 	ret = i2c_add_driver(&lp5521_driver);
 
 	if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "Adding lp5521 driver failed\n");
+#else
+		;
+#endif
 
 	return ret;
 }

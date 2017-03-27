@@ -520,8 +520,12 @@ static int ess_audio_prepare_for_output(int dev, int bsize, int bcount)
 	sb_devc *devc = audio_devs[dev]->devc;
 
 #ifdef FKS_REG_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "ess_audio_prepare_for_output: dma_out=%d,dma_in=%d\n"
 , audio_devs[dev]->dmap_out->dma, audio_devs[dev]->dmap_in->dma);
+#else
+;
+#endif
 #endif
 
 	if (devc->duplex) {
@@ -767,7 +771,11 @@ static void ess_handle_channel
 {
 	if (!intr_active || !flag) return;
 #ifdef FKS_REG_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: ess_handle_channel %s irq_mode=%d\n", channel, irq_mode);
+#else
+;
+#endif
 #endif
 	switch (irq_mode) {
 		case IMODE_OUTPUT:
@@ -782,7 +790,11 @@ printk(KERN_INFO "FKS: ess_handle_channel %s irq_mode=%d\n", channel, irq_mode);
 			break;
 
 		default:;
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk(KERN_WARNING "ESS: Unexpected interrupt\n"); */
+#else
+			/* ;
+#endif
 	}
 }
 
@@ -804,7 +816,11 @@ void ess_intr (sb_devc *devc)
 	}
 
 #ifdef FKS_REG_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: sbintr src=%x\n",(int)src);
+#else
+;
+#endif
 #endif
 	ess_handle_channel
 		( "Audio 1"
@@ -834,7 +850,11 @@ static void ess_extended (sb_devc * devc)
 static int ess_write (sb_devc * devc, unsigned char reg, unsigned char data)
 {
 #ifdef FKS_REG_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: write reg %x: %x\n", reg, data);
+#else
+;
+#endif
 #endif
 	/* Write a byte to an extended mode register of ES1688 */
 
@@ -861,11 +881,19 @@ int ess_dsp_reset(sb_devc * devc)
 	int loopc;
 
 #ifdef FKS_REG_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: ess_dsp_reset 1\n");
+#else
+;
+#endif
 ess_show_mixerregs (devc);
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("Entered ess_dsp_reset()\n"));
+#else
+	DEB(;
+#endif
 
 	outb(3, DSP_RESET); /* Reset FIFO too */
 
@@ -876,15 +904,27 @@ ess_show_mixerregs (devc);
 	for (loopc = 0; loopc < 1000 && !(inb(DSP_DATA_AVAIL) & 0x80); loopc++);
 
 	if (inb(DSP_READ) != 0xAA) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("sb: No response to RESET\n"));
+#else
+		DDB(;
+#endif
 		return 0;   /* Sorry */
 	}
 	ess_extended (devc);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sb_dsp_reset() OK\n"));
+#else
+	DEB(;
+#endif
 
 #ifdef FKS_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: dsp_reset 2\n");
+#else
+;
+#endif
 ess_show_mixerregs (devc);
 #endif
 
@@ -1242,8 +1282,12 @@ static int ess_set_dma_hw(sb_devc * devc)
 	int dma;
 
 #ifdef FKS_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
 , devc->dma8, devc->dma16, devc->duplex);
+#else
+;
+#endif
 #endif
 
 	/*
@@ -1572,7 +1616,11 @@ void ess_setmixer (sb_devc * devc, unsigned int port, unsigned int value)
 	unsigned long flags;
 
 #ifdef FKS_LOGGING
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_INFO "FKS: write mixer %x: %x\n", port, value);
+#else
+;
+#endif
 #endif
 
 	spin_lock_irqsave(&devc->lock, flags);

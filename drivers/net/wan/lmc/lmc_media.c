@@ -450,7 +450,7 @@ lmc_ds3_get_link_status (lmc_softc_t * const sc)
             r1 = lmc_mii_readreg (sc, 0, 18);
             r1 &= 0xfe;
             lmc_mii_writereg(sc, 0, 18, r1);
-            printk(KERN_WARNING "%s: Red Alarm - Loss of Signal or Loss of Framing\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED3);	/* turn on red LED */
         sc->last_led_err[3] = 1;
@@ -473,8 +473,8 @@ lmc_ds3_get_link_status (lmc_softc_t * const sc)
        (link_status_11 & LMC_FRAMER_REG10_XBIT)) {
         ret = 0;
         if(sc->last_led_err[0] != 1){
-            printk(KERN_WARNING "%s: AIS Alarm or XBit Error\n", sc->name);
-            printk(KERN_WARNING "%s: Remote end has loss of signal or framing\n", sc->name);
+;
+;
         }
         lmc_led_on(sc, LMC_DS3_LED0);
         sc->last_led_err[0] = 1;
@@ -490,7 +490,7 @@ lmc_ds3_get_link_status (lmc_softc_t * const sc)
     if(link_status & LMC_FRAMER_REG9_RBLUE){
         ret = 0;
         if(sc->last_led_err[1] != 1){
-            printk(KERN_WARNING "%s: Blue Alarm - Receiving all 1's\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED1);
         sc->last_led_err[1] = 1;
@@ -717,14 +717,14 @@ lmc_ssi_get_link_status (lmc_softc_t * const sc)
       ret = 0;
       if (sc->last_led_err[3] != 1) {
 	      sc->extra_stats.tx_lossOfClockCnt++;
-	      printk(KERN_WARNING "%s: Lost Clock, Link Down\n", sc->name);
+;
       }
       sc->last_led_err[3] = 1;
       lmc_led_on (sc, LMC_MII16_LED3);	/* turn ON red LED */
   }
   else {
       if(sc->last_led_err[3] == 1)
-          printk(KERN_WARNING "%s: Clock Returned\n", sc->name);
+;
       sc->last_led_err[3] = 0;
       lmc_led_off (sc, LMC_MII16_LED3);		/* turn OFF red LED */
   }
@@ -743,13 +743,13 @@ lmc_ssi_get_link_status (lmc_softc_t * const sc)
 
   if(hw_hdsk == 0){
       if(sc->last_led_err[1] != 1)
-          printk(KERN_WARNING "%s: DSR not asserted\n", sc->name);
+;
       sc->last_led_err[1] = 1;
       lmc_led_off(sc, LMC_MII16_LED1);
   }
   else {
       if(sc->last_led_err[1] != 0)
-          printk(KERN_WARNING "%s: DSR now asserted\n", sc->name);
+;
       sc->last_led_err[1] = 0;
       lmc_led_on(sc, LMC_MII16_LED1);
   }
@@ -1037,14 +1037,14 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     if (link_status & T1F_RAIS) {			/* turn on blue LED */
         ret = 0;
         if(sc->last_led_err[1] != 1){
-            printk(KERN_WARNING "%s: Receive AIS/Blue Alarm. Far end in RED alarm\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED1);
         sc->last_led_err[1] = 1;
     }
     else {
         if(sc->last_led_err[1] != 0){
-            printk(KERN_WARNING "%s: End AIS/Blue Alarm\n", sc->name);
+;
         }
         lmc_led_off (sc, LMC_DS3_LED1);
         sc->last_led_err[1] = 0;
@@ -1063,14 +1063,14 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     if (link_status & T1F_RMYEL) {
         ret = 0;
         if(sc->last_led_err[0] != 1){
-            printk(KERN_WARNING "%s: Receive Yellow AIS Alarm\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED0);
         sc->last_led_err[0] = 1;
     }
     else {
         if(sc->last_led_err[0] != 0){
-            printk(KERN_WARNING "%s: End of Yellow AIS Alarm\n", sc->name);
+;
         }
         lmc_led_off(sc, LMC_DS3_LED0);
         sc->last_led_err[0] = 0;
@@ -1083,7 +1083,7 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     if(link_status & T1F_RLOF){
         ret = 0;
         if(sc->last_led_err[3] != 1){
-            printk(KERN_WARNING "%s: Local Red Alarm: Loss of Framing\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED3);
         sc->last_led_err[3] = 1;
@@ -1091,7 +1091,7 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     }
     else {
         if(sc->last_led_err[3] != 0){
-            printk(KERN_WARNING "%s: End Red Alarm (LOF)\n", sc->name);
+;
         }
         if( ! (link_status & T1F_RLOS))
             lmc_led_off(sc, LMC_DS3_LED3);
@@ -1101,7 +1101,7 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     if(link_status & T1F_RLOS){
         ret = 0;
         if(sc->last_led_err[2] != 1){
-            printk(KERN_WARNING "%s: Local Red Alarm: Loss of Signal\n", sc->name);
+;
         }
         lmc_led_on(sc, LMC_DS3_LED3);
         sc->last_led_err[2] = 1;
@@ -1109,7 +1109,7 @@ lmc_t1_get_link_status (lmc_softc_t * const sc)
     }
     else {
         if(sc->last_led_err[2] != 0){
-            printk(KERN_WARNING "%s: End Red Alarm (LOS)\n", sc->name);
+;
         }
         if( ! (link_status & T1F_RLOF))
             lmc_led_off(sc, LMC_DS3_LED3);
@@ -1136,12 +1136,12 @@ lmc_t1_set_circuit_type (lmc_softc_t * const sc, int ie)
   if (ie == LMC_CTL_CIRCUIT_TYPE_T1) {
       sc->lmc_miireg16 |= LMC_MII16_T1_Z;
       sc->ictl.circuit_type = LMC_CTL_CIRCUIT_TYPE_T1;
-      printk(KERN_INFO "%s: In T1 Mode\n", sc->name);
+;
   }
   else {
       sc->lmc_miireg16 &= ~LMC_MII16_T1_Z;
       sc->ictl.circuit_type = LMC_CTL_CIRCUIT_TYPE_E1;
-      printk(KERN_INFO "%s: In E1 Mode\n", sc->name);
+;
   }
 
   lmc_mii_writereg (sc, 0, 16, sc->lmc_miireg16);

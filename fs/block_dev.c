@@ -996,8 +996,8 @@ static void flush_disk(struct block_device *bdev, bool kill_dirty)
 
 		if (bdev->bd_disk)
 			disk_name(bdev->bd_disk, 0, name);
-		printk(KERN_WARNING "VFS: busy inodes on changed media or "
-		       "resized disk %s\n", name);
+//		printk(KERN_WARNING "VFS: busy inodes on changed media or "
+;
 	}
 
 	if (!bdev->bd_disk)
@@ -1024,9 +1024,9 @@ void check_disk_size_change(struct gendisk *disk, struct block_device *bdev)
 		char name[BDEVNAME_SIZE];
 
 		disk_name(disk, 0, name);
-		printk(KERN_INFO
-		       "%s: detected capacity change from %lld to %lld\n",
-		       name, bdev_size, disk_size);
+//		printk(KERN_INFO
+//		       "%s: detected capacity change from %lld to %lld\n",
+;
 		i_size_write(bdev->bd_inode, disk_size);
 		flush_disk(bdev, false);
 	}

@@ -213,8 +213,12 @@ void pcc_iorw(int sock, unsigned long port, void *buf, size_t size, size_t nmemb
 #if 1
 	/* addr is no longer used */
 	if ((addr = pcc_get(sock, PCIRC)) & PCIRC_BWERR) {
+#ifdef CONFIG_DEBUG_PRINTK
 	  printk("m32r_pcc: BWERR detected : port 0x%04lx : iosize %dbit\n",
 			 port, size * 8);
+#else
+	  ;
+#endif
 	  pcc_set(sock, PCIRC, addr);
 	}
 #endif
@@ -287,13 +291,25 @@ static int __init is_alive(u_short sock)
 	stat = pcc_get(sock, PCIRC);
 	f = (stat & (PCIRC_CDIN1 | PCIRC_CDIN2)) >> 16;
 	if(!f){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("m32r_pcc: No Card is detected at socket %d : stat = 0x%08x\n",stat,sock);
+#else
+		;
+#endif
 		return 0;
 	}
 	if(f!=3)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("m32r_pcc: Insertion fail (%.8x) at socket %d\n",stat,sock);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("m32r_pcc: Card is Inserted at socket %d(%.8x)\n",sock,stat);
+#else
+		;
+#endif
 	return 0;
 }
 
@@ -319,8 +335,16 @@ static void add_pcc_socket(ulong base, int irq, ulong mapaddr,
 		request_region(t->base, 0x20, "m32r-pcc");
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "  %s ", pcc[pcc_sockets].name);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("pcc at 0x%08lx\n", t->base);
+#else
+	;
+#endif
 
 	/* Update socket interrupt information, capabilities */
 	t->socket.features |= (SS_CAP_PCCARD | SS_CAP_STATIC_MAP);
@@ -374,7 +398,11 @@ static irqreturn_t pcc_interrupt(int irq, void *dev)
 		if (!active) break;
 	}
 	if (j == 20)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "m32r-pcc: infinite loop in interrupt handler\n");
+#else
+		;
+#endif
 
 	pr_debug("m32r_pcc: interrupt done\n");
 
@@ -690,7 +718,11 @@ static int __init init_m32r_pcc(void)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "m32r PCC probe:\n");
+#else
+	;
+#endif
 
 	pcc_sockets = 0;
 
@@ -701,7 +733,11 @@ static int __init init_m32r_pcc(void)
 #endif
 
 	if (pcc_sockets == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("socket is not found.\n");
+#else
+		;
+#endif
 		platform_device_unregister(&pcc_device);
 		platform_driver_unregister(&pcc_driver);
 		return -ENODEV;

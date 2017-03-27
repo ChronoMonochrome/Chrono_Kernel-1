@@ -94,7 +94,7 @@ static int orinoco_nortel_hw_init(struct orinoco_pci_card *card)
 
 	/* Setup bridge */
 	if (ioread16(card->bridge_io) & 1) {
-		printk(KERN_ERR PFX "brg1 answer1 wrong\n");
+;
 		return -EBUSY;
 	}
 	iowrite16(0x118, card->bridge_io + 2);
@@ -107,19 +107,19 @@ static int orinoco_nortel_hw_init(struct orinoco_pci_card *card)
 			break;
 	}
 	if (i == 30) {
-		printk(KERN_ERR PFX "brg1 timed out\n");
+;
 		return -EBUSY;
 	}
 	if (ioread16(card->attr_io + COR_OFFSET) & 1) {
-		printk(KERN_ERR PFX "brg2 answer1 wrong\n");
+;
 		return -EBUSY;
 	}
 	if (ioread16(card->attr_io + COR_OFFSET + 2) & 1) {
-		printk(KERN_ERR PFX "brg2 answer2 wrong\n");
+;
 		return -EBUSY;
 	}
 	if (ioread16(card->attr_io + COR_OFFSET + 4) & 1) {
-		printk(KERN_ERR PFX "brg2 answer3 wrong\n");
+;
 		return -EBUSY;
 	}
 
@@ -128,8 +128,8 @@ static int orinoco_nortel_hw_init(struct orinoco_pci_card *card)
 	mdelay(1);
 	reg = ioread16(card->attr_io + COR_OFFSET);
 	if (reg != COR_VALUE) {
-		printk(KERN_ERR PFX "Error setting COR value (reg=%x)\n",
-		       reg);
+//		printk(KERN_ERR PFX "Error setting COR value (reg=%x)\n",
+;
 		return -EBUSY;
 	}
 
@@ -148,33 +148,33 @@ static int orinoco_nortel_init_one(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot enable PCI device\n");
+;
 		return err;
 	}
 
 	err = pci_request_regions(pdev, DRIVER_NAME);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot obtain PCI resources\n");
+;
 		goto fail_resources;
 	}
 
 	bridge_io = pci_iomap(pdev, 0, 0);
 	if (!bridge_io) {
-		printk(KERN_ERR PFX "Cannot map bridge registers\n");
+;
 		err = -EIO;
 		goto fail_map_bridge;
 	}
 
 	attr_io = pci_iomap(pdev, 1, 0);
 	if (!attr_io) {
-		printk(KERN_ERR PFX "Cannot map PCMCIA attributes\n");
+;
 		err = -EIO;
 		goto fail_map_attr;
 	}
 
 	hermes_io = pci_iomap(pdev, 2, 0);
 	if (!hermes_io) {
-		printk(KERN_ERR PFX "Cannot map chipset registers\n");
+;
 		err = -EIO;
 		goto fail_map_hermes;
 	}
@@ -183,7 +183,7 @@ static int orinoco_nortel_init_one(struct pci_dev *pdev,
 	priv = alloc_orinocodev(sizeof(*card), &pdev->dev,
 				orinoco_nortel_cor_reset, NULL);
 	if (!priv) {
-		printk(KERN_ERR PFX "Cannot allocate network device\n");
+;
 		err = -ENOMEM;
 		goto fail_alloc;
 	}
@@ -197,32 +197,32 @@ static int orinoco_nortel_init_one(struct pci_dev *pdev,
 	err = request_irq(pdev->irq, orinoco_interrupt, IRQF_SHARED,
 			  DRIVER_NAME, priv);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot allocate IRQ %d\n", pdev->irq);
+;
 		err = -EBUSY;
 		goto fail_irq;
 	}
 
 	err = orinoco_nortel_hw_init(card);
 	if (err) {
-		printk(KERN_ERR PFX "Hardware initialization failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_nortel_cor_reset(priv);
 	if (err) {
-		printk(KERN_ERR PFX "Initial reset failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_init(priv);
 	if (err) {
-		printk(KERN_ERR PFX "orinoco_init() failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_if_add(priv, 0, 0, NULL);
 	if (err) {
-		printk(KERN_ERR PFX "orinoco_if_add() failed\n");
+;
 		goto fail;
 	}
 
@@ -302,7 +302,7 @@ MODULE_LICENSE("Dual MPL/GPL");
 
 static int __init orinoco_nortel_init(void)
 {
-	printk(KERN_DEBUG "%s\n", version);
+;
 	return pci_register_driver(&orinoco_nortel_driver);
 }
 

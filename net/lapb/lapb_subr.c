@@ -112,9 +112,9 @@ int lapb_decode(struct lapb_cb *lapb, struct sk_buff *skb,
 	frame->type = LAPB_ILLEGAL;
 
 #if LAPB_DEBUG > 2
-	printk(KERN_DEBUG "lapb: (%p) S%d RX %02X %02X %02X\n",
-	       lapb->dev, lapb->state,
-	       skb->data[0], skb->data[1], skb->data[2]);
+//	printk(KERN_DEBUG "lapb: (%p) S%d RX %02X %02X %02X\n",
+//	       lapb->dev, lapb->state,
+;
 #endif
 
 	/* We always need to look at 2 bytes, sometimes we need
@@ -285,10 +285,10 @@ void lapb_transmit_frmr(struct lapb_cb *lapb)
 		*dptr++ = lapb->frmr_type;
 
 #if LAPB_DEBUG > 1
-	printk(KERN_DEBUG "lapb: (%p) S%d TX FRMR %02X %02X %02X %02X %02X\n",
-	       lapb->dev, lapb->state,
-	       skb->data[1], skb->data[2], skb->data[3],
-	       skb->data[4], skb->data[5]);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX FRMR %02X %02X %02X %02X %02X\n",
+//	       lapb->dev, lapb->state,
+//	       skb->data[1], skb->data[2], skb->data[3],
+;
 #endif
 	} else {
 		dptr    = skb_put(skb, 4);
@@ -302,9 +302,9 @@ void lapb_transmit_frmr(struct lapb_cb *lapb)
 		*dptr++ = lapb->frmr_type;
 
 #if LAPB_DEBUG > 1
-	printk(KERN_DEBUG "lapb: (%p) S%d TX FRMR %02X %02X %02X\n",
-	       lapb->dev, lapb->state, skb->data[1],
-	       skb->data[2], skb->data[3]);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX FRMR %02X %02X %02X\n",
+//	       lapb->dev, lapb->state, skb->data[1],
+;
 #endif
 	}
 

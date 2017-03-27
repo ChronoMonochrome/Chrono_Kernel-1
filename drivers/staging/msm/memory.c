@@ -36,7 +36,7 @@ int arch_io_remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
 /*
 	if ((pfn_addr >= 0x88000000) && (pfn_addr < 0xD0000000)) {
 		prot = pgprot_device(prot);
-		printk("remapping device %lx\n", prot);
+;
 	}
 */
 	panic("Memory remap PFN stuff not done\n");

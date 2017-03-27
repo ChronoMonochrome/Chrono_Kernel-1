@@ -191,7 +191,11 @@ static void sb1_audio_output_block(int dev, unsigned long buf, int nr_bytes, int
 		sb_dsp_command(devc, (unsigned char) ((count >> 8) & 0xff));
 	}
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound Blaster:  unable to start DAC.\n");
+#else
+		;
+#endif
 	spin_unlock_irqrestore(&devc->lock, flags);
 	devc->intr_active = 1;
 }
@@ -1034,37 +1038,61 @@ void sb_audio_init(sb_devc * devc, char *name, struct module *owner)
 	switch (devc->model)
 	{
 		case MDL_SB1:	/* SB1.0 or SB 1.5 */
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use standard SB1.x driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_HARDSTOP;
 			break;
 
 		case MDL_SB2:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use SB2.0 driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_AUTOMODE;
 			driver = &sb20_audio_driver;
 			break;
 
 		case MDL_SB201:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use SB2.01 (high speed) driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_AUTOMODE;
 			driver = &sb201_audio_driver;
 			break;
 
 		case MDL_JAZZ:
 		case MDL_SMW:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use Jazz16 driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_AUTOMODE;
 			format_mask |= AFMT_S16_LE;
 			driver = &jazz16_audio_driver;
 			break;
 
 		case MDL_ESS:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use ESS ES688/1688 driver\n"));
+#else
+			DDB(;
+#endif
 			driver = ess_audio_init (devc, &audio_flags, &format_mask);
 			break;
 
 		case MDL_SB16:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use SB16 driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_AUTOMODE;
 			format_mask |= AFMT_S16_LE;
 			if (devc->dma8 != devc->dma16 && devc->dma16 != -1)
@@ -1076,7 +1104,11 @@ void sb_audio_init(sb_devc * devc, char *name, struct module *owner)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			DDB(printk("Will use SB Pro driver\n"));
+#else
+			DDB(;
+#endif
 			audio_flags = DMA_AUTOMODE;
 			driver = &sbpro_audio_driver;
 	}

@@ -110,7 +110,11 @@ static void gef_wdt_handler_enable(void)
 	if (gef_wdt_toggle_wdc(GEF_WDC_ENABLED_FALSE,
 				   GEF_WDC_ENABLE_SHIFT)) {
 		gef_wdt_service();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "gef_wdt: watchdog activated\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -118,7 +122,11 @@ static void gef_wdt_handler_disable(void)
 {
 	if (gef_wdt_toggle_wdc(GEF_WDC_ENABLED_TRUE,
 				   GEF_WDC_ENABLE_SHIFT))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "gef_wdt: watchdog deactivated\n");
+#else
+		;
+#endif
 }
 
 static void gef_wdt_set_timeout(unsigned int timeout)
@@ -234,8 +242,12 @@ static int gef_wdt_release(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		gef_wdt_handler_disable();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT
 		       "gef_wdt: unexpected close, not stopping timer!\n");
+#else
+		;
+#endif
 		gef_wdt_service();
 	}
 	expect_close = 0;
@@ -313,7 +325,11 @@ static struct platform_driver gef_wdt_driver = {
 
 static int __init gef_wdt_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "GE watchdog driver\n");
+#else
+	;
+#endif
 	return platform_driver_register(&gef_wdt_driver);
 }
 

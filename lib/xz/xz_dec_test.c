@@ -76,7 +76,11 @@ static int xz_dec_test_open(struct inode *i, struct file *f)
 	buffers.in_size = 0;
 	buffers.out_pos = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": opened\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -85,9 +89,17 @@ static int xz_dec_test_release(struct inode *i, struct file *f)
 	device_is_open = false;
 
 	if (ret == XZ_OK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": input was truncated\n");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": closed\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -106,15 +118,23 @@ static ssize_t xz_dec_test_write(struct file *file, const char __user *buf,
 
 	if (ret != XZ_OK) {
 		if (size > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO DEVICE_NAME ": %zu bytes of "
 					"garbage at the end of the file\n",
 					size);
+#else
+			;
+#endif
 
 		return -ENOSPC;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": decoding %zu bytes of input\n",
 			size);
+#else
+	;
+#endif
 
 	remaining = size;
 	while ((remaining > 0 || buffers.out_pos == buffers.out_size)
@@ -136,36 +156,68 @@ static ssize_t xz_dec_test_write(struct file *file, const char __user *buf,
 
 	switch (ret) {
 	case XZ_OK:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_OK\n");
+#else
+		;
+#endif
 		return size;
 
 	case XZ_STREAM_END:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_STREAM_END, "
 				"CRC32 = 0x%08X\n", ~crc);
+#else
+		;
+#endif
 		return size - remaining - (buffers.in_size - buffers.in_pos);
 
 	case XZ_MEMLIMIT_ERROR:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_MEMLIMIT_ERROR\n");
+#else
+		;
+#endif
 		break;
 
 	case XZ_FORMAT_ERROR:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_FORMAT_ERROR\n");
+#else
+		;
+#endif
 		break;
 
 	case XZ_OPTIONS_ERROR:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_OPTIONS_ERROR\n");
+#else
+		;
+#endif
 		break;
 
 	case XZ_DATA_ERROR:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_DATA_ERROR\n");
+#else
+		;
+#endif
 		break;
 
 	case XZ_BUF_ERROR:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": XZ_BUF_ERROR\n");
+#else
+		;
+#endif
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEVICE_NAME ": Bug detected!\n");
+#else
+		;
+#endif
 		break;
 	}
 
@@ -192,10 +244,18 @@ static int __init xz_dec_test_init(void)
 		return device_major;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": module loaded\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": Create a device node with "
 			"'mknod " DEVICE_NAME " c %d 0' and write .xz files "
 			"to it.\n", device_major);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -203,7 +263,11 @@ static void __exit xz_dec_test_exit(void)
 {
 	unregister_chrdev(device_major, DEVICE_NAME);
 	xz_dec_end(state);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": module unloaded\n");
+#else
+	;
+#endif
 }
 
 module_init(xz_dec_test_init);

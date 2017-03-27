@@ -67,7 +67,11 @@ hycapi_reset_ctr(struct capi_ctr *ctrl)
 	hycapictrl_info *cinfo = ctrl->driverdata;
 
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "HYCAPI hycapi_reset_ctr\n");
+#else
+	;
+#endif
 #endif
 	capilib_release(&cinfo->ncci_head);
 	capi_ctr_down(ctrl);
@@ -84,7 +88,11 @@ hycapi_remove_ctr(struct capi_ctr *ctrl)
 	hycapictrl_info *cinfo = NULL;
 	hysdn_card *card = NULL;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "HYCAPI hycapi_remove_ctr\n");
+#else
+	;
+#endif
 #endif 
 	cinfo = (hycapictrl_info *)(ctrl->driverdata);
 	if(!cinfo) {
@@ -121,7 +129,11 @@ hycapi_sendmsg_internal(struct capi_ctr *ctrl, struct sk_buff *skb)
 
 	spin_lock_irq(&cinfo->lock);
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_send_message\n");    
+#else
+	;
+#endif
 #endif
 	cinfo->skbs[cinfo->in_idx++] = skb;	/* add to buffer list */
 	if (cinfo->in_idx >= HYSDN_MAX_CAPI_SKB)
@@ -161,7 +173,11 @@ hycapi_register_internal(struct capi_ctr *ctrl, __u16 appl,
 	__u16 MessageBufferSize = 0;
 	int slen = strlen(ExtFeatureDefaults);
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_register_appl\n"); 
+#else
+	;
+#endif
 #endif
 	MessageBufferSize = rp->level3cnt * rp->datablkcnt * rp->datablklen; 
 
@@ -198,7 +214,11 @@ static void hycapi_restart_internal(struct capi_ctr *ctrl)
 	int i;
 	struct sk_buff *skb;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "HYSDN: hycapi_restart_internal");
+#else
+	;
+#endif
 #endif
 	for(i=0; i<CAPI_MAXAPPL; i++) {
 		if(_hycapi_appCheck(i+1, ctrl->cnr) == 1) {
@@ -231,7 +251,11 @@ hycapi_register_appl(struct capi_ctr *ctrl, __u16 appl,
 		return;
 	}
 	if(chk == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HYSDN: apl %d already registered\n", appl);
+#else
+		;
+#endif
 		return;
 	}
 	MaxBDataBlocks = rp->datablkcnt > CAPI_MAXDATAWINDOW ? CAPI_MAXDATAWINDOW : rp->datablkcnt;
@@ -271,7 +295,11 @@ static void hycapi_release_internal(struct capi_ctr *ctrl, __u16 appl)
 	capilib_release_appl(&cinfo->ncci_head, appl);
 
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_release_appl\n");
+#else
+	;
+#endif
 #endif
 	len = CAPI_MSG_BASELEN;
 	if (!(skb = alloc_skb(len, GFP_ATOMIC))) {
@@ -325,7 +353,11 @@ int hycapi_capi_release(hysdn_card *card)
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 	struct capi_ctr *ctrl;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_capi_release\n");
+#else
+	;
+#endif
 #endif
 	if(cinfo) {
 		ctrl = &cinfo->capi_ctrl;
@@ -345,7 +377,11 @@ int hycapi_capi_stop(hysdn_card *card)
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 	struct capi_ctr *ctrl;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_capi_stop\n");
+#else
+	;
+#endif
 #endif
 	if(cinfo) {
 		ctrl = &cinfo->capi_ctrl;
@@ -380,7 +416,11 @@ static u16 hycapi_send_message(struct capi_ctr *ctrl, struct sk_buff *skb)
 	switch(_hycapi_appCheck(appl_id, ctrl->cnr))
 	{
 		case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk(KERN_INFO "Need to register\n"); */
+#else
+/*			;
+#endif
 			hycapi_register_internal(ctrl, 
 						 appl_id,
 						 &(hycapi_applications[appl_id-1].rp));
@@ -491,7 +531,11 @@ on capi-interface registration.
 static int hycapi_load_firmware(struct capi_ctr *ctrl, capiloaddata *data)
 {
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_load_firmware\n");    
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -501,7 +545,11 @@ static char *hycapi_procinfo(struct capi_ctr *ctrl)
 {
 	hycapictrl_info *cinfo = (hycapictrl_info *)(ctrl->driverdata);
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_proc_info\n");    
+#else
+	;
+#endif
 #endif
 	if (!cinfo)
 		return "";
@@ -535,7 +583,11 @@ hycapi_rx_capipkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 	__u16 len2, CapiCmd;
 	__u32 CP64[2] = {0,0};
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_rx_capipkt\n");    
+#else
+	;
+#endif
 #endif
 	if(!cinfo) {
 		return;
@@ -634,7 +686,11 @@ void hycapi_tx_capiack(hysdn_card * card)
 {
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_tx_capiack\n");    
+#else
+	;
+#endif
 #endif
 	if(!cinfo) {
 		return;
@@ -741,7 +797,11 @@ hycapi_capi_create(hysdn_card *card)
 	struct capi_ctr *ctrl = NULL;
 	int retval;
 #ifdef HYCAPI_PRINTFNAMES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "hycapi_capi_create\n");        
+#else
+	;
+#endif
 #endif
 	if((hycapi_enable & (1 << card->myid)) == 0) {
 		return 1;
@@ -749,7 +809,11 @@ hycapi_capi_create(hysdn_card *card)
 	if (!card->hyctrlinfo) {
 		cinfo = kzalloc(sizeof(hycapictrl_info), GFP_ATOMIC);
 		if (!cinfo) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HYSDN: no memory for capi-ctrl.\n");
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 		card->hyctrlinfo = cinfo;

@@ -1430,8 +1430,8 @@ u8 llc_circular_between(u8 a, u8 b, u8 c)
 static void llc_process_tmr_ev(struct sock *sk, struct sk_buff *skb)
 {
 	if (llc_sk(sk)->state == LLC_CONN_OUT_OF_SVC) {
-		printk(KERN_WARNING "%s: timer called on closed connection\n",
-		       __func__);
+//		printk(KERN_WARNING "%s: timer called on closed connection\n",
+;
 		kfree_skb(skb);
 	} else {
 		if (!sock_owned_by_user(sk))

@@ -166,7 +166,7 @@ static void netlink_sock_destruct(struct sock *sk)
 	skb_queue_purge(&sk->sk_receive_queue);
 
 	if (!sock_flag(sk, SOCK_DEAD)) {
-		printk(KERN_ERR "Freeing alive netlink socket %p\n", sk);
+;
 		return;
 	}
 

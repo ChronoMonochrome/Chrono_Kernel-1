@@ -124,7 +124,11 @@ static struct bsg_command *bsg_alloc_command(struct bsg_device *bd)
 
 	bc->bd = bd;
 	INIT_LIST_HEAD(&bc->list);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: returning free cmd %p\n", bd->name, bc);
+#else
+	d;
+#endif
 	return bc;
 out:
 	spin_unlock_irq(&bd->lock);
@@ -259,9 +263,13 @@ bsg_map_hdr(struct bsg_device *bd, struct sg_io_v4 *hdr, fmode_t has_write_perm,
 	if (!bcd->class_dev)
 		return ERR_PTR(-ENXIO);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("map hdr %llx/%u %llx/%u\n", (unsigned long long) hdr->dout_xferp,
 		hdr->dout_xfer_len, (unsigned long long) hdr->din_xferp,
 		hdr->din_xfer_len);
+#else
+	d;
+#endif
 
 	ret = bsg_validate_sgv4_hdr(q, hdr, &rw);
 	if (ret)
@@ -339,8 +347,12 @@ static void bsg_rq_end_io(struct request *rq, int uptodate)
 	struct bsg_device *bd = bc->bd;
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: finished rq %p bc %p, bio %p stat %d\n",
 		bd->name, rq, bc, bc->bio, uptodate);
+#else
+	d;
+#endif
 
 	bc->hdr.duration = jiffies_to_msecs(jiffies - bc->hdr.duration);
 
@@ -373,7 +385,11 @@ static void bsg_add_command(struct bsg_device *bd, struct request_queue *q,
 	list_add_tail(&bc->list, &bd->busy_list);
 	spin_unlock_irq(&bd->lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: queueing rq %p, bc %p\n", bd->name, rq, bc);
+#else
+	d;
+#endif
 
 	rq->end_io_data = bc;
 	blk_execute_rq_nowait(q, NULL, rq, at_head, bsg_rq_end_io);
@@ -419,7 +435,11 @@ static struct bsg_command *bsg_get_done_cmd(struct bsg_device *bd)
 		}
 	} while (1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: returning done %p\n", bd->name, bc);
+#else
+	d;
+#endif
 
 	return bc;
 }
@@ -429,7 +449,11 @@ static int blk_complete_sgv4_hdr_rq(struct request *rq, struct sg_io_v4 *hdr,
 {
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("rq %p bio %p 0x%x\n", rq, bio, rq->errors);
+#else
+	d;
+#endif
 	/*
 	 * fill in all the output members
 	 */
@@ -485,7 +509,11 @@ static int bsg_complete_all_commands(struct bsg_device *bd)
 	struct bsg_command *bc;
 	int ret, tret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: entered\n", bd->name);
+#else
+	d;
+#endif
 
 	/*
 	 * wait for all commands to complete
@@ -598,7 +626,11 @@ bsg_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 	int ret;
 	ssize_t bytes_read;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: read %Zd bytes\n", bd->name, count);
+#else
+	d;
+#endif
 
 	bsg_set_block(bd, file);
 
@@ -673,7 +705,11 @@ bsg_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
 	ssize_t bytes_written;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: write %Zd bytes\n", bd->name, count);
+#else
+	d;
+#endif
 
 	bsg_set_block(bd, file);
 
@@ -689,7 +725,11 @@ bsg_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
 	if (!bytes_written || err_block_err(ret))
 		bytes_written = ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: returning %Zd\n", bd->name, bytes_written);
+#else
+	d;
+#endif
 	return bytes_written;
 }
 
@@ -742,7 +782,11 @@ static int bsg_put_device(struct bsg_device *bd)
 	hlist_del(&bd->dev_list);
 	mutex_unlock(&bsg_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: tearing down\n", bd->name);
+#else
+	d;
+#endif
 
 	/*
 	 * close can always block
@@ -790,8 +834,12 @@ static struct bsg_device *bsg_add_device(struct inode *inode,
 	hlist_add_head(&bd->dev_list, bsg_dev_idx_hash(iminor(inode)));
 
 	strncpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name) - 1);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("bound to <%s>, max queue %d\n",
 		format_dev_t(buf, inode->i_rdev), bd->max_queue);
+#else
+	d;
+#endif
 
 	mutex_unlock(&bsg_mutex);
 	return bd;
@@ -1107,8 +1155,12 @@ static int __init bsg_init(void)
 	if (ret)
 		goto unregister_chrdev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO BSG_DESCRIPTION " version " BSG_VERSION
 	       " loaded (major %d)\n", bsg_major);
+#else
+	;
+#endif
 	return 0;
 unregister_chrdev:
 	unregister_chrdev_region(MKDEV(bsg_major, 0), BSG_MAX_DEVS);

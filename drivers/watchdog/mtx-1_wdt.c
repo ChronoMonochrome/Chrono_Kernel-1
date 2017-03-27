@@ -229,7 +229,11 @@ static int __devinit mtx1_wdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 	mtx1_wdt_start();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MTX-1 Watchdog driver\n");
+#else
+	;
+#endif
 	return 0;
 }
 

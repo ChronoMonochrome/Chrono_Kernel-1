@@ -119,20 +119,20 @@ static int __init ne3210_eisa_probe (struct device *device)
 	}
 
 #if NE3210_DEBUG & NE3210_D_PROBE
-	printk("ne3210-debug: probe at %#x, ID %s\n", ioaddr, edev->id.sig);
-	printk("ne3210-debug: config regs: %#x %#x\n",
-		inb(ioaddr + NE3210_CFG1), inb(ioaddr + NE3210_CFG2));
+;
+//	printk("ne3210-debug: config regs: %#x %#x\n",
+;
 #endif
 
 	port_index = inb(ioaddr + NE3210_CFG2) >> 6;
 	for(i = 0; i < ETHER_ADDR_LEN; i++)
 		dev->dev_addr[i] = inb(ioaddr + NE3210_SA_PROM + i);
-	printk("ne3210.c: NE3210 in EISA slot %d, media: %s, addr: %pM.\n",
-		edev->slot, ifmap[port_index], dev->dev_addr);
+//	printk("ne3210.c: NE3210 in EISA slot %d, media: %s, addr: %pM.\n",
+;
 
 	/* Snarf the interrupt now. CFG file has them all listed as `edge' with share=NO */
 	dev->irq = irq_map[(inb(ioaddr + NE3210_CFG2) >> 3) & 0x07];
-	printk("ne3210.c: using IRQ %d, ", dev->irq);
+;
 
 	retval = request_irq(dev->irq, ei_interrupt, 0, DRV_NAME, dev);
 	if (retval) {
@@ -148,11 +148,11 @@ static int __init ne3210_eisa_probe (struct device *device)
 	*/
 	if (phys_mem > 1024*1024) {	/* phys addr > 1MB */
 		if (phys_mem < virt_to_phys(high_memory)) {
-			printk(KERN_CRIT "ne3210.c: Card RAM overlaps with normal memory!!!\n");
-			printk(KERN_CRIT "ne3210.c: Use EISA SCU to set card memory below 1MB,\n");
-			printk(KERN_CRIT "ne3210.c: or to an address above 0x%llx.\n",
-				(u64)virt_to_phys(high_memory));
-			printk(KERN_CRIT "ne3210.c: Driver NOT installed.\n");
+;
+;
+//			printk(KERN_CRIT "ne3210.c: or to an address above 0x%llx.\n",
+;
+;
 			retval = -EINVAL;
 			goto out3;
 		}
@@ -164,18 +164,18 @@ static int __init ne3210_eisa_probe (struct device *device)
 		goto out3;
 	}
 
-	printk("%dkB memory at physical address %#lx\n",
-	       NE3210_STOP_PG/4, phys_mem);
+//	printk("%dkB memory at physical address %#lx\n",
+;
 
 	ei_status.mem = ioremap(phys_mem, NE3210_STOP_PG*0x100);
 	if (!ei_status.mem) {
-		printk(KERN_ERR "ne3210.c: Unable to remap card memory !!\n");
-		printk(KERN_ERR "ne3210.c: Driver NOT installed.\n");
+;
+;
 		retval = -EAGAIN;
 		goto out4;
 	}
-	printk("ne3210.c: remapped %dkB card memory to virtual address %p\n",
-	       NE3210_STOP_PG/4, ei_status.mem);
+//	printk("ne3210.c: remapped %dkB card memory to virtual address %p\n",
+;
 	dev->mem_start = (unsigned long)ei_status.mem;
 	dev->mem_end = dev->mem_start + (NE3210_STOP_PG - NE3210_START_PG)*256;
 
@@ -190,7 +190,7 @@ static int __init ne3210_eisa_probe (struct device *device)
 	ei_status.priv = phys_mem;
 
 	if (ei_debug > 0)
-		printk("ne3210 loaded.\n");
+;
 
 	ei_status.reset_8390 = &ne3210_reset_8390;
 	ei_status.block_input = &ne3210_block_input;
@@ -248,13 +248,13 @@ static void ne3210_reset_8390(struct net_device *dev)
 	unsigned short ioaddr = dev->base_addr;
 
 	outb(0x04, ioaddr + NE3210_RESET_PORT);
-	if (ei_debug > 1) printk("%s: resetting the NE3210...", dev->name);
+;
 
 	mdelay(2);
 
 	ei_status.txing = 0;
 	outb(0x01, ioaddr + NE3210_RESET_PORT);
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /*

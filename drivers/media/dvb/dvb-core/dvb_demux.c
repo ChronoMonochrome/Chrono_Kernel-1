@@ -52,7 +52,11 @@ MODULE_PARM_DESC(dvb_demux_speedcheck,
 
 #define dprintk_tscheck(x...) do {                              \
 		if (dvb_demux_tscheck && printk_ratelimit())    \
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(x);                              \
+#else
+			;
+#endif
 	} while (0)
 
 /******************************************************************************
@@ -117,7 +121,11 @@ static inline int dvb_dmx_swfilter_payload(struct dvb_demux_feed *feed,
 	ccok = ((feed->cc + 1) & 0x0f) == cc;
 	feed->cc = cc;
 	if (!ccok)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("missed packet!\n");
+#else
+		;
+#endif
 	*/
 
 	if (buf[1] & 0x40)	// PUSI ?
@@ -194,12 +202,28 @@ static void dvb_dmx_swfilter_section_new(struct dvb_demux_feed *feed)
 		 * but just first and last.
 		 */
 		if (sec->secbuf[0] != 0xff || sec->secbuf[n - 1] != 0xff) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb_demux.c section ts padding loss: %d/%d\n",
 			       n, sec->tsfeedp);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb_demux.c pad data:");
+#else
+			;
+#endif
 			for (i = 0; i < n; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %02x", sec->secbuf[i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 		}
 	}
 #endif
@@ -238,9 +262,13 @@ static int dvb_dmx_swfilter_section_copy_dump(struct dvb_demux_feed *feed,
 
 	if (sec->tsfeedp + len > DMX_MAX_SECFEED_SIZE) {
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_demux.c section buffer full loss: %d/%d\n",
 		       sec->tsfeedp + len - DMX_MAX_SECFEED_SIZE,
 		       DMX_MAX_SECFEED_SIZE);
+#else
+		;
+#endif
 #endif
 		len = DMX_MAX_SECFEED_SIZE - sec->tsfeedp;
 	}
@@ -273,7 +301,11 @@ static int dvb_dmx_swfilter_section_copy_dump(struct dvb_demux_feed *feed,
 			dvb_dmx_swfilter_section_feed(feed);
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb_demux.c pusi not seen, discarding section data\n");
+#else
+			;
+#endif
 #endif
 		sec->secbufp += seclen;	/* secbufp and secbuf moving together is */
 		sec->secbuf += seclen;	/* redundant but saves pointer arithmetic */
@@ -308,8 +340,12 @@ static int dvb_dmx_swfilter_section_packet(struct dvb_demux_feed *feed,
 
 	if (!ccok || dc_i) {
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_demux.c discontinuity detected %d bytes lost\n",
 		       count);
+#else
+		;
+#endif
 		/*
 		 * those bytes under sume circumstances will again be reported
 		 * in the following dvb_dmx_swfilter_section_new
@@ -341,7 +377,11 @@ static int dvb_dmx_swfilter_section_packet(struct dvb_demux_feed *feed,
 		}
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
 		else if (count > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb_demux.c PUSI=1 but %d bytes lost\n", count);
+#else
+			;
+#endif
 #endif
 	} else {
 		/* PUSI=0 (is not set), no section boundary */
@@ -416,9 +456,13 @@ static void dvb_dmx_swfilter_packet(struct dvb_demux *demux, const u8 *buf)
 					(u64)timespec_to_ns(&delta_time);
 				speed_timedelta = div64_u64(speed_timedelta,
 						1000000); /* nsec -> usec */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "TS speed %llu Kbits/sec \n",
 						div64_u64(speed_bytes,
 							speed_timedelta));
+#else
+				;
+#endif
 			};
 
 			demux->speed_last_time = cur_time;
@@ -1243,7 +1287,11 @@ int dvb_dmx_init(struct dvb_demux *dvbdemux)
 
 	dvbdemux->cnt_storage = vmalloc(MAX_PID + 1);
 	if (!dvbdemux->cnt_storage)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Couldn't allocate memory for TS/TEI check. Disabling it\n");
+#else
+		;
+#endif
 
 	INIT_LIST_HEAD(&dvbdemux->frontend_list);
 

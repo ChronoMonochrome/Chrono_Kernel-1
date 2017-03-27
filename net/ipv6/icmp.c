@@ -841,10 +841,10 @@ static int __net_init icmpv6_sk_init(struct net *net)
 		err = inet_ctl_sock_create(&sk, PF_INET6,
 					   SOCK_RAW, IPPROTO_ICMPV6, net);
 		if (err < 0) {
-			printk(KERN_ERR
-			       "Failed to initialize the ICMP6 control socket "
-			       "(err %d).\n",
-			       err);
+//			printk(KERN_ERR
+//			       "Failed to initialize the ICMP6 control socket "
+//			       "(err %d).\n",
+;
 			goto fail;
 		}
 
@@ -902,7 +902,7 @@ int __init icmpv6_init(void)
 	return 0;
 
 fail:
-	printk(KERN_ERR "Failed to register ICMP6 protocol\n");
+;
 	unregister_pernet_subsys(&icmpv6_sk_ops);
 	return err;
 }

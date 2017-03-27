@@ -78,8 +78,8 @@ u16 channel2freq_bg(u8 channel)
 	};
 
 	if (unlikely(channel < 1 || channel > 14)) {
-		printk(KERN_INFO "b43legacy: Channel %d is out of range\n",
-				  channel);
+//		printk(KERN_INFO "b43legacy: Channel %d is out of range\n",
+;
 		dump_stack();
 		return 2412;
 	}

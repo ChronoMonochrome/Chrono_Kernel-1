@@ -35,8 +35,12 @@
 
 /* debug */
 static int dvb_usb_ttusb2_debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...)   dprintk(dvb_usb_ttusb2_debug,0x01,args)
 module_param_named(debug,dvb_usb_ttusb2_debug, int, 0644);
+#else
+#define deb_info(args...)   d;
+#endif
 MODULE_PARM_DESC(debug, "set debugging level (1=info (or-able))." DVB_USB_DEBUG_STATUS);
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);

@@ -1524,7 +1524,7 @@ static int __init rose_proto_init(void)
 	int rc;
 
 	if (rose_ndevs > 0x7FFFFFFF/sizeof(struct net_device *)) {
-		printk(KERN_ERR "ROSE: rose_proto_init - rose_ndevs parameter to large\n");
+;
 		rc = -EINVAL;
 		goto out;
 	}
@@ -1537,7 +1537,7 @@ static int __init rose_proto_init(void)
 
 	dev_rose = kzalloc(rose_ndevs * sizeof(struct net_device *), GFP_KERNEL);
 	if (dev_rose == NULL) {
-		printk(KERN_ERR "ROSE: rose_proto_init - unable to allocate device structure\n");
+;
 		rc = -ENOMEM;
 		goto out_proto_unregister;
 	}
@@ -1549,13 +1549,13 @@ static int __init rose_proto_init(void)
 		sprintf(name, "rose%d", i);
 		dev = alloc_netdev(0, name, rose_setup);
 		if (!dev) {
-			printk(KERN_ERR "ROSE: rose_proto_init - unable to allocate memory\n");
+;
 			rc = -ENOMEM;
 			goto fail;
 		}
 		rc = register_netdev(dev);
 		if (rc) {
-			printk(KERN_ERR "ROSE: netdevice registration failed\n");
+;
 			free_netdev(dev);
 			goto fail;
 		}

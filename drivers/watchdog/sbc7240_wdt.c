@@ -65,8 +65,12 @@ static void wdt_disable(void)
 	/* disable the watchdog */
 	if (test_and_clear_bit(SBC7240_ENABLED_STATUS_BIT, &wdt_status)) {
 		inb_p(SBC7240_DISABLE_PORT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO SBC7240_PREFIX
 		       "Watchdog timer is now disabled.\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -75,8 +79,12 @@ static void wdt_enable(void)
 	/* enable the watchdog */
 	if (!test_and_set_bit(SBC7240_ENABLED_STATUS_BIT, &wdt_status)) {
 		inb_p(SBC7240_ENABLE_PORT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO SBC7240_PREFIX
 		       "Watchdog timer is now enabled.\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -91,7 +99,11 @@ static int wdt_set_timeout(int t)
 	/* set the timeout */
 	outb_p((unsigned)t, SBC7240_SET_TIMEOUT_PORT);
 	timeout = t;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO SBC7240_PREFIX "timeout set to %d seconds\n", t);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -150,8 +162,12 @@ static int fop_close(struct inode *inode, struct file *file)
 	    || !nowayout) {
 		wdt_disable();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT SBC7240_PREFIX
 		       "Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		wdt_keepalive();
 	}
 
@@ -252,7 +268,11 @@ static struct notifier_block wdt_notifier = {
 
 static void __exit sbc7240_wdt_unload(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO SBC7240_PREFIX "Removing watchdog\n");
+#else
+	;
+#endif
 	misc_deregister(&wdt_miscdev);
 
 	unregister_reboot_notifier(&wdt_notifier);
@@ -277,9 +297,13 @@ static int __init sbc7240_wdt_init(void)
 
 	if (timeout < 1 || timeout > SBC7240_MAX_TIMEOUT) {
 		timeout = SBC7240_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO SBC7240_PREFIX
 		       "timeout value must be 1<=x<=%d, using %d\n",
 		       SBC7240_MAX_TIMEOUT, timeout);
+#else
+		;
+#endif
 	}
 	wdt_set_timeout(timeout);
 	wdt_disable();
@@ -299,9 +323,13 @@ static int __init sbc7240_wdt_init(void)
 		goto err_out_reboot_notifier;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO SBC7240_PREFIX
 	       "Watchdog driver for SBC7240 initialised (nowayout=%d)\n",
 	       nowayout);
+#else
+	;
+#endif
 
 	return 0;
 

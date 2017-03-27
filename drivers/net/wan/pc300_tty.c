@@ -79,12 +79,12 @@
 		spin_unlock_irqrestore(&card->card_lock, flags);	\
 	} while (0)
 
-//#define	CPC_TTY_DBG(format,a...)	printk(format,##a)
-#define	CPC_TTY_DBG(format,a...)
-
-/* data structures */
-typedef struct _st_cpc_rx_buf {
-	struct _st_cpc_rx_buf	*next;
+////#define	CPC_TTY_DBG(format,a...)	printk(format,##a)
+//#define	CPC_TTY_DBG(format,a...)
+//
+///* data structures */
+//typedef struct _st_cpc_rx_buf {
+;
 	int		size;
 	unsigned char	data[1];
 } st_cpc_rx_buf;
@@ -210,9 +210,9 @@ void cpc_tty_init(pc300dev_t *pc300dev)
 	/* hdlcX - X=interface number */
 	port = pc300dev->dev->name[4] - '0';
 	if (port >= CPC_TTY_NPORTS) {
-		printk("%s-tty: invalid interface selected (0-%i): %li",
-			pc300dev->dev->name,
-			CPC_TTY_NPORTS-1,port);
+//		printk("%s-tty: invalid interface selected (0-%i): %li",
+//			pc300dev->dev->name,
+;
 		return;
 	}
 
@@ -242,8 +242,8 @@ void cpc_tty_init(pc300dev_t *pc300dev)
 
 		/* register the TTY driver */
 		if (tty_register_driver(&serial_drv)) { 
-			printk("%s-tty: Failed to register serial driver! ",
-				pc300dev->dev->name);
+//			printk("%s-tty: Failed to register serial driver! ",
+;
 		   	return;
 		} 
 

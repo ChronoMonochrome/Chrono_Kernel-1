@@ -93,7 +93,11 @@ static struct {
 static void
 print_temp( const char *s, int temp )
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%d.%d C", s ? s : "", temp>>8, (temp & 255)*10/256 );
+#else
+	;
+#endif
 }
 
 static ssize_t
@@ -161,7 +165,11 @@ tune_fan( int fan_setting )
 	print_temp("CPU-temp: ", x.temp );
 	if( x.casetemp )
 		print_temp(", Case: ", x.casetemp );
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(",  Fan: %d (tuned %+d)\n", 11-fan_setting, x.fan_level-fan_setting );
+#else
+	;
+#endif
 
 	x.fan_level = fan_setting;
 }
@@ -183,7 +191,11 @@ poll_temp( void )
 	if( LOG_TEMP && x.temp != temp ) {
 		print_temp("CPU-temp: ", temp );
 		print_temp(", Case: ", casetemp );
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(",  Fan: %d\n", 11-x.fan_level );
+#else
+		;
+#endif
 	}
 	x.temp = temp;
 	x.casetemp = casetemp;
@@ -223,7 +235,11 @@ setup_hardware( void )
 	if( (val=read_reg(x.thermostat, 1, 1)) >= 0 ) {
 		val |= 0x60;
 		if( write_reg( x.thermostat, 1, val, 1 ) )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Failed writing config register\n");
+#else
+			;
+#endif
 	}
 	/* disable interrupts and TAC input */
 	write_reg( x.fan, 0x01, 0x01, 1 );
@@ -245,7 +261,11 @@ setup_hardware( void )
 
 		print_temp("Reducing overheating limit to ", x.overheat_temp );
 		print_temp(" (Hyst: ", x.overheat_hyst );
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(")\n");
+#else
+		;
+#endif
 	}
 
 	/* set an initial fan setting */
@@ -256,8 +276,12 @@ setup_hardware( void )
 	err = device_create_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
 	err |= device_create_file( &x.of_dev->dev, &dev_attr_case_temperature );
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Failed to create temperature attribute file(s).\n");
+#else
+		;
+#endif
 }
 
 static void
@@ -362,7 +386,11 @@ attach_fan( struct i2c_client *cl )
 	/* check that this is an ADM1030 */
 	if( read_reg(cl, 0x3d, 1) != 0x30 || read_reg(cl, 0x3e, 1) != 0x41 )
 		goto out;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ADM1030 fan controller [@%02x]\n", cl->addr );
+#else
+	;
+#endif
 
 	x.fan = cl;
  out:
@@ -388,11 +416,19 @@ attach_thermostat( struct i2c_client *cl )
 	if( hyst_temp < 0 || os_temp < 0 )
 		goto out;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DS1775 digital thermometer [@%02x]\n", cl->addr );
+#else
+	;
+#endif
 	print_temp("Temp: ", temp );
 	print_temp("  Hyst: ", hyst_temp );
 	print_temp("  OS: ", os_temp );
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	x.temp = temp;
 	x.overheat_temp = os_temp;

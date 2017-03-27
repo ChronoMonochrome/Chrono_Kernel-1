@@ -92,14 +92,22 @@ void dsp_hwec_enable(struct dsp *dsp, const char *arg)
 	}
 
 _do:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: enabling hwec with deftaps=%d\n",
 		__func__, deftaps);
+#else
+	;
+#endif
 	memset(&cq, 0, sizeof(cq));
 	cq.op = MISDN_CTRL_HFC_ECHOCAN_ON;
 	cq.p1 = deftaps;
 	if (!dsp->ch.peer->ctrl(&dsp->ch, CONTROL_CHANNEL, &cq)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: CONTROL_CHANNEL failed\n",
 			__func__);
+#else
+		;
+#endif
 		return;
 	}
 }
@@ -114,12 +122,20 @@ void dsp_hwec_disable(struct dsp *dsp)
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: disabling hwec\n", __func__);
+#else
+	;
+#endif
 	memset(&cq, 0, sizeof(cq));
 	cq.op = MISDN_CTRL_HFC_ECHOCAN_OFF;
 	if (!dsp->ch.peer->ctrl(&dsp->ch, CONTROL_CHANNEL, &cq)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: CONTROL_CHANNEL failed\n",
 			__func__);
+#else
+		;
+#endif
 		return;
 	}
 }

@@ -103,9 +103,13 @@ static void set_fan_speeds(struct bbc_fan_control *fp)
 	if (fp->system_fan_speed > FAN_SPEED_MAX)
 		fp->system_fan_speed = FAN_SPEED_MAX;
 #ifdef ENVCTRL_TRACE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fan%d: Changed fan speed to cpu(%02x) sys(%02x)\n",
 	       fp->index,
 	       fp->cpu_fan_speed, fp->system_fan_speed);
+#else
+	;
+#endif
 #endif
 
 	bbc_i2c_writeb(fp->client, fp->cpu_fan_speed, CPU_FAN_REG);
@@ -127,9 +131,13 @@ static void get_current_temps(struct bbc_cpu_temperature *tp)
 		      (unsigned char *) &tp->curr_cpu_temp,
 		      MAX1617_CPU_TEMP);
 #ifdef ENVCTRL_TRACE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("temp%d: cpu(%d C) amb(%d C)\n",
 	       tp->index,
 	       (int) tp->curr_cpu_temp, (int) tp->curr_amb_temp);
+#else
+	;
+#endif
 #endif
 }
 
@@ -153,15 +161,27 @@ static void do_envctrl_shutdown(struct bbc_cpu_temperature *tp)
 		val = tp->curr_cpu_temp;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "temp%d: Outside of safe %s "
 	       "operating temperature, %d C.\n",
 	       tp->index, type, val);
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "kenvctrld: Shutting down the system now.\n");
+#else
+	;
+#endif
 
 	shutting_down = 1;
 	if (orderly_poweroff(true) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "envctrl: shutdown execution failed\n");
+#else
+		;
+#endif
 }
 
 #define WARN_INTERVAL	(30 * HZ)
@@ -173,15 +193,23 @@ static void analyze_ambient_temp(struct bbc_cpu_temperature *tp, unsigned long *
 	if (time_after(jiffies, (*last_warn + WARN_INTERVAL))) {
 		if (tp->curr_amb_temp >=
 		    amb_temp_limits[tp->index].high_warn) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "temp%d: "
 			       "Above safe ambient operating temperature, %d C.\n",
 			       tp->index, (int) tp->curr_amb_temp);
+#else
+			;
+#endif
 			ret = 1;
 		} else if (tp->curr_amb_temp <
 			   amb_temp_limits[tp->index].low_warn) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "temp%d: "
 			       "Below safe ambient operating temperature, %d C.\n",
 			       tp->index, (int) tp->curr_amb_temp);
+#else
+			;
+#endif
 			ret = 1;
 		}
 		if (ret)
@@ -228,15 +256,23 @@ static void analyze_cpu_temp(struct bbc_cpu_temperature *tp, unsigned long *last
 	if (time_after(jiffies, (*last_warn + WARN_INTERVAL))) {
 		if (tp->curr_cpu_temp >=
 		    cpu_temp_limits[tp->index].high_warn) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "temp%d: "
 			       "Above safe CPU operating temperature, %d C.\n",
 			       tp->index, (int) tp->curr_cpu_temp);
+#else
+			;
+#endif
 			ret = 1;
 		} else if (tp->curr_cpu_temp <
 			   cpu_temp_limits[tp->index].low_warn) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "temp%d: "
 			       "Below safe CPU operating temperature, %d C.\n",
 			       tp->index, (int) tp->curr_cpu_temp);
+#else
+			;
+#endif
 			ret = 1;
 		}
 		if (ret)
@@ -419,7 +455,11 @@ static struct task_struct *kenvctrld_task;
 
 static int kenvctrld(void *__unused)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "bbc_envctrl: kenvctrld starting...\n");
+#else
+	;
+#endif
 	last_warning_jiffies = jiffies - WARN_INTERVAL;
 	for (;;) {
 		struct bbc_cpu_temperature *tp;
@@ -436,7 +476,11 @@ static int kenvctrld(void *__unused)
 		list_for_each_entry(fp, &all_fans, glob_list)
 			maybe_new_fan_speeds(fp);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "bbc_envctrl: kenvctrld exiting...\n");
+#else
+	;
+#endif
 
 	fans_full_blast();
 

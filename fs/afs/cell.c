@@ -130,7 +130,7 @@ static struct afs_cell *afs_cell_alloc(const char *name, unsigned namelen,
 	return cell;
 
 bad_address:
-	printk(KERN_ERR "kAFS: bad VL server IP address\n");
+;
 	ret = -EINVAL;
 error:
 	key_put(cell->anonymous_key);

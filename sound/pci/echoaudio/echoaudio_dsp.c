@@ -184,7 +184,11 @@ static int load_asic_generic(struct echoaudio *chip, u32 cmd, short asic)
 
 	err = get_firmware(&fw, chip, asic);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Firmware not found !\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -247,7 +251,11 @@ static int install_resident_loader(struct echoaudio *chip)
 
 	i = get_firmware(&fw, chip, FW_361_LOADER);
 	if (i < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Firmware not found !\n");
+#else
+		;
+#endif
 		return i;
 	}
 

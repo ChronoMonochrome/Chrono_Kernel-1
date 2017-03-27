@@ -29,12 +29,16 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
 #endif
 
 static int smu_supports_new_fans_ops = 1;
+#else
+#define DBG(args...)	;
+#endif
 
 /*
  * SMU fans control object
@@ -98,8 +102,12 @@ static int smu_set_fan(int pwm, u8 id, u16 value)
 
 	/* Handle fallback (see coment above) */
 	if (cmd.status != 0 && smu_supports_new_fans_ops) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "windfarm: SMU failed new fan command "
 		       "falling back to old method\n");
+#else
+		;
+#endif
 		smu_supports_new_fans_ops = 0;
 		goto retry;
 	}
@@ -278,8 +286,12 @@ static int __init smu_controls_init(void)
 
 		fct = smu_fan_create(fan, 0);
 		if (fct == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "windfarm: Failed to create SMU "
 			       "RPM fan %s\n", fan->name);
+#else
+			;
+#endif
 			continue;
 		}
 		list_add(&fct->link, &smu_fans);
@@ -297,8 +309,12 @@ static int __init smu_controls_init(void)
 
 		fct = smu_fan_create(fan, 1);
 		if (fct == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "windfarm: Failed to create SMU "
 			       "PWM fan %s\n", fan->name);
+#else
+			;
+#endif
 			continue;
 		}
 		list_add(&fct->link, &smu_fans);

@@ -98,8 +98,8 @@ static int xtsonic_open(struct net_device *dev)
 	retval = request_irq(dev->irq, sonic_interrupt, IRQF_DISABLED,
 				"sonic", dev);
 	if (retval) {
-		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
-		       dev->name, dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
+;
 		return -EAGAIN;
 	}
 
@@ -148,7 +148,7 @@ static int __init sonic_probe1(struct net_device *dev)
 	 */
 	silicon_revision = SONIC_READ(SONIC_SR);
 	if (sonic_debug > 1)
-		printk("SONIC Silicon Revision = 0x%04x\n",silicon_revision);
+;
 
 	i = 0;
 	while ((known_revisions[i] != 0xffff) &&
@@ -156,13 +156,13 @@ static int __init sonic_probe1(struct net_device *dev)
 		i++;
 
 	if (known_revisions[i] == 0xffff) {
-		printk("SONIC ethernet controller not found (0x%4x)\n",
-				silicon_revision);
+//		printk("SONIC ethernet controller not found (0x%4x)\n",
+;
 		return -ENODEV;
 	}
 
 	if (sonic_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
 	/*
 	 * Put the sonic into software reset, then retrieve ethernet address.
@@ -203,8 +203,8 @@ static int __init sonic_probe1(struct net_device *dev)
 			&lp->descriptors_laddr, GFP_KERNEL);
 
 	if (lp->descriptors == NULL) {
-		printk(KERN_ERR "%s: couldn't alloc DMA memory for "
-				" descriptors.\n", dev_name(lp->device));
+//		printk(KERN_ERR "%s: couldn't alloc DMA memory for "
+;
 		goto out;
 	}
 
@@ -277,8 +277,8 @@ int __devinit xtsonic_probe(struct platform_device *pdev)
 	if ((err = register_netdev(dev)))
 		goto out1;
 
-	printk("%s: SONIC ethernet @%08lx, MAC %pM, IRQ %d\n", dev->name,
-	       dev->base_addr, dev->dev_addr, dev->irq);
+//	printk("%s: SONIC ethernet @%08lx, MAC %pM, IRQ %d\n", dev->name,
+;
 
 	return 0;
 

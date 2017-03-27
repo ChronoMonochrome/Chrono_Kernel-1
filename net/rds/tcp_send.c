@@ -143,9 +143,9 @@ out:
 			rds_tcp_stats_inc(s_tcp_sndbuf_full);
 			ret = 0;
 		} else {
-			printk(KERN_WARNING "RDS/tcp: send to %pI4 "
-			       "returned %d, disconnecting and reconnecting\n",
-			       &conn->c_faddr, ret);
+//			printk(KERN_WARNING "RDS/tcp: send to %pI4 "
+//			       "returned %d, disconnecting and reconnecting\n",
+;
 			rds_conn_drop(conn);
 		}
 	}

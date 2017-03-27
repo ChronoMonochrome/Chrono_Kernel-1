@@ -206,7 +206,11 @@ static int __init test_size_treshold(void)
 		t1 = sched_clock();
 		ret |= __copy_to_user_std(user_ptr, kernel_ptr, size);
 		t2 = sched_clock();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("copy_to_user: %d %llu %llu\n", size, t1 - t0, t2 - t1);
+#else
+		;
+#endif
 	}
 
 	for (size = PAGE_SIZE; size >= 4; size /= 2) {
@@ -215,7 +219,11 @@ static int __init test_size_treshold(void)
 		t1 = sched_clock();
 		ret |= __clear_user_std(user_ptr, size);
 		t2 = sched_clock();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("clear_user: %d %llu %llu\n", size, t1 - t0, t2 - t1);
+#else
+		;
+#endif
 	}
 
 	if (ret)

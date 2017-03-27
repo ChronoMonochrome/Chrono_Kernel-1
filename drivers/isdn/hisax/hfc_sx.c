@@ -293,7 +293,11 @@ read_fifo(struct IsdnCardState *cs, u_char fifo, int trans_max)
 		skb = NULL;
 	      }
 	    } else {
+#ifdef CONFIG_DEBUG_PRINTK
 	      printk(KERN_WARNING "HFC-SX: receive out of memory\n");
+#else
+	      ;
+#endif
 	      return(NULL);
 	    }
 
@@ -352,14 +356,22 @@ reset_hfcsx(struct IsdnCardState *cs)
 	cs->hw.hfcsx.int_m2 = 0;	/* interrupt output off ! */
 	Write_hfc(cs, HFCSX_INT_M2, cs->hw.hfcsx.int_m2);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HFC_SX: resetting card\n");
+#else
+	;
+#endif
 	while (1) {
 	  Write_hfc(cs, HFCSX_CIRM, HFCSX_RESET | cs->hw.hfcsx.cirm ); /* Reset */
 	  mdelay(30);
 	  Write_hfc(cs, HFCSX_CIRM, cs->hw.hfcsx.cirm); /* Reset Off */
 	  mdelay(20);
 	  if (Read_hfc(cs, HFCSX_STATUS) & 2)
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(KERN_WARNING "HFC-SX init bit busy\n");
+#else
+	    ;
+#endif
 	  cs->hw.hfcsx.last_fifo = 0xff; /* invalidate */
 	  if (!set_fifo_size(cs)) continue;
 	  break;
@@ -1159,7 +1171,11 @@ hfcsx_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "hfc_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 //				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -1399,7 +1415,11 @@ setup_hfcsx(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, hfcsx_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: HFC-SX driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 #ifdef __ISAPNP__
 	if (!card->para[1] && isapnp_present()) {
 		struct pnp_dev *pnp_d;
@@ -1411,13 +1431,21 @@ setup_hfcsx(struct IsdnCard *card)
 					ipid->vendor, ipid->function, pnp_d))) {
 					int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "HiSax: %s detected\n",
 						(char *)ipid->driver_data);
+#else
+					;
+#endif
 					pnp_disable_dev(pnp_d);
 					err = pnp_activate_dev(pnp_d);
 					if (err<0) {
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
 							__func__, err);
+#else
+						;
+#endif
 						return(0);
 					}
 					card->para[1] = pnp_port_start(pnp_d, 0);
@@ -1437,7 +1465,11 @@ setup_hfcsx(struct IsdnCard *card)
 			pnp_c = NULL;
 		} 
 		if (!ipid->card_vendor) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "HFC PnP: no ISAPnP card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 	}
@@ -1450,9 +1482,13 @@ setup_hfcsx(struct IsdnCard *card)
 	if ((cs->typ == ISDN_CTYPE_HFC_SX) || 
 	    (cs->typ == ISDN_CTYPE_HFC_SP_PCMCIA)) {
 	        if ((!cs->hw.hfcsx.base) || !request_region(cs->hw.hfcsx.base, 2, "HFCSX isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_WARNING
 			 "HiSax: HFC-SX io-base %#lx already in use\n",
 		          cs->hw.hfcsx.base);
+#else
+		  ;
+#endif
 		  return(0);
 		}
 		byteout(cs->hw.hfcsx.base, cs->hw.hfcsx.base & 0xFF);
@@ -1468,26 +1504,42 @@ setup_hfcsx(struct IsdnCard *card)
 		    tmp[0] ='P';
 		    break;
 		  default:
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk(KERN_WARNING
 			   "HFC-SX: invalid chip id 0x%x\n",
 			   cs->hw.hfcsx.chip >> 4);
+#else
+		    ;
+#endif
 		    release_region(cs->hw.hfcsx.base, 2);
 		    return(0);
 		}  
 		if (!ccd_sp_irqtab[cs->irq & 0xF]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_WARNING 
 			 "HFC_SX: invalid irq %d specified\n",cs->irq & 0xF);
+#else
+		  ;
+#endif
 		  release_region(cs->hw.hfcsx.base, 2);
 		  return(0);
 		}  
 		if (!(cs->hw.hfcsx.extra = (void *)
 		      kmalloc(sizeof(struct hfcsx_extra), GFP_ATOMIC))) {
 		  release_region(cs->hw.hfcsx.base, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_WARNING "HFC-SX: unable to allocate memory\n");
+#else
+		  ;
+#endif
 		  return(0);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HFC-S%c chip detected at base 0x%x IRQ %d HZ %d\n",
 			tmp[0], (u_int) cs->hw.hfcsx.base, cs->irq, HZ);
+#else
+		;
+#endif
 		cs->hw.hfcsx.int_m2 = 0;	/* disable alle interrupts */
 		cs->hw.hfcsx.int_m1 = 0;
 		Write_hfc(cs, HFCSX_INT_M1, cs->hw.hfcsx.int_m1);

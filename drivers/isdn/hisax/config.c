@@ -380,23 +380,55 @@ static void __init HiSaxVersion(void)
 {
 	char tmp[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Linux Driver for passive ISDN cards\n");
+#else
+	;
+#endif
 #ifdef MODULE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Version 3.5 (module)\n");
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Version 3.5 (kernel)\n");
+#else
+	;
+#endif
 #endif
 	strcpy(tmp, l1_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Layer1 Revision %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	strcpy(tmp, l2_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Layer2 Revision %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	strcpy(tmp, tei_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: TeiMgr Revision %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	strcpy(tmp, l3_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Layer3 Revision %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	strcpy(tmp, lli_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: LinkLayer Revision %s\n",
 	       HiSax_getrev(tmp));
+#else
+	;
+#endif
 }
 
 #ifndef MODULE
@@ -409,7 +441,11 @@ static int __init HiSax_setup(char *line)
 
 	str = get_options(line, MAX_ARG, ints);
 	argc = ints[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax_setup: argc(%d) str(%s)\n", argc, str);
+#else
+	;
+#endif
 	i = 0;
 	j = 1;
 	while (argc && (i < HISAX_MAX_CARDS)) {
@@ -445,7 +481,11 @@ static int __init HiSax_setup(char *line)
 		if (strlen(str) < HISAX_IDSIZE)
 			strcpy(HiSaxID, str);
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: ID too long!");
+#else
+			;
+#endif
 	} else
 		strcpy(HiSaxID, "HiSax");
 
@@ -603,9 +643,13 @@ static int HiSax_readstatus(u_char __user *buf, int len, int id, int channel)
 
 	if (cs) {
 		if (len > HISAX_STATUS_BUFSIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: status overflow readstat %d/%d\n",
 			       len, HISAX_STATUS_BUFSIZE);
+#else
+			;
+#endif
 		}
 		count = cs->status_end - cs->status_read + 1;
 		if (count >= len)
@@ -671,7 +715,11 @@ void VHiSax_putstatus(struct IsdnCardState *cs, char *head, char *fmt,
 	int		len;
 
 	if (!cs) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: No CardStatus for message");
+#else
+		;
+#endif
 		return;
 	}
 	spin_lock_irqsave(&cs->statlock, flags);
@@ -690,8 +738,12 @@ void VHiSax_putstatus(struct IsdnCardState *cs, char *head, char *fmt,
 	}
 	if (len > HISAX_STATUS_BUFSIZE) {
 		spin_unlock_irqrestore(&cs->statlock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: status overflow %d/%d\n",
 		       len, HISAX_STATUS_BUFSIZE);
+#else
+		;
+#endif
 		return;
 	}
 	count = len;
@@ -820,23 +872,39 @@ static int init_card(struct IsdnCardState *cs)
 		return(ret);
 	}
 	irq_cnt = cs->irq_cnt = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: IRQ %d count %d\n", CardType[cs->typ],
 	       cs->irq, irq_cnt);
+#else
+	;
+#endif
 	if (request_irq(cs->irq, card_irq, cs->irq_flags, "HiSax", cs)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: couldn't get interrupt %d\n",
 		       cs->irq);
+#else
+		;
+#endif
 		return 1;
 	}
 	while (cnt) {
 		cs->cardmsg(cs, CARD_INIT, NULL);
 		/* Timeout 10ms */
 		msleep(10);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: IRQ %d count %d\n",
 		       CardType[cs->typ], cs->irq, cs->irq_cnt);
+#else
+		;
+#endif
 		if (cs->irq_cnt == irq_cnt) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: IRQ(%d) getting no interrupts during init %d\n",
 			       CardType[cs->typ], cs->irq, 4 - cnt);
+#else
+			;
+#endif
 			if (cnt == 1) {
 				free_irq(cs->irq, cs);
 				return 2;
@@ -1011,9 +1079,13 @@ static int __devinit hisax_cs_setup_card(struct IsdnCard *card)
 		ret = 2;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: Support for %s Card not selected\n",
 		       CardType[card->typ]);
+#else
+		;
+#endif
 		ret = 0;
 		break;
 	}
@@ -1031,9 +1103,13 @@ static int hisax_cs_new(int cardnr, char *id, struct IsdnCard *card,
 
 	cs = kzalloc(sizeof(struct IsdnCardState), GFP_ATOMIC);
 	if (!cs) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for IsdnCardState(card %d)\n",
 		       cardnr + 1);
+#else
+		;
+#endif
 		goto out;
 	}
 	card->cs = cs;
@@ -1055,19 +1131,31 @@ static int hisax_cs_new(int cardnr, char *id, struct IsdnCard *card,
 	cs->protocol = card->protocol;
 
 	if (card->typ <= 0 || card->typ > ISDN_CTYPE_COUNT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: Card Type %d out of range\n", card->typ);
+#else
+		;
+#endif
 		goto outf_cs;
 	}
 	if (!(cs->dlog = kmalloc(MAX_DLOG_SPACE, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for dlog(card %d)\n", cardnr + 1);
+#else
+		;
+#endif
 		goto outf_cs;
 	}
 	if (!(cs->status_buf = kmalloc(HISAX_STATUS_BUFSIZE, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for status_buf(card %d)\n",
 		       cardnr + 1);
+#else
+		;
+#endif
 		goto outf_dlog;
 	}
 	cs->stlist = NULL;
@@ -1124,7 +1212,11 @@ static int hisax_cs_setup(int cardnr, struct IsdnCard *card,
 	int ret;
 
 	if (!(cs->rcvbuf = kmalloc(MAX_DFRAME_LEN_L1, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: No memory for isac rcvbuf\n");
+#else
+		;
+#endif
 		ll_unload(cs);
 		goto outf_cs;
 	}
@@ -1186,6 +1278,7 @@ static int __ref checkcard(int cardnr, char *id, int *busy_flag,
 	if (!ret)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "HiSax: Card %d Protocol %s Id=%s (%d)\n", cardnr + 1,
 	       (card->protocol == ISDN_PTYPE_1TR6) ? "1TR6" :
@@ -1193,6 +1286,9 @@ static int __ref checkcard(int cardnr, char *id, int *busy_flag,
 	       (card->protocol == ISDN_PTYPE_LEASED) ? "LEASED" :
 	       (card->protocol == ISDN_PTYPE_NI1) ? "NI1" :
 	       "NONE", cs->iif.id, cs->myid);
+#else
+	;
+#endif
 
 	ret = card_setup(card);
 	if (!ret) {
@@ -1255,9 +1351,13 @@ static int __init HiSax_inithardware(int *busy_flag)
 		} else {
 			/* make sure we don't oops the module */
 			if (cards[i].typ > 0 && cards[i].typ <= ISDN_CTYPE_COUNT) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 			       		"HiSax: Card %s not installed !\n",
 			       		CardType[cards[i].typ]);
+#else
+				;
+#endif
 			}
 			HiSax_shiftcards(i);
 			nrcards--;
@@ -1295,29 +1395,73 @@ void HiSax_reportcard(int cardnr, int sel)
 {
 	struct IsdnCardState *cs = cards[cardnr].cs;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: reportcard No %d\n", cardnr + 1);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: Type %s\n", CardType[cs->typ]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: debuglevel %x\n", cs->debug);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: HiSax_reportcard address 0x%lX\n",
 	       (ulong) & HiSax_reportcard);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: cs 0x%lX\n", (ulong) cs);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: HW_Flags %lx bc0 flg %lx bc1 flg %lx\n",
 	       cs->HW_Flags, cs->bcs[0].Flag, cs->bcs[1].Flag);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: bcs 0 mode %d ch%d\n",
 	       cs->bcs[0].mode, cs->bcs[0].channel);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: bcs 1 mode %d ch%d\n",
 	       cs->bcs[1].mode, cs->bcs[1].channel);
+#else
+	;
+#endif
 #ifdef ERROR_STATISTIC
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: dc errors(rx,crc,tx) %d,%d,%d\n",
 	       cs->err_rx, cs->err_crc, cs->err_tx);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "HiSax: bc0 errors(inv,rdo,crc,tx) %d,%d,%d,%d\n",
 	       cs->bcs[0].err_inv, cs->bcs[0].err_rdo, cs->bcs[0].err_crc,
 	       cs->bcs[0].err_tx);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "HiSax: bc1 errors(inv,rdo,crc,tx) %d,%d,%d,%d\n",
 	       cs->bcs[1].err_inv, cs->bcs[1].err_rdo, cs->bcs[1].err_crc,
 	       cs->bcs[1].err_tx);
+#else
+	;
+#endif
 	if (sel == 99) {
 		cs->err_rx  = 0;
 		cs->err_crc = 0;
@@ -1500,10 +1644,18 @@ static int __init HiSax_init(void)
 		j++;
 	}
 	if (!nzproto) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: Warning - no protocol specified\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: using protocol %s\n",
 		       DEFAULT_PROTO_NAME);
+#else
+		;
+#endif
 	}
 #endif
 	if (!HiSax_id)
@@ -1513,8 +1665,12 @@ static int __init HiSax_init(void)
 	for (i = 0; i < HISAX_MAX_CARDS; i++)
 		if (cards[i].typ > 0)
 			nrcards++;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HiSax: Total %d card%s defined\n",
 	       nrcards, (nrcards > 1) ? "s" : "");
+#else
+	;
+#endif
 
 	/* Install only, if at least one card found */
 	if (!HiSax_inithardware(NULL))
@@ -1544,7 +1700,11 @@ static void __exit HiSax_exit(void)
 	Isdnl2Free();
 	Isdnl3Free();
 	CallcFree();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax module removed\n");
+#else
+	;
+#endif
 }
 
 #ifdef CONFIG_HOTPLUG
@@ -1735,7 +1895,11 @@ static void hisax_d_l1l2(struct hisax_if *ifc, int pr, void *arg)
 		hisax_sched_event(cs, E_RCVBUFREADY);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pr %#x\n", pr);
+#else
+		;
+#endif
 		break;
 	}
 }
@@ -1782,7 +1946,11 @@ static void hisax_b_l1l2(struct hisax_if *ifc, int pr, void *arg)
 		}
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hisax_b_l1l2 pr %#x\n", pr);
+#else
+		;
+#endif
 		break;
 	}
 }

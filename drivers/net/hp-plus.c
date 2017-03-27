@@ -194,9 +194,9 @@ static int __init hpp_probe1(struct net_device *dev, int ioaddr)
 	}
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
-	printk("%s: %s at %#3x, ", dev->name, name, ioaddr);
+;
 
 	/* Retrieve and checksum the station address. */
 	outw(MAC_Page, ioaddr + HP_PAGING);
@@ -208,16 +208,16 @@ static int __init hpp_probe1(struct net_device *dev, int ioaddr)
 	}
 	checksum += inb(ioaddr + 14);
 
-	printk("%pM", dev->dev_addr);
+;
 
 	if (checksum != 0xff) {
-		printk(" bad checksum %2.2x.\n", checksum);
+;
 		retval = -ENODEV;
 		goto out;
 	} else {
 		/* Point at the Software Configuration Flags. */
 		outw(ID_Page, ioaddr + HP_PAGING);
-		printk(" ID %4.4x", inw(ioaddr + 12));
+;
 	}
 
 	/* Read the IRQ line. */
@@ -229,10 +229,10 @@ static int __init hpp_probe1(struct net_device *dev, int ioaddr)
 		dev->irq = irq;
 		if (option & MemEnable) {
 			mem_start = inw(ioaddr + 9) << 8;
-			printk(", IRQ %d, memory address %#x.\n", irq, mem_start);
+;
 		} else {
 			mem_start = 0;
-			printk(", IRQ %d, programmed-I/O mode.\n", irq);
+;
 		}
 	}
 
@@ -336,7 +336,7 @@ hpp_reset_8390(struct net_device *dev)
 	int ioaddr = dev->base_addr - NIC_OFFSET;
 	int option_reg = inw(ioaddr + HPP_OPTION);
 
-	if (ei_debug > 1) printk("resetting the 8390 time=%ld...", jiffies);
+;
 
 	outw(option_reg & ~(NICReset + ChipReset), ioaddr + HPP_OPTION);
 	/* Pause a few cycles for the hardware reset to take place. */
@@ -348,9 +348,9 @@ hpp_reset_8390(struct net_device *dev)
 
 
 	if ((inb_p(ioaddr+NIC_OFFSET+EN0_ISR) & ENISR_RESET) == 0)
-		printk("%s: hp_reset_8390() did not complete.\n", dev->name);
+;
 
-	if (ei_debug > 1) printk("8390 reset done (%ld).", jiffies);
+;
 }
 
 /* The programmed-I/O version of reading the 4 byte 8390 specific header.
@@ -461,7 +461,7 @@ init_module(void)
 	for (this_dev = 0; this_dev < MAX_HPP_CARDS; this_dev++) {
 		if (io[this_dev] == 0)  {
 			if (this_dev != 0) break; /* only autoprobe 1st one */
-			printk(KERN_NOTICE "hp-plus.c: Presently autoprobing (not recommended) for a single card.\n");
+;
 		}
 		dev = alloc_eip_netdev();
 		if (!dev)
@@ -473,7 +473,7 @@ init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "hp-plus.c: No HP-Plus card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

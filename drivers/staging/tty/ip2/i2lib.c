@@ -119,21 +119,21 @@ fatality(i2eBordStrPtr pB )
 
 	for (i=0;i<sizeof(DBGBuf);i++) {
 		if ((i%16) == 0)
-			printk("\n%4x:",i);
-		printk("%02x ",DBGBuf[i]);
+;
+;
 	}
-	printk("\n");
+;
 	for (i=0;i<sizeof(DBGBuf);i++) {
 		if ((i%16) == 0)
-			printk("\n%4x:",i);
+;
 		if (DBGBuf[i] >= ' ' && DBGBuf[i] <= '~') {
-			printk(" %c ",DBGBuf[i]);
+;
 		} else {
-			printk(" . ");
+;
 		}
 	}
-	printk("\n");
-	printk("Last index %x\n",I);
+;
+;
 }
 #endif /* DEBUG_FIFO */
 
@@ -195,7 +195,7 @@ iiSendPendingMail(i2eBordStrPtr pB)
 					iiSendPendingMail_t, (unsigned long)pB);
 				mod_timer(&pB->SendPendingTimer, jiffies + 1);
 			} else {
-				printk( KERN_ERR "IP2: iiSendPendingMail unable to queue outbound mail\n" );
+;
 			}
 		}
 	}
@@ -423,7 +423,7 @@ i2DeQueueNeeds(i2eBordStrPtr pB, int type)
 		write_unlock_irqrestore(&pB->Fbuf_spinlock, flags);
 		break;
 	default:
-		printk(KERN_ERR "i2DeQueueNeeds called with bad type:%x\n",type);
+;
 		break;
 	}
 	return pCh;
@@ -500,7 +500,7 @@ i2QueueNeeds(i2eBordStrPtr pB, i2ChanStrPtr pCh, int type)
 		pCh->channelNeeds |= NEED_CREDIT;
 		break;
 	default:
-		printk(KERN_ERR "i2QueueNeeds called with bad type:%x\n",type);
+;
 		break;
 	}
 	return;

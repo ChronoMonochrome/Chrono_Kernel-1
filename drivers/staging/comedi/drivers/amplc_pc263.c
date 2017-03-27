@@ -206,12 +206,12 @@ pc263_find_pci(struct comedi_device *dev, int bus, int slot,
 	}
 	/* No match found. */
 	if (bus || slot) {
-		printk(KERN_ERR
-		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
-		       dev->minor, thisboard->name, bus, slot);
+//		printk(KERN_ERR
+//		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
+;
 	} else {
-		printk(KERN_ERR "comedi%d: error! no %s found!\n",
-		       dev->minor, thisboard->name);
+//		printk(KERN_ERR "comedi%d: error! no %s found!\n",
+;
 	}
 	return -EIO;
 }
@@ -233,8 +233,8 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #endif
 	int ret;
 
-	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
-	       PC263_DRIVER_NAME);
+//	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
+;
 /*
  * Allocate the private structure area.  alloc_private() is a
  * convenient macro defined in comedidev.h.
@@ -242,8 +242,8 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #ifdef CONFIG_COMEDI_PCI
 	ret = alloc_private(dev, sizeof(struct pc263_private));
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 #endif
@@ -264,9 +264,9 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		break;
 #endif /* CONFIG_COMEDI_PCI */
 	default:
-		printk(KERN_ERR
-		       "comedi%d: %s: BUG! cannot determine board type!\n",
-		       dev->minor, PC263_DRIVER_NAME);
+//		printk(KERN_ERR
+//		       "comedi%d: %s: BUG! cannot determine board type!\n",
+;
 		return -EINVAL;
 		break;
 	}
@@ -281,10 +281,10 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (pci_dev) {
 		ret = comedi_pci_enable(pci_dev, PC263_DRIVER_NAME);
 		if (ret < 0) {
-			printk(KERN_ERR
-			       "comedi%d: error! cannot enable PCI device and "
-				"request regions!\n",
-			       dev->minor);
+//			printk(KERN_ERR
+//			       "comedi%d: error! cannot enable PCI device and "
+//				"request regions!\n",
+;
 			return ret;
 		}
 		iobase = pci_resource_start(pci_dev, 2);
@@ -303,8 +303,8 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 	ret = alloc_subdevices(dev, 1);
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 
@@ -323,16 +323,16 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->state = inb(dev->iobase);
 	s->state = s->state | (inb(dev->iobase) << 8);
 
-	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
+;
 	if (thisboard->bustype == isa_bustype) {
-		printk("(base %#lx) ", iobase);
+;
 	} else {
 #ifdef CONFIG_COMEDI_PCI
-		printk("(pci %s) ", pci_name(pci_dev));
+;
 #endif
 	}
 
-	printk("attached\n");
+;
 
 	return 1;
 }
@@ -347,8 +347,8 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pc263_detach(struct comedi_device *dev)
 {
-	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
-	       PC263_DRIVER_NAME);
+//	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+;
 
 #ifdef CONFIG_COMEDI_PCI
 	if (devpriv) {
@@ -366,8 +366,8 @@ static int pc263_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name) {
-		printk(KERN_INFO "comedi%d: %s removed\n",
-		       dev->minor, dev->board_name);
+//		printk(KERN_INFO "comedi%d: %s removed\n",
+;
 	}
 	return 0;
 }
@@ -380,8 +380,8 @@ static int pc263_request_region(unsigned minor, unsigned long from,
 				unsigned long extent)
 {
 	if (!from || !request_region(from, extent, PC263_DRIVER_NAME)) {
-		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
-		       minor, from, extent);
+//		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
+;
 		return -EIO;
 	}
 	return 0;

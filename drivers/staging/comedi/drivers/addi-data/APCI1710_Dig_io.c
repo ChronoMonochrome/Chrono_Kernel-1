@@ -234,7 +234,7 @@ int i_APCI1710_InsnConfigDigitalIO(struct comedi_device *dev, struct comedi_subd
 			i_ReturnValue = -3;
 		}
 	}			/*  end of Switch */
-	printk("Return Value %d\n", i_ReturnValue);
+;
 	return i_ReturnValue;
 }
 

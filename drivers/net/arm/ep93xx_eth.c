@@ -866,8 +866,8 @@ static int ep93xx_eth_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
-	printk(KERN_INFO "%s: ep93xx on-chip ethernet, IRQ %d, %pM\n",
-			dev->name, ep->irq, dev->dev_addr);
+//	printk(KERN_INFO "%s: ep93xx on-chip ethernet, IRQ %d, %pM\n",
+;
 
 	return 0;
 
@@ -888,7 +888,7 @@ static struct platform_driver ep93xx_eth_driver = {
 
 static int __init ep93xx_eth_init_module(void)
 {
-	printk(KERN_INFO DRV_MODULE_NAME " version " DRV_MODULE_VERSION " loading\n");
+;
 	return platform_driver_register(&ep93xx_eth_driver);
 }
 

@@ -266,7 +266,11 @@ static void snd_es1938_mixer_write(struct es1938 *chip, unsigned char reg, unsig
 	outb(val, SLSB_REG(chip, MIXERDATA));
 	spin_unlock_irqrestore(&chip->mixer_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Mixer reg %02x set to %02x\n", reg, val);
+#else
+	;
+#endif
 #endif
 }
 
@@ -282,7 +286,11 @@ static int snd_es1938_mixer_read(struct es1938 *chip, unsigned char reg)
 	data = inb(SLSB_REG(chip, MIXERDATA));
 	spin_unlock_irqrestore(&chip->mixer_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Mixer reg %02x now is %02x\n", reg, data);
+#else
+	;
+#endif
 #endif
 	return data;
 }
@@ -303,8 +311,12 @@ static int snd_es1938_mixer_bits(struct es1938 *chip, unsigned char reg,
 		new = (old & ~mask) | (val & mask);
 		outb(new, SLSB_REG(chip, MIXERDATA));
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "Mixer reg %02x was %02x, set to %02x\n",
 			   reg, old, new);
+#else
+		;
+#endif
 #endif
 	}
 	spin_unlock_irqrestore(&chip->mixer_lock, flags);
@@ -352,7 +364,11 @@ static void snd_es1938_write(struct es1938 *chip, unsigned char reg, unsigned ch
 	snd_es1938_write_cmd(chip, val);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Reg %02x set to %02x\n", reg, val);
+#else
+	;
+#endif
 #endif
 }
 
@@ -369,7 +385,11 @@ static unsigned char snd_es1938_read(struct es1938 *chip, unsigned char reg)
 	val = snd_es1938_get_byte(chip);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "Reg %02x now is %02x\n", reg, val);
+#else
+	;
+#endif
 #endif
 	return val;
 }
@@ -392,8 +412,12 @@ static int snd_es1938_bits(struct es1938 *chip, unsigned char reg, unsigned char
 		new = (old & ~mask) | (val & mask);
 		snd_es1938_write_cmd(chip, new);
 #ifdef REG_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "Reg %02x was %02x, set to %02x\n",
 			   reg, old, new);
+#else
+		;
+#endif
 #endif
 	}
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
@@ -1643,8 +1667,12 @@ static int __devinit snd_es1938_create(struct snd_card *card,
 	}
 	chip->irq = pci->irq;
 #ifdef ES1938_DDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "create: io: 0x%lx, sb: 0x%lx, vc: 0x%lx, mpu: 0x%lx, game: 0x%lx\n",
 		   chip->io_port, chip->sb_port, chip->vc_port, chip->mpu_port, chip->game_port);
+#else
+	;
+#endif
 #endif
 
 	chip->ddma_port = chip->vc_port + 0x00;		/* fix from Thomas Sailer */
@@ -1673,23 +1701,43 @@ static irqreturn_t snd_es1938_interrupt(int irq, void *dev_id)
 
 	status = inb(SLIO_REG(chip, IRQCONTROL));
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Es1938debug - interrupt status: =0x%x\n", status);
+#else
+	;
+#endif
 #endif
 	
 	/* AUDIO 1 */
 	if (status & 0x10) {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 1 interrupt\n");
+#else
+                ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 1 DMAC DMA count: %u\n",
 		       inw(SLDM_REG(chip, DMACOUNT)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 1 DMAC DMA base: %u\n",
 		       inl(SLDM_REG(chip, DMAADDR)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 1 DMAC DMA status: 0x%x\n",
 		       inl(SLDM_REG(chip, DMASTATUS)));
+#else
+		;
+#endif
 #endif
 		/* clear irq */
 		handled = 1;
@@ -1703,14 +1751,26 @@ static irqreturn_t snd_es1938_interrupt(int irq, void *dev_id)
 	/* AUDIO 2 */
 	if (status & 0x20) {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 2 interrupt\n");
+#else
+                ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 2 DMAC DMA count: %u\n",
 		       inw(SLIO_REG(chip, AUDIO2DMACOUNT)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Es1938debug - AUDIO channel 2 DMAC DMA base: %u\n",
 		       inl(SLIO_REG(chip, AUDIO2DMAADDR)));
+#else
+		;
+#endif
 
 #endif
 		/* clear irq */

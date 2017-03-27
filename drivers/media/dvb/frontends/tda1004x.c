@@ -40,9 +40,13 @@
 #include "tda1004x.h"
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "tda1004x: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 #define TDA1004X_CHIPID		 0x00
@@ -131,17 +135,29 @@ static int tda1004x_write_byteI(struct tda1004x_state *state, int reg, int data)
 	u8 buf[] = { reg, data };
 	struct i2c_msg msg = { .flags = 0, .buf = buf, .len = 2 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: reg=0x%x, data=0x%x\n", __func__, reg, data);
+#else
+	d;
+#endif
 
 	msg.addr = state->config->demod_address;
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
 			__func__, reg, data, ret);
+#else
+		d;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: success reg=0x%x, data=0x%x, ret=%i\n", __func__,
 		reg, data, ret);
+#else
+	d;
+#endif
 	return (ret != 1) ? -1 : 0;
 }
 
@@ -153,28 +169,44 @@ static int tda1004x_read_byte(struct tda1004x_state *state, int reg)
 	struct i2c_msg msg[] = {{ .flags = 0, .buf = b0, .len = 1 },
 				{ .flags = I2C_M_RD, .buf = b1, .len = 1 }};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: reg=0x%x\n", __func__, reg);
+#else
+	d;
+#endif
 
 	msg[0].addr = state->config->demod_address;
 	msg[1].addr = state->config->demod_address;
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: error reg=0x%x, ret=%i\n", __func__, reg,
 			ret);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: success reg=0x%x, data=0x%x, ret=%i\n", __func__,
 		reg, b1[0], ret);
+#else
+	d;
+#endif
 	return b1[0];
 }
 
 static int tda1004x_write_mask(struct tda1004x_state *state, int reg, int mask, int data)
 {
 	int val;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: reg=0x%x, mask=0x%x, data=0x%x\n", __func__, reg,
 		mask, data);
+#else
+	d;
+#endif
 
 	// read a byte and check
 	val = tda1004x_read_byte(state, reg);
@@ -194,7 +226,11 @@ static int tda1004x_write_buf(struct tda1004x_state *state, int reg, unsigned ch
 	int i;
 	int result;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: reg=0x%x, len=0x%x\n", __func__, reg, len);
+#else
+	d;
+#endif
 
 	result = 0;
 	for (i = 0; i < len; i++) {
@@ -209,7 +245,11 @@ static int tda1004x_write_buf(struct tda1004x_state *state, int reg, unsigned ch
 static int tda1004x_enable_tuner_i2c(struct tda1004x_state *state)
 {
 	int result;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	result = tda1004x_write_mask(state, TDA1004X_CONFC4, 2, 2);
 	msleep(20);
@@ -218,7 +258,11 @@ static int tda1004x_enable_tuner_i2c(struct tda1004x_state *state)
 
 static int tda1004x_disable_tuner_i2c(struct tda1004x_state *state)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	return tda1004x_write_mask(state, TDA1004X_CONFC4, 2, 0);
 }
@@ -345,7 +389,11 @@ static int tda1004x_do_upload(struct tda1004x_state *state,
 		}
 		pos += tx_size;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: fw_pos=0x%x\n", __func__, pos);
+#else
+		d;
+#endif
 	}
 	// give the DSP a chance to settle 03/10/05 Hac
 	msleep(100);
@@ -377,10 +425,18 @@ static int tda1004x_check_upload_ok(struct tda1004x_state *state)
 	data1 = tda1004x_read_byte(state, TDA1004X_DSP_DATA1);
 	data2 = tda1004x_read_byte(state, TDA1004X_DSP_DATA2);
 	if (data1 != 0x67 || data2 < 0x20 || data2 > 0x2e) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "tda1004x: found firmware revision %x -- invalid\n", data2);
+#else
+		;
+#endif
 		return -EIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tda1004x: found firmware revision %x -- ok\n", data2);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -395,7 +451,11 @@ static int tda10045_fwupload(struct dvb_frontend* fe)
 		return 0;
 
 	/* request the firmware, this will block until someone uploads it */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tda1004x: waiting for firmware upload (%s)...\n", TDA10045_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 	ret = state->config->request_firmware(fe, &fw, TDA10045_DEFAULT_FIRMWARE);
 	if (ret) {
 		printk(KERN_ERR "tda1004x: no firmware upload (timeout or file not found?)\n");
@@ -415,7 +475,11 @@ static int tda10045_fwupload(struct dvb_frontend* fe)
 	release_firmware(fw);
 	if (ret)
 		return ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tda1004x: firmware upload complete\n");
+#else
+	;
+#endif
 
 	/* wait for DSP to initialise */
 	/* DSPREADY doesn't seem to work on the TDA10045H */
@@ -437,17 +501,33 @@ static void tda10046_init_plls(struct dvb_frontend* fe)
 
 	tda1004x_write_byteI(state, TDA10046H_CONFPLL1, 0xf0);
 	if(tda10046_clk53m) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "tda1004x: setting up plls for 53MHz sampling clock\n");
+#else
+		;
+#endif
 		tda1004x_write_byteI(state, TDA10046H_CONFPLL2, 0x08); // PLL M = 8
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "tda1004x: setting up plls for 48MHz sampling clock\n");
+#else
+		;
+#endif
 		tda1004x_write_byteI(state, TDA10046H_CONFPLL2, 0x03); // PLL M = 3
 	}
 	if (state->config->xtal_freq == TDA10046_XTAL_4M ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting up PLLs for a 4 MHz Xtal\n", __func__);
+#else
+		d;
+#endif
 		tda1004x_write_byteI(state, TDA10046H_CONFPLL3, 0); // PLL P = N = 0
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting up PLLs for a 16 MHz Xtal\n", __func__);
+#else
+		d;
+#endif
 		tda1004x_write_byteI(state, TDA10046H_CONFPLL3, 3); // PLL P = 0, N = 3
 	}
 	if(tda10046_clk53m)
@@ -488,7 +568,11 @@ static int tda10046_fwupload(struct dvb_frontend* fe)
 	if (state->config->xtal_freq == TDA10046_XTAL_4M) {
 		confc4 = 0;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: 16MHz Xtal, reducing I2C speed\n", __func__);
+#else
+		d;
+#endif
 		confc4 = 0x80;
 	}
 	tda1004x_write_byteI(state, TDA1004X_CONFC4, confc4);
@@ -522,7 +606,11 @@ static int tda10046_fwupload(struct dvb_frontend* fe)
 	   goes into an instable state. So, proper locking are needed
 	   at the i2c bus master.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tda1004x: trying to boot from eeprom\n");
+#else
+	;
+#endif
 	tda1004x_write_byteI(state, TDA1004X_CONFC4, 4);
 	msleep(300);
 	tda1004x_write_byteI(state, TDA1004X_CONFC4, confc4);
@@ -535,7 +623,11 @@ static int tda10046_fwupload(struct dvb_frontend* fe)
 
 	if (state->config->request_firmware != NULL) {
 		/* request the firmware, this will block until someone uploads it */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "tda1004x: waiting for firmware upload...\n");
+#else
+		;
+#endif
 		ret = state->config->request_firmware(fe, &fw, TDA10046_DEFAULT_FIRMWARE);
 		if (ret) {
 			/* remain compatible to old bug: try to load with tda10045 image name */
@@ -544,8 +636,12 @@ static int tda10046_fwupload(struct dvb_frontend* fe)
 				printk(KERN_ERR "tda1004x: no firmware upload (timeout or file not found?)\n");
 				return ret;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "tda1004x: please rename the firmware file to %s\n",
 						  TDA10046_DEFAULT_FIRMWARE);
+#else
+				;
+#endif
 			}
 		}
 	} else {
@@ -612,10 +708,18 @@ static int tda10045_init(struct dvb_frontend* fe)
 {
 	struct tda1004x_state* state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (tda10045_fwupload(fe)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda1004x: firmware upload failed\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -642,10 +746,18 @@ static int tda10045_init(struct dvb_frontend* fe)
 static int tda10046_init(struct dvb_frontend* fe)
 {
 	struct tda1004x_state* state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (tda10046_fwupload(fe)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda1004x: firmware upload failed\n");
+#else
+		;
+#endif
 			return -EIO;
 	}
 
@@ -704,7 +816,11 @@ static int tda1004x_set_fe(struct dvb_frontend* fe,
 	int tmp;
 	int inversion;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (state->demod_type == TDA1004X_DEMOD_TDA10046) {
 		// setup auto offset
@@ -899,7 +1015,11 @@ static int tda1004x_get_fe(struct dvb_frontend* fe, struct dvb_frontend_paramete
 {
 	struct tda1004x_state* state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// inversion status
 	fe_params->inversion = INVERSION_OFF;
@@ -1007,7 +1127,11 @@ static int tda1004x_read_status(struct dvb_frontend* fe, fe_status_t * fe_status
 	int cber;
 	int vber;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// read status
 	status = tda1004x_read_byte(state, TDA1004X_STATUS_CD);
@@ -1066,7 +1190,11 @@ static int tda1004x_read_status(struct dvb_frontend* fe, fe_status_t * fe_status
 	}
 
 	// success
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: fe_status=0x%x\n", __func__, *fe_status);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1076,7 +1204,11 @@ static int tda1004x_read_signal_strength(struct dvb_frontend* fe, u16 * signal)
 	int tmp;
 	int reg = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// determine the register to use
 	switch (state->demod_type) {
@@ -1095,7 +1227,11 @@ static int tda1004x_read_signal_strength(struct dvb_frontend* fe, u16 * signal)
 		return -EIO;
 
 	*signal = (tmp << 8) | tmp;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: signal=0x%x\n", __func__, *signal);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1104,7 +1240,11 @@ static int tda1004x_read_snr(struct dvb_frontend* fe, u16 * snr)
 	struct tda1004x_state* state = fe->demodulator_priv;
 	int tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// read it
 	tmp = tda1004x_read_byte(state, TDA1004X_SNR);
@@ -1113,7 +1253,11 @@ static int tda1004x_read_snr(struct dvb_frontend* fe, u16 * snr)
 	tmp = 255 - tmp;
 
 	*snr = ((tmp << 8) | tmp);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: snr=0x%x\n", __func__, *snr);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1124,7 +1268,11 @@ static int tda1004x_read_ucblocks(struct dvb_frontend* fe, u32* ucblocks)
 	int tmp2;
 	int counter;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// read the UCBLOCKS and reset
 	counter = 0;
@@ -1150,7 +1298,11 @@ static int tda1004x_read_ucblocks(struct dvb_frontend* fe, u32* ucblocks)
 	else
 		*ucblocks = 0xffffffff;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ucblocks=0x%x\n", __func__, *ucblocks);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1159,7 +1311,11 @@ static int tda1004x_read_ber(struct dvb_frontend* fe, u32* ber)
 	struct tda1004x_state* state = fe->demodulator_priv;
 	int tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	// read it in
 	tmp = tda1004x_read_byte(state, TDA1004X_CBER_LSB);
@@ -1173,7 +1329,11 @@ static int tda1004x_read_ber(struct dvb_frontend* fe, u32* ber)
 	// The address 0x20 should be read to cope with a TDA10046 bug
 	tda1004x_read_byte(state, TDA1004X_CBER_RESET);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ber=0x%x\n", __func__, *ber);
+#else
+	d;
+#endif
 	return 0;
 }
 

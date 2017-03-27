@@ -69,8 +69,8 @@ static void ipcomp6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 	if (!x)
 		return;
 
-	printk(KERN_DEBUG "pmtu discovery on SA IPCOMP/%08x/%pI6\n",
-			spi, &iph->daddr);
+//	printk(KERN_DEBUG "pmtu discovery on SA IPCOMP/%08x/%pI6\n",
+;
 	xfrm_state_put(x);
 }
 
@@ -190,11 +190,11 @@ static const struct inet6_protocol ipcomp6_protocol =
 static int __init ipcomp6_init(void)
 {
 	if (xfrm_register_type(&ipcomp6_type, AF_INET6) < 0) {
-		printk(KERN_INFO "ipcomp6 init: can't add xfrm type\n");
+;
 		return -EAGAIN;
 	}
 	if (inet6_add_protocol(&ipcomp6_protocol, IPPROTO_COMP) < 0) {
-		printk(KERN_INFO "ipcomp6 init: can't add protocol\n");
+;
 		xfrm_unregister_type(&ipcomp6_type, AF_INET6);
 		return -EAGAIN;
 	}
@@ -204,9 +204,9 @@ static int __init ipcomp6_init(void)
 static void __exit ipcomp6_fini(void)
 {
 	if (inet6_del_protocol(&ipcomp6_protocol, IPPROTO_COMP) < 0)
-		printk(KERN_INFO "ipv6 ipcomp close: can't remove protocol\n");
+;
 	if (xfrm_unregister_type(&ipcomp6_type, AF_INET6) < 0)
-		printk(KERN_INFO "ipv6 ipcomp close: can't remove xfrm type\n");
+;
 }
 
 module_init(ipcomp6_init);
