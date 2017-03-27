@@ -9,7 +9,6 @@
 
 #include <linux/init.h>
 #include <linux/module.h>
-#ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h> /* printk() */
 #include <linux/fs.h> /* everything... */
 #include <linux/scatterlist.h>
@@ -31,9 +30,6 @@
 
 #ifdef VERBOSE_DEBUG
 #define COH_DBG(x) ({ if (1) x; 0; })
-#else
-#include <linux/kernel.h> /* ;
-#endif
 #else
 #define COH_DBG(x) ({ if (0) x; 0; })
 #endif
