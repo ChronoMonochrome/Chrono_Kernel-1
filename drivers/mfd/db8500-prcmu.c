@@ -2269,6 +2269,11 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	int freq = 0, div, mul;
 	int ret = 0;
 
+	if (unlikely(pending_pllddr_val > 0)) {
+		pr_err("%s: PLLDDR OC is already scheduled.\n");
+		return -EBUSY;
+	}
+
 	ret = sscanf(buf, "%d", &freq);
 
 	// check for bogus values - retry with hexademical input
