@@ -44,8 +44,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/mfd/abx500.h>
 #include <linux/wakelock.h>
-#include <linux/input.h>
-#include <linux/ab8500-ponkey.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db8500-regs.h>
@@ -1232,8 +1230,6 @@ static bool sdmmc_is_calibrated = false,
 static bool ddr_clocks_boost = false;
 static struct wake_lock pllddr_oc_lock;
 
-static bool reschedule_ddr_oc = false;
-
 struct prcmu_regs_table
 {
 	u32 reg;
@@ -1339,8 +1335,6 @@ static int pllarm_freq(u32 raw);
 
 static u32 tmp_val; // this value is used if do_oc_ddr was aborted on PLLDDR calibration
 
-static bool is_atomic = false;
-
 static void do_oc_ddr(int new_val_)
 {
 	u32 old_val_, val;
@@ -1352,14 +1346,8 @@ static void do_oc_ddr(int new_val_)
 #if 0
 	    dma_new_divider, // used for ACLK and DMACLK since its orig. values are same
 #endif
-	    sxa_new_divider; // used for SIACLK and SVACLK
-
-	if (reschedule_ddr_oc) {
-		pr_err("%s: reschedule_ddr_oc == true");
-		reschedule_ddr_oc = false;
-		return;
-	}
-
+	    sxa_new_divider; // used for SIACLK and SVACLK;
+	    
 	old_val_ = readl(prcmu_base + PRCMU_PLLDDR_REG);
   
 	pllddr_freq = pllarm_freq(new_val_);
@@ -1405,8 +1393,7 @@ static void do_oc_ddr(int new_val_)
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			if (!is_suspend) goto reschedule;
-			else return;
+			return;
 		}
 		
 		pr_err("[PLLDDR] recalibrating PERXCLK and MCDECLK\n");
@@ -1425,8 +1412,7 @@ static void do_oc_ddr(int new_val_)
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			if (!is_suspend) goto reschedule;
-			else return;
+			return;
 		}
 			
 		if (sdmmc_new_divider && (sdmmc_old_divider != sdmmc_new_divider)) {
@@ -1445,15 +1431,13 @@ static void do_oc_ddr(int new_val_)
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			if (!is_suspend) goto reschedule;
-			else return;
+			return;
 		}
-
+		
 		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
 		preempt_disable();
 		local_irq_disable();
 		local_fiq_disable();
-		is_atomic = true;
 
 		pr_err("[pllddr] (mcdeclk_is_enabled || sdmmcclk_is_enabled) = %d", (mcdeclk_is_enabled || sdmmcclk_is_enabled));
 		for (int i = 0; i < 20 && (mcdeclk_is_enabled || sdmmcclk_is_enabled); i++) {
@@ -1461,6 +1445,7 @@ static void do_oc_ddr(int new_val_)
 			mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 			sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 		}
+
 		for (val = (tmp_val ? tmp_val : old_val_);
 		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_);
 		    (new_val_ > old_val_) ? val++ : val--) {
@@ -1470,14 +1455,7 @@ static void do_oc_ddr(int new_val_)
 				if (mcdeclk_is_enabled || sdmmcclk_is_enabled) {
 					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
-					local_fiq_enable();
-					local_irq_enable();
-					preempt_enable();
-					is_atomic = false;
-
-					if (!is_suspend) goto reschedule;
-					else
-						return;
+					return;
 				}
 			}
 			//pr_err("[PLLDRR] val=%#010x", val);
@@ -1487,16 +1465,11 @@ static void do_oc_ddr(int new_val_)
 		local_fiq_enable();
 		local_irq_enable();
 		preempt_enable();
-		is_atomic = false;
-
+			
 		pllddr_is_calibrated = true;
 		tmp_val = 0;
 		udelay(50);
 	}
-
-	return;
-reschedule:
-	reschedule_ddr_oc = true;
 }
 
 /*--------------------------------------------------------*/
@@ -2196,8 +2169,6 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
-extern bool disable_gpio_keys;
-
 static void do_oc_ddr_fn(struct work_struct *work);
 static DECLARE_DELAYED_WORK(do_oc_ddr_delayedwork, do_oc_ddr_fn);
 static void do_oc_ddr_fn(struct work_struct *work)
@@ -2206,32 +2177,22 @@ static void do_oc_ddr_fn(struct work_struct *work)
 		if (!wake_lock_active(&pllddr_oc_lock))
 			wake_lock(&pllddr_oc_lock);
 	}
-
+	
 	if (!(perx_is_calibrated && sdmmc_is_calibrated && pllddr_is_calibrated)) {
-		if (!reschedule_ddr_oc) {
-			pr_err("%s: reschedule_ddr_oc == false", __func__);
-			do_oc_ddr(pending_pllddr_val);
-			schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(100));
-		} else {
-			pr_err("%s: reschedule_ddr_oc == true", __func__);
-			reschedule_ddr_oc = false;
-			ddr_oc_on_suspend = true;
-		}
+		do_oc_ddr(pending_pllddr_val);
+		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(100));
 	} else {
 		perx_is_calibrated = false;
 		sdmmc_is_calibrated = false;
 		pllddr_is_calibrated = false;
 		pending_pllddr_val = 0;
 		pending_pllddr_freq = 0;
-
-		pr_err("[PLLDDR] disable suspend lockup\n");
-		ddr_oc_on_suspend = false;
-		abb_ponkey_remap_power_key(0, KEY_POWER);
-		disable_gpio_keys = false;
-
+	
 		if (ddr_oc_on_suspend) {
 			if (wake_lock_active(&pllddr_oc_lock))
 				wake_unlock(&pllddr_oc_lock);
+			
+			ddr_oc_on_suspend = false;
 		}
 	}
 }
@@ -2244,13 +2205,10 @@ module_param(ddr_oc_delay_ms, uint, 0644);
 static void pllddr_early_suspend(struct early_suspend *h)
 {
 	is_suspend = true;
+	
 	//pr_err("[PLLDDR] %s\n", __func__);
 
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
-		pr_err("[PLLDDR] enable suspend lockup!\n");
-		abb_ponkey_remap_power_key(KEY_POWER, 0);
-		disable_gpio_keys = true;
-		//ddr_oc_on_suspend = true;
 		pr_err("[PLLDDR] pending_pllddr_val=%#010x\n", pending_pllddr_val);
 		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(ddr_oc_delay_ms));
 	}
@@ -2261,13 +2219,7 @@ static void pllddr_late_resume(struct early_suspend *h)
 	is_suspend = false;
 
 	//pr_err("[PLLDDR] %s\n", __func__);
-	if (pending_pllddr_val) {
-		pr_err("[PLLDDR] disable suspend lockup\n");
-		ddr_oc_on_suspend = false;
-		abb_ponkey_remap_power_key(0, KEY_POWER);
-		disable_gpio_keys = false;
-	}
-
+	
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		cancel_delayed_work(&do_oc_ddr_delayedwork);
 		//pr_err("canceled\n");

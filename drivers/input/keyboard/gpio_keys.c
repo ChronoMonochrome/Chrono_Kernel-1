@@ -579,9 +579,6 @@ static bool is_early_suspend = false;
 unsigned int is_suspend = 0;
 module_param_named(is_suspend, is_suspend, uint, 0444);
 
-bool disable_gpio_keys = false;
-module_param(disable_gpio_keys, uint, 0644);
-
 static struct early_suspend early_suspend;
 
 static void gpio_keys_early_suspend(struct early_suspend *h)
@@ -603,10 +600,6 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
-	if (disable_gpio_keys) {
-		pr_err("[GPIO-KEYS] ignoring HOME key press\n");
-		return 0;
-	}
 
 	if (emulator_volup) {
 		if (button->gpio == VOL_UP_JANICE_R0_0) {
