@@ -1421,11 +1421,11 @@ static void do_oc_ddr(int new_val_)
 			writel_relaxed(sdmmc_val_base | sdmmc_new_divider,
 					prcmu_base + PRCMU_SDMMCCLK_REG);
 		}
-		
+
 		sdmmc_is_calibrated = true;
 		udelay(50);
 	}
-		
+
 	if (!pllddr_is_calibrated) {
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
@@ -1433,7 +1433,7 @@ static void do_oc_ddr(int new_val_)
 			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
-		
+
 		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
 		preempt_disable();
 		local_irq_disable();
@@ -1455,6 +1455,9 @@ static void do_oc_ddr(int new_val_)
 				if (mcdeclk_is_enabled || sdmmcclk_is_enabled) {
 					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
+					local_fiq_enable();
+					local_irq_enable();
+					preempt_enable();
 					return;
 				}
 			}
@@ -1465,7 +1468,7 @@ static void do_oc_ddr(int new_val_)
 		local_fiq_enable();
 		local_irq_enable();
 		preempt_enable();
-			
+
 		pllddr_is_calibrated = true;
 		tmp_val = 0;
 		udelay(50);
