@@ -47,7 +47,6 @@
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db8500-regs.h>
-#include <asm/hardware/gic.h>
 #include <mach/hardware.h>
 #include <mach/prcmu-debug.h>
 #include "dbx500-prcmu-regs.h"
@@ -1022,122 +1021,6 @@ static u8 db8500_prcmu_get_power_state_result(void)
 	return status;
 }
 
-#define PRCMU_A9_MASK_REQ               0x00000328
-#define PRCMU_A9_MASK_REQ_MASK          0x00000001
-#define PRCMU_GIC_DELAY                 1
-
-/* This function decouple the gic from the prcmu */
-int db8500_prcmu_gic_decouple(void)
-{
-	u32 val = readl(_PRCMU_BASE + PRCMU_A9_MASK_REQ);
-
-	/* Set bit 0 register value to 1 */
-	writel(val | PRCMU_A9_MASK_REQ_MASK, _PRCMU_BASE + PRCMU_A9_MASK_REQ);
-
-	/* Make sure the register is updated */
-	readl(_PRCMU_BASE + PRCMU_A9_MASK_REQ);
-
-	/* Wait a few cycles for the gic mask completion */
-	udelay(PRCMU_GIC_DELAY);
-
-	return 0;
-}
-
-/* This function recouple the gic with the prcmu */
-int db8500_prcmu_gic_recouple(void)
-{
-	u32 val = readl(_PRCMU_BASE + PRCMU_A9_MASK_REQ);
-
-	/* Set bit 0 register value to 0 */
-	writel(val & ~PRCMU_A9_MASK_REQ_MASK, _PRCMU_BASE + PRCMU_A9_MASK_REQ);
-
-	return 0;
-}
-
-#define PRCMU_GIC_NUMBER_REGS 5
-
-/*
- * This function checks if there are pending irq on the gic. It only
- * makes sense if the gic has been decoupled before with the
- * db8500_prcmu_gic_decouple function. Disabling an interrupt only
- * disables the forwarding of the interrupt to any CPU interface. It
- * does not prevent the interrupt from changing state, for example
- * becoming pending, or active and pending if it is already
- * active. Hence, we have to check the interrupt is pending *and* is
- * active.
- */
-bool db8500_prcmu_gic_pending_irq(void)
-{
-	u32 pr; /* Pending register */
-	u32 er; /* Enable register */
-	void __iomem *dist_base = __io_address(U8500_GIC_DIST_BASE);
-	int i;
-
-        /* 5 registers. STI & PPI not skipped */
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS; i++) {
-
-		pr = readl_relaxed(dist_base + GIC_DIST_PENDING_SET + i * 4);
-		er = readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
-
-		if (pr & er)
-			return true; /* There is a pending interrupt */
-	}
-
-	return false;
-}
-
-/*
- * This function checks if there are pending interrupt on the
- * prcmu which has been delegated to monitor the irqs with the
- * db8500_prcmu_copy_gic_settings function.
- */
-bool db8500_prcmu_pending_irq(void)
-{
-	u32 it, im;
-	int i;
-
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS - 1; i++) {
-		it = readl(PRCM_ARMITVAL31TO0 + i * 4);
-		im = readl(PRCM_ARMITMSK31TO0 + i * 4);
-		if (it & im)
-			return true; /* There is a pending interrupt */
-	}
-
-	return false;
-}
-
-/*
- * This function checks if the specified cpu is in in WFI. It's usage
- * makes sense only if the gic is decoupled with the db8500_prcmu_gic_decouple
- * function. Of course passing smp_processor_id() to this function will
- * always return false...
- */
-bool db8500_prcmu_is_cpu_in_wfi(int cpu)
-{
-	return readl(PRCM_ARM_WFI_STANDBY) & cpu ? PRCM_ARM_WFI_STANDBY_WFI1 :
-		     PRCM_ARM_WFI_STANDBY_WFI0;
-}
-
-/*
- * This function copies the gic SPI settings to the prcmu in order to
- * monitor them and abort/finish the retention/off sequence or state.
- */
-int db8500_prcmu_copy_gic_settings(void)
-{
-	u32 er; /* Enable register */
-	void __iomem *dist_base = __io_address(U8500_GIC_DIST_BASE);
-	int i;
-
-        /* We skip the STI and PPI */
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS - 1; i++) {
-		er = readl_relaxed(dist_base +
-				   GIC_DIST_ENABLE_SET + (i + 1) * 4);
-		writel(er, PRCM_ARMITMSK31TO0 + i * 4);
-	}
-
-	return 0;
-}
-
 /* This function should only be called while mb0_transfer.lock is held. */
 static void config_wakeups(void)
 {
@@ -1538,11 +1421,11 @@ static void do_oc_ddr(int new_val_)
 			writel_relaxed(sdmmc_val_base | sdmmc_new_divider,
 					prcmu_base + PRCMU_SDMMCCLK_REG);
 		}
-
+		
 		sdmmc_is_calibrated = true;
 		udelay(50);
 	}
-
+		
 	if (!pllddr_is_calibrated) {
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
@@ -1550,7 +1433,7 @@ static void do_oc_ddr(int new_val_)
 			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
-
+		
 		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
 		preempt_disable();
 		local_irq_disable();
@@ -1572,9 +1455,6 @@ static void do_oc_ddr(int new_val_)
 				if (mcdeclk_is_enabled || sdmmcclk_is_enabled) {
 					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
-					local_fiq_enable();
-					local_irq_enable();
-					preempt_enable();
 					return;
 				}
 			}
@@ -1585,7 +1465,7 @@ static void do_oc_ddr(int new_val_)
 		local_fiq_enable();
 		local_irq_enable();
 		preempt_enable();
-
+			
 		pllddr_is_calibrated = true;
 		tmp_val = 0;
 		udelay(50);
@@ -2385,11 +2265,6 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	u32 new_val, old_val;
 	int freq = 0, div, mul;
 	int ret = 0;
-
-	if (unlikely(pending_pllddr_val > 0)) {
-		pr_err("%s: PLLDDR OC is already scheduled.\n");
-		return -EBUSY;
-	}
 
 	ret = sscanf(buf, "%d", &freq);
 
