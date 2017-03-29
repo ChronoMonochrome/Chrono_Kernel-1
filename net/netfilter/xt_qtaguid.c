@@ -1665,7 +1665,7 @@ static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 
 	if (unlikely(mod_register_inet6addr_notifier) == NULL) {
 		pr_err("%s: register_inet6addr_notifier is not imported!\n", __func__);
-		err = -EINVAL;
+		//err = -EINVAL;
 	} else
 		err = mod_register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
 
@@ -2969,6 +2969,7 @@ static struct xt_match qtaguid_mt_reg __read_mostly = {
 
 static int __init qtaguid_mt_init(void)
 {
+	
 	if (qtaguid_proc_register(&xt_qtaguid_procdir)
 	    || iface_stat_init(xt_qtaguid_procdir)
 	    || xt_register_match(&qtaguid_mt_reg)

@@ -1109,6 +1109,9 @@ static struct pernet_operations inet6_net_ops = {
 	.exit = inet6_net_exit,
 };
 
+extern void addrconf6_find_symbols();
+extern void addrconf6_remove_symbols();
+
 static int __init inet6_init(void)
 {
 	struct sk_buff *dummy_skb;
@@ -1251,6 +1254,9 @@ static int __init inet6_init(void)
 	if (err)
 		goto sysctl_fail;
 #endif
+
+	addrconf6_find_symbols();
+
 out:
 	return err;
 
@@ -1364,6 +1370,8 @@ static void __exit inet6_exit(void)
 #ifdef CONFIG_SYSCTL
 	ipv6_static_sysctl_unregister();
 #endif
+	addrconf6_remove_symbols();
+
 	proto_unregister(&rawv6_prot);
 	proto_unregister(&udplitev6_prot);
 	proto_unregister(&udpv6_prot);

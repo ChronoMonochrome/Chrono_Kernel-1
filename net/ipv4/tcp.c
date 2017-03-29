@@ -3412,8 +3412,8 @@ static int tcp_is_local6(struct net *net, struct in6_addr *addr) {
 	struct rt6_info *rt6;
 	int is_local;
 
-	if (unlikely(mod_key_rt6_lookup == NULL)) {
-		pr_err("%s: ipv6_rt6_lookup is not imported!\n", __func__);
+	if (unlikely(mod_rt6_lookup == NULL)) {
+		pr_err("%s: rt6_lookup is not imported!\n", __func__);
 		rt6 = NULL;
 	} else
 		rt6 = mod_rt6_lookup(net, addr, addr, 0, 0);
