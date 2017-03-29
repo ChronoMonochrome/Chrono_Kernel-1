@@ -5030,10 +5030,7 @@ void __used addrconf6_find_symbols()
 	mod_in6addr_any = &in6addr_any;
 	static_key_slow_inc(&key_in6addr_any);
 
-	pr_err("%s: init!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", __func__);
 	IMPORT_SYMBOL(register_inet6addr_notifier);
-	if (mod_register_inet6addr_notifier == NULL)
-		pr_err("%s: mod_register_inet6addr_notifier == NULL!!!!!!!\n");
 
 }
 EXPORT_SYMBOL(addrconf6_find_symbols);

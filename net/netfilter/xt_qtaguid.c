@@ -1614,6 +1614,21 @@ static struct notifier_block iface_inet6addr_notifier_blk = {
 
 MODEXPORT_SYMBOL(register_inet6addr_notifier);
 
+static int inet6addr_notifier_status = 0;
+
+static void register_inet6addr_notifier_fn(struct work_struct *work) {
+	if (unlikely(mod_register_inet6addr_notifier == NULL)) {
+		pr_err("%s: register_inet6addr_notifier is not imported!\n", __func__);
+		inet6addr_notifier_status = -EINVAL;
+	} else
+		inet6addr_notifier_status = mod_register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
+
+	if (inet6addr_notifier_status)
+		pr_err("%s: register_inet6addr_notifier failed: %d", __func__, inet6addr_notifier_status);
+
+}
+static DECLARE_DELAYED_WORK(register_inet6addr_notifier_delayedwork, register_inet6addr_notifier_fn);
+
 static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 {
 	int err;
@@ -1663,17 +1678,14 @@ static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 		goto err_unreg_nd;
 	}
 
-	if (unlikely(mod_register_inet6addr_notifier) == NULL) {
-		pr_err("%s: register_inet6addr_notifier is not imported!\n", __func__);
-		//err = -EINVAL;
-	} else
-		err = mod_register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
-
+	schedule_delayed_work(&register_inet6addr_notifier_delayedwork, msecs_to_jiffies(5000));
+#if 0
 	if (err) {
 		pr_err("qtaguid: iface_stat: init "
 		       "failed to register ipv6 dev event handler\n");
 		goto err_unreg_ip4_addr;
 	}
+#endif
 	return 0;
 
 err_unreg_ip4_addr:
