@@ -121,6 +121,8 @@ static struct proc_dir_entry *iface_stat_all_procfile;
 static const char *iface_stat_fmt_procfilename = "iface_stat_fmt";
 static struct proc_dir_entry *iface_stat_fmt_procfile;
 
+MODEXPORT_SYMBOL(ipv6_find_hdr);
+
 
 /*
  * Ordering of locks:
@@ -1211,7 +1213,12 @@ static int ipx_proto(const struct sk_buff *skb,
 
 	switch (par->family) {
 	case NFPROTO_IPV6:
-		tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
+		if (unlikely(mod_ipv6_find_hdr == NULL)) {
+			pr_err("%s: ipv6_find_hdr is not imported!\n", __func__);
+			tproto = -EINVAL;
+		} else
+			tproto = mod_ipv6_find_hdr(skb, &thoff, -1, NULL);
+
 		if (tproto < 0)
 			MT_DEBUG("%s(): transport header not found in ipv6"
 				 " skb=%p\n", __func__, skb);
@@ -1605,6 +1612,8 @@ static struct notifier_block iface_inet6addr_notifier_blk = {
 	.notifier_call = iface_inet6addr_event_handler,
 };
 
+MODEXPORT_SYMBOL(register_inet6addr_notifier);
+
 static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 {
 	int err;
@@ -1654,7 +1663,12 @@ static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 		goto err_unreg_nd;
 	}
 
-	err = register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
+	if (unlikely(mod_register_inet6addr_notifier) == NULL) {
+		pr_err("%s: register_inet6addr_notifier is not imported!\n", __func__);
+		err = -EINVAL;
+	} else
+		err = mod_register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
+
 	if (err) {
 		pr_err("qtaguid: iface_stat: init "
 		       "failed to register ipv6 dev event handler\n");

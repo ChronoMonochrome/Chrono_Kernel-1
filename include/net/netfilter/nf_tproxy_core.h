@@ -13,6 +13,8 @@
 #define NFT_LOOKUP_LISTENER    1
 #define NFT_LOOKUP_ESTABLISHED 2
 
+MODSYMBOL_DECLARE(udp6_lib_lookup);
+
 /* look up and get a reference to a matching socket */
 
 
@@ -172,7 +174,7 @@ nf_tproxy_get_sock_v6(struct net *net, const u8 protocol,
 		}
 		break;
 	case IPPROTO_UDP:
-		sk = udp6_lib_lookup(net, saddr, sport, daddr, dport,
+		sk = mod_udp6_lib_lookup(net, saddr, sport, daddr, dport,
 				     in->ifindex);
 		if (sk && lookup_type != NFT_LOOKUP_ANY) {
 			int connected = (sk->sk_state == TCP_ESTABLISHED);

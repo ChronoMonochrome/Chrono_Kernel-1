@@ -63,6 +63,8 @@ MODULE_DESCRIPTION("IPv6 packet filter");
 #define inline
 #endif
 
+MODSYMBOL_DECLARE(ipv6_find_hdr);
+
 void *ip6t_alloc_initial_table(const struct xt_table *info)
 {
 	return xt_alloc_initial_table(ip6t, IP6T);
@@ -2251,6 +2253,8 @@ static int __init ip6_tables_init(void)
 	if (ret < 0)
 		goto err5;
 
+	IMPORT_SYMBOL(ipv6_find_hdr);
+
 	pr_info("(C) 2000-2006 Netfilter Core Team\n");
 	return 0;
 
@@ -2271,6 +2275,7 @@ static void __exit ip6_tables_fini(void)
 	xt_unregister_matches(ip6t_builtin_mt, ARRAY_SIZE(ip6t_builtin_mt));
 	xt_unregister_targets(ip6t_builtin_tg, ARRAY_SIZE(ip6t_builtin_tg));
 	unregister_pernet_subsys(&ip6_tables_net_ops);
+	UNIMPORT_SYMBOL(ipv6_find_hdr);
 }
 
 /*

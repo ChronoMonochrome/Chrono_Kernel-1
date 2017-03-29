@@ -3018,6 +3018,8 @@ static struct notifier_block ip6_route_dev_notifier = {
 	.priority = 0,
 };
 
+MODSYMBOL_DECLARE(rt6_lookup);
+
 int __init ip6_route_init(void)
 {
 	int ret;
@@ -3076,6 +3078,8 @@ int __init ip6_route_init(void)
 	if (ret)
 		goto out_register_late_subsys;
 
+	IMPORT_SYMBOL(rt6_lookup);
+
 out:
 	return ret;
 
@@ -3106,4 +3110,5 @@ void ip6_route_cleanup(void)
 	unregister_pernet_subsys(&ip6_route_net_ops);
 	dst_entries_destroy(&ip6_dst_blackhole_ops);
 	kmem_cache_destroy(ip6_dst_ops_template.kmem_cachep);
+	UNIMPORT_SYMBOL(rt6_lookup);
 }

@@ -35,6 +35,8 @@
 #include <net/netfilter/nf_conntrack.h>
 #endif
 
+MODSYMBOL_DECLARE(ipv6_find_hdr);
+
 void
 xt_socket_put_sk(struct sock *sk)
 {
@@ -277,7 +279,12 @@ xt_socket_get6_sk(const struct sk_buff *skb, struct xt_action_param *par)
 	__be16 dport, sport;
 	int thoff, tproto;
 
-	tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
+	if (unlikely(mod_ipv6_find_hdr) == NULL) {
+		pr_err("%s: ipv6_find_hdr is not imported!\n", __func__);
+		tproto = -EINVAL;
+	} else
+		tproto = mod_ipv6_find_hdr(skb, &thoff, -1, NULL);
+
 	if (tproto < 0) {
 		pr_debug("unable to find transport header in IPv6 packet, dropping\n");
 		return NF_DROP;
@@ -385,7 +392,7 @@ static int __init socket_mt_init(void)
 {
 	nf_defrag_ipv4_enable();
 #ifdef XT_SOCKET_HAVE_IPV6
-	nf_defrag_ipv6_enable();
+	//nf_defrag_ipv6_enable();
 #endif
 
 	return xt_register_matches(socket_mt_reg, ARRAY_SIZE(socket_mt_reg));

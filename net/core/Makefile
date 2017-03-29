@@ -12,7 +12,7 @@ obj-y		     += ethtool.o netevent.o \
 			sock_diag.o
 
 obj-$(CONFIG_XFRM) += flow.o
-obj-y += net-sysfs.o
+obj-y += net-sysfs.o symbols.o
 obj-$(CONFIG_NET_PKTGEN) += pktgen.o
 obj-$(CONFIG_NETPOLL) += netpoll.o
 obj-$(CONFIG_NET_DMA) += user_dma.o

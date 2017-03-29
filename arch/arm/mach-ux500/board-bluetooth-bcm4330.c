@@ -20,6 +20,8 @@
  *
  */
 
+#include <linux/export.h>
+#include <linux/err.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/hrtimer.h>
@@ -39,6 +41,13 @@
 #include "board-bluetooth-bcm4330.h"
 
 #define BT_LPM_ENABLE
+ 
+MODEXPORT_SYMBOL(rfkill_unregister);
+MODEXPORT_SYMBOL(rfkill_register);
+MODEXPORT_SYMBOL(rfkill_alloc);
+MODEXPORT_SYMBOL(rfkill_init_sw_state);
+MODEXPORT_SYMBOL(rfkill_set_sw_state);
+MODEXPORT_SYMBOL(rfkill_destroy);
 
 static struct rfkill *bt_rfkill;
 
@@ -220,9 +229,21 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 	gpio_direction_output(BT_RST_N_GTI9060_R0_1, 0);
 	gpio_direction_output(BT_VREG_EN_GTI9060_R0_1, 0);
 
-	bt_rfkill = rfkill_alloc("bcm4330 Bluetooth", &pdev->dev,
+	pr_err("%s: rfkill_alloc\n", __func__);
+
+	if (unlikely(mod_rfkill_alloc == NULL)) {
+		pr_err("%s: rfkill_alloc is not imported!\n", __func__);
+		bt_rfkill = NULL;
+	} else {
+		pr_err("%s: mod_rfkill_alloc\n", __func__);
+		if (mod_rfkill_alloc == NULL) {
+			pr_err("%s: mod_rfkill_alloc == NULL\n", __func__);
+			bt_rfkill = NULL;
+		} else
+			bt_rfkill = mod_rfkill_alloc("bcm4330 Bluetooth", &pdev->dev,
 				RFKILL_TYPE_BLUETOOTH, &bcm4330_bt_rfkill_ops,
 				NULL);
+	}
 
 	if (unlikely(!bt_rfkill)) {
 		pr_err("[BT] bt_rfkill alloc failed.\n");
@@ -233,13 +254,21 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	rfkill_init_sw_state(bt_rfkill, 0);
+	pr_err("%s: rfkill_init_sw_state\n", __func__);
 
-	rc = rfkill_register(bt_rfkill);
+	MODSYMBOL_CALL(rfkill_init_sw_state, (bt_rfkill, 0));
+
+	pr_err("%s: key_rfkill_register\n", __func__);
+
+	if (unlikely(mod_rfkill_register == NULL)) {
+		pr_err("%s: rfkill_register is not imported!\n", __func__);
+		rc = -EINVAL;
+	} else
+		rc = mod_rfkill_register(bt_rfkill);
 
 	if (unlikely(rc)) {
 		pr_err("[BT] bt_rfkill register failed.\n");
-		rfkill_destroy(bt_rfkill);
+		MODSYMBOL_CALL(rfkill_destroy, (bt_rfkill));
 		gpio_free(BT_HOST_WAKE_GTI9060_R0_1);
 		gpio_free(BT_WAKE_GTI9060_R0_1);
 		gpio_free(BT_RST_N_GTI9060_R0_1);
@@ -247,14 +276,16 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-	rfkill_set_sw_state(bt_rfkill, true);
+	pr_err("%s: rfkill_set_sw_state\n", __func__);
+
+	MODSYMBOL_CALL(rfkill_set_sw_state, (bt_rfkill, true));
 	bcm4330_bt_rfkill_set_power(NULL, true);
 
 #ifdef BT_LPM_ENABLE
 	ret = bcm_bt_lpm_init(pdev);
 	if (ret) {
-		rfkill_unregister(bt_rfkill);
-		rfkill_destroy(bt_rfkill);
+		MODSYMBOL_CALL(rfkill_unregister, (bt_rfkill));
+		MODSYMBOL_CALL(rfkill_destroy, (bt_rfkill));
 
 		gpio_free(BT_HOST_WAKE_GTI9060_R0_1);
 		gpio_free(BT_WAKE_GTI9060_R0_1);
@@ -267,8 +298,8 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 
 static int bcm4330_bluetooth_remove(struct platform_device *pdev)
 {
-	rfkill_unregister(bt_rfkill);
-	rfkill_destroy(bt_rfkill);
+	MODSYMBOL_CALL(rfkill_unregister, (bt_rfkill));
+	MODSYMBOL_CALL(rfkill_destroy, (bt_rfkill));
 
 	gpio_free(BT_VREG_EN_GTI9060_R0_1);
 	gpio_free(BT_RST_N_GTI9060_R0_1);

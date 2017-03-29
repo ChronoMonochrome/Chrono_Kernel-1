@@ -498,6 +498,8 @@ int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
 
 EXPORT_SYMBOL(inet6_getname);
 
+MODSYMBOL_DECLARE(tcp_nuke_addr);
+
 int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 	struct in6_ifreq ireq;
 	struct sockaddr_in6 sin6;
@@ -510,7 +512,11 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 
 	sin6.sin6_family = AF_INET6;
 	sin6.sin6_addr = ireq.ifr6_addr;
-	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
+	if (unlikely(mod_tcp_nuke_addr == NULL)) {
+		pr_err("%s: tcp_nuke_addr is not imported!\n", __func__);
+		return -EINVAL;
+	} else
+		return mod_tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
 int inet6_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
