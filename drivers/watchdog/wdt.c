@@ -252,11 +252,23 @@ static int wdt_get_temperature(void)
 static void wdt_decode_501(int status)
 {
 	if (!(status & WDC_SR_TGOOD))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Overheat alarm.(%d)\n", inb_p(WDT_RT));
+#else
+		;
+#endif
 	if (!(status & WDC_SR_PSUOVER))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "PSU over voltage.\n");
+#else
+		;
+#endif
 	if (!(status & WDC_SR_PSUUNDR))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "PSU under voltage.\n");
+#else
+		;
+#endif
 }
 
 /**
@@ -280,25 +292,45 @@ static irqreturn_t wdt_interrupt(int irq, void *dev_id)
 	spin_lock(&wdt_lock);
 	status = inb_p(WDT_SR);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "WDT status %d\n", status);
+#else
+	;
+#endif
 
 	if (type == 501) {
 		wdt_decode_501(status);
 		if (tachometer) {
 			if (!(status & WDC_SR_FANGOOD))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CRIT "Possible fan fault.\n");
+#else
+				;
+#endif
 		}
 	}
 	if (!(status & WDC_SR_WCCR)) {
 #ifdef SOFTWARE_REBOOT
 #ifdef ONLY_TESTING
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Would Reboot.\n");
 #else
+		;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Initiating system reboot.\n");
+#else
+		;
+#endif
 		emergency_restart();
 #endif
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Reset in 5ms.\n");
+#else
+		;
+#endif
 #endif
 	}
 	spin_unlock(&wdt_lock);
@@ -441,8 +473,12 @@ static int wdt_release(struct inode *inode, struct file *file)
 		wdt_stop();
 		clear_bit(0, &wdt_is_open);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT
 		 "wdt: WDT device closed unexpectedly.  WDT will not stop!\n");
+#else
+		;
+#endif
 		wdt_ping();
 	}
 	expect_close = 0;
@@ -601,8 +637,12 @@ static int __init wdt_init(void)
 	   if not reset to the default */
 	if (wdt_set_heartbeat(heartbeat)) {
 		wdt_set_heartbeat(WD_TIMO);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "wdt: heartbeat value must be "
 			"0 < heartbeat < 65536, using %d\n", WD_TIMO);
+#else
+		;
+#endif
 	}
 
 	if (!request_region(io, 8, "wdt501p")) {
@@ -642,12 +682,20 @@ static int __init wdt_init(void)
 		goto outmisc;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "WDT500/501-P driver 0.10 "
 		"at 0x%04x (Interrupt %d). heartbeat=%d sec (nowayout=%d)\n",
 		io, irq, heartbeat, nowayout);
+#else
+	;
+#endif
 	if (type == 501)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "wdt: Fan Tachometer is %s\n",
 				(tachometer ? "Enabled" : "Disabled"));
+#else
+		;
+#endif
 	return 0;
 
 outmisc:

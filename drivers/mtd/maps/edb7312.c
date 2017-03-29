@@ -25,10 +25,14 @@
 /* can be "cfi_probe", "jedec_probe", "map_rom", NULL }; */
 #define PROBETYPES { "cfi_probe", NULL }
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define MSG_PREFIX "EDB7312-NOR:"   /* prefix for our printk()'s */
 #define MTDID      "edb7312-nor"    /* for mtdparts= partitioning */
 
 static struct mtd_info *mymtd;
+#else
+#define MSG_PREFIX "EDB7312-NOR:"   /* prefix for our ;
+#endif
 
 struct map_info edb7312nor_map = {
 	.name = "NOR flash on EDB7312",
@@ -70,12 +74,20 @@ static int __init init_edb7312nor(void)
 	const char **type;
 	const char *part_type = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
        	printk(KERN_NOTICE MSG_PREFIX "0x%08x at 0x%08x\n",
 	       WINDOW_SIZE, WINDOW_ADDR);
+#else
+       	;
+#endif
 	edb7312nor_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE);
 
 	if (!edb7312nor_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MSG_PREFIX "failed to ioremap\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -100,10 +112,18 @@ static int __init init_edb7312nor(void)
 		}
 
 		if (mtd_parts_nb == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE MSG_PREFIX "no partition info available\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE MSG_PREFIX
 			       "using %s partition definition\n", part_type);
+#else
+			;
+#endif
 		/* Register the whole device first. */
 		mtd_device_register(mymtd, NULL, 0);
 		mtd_device_register(mymtd, mtd_parts, mtd_parts_nb);

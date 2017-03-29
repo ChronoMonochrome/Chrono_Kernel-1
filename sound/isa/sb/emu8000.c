@@ -657,7 +657,11 @@ snd_emu8000_load_chorus_fx(struct snd_emu8000 *emu, int mode, const void __user 
 {
 	struct soundfont_chorus_fx rec;
 	if (mode < SNDRV_EMU8000_CHORUS_PREDEFINED || mode >= SNDRV_EMU8000_CHORUS_NUMBERS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "invalid chorus mode %d for uploading\n", mode);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (len < (long)sizeof(rec) || copy_from_user(&rec, buf, sizeof(rec)))
@@ -785,7 +789,11 @@ snd_emu8000_load_reverb_fx(struct snd_emu8000 *emu, int mode, const void __user 
 	struct soundfont_reverb_fx rec;
 
 	if (mode < SNDRV_EMU8000_REVERB_PREDEFINED || mode >= SNDRV_EMU8000_REVERB_NUMBERS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "invalid reverb mode %d for uploading\n", mode);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (len < (long)sizeof(rec) || copy_from_user(&rec, buf, sizeof(rec)))

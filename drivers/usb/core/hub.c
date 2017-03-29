@@ -1736,7 +1736,7 @@ static void show_string(struct usb_device *udev, char *id, char *string)
 {
 	if (!string)
 		return;
-	dev_printk(KERN_INFO, &udev->dev, "%s: %s\n", id, string);
+;
 }
 
 static void announce_device(struct usb_device *udev)
@@ -3959,8 +3959,8 @@ static struct usb_driver hub_driver = {
 int usb_hub_init(void)
 {
 	if (usb_register(&hub_driver) < 0) {
-		printk(KERN_ERR "%s: can't register hub driver\n",
-			usbcore_name);
+//		printk(KERN_ERR "%s: can't register hub driver\n",
+;
 		return -1;
 	}
 
@@ -3970,7 +3970,7 @@ int usb_hub_init(void)
 
 	/* Fall through if kernel_thread failed */
 	usb_deregister(&hub_driver);
-	printk(KERN_ERR "%s: can't start khubd\n", usbcore_name);
+;
 
 	return -1;
 }

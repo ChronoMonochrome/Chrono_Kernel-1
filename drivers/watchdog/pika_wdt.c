@@ -90,7 +90,11 @@ static void pikawdt_ping(unsigned long data)
 		pikawdt_reset();
 		mod_timer(&pikawdt_private.timer, jiffies + WDT_TIMEOUT);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "I will reset your machine !\n");
+#else
+		;
+#endif
 }
 
 
@@ -275,8 +279,12 @@ static int __init pikawdt_init(void)
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
 							heartbeat, nowayout);
+#else
+	;
+#endif
 	return 0;
 
 out:

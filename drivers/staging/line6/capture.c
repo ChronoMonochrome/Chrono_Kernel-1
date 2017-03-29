@@ -124,7 +124,7 @@ static void wait_clear_audio_in_urbs(struct snd_line6_pcm *line6pcm)
 		schedule_timeout(1);
 	} while (--timeout > 0);
 	if (alive)
-		snd_printk(KERN_ERR "timeout: still %d active urbs..\n", alive);
+;
 }
 
 /*

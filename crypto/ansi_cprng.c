@@ -60,7 +60,11 @@ static int dbg;
 static void hexdump(char *note, unsigned char *buf, unsigned int len)
 {
 	if (dbg) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s", note);
+#else
+		;
+#endif
 		print_hex_dump(KERN_CONT, "", DUMP_PREFIX_OFFSET,
 				16, 1,
 				buf, len, false);
@@ -69,7 +73,11 @@ static void hexdump(char *note, unsigned char *buf, unsigned int len)
 
 #define dbgprint(format, args...) do {\
 if (dbg)\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(format, ##args);\
+#else
+	;
+#endif
 } while (0)
 
 static void xor_vectors(unsigned char *in1, unsigned char *in2,

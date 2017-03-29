@@ -1528,16 +1528,16 @@ static inline int irda_usb_parse_endpoints(struct irda_usb_cb *self, struct usb_
 static inline void irda_usb_dump_class_desc(struct irda_class_desc *desc)
 {
 	/* Values are little endian */
-	printk("bLength=%x\n", desc->bLength);
-	printk("bDescriptorType=%x\n", desc->bDescriptorType);
-	printk("bcdSpecRevision=%x\n", le16_to_cpu(desc->bcdSpecRevision)); 
-	printk("bmDataSize=%x\n", desc->bmDataSize);
-	printk("bmWindowSize=%x\n", desc->bmWindowSize);
-	printk("bmMinTurnaroundTime=%d\n", desc->bmMinTurnaroundTime);
-	printk("wBaudRate=%x\n", le16_to_cpu(desc->wBaudRate));
-	printk("bmAdditionalBOFs=%x\n", desc->bmAdditionalBOFs);
-	printk("bIrdaRateSniff=%x\n", desc->bIrdaRateSniff);
-	printk("bMaxUnicastList=%x\n", desc->bMaxUnicastList);
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 }
 #endif /* IU_DUMP_CLASS_DESC */
 

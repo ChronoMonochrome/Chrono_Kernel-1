@@ -31,6 +31,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(stuff...) printk(stuff)
 #else
 #define DPRINTK(stuff...)
@@ -38,6 +39,9 @@
 
 static struct daisydev {
 	struct daisydev *next;
+#else
+#define DPRINTK(stuff...) ;
+#endif
 	struct parport *port;
 	int daisy;
 	int devnum;
@@ -109,9 +113,13 @@ again:
 	    ((num_ports = num_mux_ports(port)) == 2 || num_ports == 4)) {
 		/* Leave original as port zero. */
 		port->muxport = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"%s: 1st (default) port of %d-way multiplexor\n",
 			port->name, num_ports);
+#else
+		;
+#endif
 		for (i = 1; i < num_ports; i++) {
 			/* Clone the port. */
 			struct parport *extra = clone_parport(port, i);
@@ -123,10 +131,14 @@ again:
 				continue;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"%s: %d%s port of %d-way multiplexor on %s\n",
 				extra->name, i + 1, th[i + 1], num_ports,
 				port->name);
+#else
+			;
+#endif
 
 			/* Analyse that port too.  We won't recurse
 			   forever because of the 'port->muxport < 0'

@@ -356,7 +356,11 @@ static void apm_battery_apm_get_power_status(struct apm_power_info *info)
 
 static int __init apm_battery_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "APM Battery Driver\n");
+#else
+	;
+#endif
 
 	apm_get_power_status = apm_battery_apm_get_power_status;
 	return 0;

@@ -668,8 +668,12 @@ static void update_sleep_time(struct timespec t)
 static void __timekeeping_inject_sleeptime(struct timespec *delta)
 {
 	if (!timespec_valid_strict(delta)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
 					"sleep delta value!\n");
+#else
+		;
+#endif
 		return;
 	}
 

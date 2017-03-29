@@ -86,7 +86,7 @@ gss_verify_mic_v1(struct krb5_ctx *ctx,
 	int			bodysize;
 	u8			*cksumkey;
 
-	dprintk("RPC:       krb5_read_token\n");
+;
 
 	if (g_verify_token_header(&ctx->mech_used, &bodysize, &ptr,
 					read_token->len))
@@ -157,7 +157,7 @@ gss_verify_mic_v2(struct krb5_ctx *ctx,
 	int i;
 	unsigned int cksum_usage;
 
-	dprintk("RPC:       %s\n", __func__);
+;
 
 	if (be16_to_cpu(*((__be16 *)ptr)) != KG2_TOK_MIC)
 		return GSS_S_DEFECTIVE_TOKEN;
@@ -168,7 +168,7 @@ gss_verify_mic_v2(struct krb5_ctx *ctx,
 		return GSS_S_BAD_SIG;
 
 	if (flags & KG2_TOKEN_FLAG_SEALED) {
-		dprintk("%s: token has unexpected sealed flag\n", __func__);
+;
 		return GSS_S_FAILURE;
 	}
 

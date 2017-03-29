@@ -745,7 +745,11 @@ static void HPIMSGX__cleanup(u16 adapter_index, void *h_owner)
 	}
 
 	for (; adapter < adapter_limit; adapter++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		/*      printk(KERN_INFO "Cleanup adapter #%d\n",wAdapter); */
+#else
+		/*      ;
+#endif
 		for (i = 0; i < HPI_MAX_STREAMS; i++) {
 			if (h_owner ==
 				outstream_user_open[adapter][i].h_owner) {

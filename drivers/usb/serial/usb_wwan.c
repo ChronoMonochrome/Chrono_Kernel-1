@@ -311,8 +311,8 @@ static void usb_wwan_indat_callback(struct urb *urb)
 			err = usb_submit_urb(urb, GFP_ATOMIC);
 			if (err) {
 				if (err != -EPERM) {
-					printk(KERN_ERR "%s: resubmit read urb failed. "
-						"(%d)", __func__, err);
+//					printk(KERN_ERR "%s: resubmit read urb failed. "
+;
 					/* busy also in error unless we are killed */
 					usb_mark_last_busy(port->serial->dev);
 				}

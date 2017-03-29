@@ -2407,13 +2407,13 @@ int btrfs_orphan_cleanup(struct btrfs_root *root)
 	}
 
 	if (nr_unlink)
-		printk(KERN_INFO "btrfs: unlinked %d orphans\n", nr_unlink);
+;
 	if (nr_truncate)
-		printk(KERN_INFO "btrfs: truncated %d orphans\n", nr_truncate);
+;
 
 out:
 	if (ret)
-		printk(KERN_CRIT "btrfs: could not do orphan cleanup %d\n", ret);
+;
 	btrfs_free_path(path);
 	return ret;
 }
@@ -5333,7 +5333,7 @@ again:
 				    extent_map_end(em) - 1, NULL, GFP_NOFS);
 		goto insert;
 	} else {
-		printk(KERN_ERR "btrfs unknown found_type %d\n", found_type);
+;
 		WARN_ON(1);
 	}
 not_found:
@@ -5345,11 +5345,11 @@ not_found_em:
 insert:
 	btrfs_release_path(path);
 	if (em->start > start || extent_map_end(em) <= start) {
-		printk(KERN_ERR "Btrfs: bad extent! em: [%llu %llu] passed "
-		       "[%llu %llu]\n", (unsigned long long)em->start,
-		       (unsigned long long)em->len,
-		       (unsigned long long)start,
-		       (unsigned long long)len);
+//		printk(KERN_ERR "Btrfs: bad extent! em: [%llu %llu] passed "
+//		       "[%llu %llu]\n", (unsigned long long)em->start,
+//		       (unsigned long long)em->len,
+//		       (unsigned long long)start,
+;
 		err = -EIO;
 		goto out;
 	}
@@ -5888,11 +5888,11 @@ static void btrfs_endio_direct_read(struct bio *bio, int err)
 
 			flush_dcache_page(bvec->bv_page);
 			if (csum != *private) {
-				printk(KERN_ERR "btrfs csum failed ino %llu off"
-				      " %llu csum %u private %u\n",
-				      (unsigned long long)btrfs_ino(inode),
-				      (unsigned long long)start,
-				      csum, *private);
+//				printk(KERN_ERR "btrfs csum failed ino %llu off"
+//				      " %llu csum %u private %u\n",
+//				      (unsigned long long)btrfs_ino(inode),
+//				      (unsigned long long)start,
+;
 				err = -EIO;
 			}
 		}
@@ -6037,10 +6037,10 @@ static void btrfs_end_dio_bio(struct bio *bio, int err)
 	struct btrfs_dio_private *dip = bio->bi_private;
 
 	if (err) {
-		printk(KERN_ERR "btrfs direct IO failed ino %llu rw %lu "
-		      "sector %#Lx len %u err no %d\n",
-		      (unsigned long long)btrfs_ino(dip->inode), bio->bi_rw,
-		      (unsigned long long)bio->bi_sector, bio->bi_size, err);
+//		printk(KERN_ERR "btrfs direct IO failed ino %llu rw %lu "
+//		      "sector %#Lx len %u err no %d\n",
+//		      (unsigned long long)btrfs_ino(dip->inode), bio->bi_rw,
+;
 		dip->errors = 1;
 
 		/*
@@ -6991,8 +6991,8 @@ void btrfs_destroy_inode(struct inode *inode)
 
 	spin_lock(&root->orphan_lock);
 	if (!list_empty(&BTRFS_I(inode)->i_orphan)) {
-		printk(KERN_INFO "BTRFS: inode %llu still on the orphan list\n",
-		       (unsigned long long)btrfs_ino(inode));
+//		printk(KERN_INFO "BTRFS: inode %llu still on the orphan list\n",
+;
 		list_del_init(&BTRFS_I(inode)->i_orphan);
 	}
 	spin_unlock(&root->orphan_lock);
@@ -7002,10 +7002,10 @@ void btrfs_destroy_inode(struct inode *inode)
 		if (!ordered)
 			break;
 		else {
-			printk(KERN_ERR "btrfs found ordered "
-			       "extent %llu %llu on inode cleanup\n",
-			       (unsigned long long)ordered->file_offset,
-			       (unsigned long long)ordered->len);
+//			printk(KERN_ERR "btrfs found ordered "
+//			       "extent %llu %llu on inode cleanup\n",
+//			       (unsigned long long)ordered->file_offset,
+;
 			btrfs_remove_ordered_extent(inode, ordered);
 			btrfs_put_ordered_extent(ordered);
 			btrfs_put_ordered_extent(ordered);

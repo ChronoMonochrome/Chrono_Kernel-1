@@ -284,7 +284,11 @@ struct parport *parport_register_port(unsigned long base, int irq, int dma,
 
 	tmp = kmalloc(sizeof(struct parport), GFP_KERNEL);
 	if (!tmp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "parport: memory squeeze\n");
+#else
+		;
+#endif
 		return NULL;
 	}
 
@@ -366,9 +370,13 @@ void parport_announce_port (struct parport *port)
 #endif
 
 	if (!port->dev)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: fix this legacy "
 				"no-device port driver!\n",
 				port->name);
+#else
+		;
+#endif
 
 	parport_proc_register(port);
 	mutex_lock(&registration_lock);
@@ -538,7 +546,11 @@ parport_register_device(struct parport *port, const char *name,
 
 	if (flags & PARPORT_DEV_LURK) {
 		if (!pf || !kf) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: refused to register lurking device (%s) without callbacks\n", port->name, name);
+#else
+			;
+#endif
 			return NULL;
 		}
 	}
@@ -556,13 +568,21 @@ parport_register_device(struct parport *port, const char *name,
 
 	tmp = kmalloc(sizeof(struct pardevice), GFP_KERNEL);
 	if (tmp == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: memory squeeze, couldn't register %s.\n", port->name, name);
+#else
+		;
+#endif
 		goto out;
 	}
 
 	tmp->state = kmalloc(sizeof(struct parport_state), GFP_KERNEL);
 	if (tmp->state == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: memory squeeze, couldn't register %s.\n", port->name, name);
+#else
+		;
+#endif
 		goto out_free_pardevice;
 	}
 
@@ -658,8 +678,12 @@ void parport_unregister_device(struct pardevice *dev)
 	}
 
 	if (port->cad == dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s forgot to release port\n",
 		       port->name, dev->name);
+#else
+		;
+#endif
 		parport_release (dev);
 	}
 
@@ -777,8 +801,12 @@ int parport_claim(struct pardevice *dev)
 	unsigned long flags;
 
 	if (port->cad == dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s already owner\n",
 		       dev->port->name,dev->name);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -795,9 +823,13 @@ int parport_claim(struct pardevice *dev)
 		if (port->cad != oldcad) {
 			/* I think we'll actually deadlock rather than
                            get here, but just in case.. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: %s released port when preempted!\n",
 			       port->name, oldcad->name);
+#else
+			;
+#endif
 			if (port->cad)
 				goto blocked;
 		}
@@ -892,7 +924,11 @@ int parport_claim_or_block(struct pardevice *dev)
 	r = parport_claim(dev);
 	if (r == -EAGAIN) {
 #ifdef PARPORT_DEBUG_SHARING
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: parport_claim() returned -EAGAIN\n", dev->name);
+#else
+		;
+#endif
 #endif
 		/*
 		 * FIXME!!! Use the proper locking for dev->waiting,
@@ -914,17 +950,25 @@ int parport_claim_or_block(struct pardevice *dev)
 		} else {
 			r = 0;
 #ifdef PARPORT_DEBUG_SHARING
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: didn't sleep in parport_claim_or_block()\n",
 			       dev->name);
+#else
+			;
+#endif
 #endif
 		}
 
 #ifdef PARPORT_DEBUG_SHARING
 		if (dev->port->physport->cad != dev)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: exiting parport_claim_or_block "
 			       "but %s owns port!\n", dev->name,
 			       dev->port->physport->cad ?
 			       dev->port->physport->cad->name:"nobody");
+#else
+			;
+#endif
 #endif
 	}
 	dev->waiting = 0;
@@ -950,8 +994,12 @@ void parport_release(struct pardevice *dev)
 	write_lock_irqsave(&port->cad_lock, flags);
 	if (port->cad != dev) {
 		write_unlock_irqrestore (&port->cad_lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: %s tried to release parport "
 		       "when not owner\n", port->name, dev->name);
+#else
+		;
+#endif
 		return;
 	}
 

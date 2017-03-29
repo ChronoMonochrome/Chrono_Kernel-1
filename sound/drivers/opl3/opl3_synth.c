@@ -170,7 +170,11 @@ int snd_opl3_ioctl(struct snd_hwdep * hw, struct file *file,
 
 #ifdef CONFIG_SND_DEBUG
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "unknown IOCTL: 0x%x\n", cmd);
+#else
+		;
+#endif
 #endif
 	}
 	return -ENOTTY;

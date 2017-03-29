@@ -217,7 +217,11 @@ static int snd_emu10k1_init(struct snd_emu10k1 *emu, int enable_ir, int resume)
 	}
 	if (emu->card_capabilities->ca0108_chip) { /* audigy2 Value */
 		/* Hacks for Alice3 to work independent of haP16V driver */
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "Audigy2 value: Special config.\n");
+#else
+		;
+#endif
 		/* Setup SRCMulti_I2S SamplingRate */
 		tmp = snd_emu10k1_ptr_read(emu, A_SPDIF_SAMPLERATE, 0);
 		tmp &= 0xfffff1ff;
@@ -672,7 +676,11 @@ static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu, const char *filena
 		snd_printk(KERN_ERR "firmware: %s not found. Err = %d\n", filename, err);
 		return err;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "firmware size = 0x%zx\n", fw_entry->size);
+#else
+	;
+#endif
 
 	/* The FPGA is a Xilinx Spartan IIE XC2S50E */
 	/* GPIO7 -> FPGA PGMN
@@ -725,7 +733,11 @@ static int emu1010_firmware_thread(void *data)
 		if (reg & EMU_HANA_OPTION_DOCK_OFFLINE) {
 			/* Audio Dock attached */
 			/* Return to Audio Dock programming mode */
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "emu1010: Loading Audio Dock Firmware\n");
+#else
+			;
+#endif
 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, EMU_HANA_FPGA_CONFIG_AUDIODOCK);
 			if (emu->card_capabilities->emu_model ==
 			    EMU_MODEL_EMU1010) {
@@ -746,20 +758,40 @@ static int emu1010_firmware_thread(void *data)
 
 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, 0);
 			snd_emu1010_fpga_read(emu, EMU_HANA_IRQ_STATUS, &reg);
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "emu1010: EMU_HANA+DOCK_IRQ_STATUS = 0x%x\n", reg);
+#else
+			;
+#endif
 			/* ID, should read & 0x7f = 0x55 when FPGA programmed. */
 			snd_emu1010_fpga_read(emu, EMU_HANA_ID, &reg);
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "emu1010: EMU_HANA+DOCK_ID = 0x%x\n", reg);
+#else
+			;
+#endif
 			if ((reg & 0x1f) != 0x15) {
 				/* FPGA failed to be programmed */
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_INFO "emu1010: Loading Audio Dock Firmware file failed, reg = 0x%x\n", reg);
+#else
+				;
+#endif
 				continue;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "emu1010: Audio Dock Firmware loaded\n");
+#else
+			;
+#endif
 			snd_emu1010_fpga_read(emu, EMU_DOCK_MAJOR_REV, &tmp);
 			snd_emu1010_fpga_read(emu, EMU_DOCK_MINOR_REV, &tmp2);
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "Audio Dock ver: %u.%u\n",
 				   tmp, tmp2);
+#else
+			;
+#endif
 			/* Sync clocking between 1010 and Dock */
 			/* Allow DLL to settle */
 			msleep(10);
@@ -767,7 +799,11 @@ static int emu1010_firmware_thread(void *data)
 			snd_emu1010_fpga_write(emu, EMU_HANA_UNMUTE, EMU_UNMUTE);
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: firmware thread stopping\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -809,7 +845,11 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
 	int err;
 	const char *filename = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Special config.\n");
+#else
+	;
+#endif
 	/* AC97 2.1, Any 16Meg of 4Gig address, Auto-Mute, EMU32 Slave,
 	 * Lock Sound Memory Cache, Lock Tank Memory Cache,
 	 * Mute all codecs.
@@ -845,10 +885,18 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
 	snd_printdd("reg2 = 0x%x\n", reg);
 	if ((reg & 0x3f) == 0x15) {
 		/* FPGA failed to return to programming mode */
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "emu1010: FPGA failed to return to programming mode\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: EMU_HANA_ID = 0x%x\n", reg);
+#else
+	;
+#endif
 	switch (emu->card_capabilities->emu_model) {
 	case EMU_MODEL_EMU1010:
 		filename = HANA_FILENAME;
@@ -867,12 +915,20 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
 		return -ENODEV;
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: filename %s testing\n", filename);
+#else
+	;
+#endif
 	err = snd_emu1010_load_firmware(emu, filename);
 	if (err != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(
 			KERN_INFO "emu1010: Loading Firmware file %s failed\n",
 			filename);
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -880,21 +936,41 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
 	snd_emu1010_fpga_read(emu, EMU_HANA_ID, &reg);
 	if ((reg & 0x3f) != 0x15) {
 		/* FPGA failed to be programmed */
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "emu1010: Loading Hana Firmware file failed, reg = 0x%x\n", reg);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Hana Firmware loaded\n");
+#else
+	;
+#endif
 	snd_emu1010_fpga_read(emu, EMU_HANA_MAJOR_REV, &tmp);
 	snd_emu1010_fpga_read(emu, EMU_HANA_MINOR_REV, &tmp2);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Hana version: %u.%u\n", tmp, tmp2);
+#else
+	;
+#endif
 	/* Enable 48Volt power to Audio Dock */
 	snd_emu1010_fpga_write(emu, EMU_HANA_DOCK_PWR, EMU_HANA_DOCK_PWR_ON);
 
 	snd_emu1010_fpga_read(emu, EMU_HANA_OPTION_CARDS, &reg);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Card options = 0x%x\n", reg);
+#else
+	;
+#endif
 	snd_emu1010_fpga_read(emu, EMU_HANA_OPTION_CARDS, &reg);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Card options = 0x%x\n", reg);
+#else
+	;
+#endif
 	snd_emu1010_fpga_read(emu, EMU_HANA_OPTICAL_TYPE, &tmp);
 	/* Optical -> ADAT I/O  */
 	/* 0 : SPDIF
@@ -933,7 +1009,11 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
 	snd_emu1010_fpga_write(emu, EMU_HANA_IRQ_ENABLE, 0x00);
 
 	snd_emu1010_fpga_read(emu, EMU_HANA_OPTION_CARDS, &reg);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "emu1010: Card options3 = 0x%x\n", reg);
+#else
+	;
+#endif
 	/* Default WCLK set to 48kHz. */
 	snd_emu1010_fpga_write(emu, EMU_HANA_DEFCLOCK, 0x00);
 	/* Word Clock source, Internal 48kHz x1 */

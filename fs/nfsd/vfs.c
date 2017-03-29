@@ -980,13 +980,13 @@ static int wait_for_concurrent_writes(struct file *file)
 
 	if (atomic_read(&inode->i_writecount) > 1
 	    || (last_ino == inode->i_ino && last_dev == inode->i_sb->s_dev)) {
-		dprintk("nfsd: write defer %d\n", task_pid_nr(current));
+;
 		msleep(10);
-		dprintk("nfsd: write resume %d\n", task_pid_nr(current));
+;
 	}
 
 	if (inode->i_state & I_DIRTY) {
-		dprintk("nfsd: write sync %d\n", task_pid_nr(current));
+;
 		err = vfs_fsync(file, 0);
 	}
 	last_ino = inode->i_ino;
@@ -1053,7 +1053,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
 		host_err = wait_for_concurrent_writes(file);
 
 out_nfserr:
-	dprintk("nfsd: write complete host_err=%d\n", host_err);
+;
 	if (host_err >= 0)
 		err = 0;
 	else
@@ -1290,10 +1290,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
 		dchild = dget(resfhp->fh_dentry);
 		if (!fhp->fh_locked) {
 			/* not actually possible */
-			printk(KERN_ERR
-				"nfsd_create: parent %s/%s not locked!\n",
-				dentry->d_parent->d_name.name,
-				dentry->d_name.name);
+//			printk(KERN_ERR
+//				"nfsd_create: parent %s/%s not locked!\n",
+//				dentry->d_parent->d_name.name,
+;
 			err = nfserr_io;
 			goto out;
 		}
@@ -1303,8 +1303,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
 	 */
 	err = nfserr_exist;
 	if (dchild->d_inode) {
-		dprintk("nfsd_create: dentry %s/%s not negative!\n",
-			dentry->d_name.name, dchild->d_name.name);
+//		dprintk("nfsd_create: dentry %s/%s not negative!\n",
+;
 		goto out; 
 	}
 
@@ -1314,8 +1314,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
 
 	err = nfserr_inval;
 	if (!S_ISREG(type) && !S_ISDIR(type) && !special_file(type)) {
-		printk(KERN_WARNING "nfsd: bad file type %o in nfsd_create\n",
-		       type);
+//		printk(KERN_WARNING "nfsd: bad file type %o in nfsd_create\n",
+;
 		goto out;
 	}
 
@@ -2100,21 +2100,21 @@ nfsd_permission(struct svc_rqst *rqstp, struct svc_export *exp,
 	if ((acc & NFSD_MAY_MASK) == NFSD_MAY_NOP)
 		return 0;
 #if 0
-	dprintk("nfsd: permission 0x%x%s%s%s%s%s%s%s mode 0%o%s%s%s\n",
-		acc,
-		(acc & NFSD_MAY_READ)?	" read"  : "",
-		(acc & NFSD_MAY_WRITE)?	" write" : "",
-		(acc & NFSD_MAY_EXEC)?	" exec"  : "",
-		(acc & NFSD_MAY_SATTR)?	" sattr" : "",
-		(acc & NFSD_MAY_TRUNC)?	" trunc" : "",
-		(acc & NFSD_MAY_LOCK)?	" lock"  : "",
-		(acc & NFSD_MAY_OWNER_OVERRIDE)? " owneroverride" : "",
-		inode->i_mode,
-		IS_IMMUTABLE(inode)?	" immut" : "",
-		IS_APPEND(inode)?	" append" : "",
-		__mnt_is_readonly(exp->ex_path.mnt)?	" ro" : "");
-	dprintk("      owner %d/%d user %d/%d\n",
-		inode->i_uid, inode->i_gid, current_fsuid(), current_fsgid());
+//	dprintk("nfsd: permission 0x%x%s%s%s%s%s%s%s mode 0%o%s%s%s\n",
+//		acc,
+//		(acc & NFSD_MAY_READ)?	" read"  : "",
+//		(acc & NFSD_MAY_WRITE)?	" write" : "",
+//		(acc & NFSD_MAY_EXEC)?	" exec"  : "",
+//		(acc & NFSD_MAY_SATTR)?	" sattr" : "",
+//		(acc & NFSD_MAY_TRUNC)?	" trunc" : "",
+//		(acc & NFSD_MAY_LOCK)?	" lock"  : "",
+//		(acc & NFSD_MAY_OWNER_OVERRIDE)? " owneroverride" : "",
+//		inode->i_mode,
+//		IS_IMMUTABLE(inode)?	" immut" : "",
+//		IS_APPEND(inode)?	" append" : "",
+;
+//	dprintk("      owner %d/%d user %d/%d\n",
+;
 #endif
 
 	/* Normally we reject any write/sattr etc access on a read-only file
@@ -2178,7 +2178,7 @@ nfsd_racache_shutdown(void)
 	struct raparms *raparm, *last_raparm;
 	unsigned int i;
 
-	dprintk("nfsd: freeing readahead buffers.\n");
+;
 
 	for (i = 0; i < RAPARM_HASH_SIZE; i++) {
 		raparm = raparm_hash[i].pb_head;
@@ -2209,7 +2209,7 @@ nfsd_racache_init(int cache_size)
 		nperbucket = 2;
 	cache_size = nperbucket * RAPARM_HASH_SIZE;
 
-	dprintk("nfsd: allocating %d readahead buffers.\n", cache_size);
+;
 
 	for (i = 0; i < RAPARM_HASH_SIZE; i++) {
 		spin_lock_init(&raparm_hash[i].pb_lock);
@@ -2228,7 +2228,7 @@ nfsd_racache_init(int cache_size)
 	return 0;
 
 out_nomem:
-	dprintk("nfsd: kmalloc failed, freeing readahead buffers\n");
+;
 	nfsd_racache_shutdown();
 	return -ENOMEM;
 }

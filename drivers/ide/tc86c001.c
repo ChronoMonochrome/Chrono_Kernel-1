@@ -75,8 +75,12 @@ static int tc86c001_timer_expiry(ide_drive_t *drive)
 		unsigned long twcr_port	= sc_base + (drive->dn ? 0x06 : 0x04);
 		u8 dma_cmd		= inb(hwif->dma_base + ATA_DMA_CMD);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: DMA interrupt possibly stuck, "
 		       "attempting recovery...\n", drive->name);
+#else
+		;
+#endif
 
 		/* Stop DMA */
 		outb(dma_cmd & ~0x01, hwif->dma_base + ATA_DMA_CMD);

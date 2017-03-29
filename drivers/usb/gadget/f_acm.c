@@ -548,7 +548,7 @@ int acm_notify(void *dev, u16 state)
 		acm->serial_state = state;
 		acm_notify_serial_state(acm);
 	} else {
-		printk(KERN_DEBUG "usb: %s not ready\n", __func__);
+;
 		return -EAGAIN;
 	}
 	return 0;
@@ -564,7 +564,7 @@ static void acm_connect(struct gserial *port)
 	acm->serial_state |= ACM_CTRL_DSR | ACM_CTRL_DCD;
 	acm_notify_serial_state(acm);
 #else
-	printk(KERN_DEBUG "acm_connected\n");
+;
 #endif
 }
 
@@ -590,7 +590,7 @@ static int acm_send_break(struct gserial *port, int duration)
 	acm->serial_state = state;
 	return acm_notify_serial_state(acm);
 #else
-	printk(KERN_DEBUG "acm_send_break\n");
+;
 	return 0;
 #endif
 }

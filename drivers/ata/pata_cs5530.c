@@ -189,7 +189,11 @@ static const struct dmi_system_id palmax_dmi_table[] = {
 static int cs5530_is_palmax(void)
 {
 	if (dmi_check_system(palmax_dmi_table)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Palmax PD1100: Disabling DMA on docking port.\n");
+#else
+		;
+#endif
 		return 1;
 	}
 	return 0;

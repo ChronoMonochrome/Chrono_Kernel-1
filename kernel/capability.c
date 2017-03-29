@@ -46,9 +46,13 @@ static void warn_legacy_capability_use(void)
 	if (!warned) {
 		char name[sizeof(current->comm)];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "warning: `%s' uses 32-bit capabilities"
 		       " (legacy support in use)\n",
 		       get_task_comm(name, current));
+#else
+		;
+#endif
 		warned = 1;
 	}
 }
@@ -76,9 +80,13 @@ static void warn_deprecated_v2(void)
 	if (!warned) {
 		char name[sizeof(current->comm)];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "warning: `%s' uses deprecated v2"
 		       " capabilities in a way that may be insecure.\n",
 		       get_task_comm(name, current));
+#else
+		;
+#endif
 		warned = 1;
 	}
 }
@@ -380,7 +388,11 @@ bool has_capability_noaudit(struct task_struct *t, int cap)
 bool ns_capable(struct user_namespace *ns, int cap)
 {
 	if (unlikely(!cap_valid(cap))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "capable() called with invalid cap=%u\n", cap);
+#else
+		;
+#endif
 		BUG();
 	}
 

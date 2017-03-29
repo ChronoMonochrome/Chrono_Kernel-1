@@ -352,8 +352,12 @@ int __init find_via_pmu(void)
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PMU driver v%d initialized for %s, firmware: %02x\n",
 	       PMU_DRIVER_VERSION, pbook_type[pmu_kind], pmu_version);
+#else
+	;
+#endif
 	       
 	sys_ctrler = SYS_CTRLER_PMU;
 	
@@ -575,8 +579,12 @@ init_pmu(void)
 		if (req.reply_len == 2) {
 			if (req.reply[1] & PMU_PWR_WAKEUP_AC_INSERT)
 				option_server_mode = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "via-pmu: Server Mode is %s\n",
 			       option_server_mode ? "enabled" : "disabled");
+#else
+			;
+#endif
 		}
 	}
 	return 1;
@@ -751,8 +759,12 @@ done_battery_state_smart(struct adb_request* req)
 				voltage = (req->reply[8] << 8) | req->reply[9];
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "pmu.c : unrecognized battery info, len: %d, %02x %02x %02x %02x\n",
 					req->reply_len, req->reply[0], req->reply[1], req->reply[2], req->reply[3]);
+#else
+				;
+#endif
 				break;
 		}
 	}
@@ -1568,9 +1580,13 @@ via_pmu_interrupt(int irq, void *arg)
 			break;
 		handled = 1;
 		if (++nloop > 1000) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "PMU: stuck in intr loop, "
 			       "intr=%x, ier=%x pmu_state=%d\n",
 			       intr, in_8(&via[IER]), pmu_state);
+#else
+			;
+#endif
 			break;
 		}
 		out_8(&via[IFR], intr);
@@ -1959,7 +1975,11 @@ static void powerbook_sleep_init_3400(void)
 	/* map in the memory controller registers */
 	pb3400_mem_ctrl = ioremap(PB3400_MEM_CTRL, 0x100);
 	if (pb3400_mem_ctrl == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ioremap failed: sleep won't be possible");
+#else
+		;
+#endif
 }
 
 static int powerbook_sleep_3400(void)

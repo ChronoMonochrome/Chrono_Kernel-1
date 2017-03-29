@@ -323,8 +323,12 @@ static int sch311x_wdt_close(struct inode *inode, struct file *file)
 	if (sch311x_wdt_expect_close == 42) {
 		sch311x_wdt_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 				"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		sch311x_wdt_keepalive();
 	}
 	clear_bit(0, &sch311x_wdt_is_open);
@@ -509,7 +513,11 @@ static int __init sch311x_detect(int sio_config_port, unsigned short *addr)
 
 	/* Check if Logical Device Register is currently active */
 	if ((sch311x_sio_inb(sio_config_port, 0x30) & 0x01) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Seems that LDN 0x0a is not active...\n");
+#else
+		;
+#endif
 
 	/* Get the base address of the runtime registers */
 	base_addr = (sch311x_sio_inb(sio_config_port, 0x60) << 8) |
@@ -521,8 +529,12 @@ static int __init sch311x_detect(int sio_config_port, unsigned short *addr)
 	}
 	*addr = base_addr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found an SMSC SCH311%d chip at 0x%04x\n",
 		dev_id, base_addr);
+#else
+	;
+#endif
 
 exit:
 	sch311x_sio_exit(sio_config_port);

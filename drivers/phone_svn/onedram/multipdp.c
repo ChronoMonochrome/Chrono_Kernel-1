@@ -68,8 +68,16 @@ typedef struct pdp_arg {
 #ifdef MULTIPDP_ERROR
 #define EPRINTK(X...) \
 		do { \
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(): ", __FUNCTION__); \
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(X); \
+#else
+			;
+#endif
 		} while (0)
 #else
 #define EPRINTK(X...)		do { } while (0)
@@ -81,8 +89,16 @@ typedef struct pdp_arg {
 #define DPRINTK(N, X...) \
 		do { \
 			if (N <= CONFIG_MULTIPDP_DEBUG) { \
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(): ", __FUNCTION__); \
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(X); \
+#else
+				;
+#endif
 			} \
 		} while (0)
 #else
@@ -216,9 +232,17 @@ static send_loop_back_packet(const char* data, int size)
 	struct pdp_info* dev = pdp_get_dev(LOOP_BACK_CHANNEL);
 
 	if (loopback_ongoing) {
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("send loopback packet start [%d]\n",loopback_res.nTransfered);
+#else
+		//;
+#endif
 		pdp_mux(dev, data, size);
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("send loopback packet end [%d]\n",loopback_res.nTransfered);
+#else
+		//;
+#endif
 		loopback_res.nTransfered++;
 		}
 	
@@ -500,7 +524,11 @@ static inline int dpram_read(struct file *filp, void *buf, size_t count)
 		}
 		n += ret;
 		count -= ret;
+#ifdef CONFIG_DEBUG_PRINTK
 //		printk("[%s] ret: %d, count: %d n: %d\n", __func__, ret, count, n);
+#else
+//		;
+#endif
 	}
 	return n;
 }
@@ -544,14 +572,26 @@ int	multipdp_rx_cback( char *buf, int len)
 	for( i=0; i < len; i++)
 	{
 		if (buf[i] == 0x7f) {
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("multipdp_demux : start = %d, len=%d\n", i+1, len-i-1);
+#else
+			//;
+#endif
 			phdr = (struct pdp_hdr*)&buf[i+1];
 
 			//if( i > 1 )
+#ifdef CONFIG_DEBUG_PRINTK
 			//	printk("================> multipdp_rx_cback : i = %d\n", i);
+#else
+			//	;
+#endif
 				
 			if( buf[i+phdr->len+1] != 0x7E)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("==== NOT 0x7E ...\n");
+#else
+				;
+#endif
 			
 			wake_lock_timeout(&pdp_wake_lock, 6*HZ);
 			ret = multipdp_demux( (char *)&buf[i+1], len-i-1);
@@ -559,14 +599,26 @@ int	multipdp_rx_cback( char *buf, int len)
 			//i = i + phdr->len + 2;
 			i = i + phdr->len+1;
 			
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("multipdp_demux : end ret = %d, next i = %d\n", ret, i);
+#else
+			//;
+#endif
 			if( ret < 0 || ret == 0 )
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("multipdp_demux : Error .. ret[%d]!!!!!!\n", ret);
+#else
+				;
+#endif
 				break;
 			}
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("~~~~>> Header mismatch : , buf[%d] = 0x%x\n", i, buf[i]);
+#else
+		//;
+#endif
 	}
 	return(i);
 
@@ -656,7 +708,11 @@ static int vnet_open(struct net_device *net)
 
 	if (pdp_net_activation_count == 0) {
 		vnet_start_xmit_flag = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%s] clear xmit_flag, there's no net device\n", __func__);
+#else
+		;
+#endif
 	}
 	INIT_WORK(&dev->vn_dev.xmit_task, NULL);
 	netif_start_queue(net);
@@ -683,7 +739,11 @@ static void vnet_defer_xmit(struct work_struct *data)
 #endif
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("<------------ vnet_defer_xmit() Called .. !!\n");
+#else
+	//;
+#endif
 
 	down(&pdp_txlock);
     			
@@ -714,7 +774,11 @@ static netdev_tx_t vnet_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct pdp_info *dev = (struct pdp_info *)net->priv;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("============> vnet_start_xmit() Called .. !!\n");
+#else
+	//;
+#endif
 
 #ifdef USE_LOOPBACK_PING
 	int ret;
@@ -782,7 +846,11 @@ static int multipdp_vnet_recv(struct pdp_info *dev, char *buf, size_t len)
 	}
 
 	if( dev->vn_dev.net == NULL )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("====================> dev->vn_dev.net == NULL .. !!!!!!!\n");
+#else
+		;
+#endif
 		
 	if (!netif_running(dev->vn_dev.net)) {
 		DPRINTK(1, "%s(id: %u) is not running\n", 
@@ -816,7 +884,11 @@ static int multipdp_vnet_recv(struct pdp_info *dev, char *buf, size_t len)
 	dev->vn_dev.stats.rx_packets++;
 	dev->vn_dev.stats.rx_bytes += skb->len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("multipdp_vnet_recv : len = %d\n", len);
+#else
+	//;
+#endif
 	return ret;
 }
 #endif
@@ -969,7 +1041,11 @@ static int vs_open(struct tty_struct *tty, struct file *filp)
 	tty->low_latency = 1;
 	dev->vs_dev.tty = tty;
 
+#ifdef CONFIG_DEBUG_PRINTK
 printk("========================>  vs_open : %s\n", tty->driver->name); 
+#else
+;
+#endif
 	return 0;
 }
 
@@ -984,7 +1060,11 @@ static int vs_close(struct tty_struct *tty, struct file *filp)
 	}
 	dev->vs_dev.tty = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 printk("========================>  vs_close : %s\n", tty->driver->name); 
+#else
+;
+#endif
 	return 0;
 }
 
@@ -995,7 +1075,11 @@ static int vs_write(struct tty_struct *tty,
 	int ret;
 	struct pdp_info *dev = (struct pdp_info *)tty->driver_data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("========================>  vs_write : %s : %d\n", tty->driver->name, count); 
+#else
+//;
+#endif
 
 	ret = pdp_mux(dev, buf, count);
 
@@ -1067,14 +1151,22 @@ static int multipdp_vs_read(struct pdp_info *dev, char *buf, size_t len)
 			return ret;
 		
 		if(dev->vs_dev.tty == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(">>>>> TTY is NULL : (1)~ !!!! \n");
+#else
+			;
+#endif
 
 		if (ret > 0 && dev->vs_dev.tty != NULL) {
 			ret = multipdp_tty_insert_data(dev->vs_dev.tty, prx_buf, ret);
 			if( ret > 0 )
 				tty_flip_buffer_push(dev->vs_dev.tty);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("RF cal data read.(1) len: %d ret: %d\n", len, ret);
+#else
+		;
+#endif
 		kfree(prx_buf);
 	}
 	else {
@@ -1089,12 +1181,28 @@ static int multipdp_vs_read(struct pdp_info *dev, char *buf, size_t len)
 #ifdef LOOP_BACK_TEST
 		if (dev->id == LOOP_BACK_CHANNEL) {
 			// compare and resend , update stastic data
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("receive loopback packet[%d]\n",loopback_res.nTransfered);
+#else
+			//;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("read data : %x %x %x %x %x %x\n",pdp_rx_buf[0],pdp_rx_buf[1],pdp_rx_buf[2],pdp_rx_buf[3],pdp_rx_buf[4],pdp_rx_buf[5]);
+#else
+			//;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("write data : %x %x %x %x %x %x\n",loopback_data[0],loopback_data[1],loopback_data[2],loopback_data[3],loopback_data[4],loopback_data[5]);
+#else
+			//;
+#endif
 			if (loopback_ongoing) {
 				if (strncmp(pdp_rx_buf, loopback_data, loopback_res.nPacketDataSize)){
+#ifdef CONFIG_DEBUG_PRINTK
 					//printk("receive packet is not identical to that sent\n");
+#else
+					//;
+#endif
 				}
 				else {
 					send_loop_back_packet(loopback_data, loopback_res.nPacketDataSize);
@@ -1102,7 +1210,11 @@ static int multipdp_vs_read(struct pdp_info *dev, char *buf, size_t len)
 			}
 			else {
 				//do nothing
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk("loopback channel has gotten data, but test is no ongoing\n");
+#else
+				//;
+#endif
 			}
 			
 		}
@@ -1112,7 +1224,11 @@ static int multipdp_vs_read(struct pdp_info *dev, char *buf, size_t len)
 		}
 #else
 		if(dev->vs_dev.tty == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(">>>>> TTY is NULL : (2)~ !!!! \n");
+#else
+			;
+#endif
 		
 		if (ret > 0 && dev->vs_dev.tty != NULL) {
 	#if 1
@@ -1123,10 +1239,18 @@ static int multipdp_vs_read(struct pdp_info *dev, char *buf, size_t len)
 			if( ret > 0 )
 				tty_flip_buffer_push(dev->vs_dev.tty);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("RF cal data read.(2) len: %d ret: %d\n", len, ret);
+#else
+		//;
+#endif
 #endif		
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("multipdp_vs_read : len = %d\n", ret);
+#else
+	//;
+#endif
 	return ret;
 }
 ////////////
@@ -1152,12 +1276,20 @@ static int vs_read(struct pdp_info *dev, size_t len)
 			return ret;
         }
 		if (dev->vs_dev.tty == NULL) 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("vs_read : #1 vs_dev.tty is NULL =====\n");
+#else
+			;
+#endif
 		if (ret > 0 && dev->vs_dev.tty != NULL) {
 			ret = tty_insert_flip_string(dev->vs_dev.tty, prx_buf, ret);
 			tty_flip_buffer_push(dev->vs_dev.tty);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("RF cal data read. len: %d ret: %d\n", len, ret);
+#else
+		;
+#endif
 		kfree(prx_buf);
 	}
 	else {
@@ -1171,12 +1303,28 @@ static int vs_read(struct pdp_info *dev, size_t len)
 #ifdef LOOP_BACK_TEST
 		if (dev->id == LOOP_BACK_CHANNEL) {
 			// compare and resend , update stastic data
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("receive loopback packet[%d]\n",loopback_res.nTransfered);
+#else
+			//;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("read data : %x %x %x %x %x %x\n",pdp_rx_buf[0],pdp_rx_buf[1],pdp_rx_buf[2],pdp_rx_buf[3],pdp_rx_buf[4],pdp_rx_buf[5]);
+#else
+			//;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("write data : %x %x %x %x %x %x\n",loopback_data[0],loopback_data[1],loopback_data[2],loopback_data[3],loopback_data[4],loopback_data[5]);
+#else
+			//;
+#endif
 			if (loopback_ongoing) {
 				if (strncmp(pdp_rx_buf, loopback_data, loopback_res.nPacketDataSize)){
+#ifdef CONFIG_DEBUG_PRINTK
 					//printk("receive packet is not identical to that sent\n");
+#else
+					//;
+#endif
 				}
 				else {
 					send_loop_back_packet(loopback_data, loopback_res.nPacketDataSize);
@@ -1184,7 +1332,11 @@ static int vs_read(struct pdp_info *dev, size_t len)
 			}
 			else {
 				//do nothing
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk("loopback channel has gotten data, but test is no ongoing\n");
+#else
+				//;
+#endif
 			}
 			
 		}
@@ -1194,7 +1346,11 @@ static int vs_read(struct pdp_info *dev, size_t len)
 		}
 #else
 		if (dev->vs_dev.tty == NULL) 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("vs_read : #2 vs_dev.tty is NULL =====\n");
+#else
+			;
+#endif
 		if (ret > 0 && dev->vs_dev.tty != NULL) {	//hobac.
 			tty_insert_flip_string(dev->vs_dev.tty, pdp_rx_buf, ret);
 			tty_flip_buffer_push(dev->vs_dev.tty);
@@ -1272,7 +1428,11 @@ static int vs_add_dev(struct pdp_info *dev)
 	}
 
 	if (!tty_driver) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tty driver is NULL!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1443,7 +1603,11 @@ static int pdp_mux(struct pdp_info *dev, const void *data, size_t len   )
 #ifdef	NO_TTY_DPRAM
 		ret = multipdp_write(tx_buf, hdr->len +2);
 		if( ret <= 0 )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("pdp_mux:multipdp_write : len = %d\n", hdr->len+2);
+#else
+			;
+#endif
 #endif
 		if (ret < 0) {
 			DPRINTK(1, "dpram_write() failed: %d\n", ret);
@@ -1470,7 +1634,11 @@ static int multipdp_demux(char *buf, int size)
 
    	DPRINTK(2, "BEGIN\n");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("multipdp_demux : size = %d\n", size);
+#else
+	//;
+#endif
    	//mutex_lock(&pdp_lock);
 	
 	memcpy( (void *)&hdr, (void *)buf, sizeof( struct pdp_hdr));
@@ -1480,11 +1648,23 @@ static int multipdp_demux(char *buf, int size)
 	dev = pdp_get_dev(hdr.id);
 
 	if (dev == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("========================================= : (1)\n");
+#else
+		;
+#endif
 		yhexdump((char*)&hdr, sizeof(struct pdp_hdr));		
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("========================================= : (2)\n");
+#else
+		;
+#endif
 		yhexdump((char*)buf, size);	
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("========================================= : (3)\n");
+#else
+		;
+#endif
 		EPRINTK("invalid id: %u, there is no existing device.\n", hdr.id);
 
 		multipdp_dump();
@@ -1494,12 +1674,20 @@ static int multipdp_demux(char *buf, int size)
 
 	if( buf[-1] != 0x7F)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("============ multipdp_demux :  ******** not 0x7F \n");	
+#else
+		;
+#endif
 	}
 	
 	if( len > size )
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("============== multipdp_demux : len>size : len=%d, size=%d\n", size, len);
+#else
+		;
+#endif
 	}
 
 	/* read data */
@@ -1507,18 +1695,34 @@ static int multipdp_demux(char *buf, int size)
 		case DEV_TYPE_NET:
 			if( len > 1500 )
 			{	
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("-------------> len is [%d]\n", len);
+#else
+				;
+#endif
 				multipdp_dump();
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("multipdp_demux:vnet_recv(VNET) (1): len = %d\n", len);
+#else
+			//;
+#endif
 			ret = multipdp_vnet_recv(dev, (char *)&buf[sizeof(struct pdp_hdr)],  len);
 			break;
 		case DEV_TYPE_SERIAL:
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("multipdp_demux:vs_read(SERIAL) : len = %d\n", len);
+#else
+			//;
+#endif
 			ret = multipdp_vs_read(dev, (char *)&buf[sizeof(struct pdp_hdr)], len);
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("-------------> type invalid [%d]\n", dev->type);
+#else
+			;
+#endif
 			multipdp_dump();
 			ret = -1;
 	}
@@ -1530,7 +1734,11 @@ static int multipdp_demux(char *buf, int size)
 	ch = buf[hdr.len];
 
 	if ( ch != 0x7e) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" *******Not 0x7E ... !!!!\n");
+#else
+		;
+#endif
       		//mutex_unlock(&pdp_lock);
 		return ret;
 	}
@@ -1568,10 +1776,18 @@ static int pdp_demux(void)
 	down(&pdp_lock);
 	dev = pdp_get_dev(hdr.id);
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("%s, hdr.id: %d, hdr.len: %d, len: %d\n", __func__, hdr.id, hdr.len, len);
+#else
+//	;
+#endif
 
 	if (dev == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("invalid id: %u, there is no existing device.\n", hdr.id);
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto err;
 	}
@@ -1744,19 +1960,35 @@ static int pdp_deactivate(pdp_arg_t *pdp_arg, int force)
 	if (dev->type == DEV_TYPE_NET) {
 		
 	#ifdef	NO_TTY_MUTEX_VNET
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("<--- VNET Mutex lock : Before .. !!\n");
+#else
+		//;
+#endif
         vnet_stop(dev->vn_dev.net);
 		down(&pdp_txlock);
 		pdp_net_activation_count--;
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("<--- VNET Mutex lock : After .. !!\n");
+#else
+		//;
+#endif
 	#endif
 		DPRINTK(1, "%s(id: %u) network device removed\n", 
 			dev->vn_dev.net->name, dev->id);
 		vnet_del_dev(dev->vn_dev.net);
   	#ifdef	NO_TTY_MUTEX_VNET
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("<--- VNET Mutex Unlock : Before .. !!\n");
+#else
+		//;
+#endif
 		up(&pdp_txlock);
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("<--- VNET Mutex Unlock : After .. !!\n");
+#else
+		//;
+#endif
 	#endif
 	
 	} else if (dev->type == DEV_TYPE_SERIAL) {
@@ -1814,7 +2046,11 @@ static void __exit pdp_cleanup(void)
 static int pdp_adjust(const int adjust)
 {
 	g_adjust = adjust;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adjusting value: %d\n", adjust);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -2011,11 +2247,19 @@ static int __init multipdp_init(void)
 #endif
 
 #ifdef	NO_TTY_DPRAM
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("multipdp_init:multipdp_rx_noti_regi calling");
+#else
+	;
+#endif
 	multipdp_rx_noti_regi(multipdp_rx_cback );	
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_INFO 
 //	       "$Id: multipdp.c,v 1.10 2008/01/11 05:40:56 melonzz Exp $\n");
+#else
+//	;
+#endif
 	return 0;
 
 #ifdef LOOP_BACK_TEST	

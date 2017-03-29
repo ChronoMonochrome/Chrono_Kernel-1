@@ -252,13 +252,29 @@ int vx_send_msg_nolock(struct vx_core *chip, struct vx_rmh *rmh)
 	}
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "rmh: cmd = 0x%06x, length = %d, stype = %d\n",
 	       rmh->Cmd[0], rmh->LgCmd, rmh->DspStat);
+#else
+	;
+#endif
 	if (rmh->LgCmd > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "  ");
+#else
+		;
+#endif
 		for (i = 1; i < rmh->LgCmd; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("0x%06x ", rmh->Cmd[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 	/* Check bit M is set according to length of the command */
@@ -375,7 +391,11 @@ int vx_send_rih_nolock(struct vx_core *chip, int cmd)
 		return -EBUSY;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "send_rih: cmd = 0x%x\n", cmd);
+#else
+	;
+#endif
 #endif
 	if ((err = vx_reset_chk(chip)) < 0)
 		return err;
@@ -512,7 +532,11 @@ static void vx_interrupt(unsigned long private_data)
 	if (events & 0x000800)
 		printk(KERN_ERR "DSP Stream underrun ! IRQ events = 0x%x\n", events);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG "IRQ events = 0x%x\n", events);
+#else
+	// ;
+#endif
 
 	/* We must prevent any application using this DSP
 	 * and block any further request until the application

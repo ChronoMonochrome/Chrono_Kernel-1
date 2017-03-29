@@ -178,7 +178,11 @@ static int __init dio_init(void)
 	if (!MACH_IS_HP300)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_INFO "Scanning for DIO devices...\n");
+#else
+        ;
+#endif
 
 	/* Initialize the DIO bus */ 
 	INIT_LIST_HEAD(&dio_bus.devices);
@@ -250,10 +254,22 @@ static int __init dio_init(void)
 
                 dev->ipl = DIO_IPL(va);
                 strcpy(dev->name,dio_getname(dev->id));
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_INFO "select code %3d: ipl %d: ID %02X", dev->scode, dev->ipl, prid);
+#else
+                ;
+#endif
                 if (DIO_NEEDSSECID(prid))
+#ifdef CONFIG_DEBUG_PRINTK
                         printk(":%02X", secid);
+#else
+                        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(": %s\n", dev->name);
+#else
+                ;
+#endif
 
 		if (scode >= DIOII_SCBASE)
 			iounmap(va);

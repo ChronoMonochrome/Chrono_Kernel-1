@@ -346,10 +346,10 @@ static u16 get_onfi_nand_para(void)
 					INTR_STATUS3__TIME_OUT)))
 					;
 			} else {
-				printk(KERN_ERR "Getting a time out for bank 2!\n");
+;
 			}
 		} else {
-			printk(KERN_ERR "Getting a time out for bank 1!\n");
+;
 		}
 	}
 
@@ -469,8 +469,8 @@ static void get_toshiba_nand_para(void)
 	/* register, then we use default block number value */
 	scratch_reg = ioremap_nocache(SCRATCH_REG_ADDR, SCRATCH_REG_SIZE);
 	if (!scratch_reg) {
-		printk(KERN_ERR "Spectra: ioremap failed in %s, Line %d",
-			__FILE__, __LINE__);
+//		printk(KERN_ERR "Spectra: ioremap failed in %s, Line %d",
+;
 		DeviceInfo.wTotalBlocks = GLOB_HWCTL_DEFAULT_BLKS;
 	} else {
 		nand_dbg_print(NAND_DBG_WARN,
@@ -514,8 +514,8 @@ static void get_hynix_nand_para(void)
 
 	scratch_reg = ioremap_nocache(SCRATCH_REG_ADDR, SCRATCH_REG_SIZE);
 	if (!scratch_reg) {
-		printk(KERN_ERR "Spectra: ioremap failed in %s, Line %d",
-			__FILE__, __LINE__);
+//		printk(KERN_ERR "Spectra: ioremap failed in %s, Line %d",
+;
 		DeviceInfo.wTotalBlocks = GLOB_HWCTL_DEFAULT_BLKS;
 	} else {
 		nand_dbg_print(NAND_DBG_WARN,
@@ -889,17 +889,17 @@ u16 NAND_Read_Page_Spare(u8 *read_data, u32 block, u16 page,
 	u8 *page_spare = buf_read_page_spare;
 
 	if (block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "block too big: %d\n", (int)block);
+;
 		status = FAIL;
 	}
 
 	if (page >= DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "page too big: %d\n", page);
+;
 		status = FAIL;
 	}
 
 	if (page_count > 1) {
-		printk(KERN_ERR "page count too big: %d\n", page_count);
+;
 		status = FAIL;
 	}
 
@@ -956,9 +956,9 @@ u16 NAND_Read_Page_Spare(u8 *read_data, u32 block, u16 page,
 u16 NAND_Write_Page_Spare(u8 *write_data, u32 block, u16 page,
 			     u16 page_count)
 {
-	printk(KERN_ERR
-	       "Error! This function (NAND_Write_Page_Spare) should never"
-		" be called!\n");
+//	printk(KERN_ERR
+//	       "Error! This function (NAND_Write_Page_Spare) should never"
+;
 	return ERR;
 }
 
@@ -1377,8 +1377,8 @@ u16 NAND_Read_Page_Main(u8 *read_data, u32 block, u16 page,
 
 	ret = wait_for_completion_timeout(&info.complete, 10 * HZ);
 	if (!ret) {
-		printk(KERN_ERR "Wait for completion timeout "
-			"in %s, Line %d\n", __FILE__, __LINE__);
+//		printk(KERN_ERR "Wait for completion timeout "
+;
 		status = ERR;
 	} else {
 		status = info.ret;
@@ -1650,8 +1650,8 @@ u16 NAND_Pipeline_Read_Ahead(u8 *read_data, u32 block,
 
 	ret = wait_for_completion_timeout(&info.complete, 10 * HZ);
 	if (!ret) {
-		printk(KERN_ERR "Wait for completion timeout "
-			"in %s, Line %d\n", __FILE__, __LINE__);
+//		printk(KERN_ERR "Wait for completion timeout "
+;
 		status = ERR;
 	} else {
 		status = info.ret;
@@ -1750,8 +1750,8 @@ u16 NAND_Write_Page_Main(u8 *write_data, u32 block, u16 page,
 
 	ret = wait_for_completion_timeout(&info.complete, 10 * HZ);
 	if (!ret) {
-		printk(KERN_ERR "Wait for completion timeout "
-			"in %s, Line %d\n", __FILE__, __LINE__);
+//		printk(KERN_ERR "Wait for completion timeout "
+;
 		status = ERR;
 	} else {
 		status = info.ret;
@@ -2102,8 +2102,8 @@ u16 NAND_Pipeline_Write_Ahead(u8 *write_data, u32 block,
 
 	ret = wait_for_completion_timeout(&info.complete, 10 * HZ);
 	if (!ret) {
-		printk(KERN_ERR "Wait for completion timeout "
-			"in %s, Line %d\n", __FILE__, __LINE__);
+//		printk(KERN_ERR "Wait for completion timeout "
+;
 		status = ERR;
 	} else {
 		status = info.ret;
@@ -2265,10 +2265,10 @@ static void handle_nand_int_read(struct mrst_nand_info *dev)
 					FlashReg + intr_status);
 				break;
 			} else {
-				printk(KERN_ERR "Illegal INTS "
-					"(offset addr 0x%x) value: 0x%x\n",
-					intr_status,
-					ioread32(FlashReg + intr_status));
+//				printk(KERN_ERR "Illegal INTS "
+//					"(offset addr 0x%x) value: 0x%x\n",
+//					intr_status,
+;
 			}
 		}
 
@@ -2368,8 +2368,8 @@ static irqreturn_t ddma_isr(int irq, void *dev_id)
 		handle_nand_int_write(dev);
 		break;
 	default:
-		printk(KERN_ERR "ddma_isr - Illegal state: 0x%x\n",
-			dev->state);
+//		printk(KERN_ERR "ddma_isr - Illegal state: 0x%x\n",
+;
 		return IRQ_NONE;
 	}
 
@@ -2403,7 +2403,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	FlashReg = ioremap_nocache(GLOB_HWCTL_REG_BASE,
 			GLOB_HWCTL_REG_SIZE);
 	if (!FlashReg) {
-		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
+;
 		return -ENOMEM;
 	}
 	nand_dbg_print(NAND_DBG_WARN,
@@ -2414,7 +2414,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	FlashMem = ioremap_nocache(GLOB_HWCTL_MEM_BASE,
 			GLOB_HWCTL_MEM_SIZE);
 	if (!FlashMem) {
-		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
+;
 		iounmap(FlashReg);
 		return -ENOMEM;
 	}
@@ -2481,7 +2481,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	enable_ecc = 1;
 	ret = pci_enable_device(dev);
 	if (ret) {
-		printk(KERN_ERR "Spectra: pci_enable_device failed.\n");
+;
 		goto failed_req_csr;
 	}
 
@@ -2490,28 +2490,28 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	csr_base = pci_resource_start(dev, 0);
 	if (!csr_base) {
-		printk(KERN_ERR "Spectra: pci_resource_start failed!\n");
+;
 		ret = -ENODEV;
 		goto failed_req_csr;
 	}
 
 	csr_len = pci_resource_len(dev, 0);
 	if (!csr_len) {
-		printk(KERN_ERR "Spectra: pci_resource_len failed!\n");
+;
 		ret = -ENODEV;
 		goto failed_req_csr;
 	}
 
 	ret = pci_request_regions(dev, SPECTRA_NAND_NAME);
 	if (ret) {
-		printk(KERN_ERR "Spectra: Unable to request "
-		       "memory region\n");
+//		printk(KERN_ERR "Spectra: Unable to request "
+;
 		goto failed_req_csr;
 	}
 
 	pndev->ioaddr = ioremap_nocache(csr_base, csr_len);
 	if (!pndev->ioaddr) {
-		printk(KERN_ERR "Spectra: Unable to remap memory region\n");
+;
 		ret = -ENOMEM;
 		goto failed_remap_csr;
 	}
@@ -2524,7 +2524,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 #if CMD_DMA
 	if (request_irq(dev->irq, cdma_isr, IRQF_SHARED,
 			SPECTRA_NAND_NAME, &info)) {
-		printk(KERN_ERR "Spectra: Unable to allocate IRQ\n");
+;
 		ret = -ENODEV;
 		iounmap(pndev->ioaddr);
 		goto failed_remap_csr;
@@ -2532,7 +2532,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 #else
 	if (request_irq(dev->irq, ddma_isr, IRQF_SHARED,
 			SPECTRA_NAND_NAME, &info)) {
-		printk(KERN_ERR "Spectra: Unable to allocate IRQ\n");
+;
 		ret = -ENODEV;
 		iounmap(pndev->ioaddr);
 		goto failed_remap_csr;

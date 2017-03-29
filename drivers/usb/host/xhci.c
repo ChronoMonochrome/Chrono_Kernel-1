@@ -938,13 +938,13 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
 	struct xhci_virt_device	*virt_dev;
 
 	if (!hcd || (check_ep && !ep) || !udev) {
-		printk(KERN_DEBUG "xHCI %s called with invalid args\n",
-				func);
+//		printk(KERN_DEBUG "xHCI %s called with invalid args\n",
+;
 		return -EINVAL;
 	}
 	if (!udev->parent) {
-		printk(KERN_DEBUG "xHCI %s called for root hub\n",
-				func);
+//		printk(KERN_DEBUG "xHCI %s called for root hub\n",
+;
 		return 0;
 	}
 
@@ -955,15 +955,15 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
 	if (check_virt_dev) {
 		if (!udev->slot_id || !xhci->devs
 			|| !xhci->devs[udev->slot_id]) {
-			printk(KERN_DEBUG "xHCI %s called with unaddressed "
-						"device\n", func);
+//			printk(KERN_DEBUG "xHCI %s called with unaddressed "
+;
 			return -EINVAL;
 		}
 
 		virt_dev = xhci->devs[udev->slot_id];
 		if (virt_dev->udev != udev) {
-			printk(KERN_DEBUG "xHCI %s called with udev and "
-					  "virt_dev does not match\n", func);
+//			printk(KERN_DEBUG "xHCI %s called with udev and "
+;
 			return -EINVAL;
 		}
 	}
@@ -3082,7 +3082,7 @@ static int __init xhci_hcd_init(void)
 	retval = xhci_register_pci();
 
 	if (retval < 0) {
-		printk(KERN_DEBUG "Problem registering PCI driver.");
+;
 		return retval;
 	}
 #endif

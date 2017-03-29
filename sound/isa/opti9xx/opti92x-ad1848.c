@@ -444,7 +444,11 @@ static int __devinit snd_opti9xx_configure(struct snd_opti9xx *chip,
 		wss_base_bits = 0x02;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "WSS port 0x%lx not valid\n", port);
+#else
+		;
+#endif
 		goto __skip_base;
 	}
 	snd_opti9xx_write_mask(chip, OPTi9XX_MC_REG(1), wss_base_bits << 4, 0x30);
@@ -469,7 +473,11 @@ __skip_base:
 		irq_bits = 0x04;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "WSS irq # %d not valid\n", irq);
+#else
+		;
+#endif
 		goto __skip_resources;
 	}
 
@@ -484,7 +492,11 @@ __skip_base:
 		dma_bits = 0x03;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "WSS dma1 # %d not valid\n", dma1);
+#else
+		;
+#endif
 		goto __skip_resources;
 	}
 
@@ -499,7 +511,11 @@ __skip_base:
 	case 1:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "WSS dma2 # %d not valid\n", dma2);
+#else
+		;
+#endif
 		goto __skip_resources;
 	}
 	dma_bits |= 0x04;
@@ -530,8 +546,12 @@ __skip_resources:
 			mpu_port_bits = 0x00;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "MPU-401 port 0x%lx not valid\n", mpu_port);
+#else
+			;
+#endif
 			goto __skip_mpu;
 		}
 
@@ -549,8 +569,12 @@ __skip_resources:
 			mpu_irq_bits = 0x01;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "MPU-401 irq # %d not valid\n",
 				mpu_irq);
+#else
+			;
+#endif
 			goto __skip_mpu;
 		}
 
@@ -912,8 +936,12 @@ static int __devinit snd_opti9xx_probe(struct snd_card *card)
 		error = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
 				mpu_port, 0, mpu_irq, &rmidi);
 		if (error)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "no MPU-401 device at 0x%lx?\n",
 				   mpu_port);
+#else
+			;
+#endif
 	}
 
 	if (fm_port > 0 && fm_port != SNDRV_AUTO_PORT) {
@@ -936,8 +964,12 @@ static int __devinit snd_opti9xx_probe(struct snd_card *card)
 #endif	/* !OPTi93X */
 		if (!opl3 && snd_opl3_create(card, fm_port, fm_port + 2,
 					     OPL3_HW_AUTO, 0, &opl3) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "no OPL device at 0x%lx-0x%lx\n",
 				   fm_port, fm_port + 4 - 1);
+#else
+			;
+#endif
 		}
 		if (opl3) {
 			error = snd_opl3_hwdep_new(opl3, 0, 1, &synth);

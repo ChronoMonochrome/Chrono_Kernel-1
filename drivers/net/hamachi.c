@@ -595,7 +595,7 @@ static int __devinit hamachi_init_one (struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	if (pci_enable_device(pdev)) {
@@ -632,8 +632,8 @@ static int __devinit hamachi_init_one (struct pci_dev *pdev,
 #if ! defined(final_version)
 	if (hamachi_debug > 4)
 		for (i = 0; i < 0x10; i++)
-			printk("%2.2x%s",
-				   read_eeprom(ioaddr, i), i % 16 != 15 ? " " : "\n");
+//			printk("%2.2x%s",
+;
 #endif
 
 	hmp = netdev_priv(dev);
@@ -740,15 +740,15 @@ static int __devinit hamachi_init_one (struct pci_dev *pdev,
 		goto err_out_unmap_rx;
 	}
 
-	printk(KERN_INFO "%s: %s type %x at %p, %pM, IRQ %d.\n",
-		   dev->name, chip_tbl[chip_id].name, readl(ioaddr + ChipRev),
-		   ioaddr, dev->dev_addr, irq);
+//	printk(KERN_INFO "%s: %s type %x at %p, %pM, IRQ %d.\n",
+//		   dev->name, chip_tbl[chip_id].name, readl(ioaddr + ChipRev),
+;
 	i = readb(ioaddr + PCIClkMeas);
-	printk(KERN_INFO "%s:  %d-bit %d Mhz PCI bus (%d), Virtual Jumpers "
-		   "%2.2x, LPA %4.4x.\n",
-		   dev->name, readw(ioaddr + MiscStatus) & 1 ? 64 : 32,
-		   i ? 2000/(i&0x7f) : 0, i&0x7f, (int)readb(ioaddr + VirtualJumpers),
-		   readw(ioaddr + ANLinkPartnerAbility));
+//	printk(KERN_INFO "%s:  %d-bit %d Mhz PCI bus (%d), Virtual Jumpers "
+//		   "%2.2x, LPA %4.4x.\n",
+//		   dev->name, readw(ioaddr + MiscStatus) & 1 ? 64 : 32,
+//		   i ? 2000/(i&0x7f) : 0, i&0x7f, (int)readb(ioaddr + VirtualJumpers),
+;
 
 	if (chip_tbl[hmp->chip_id].flags & CanHaveMII) {
 		int phy, phy_idx = 0;
@@ -758,9 +758,9 @@ static int __devinit hamachi_init_one (struct pci_dev *pdev,
 				mii_status != 0x0000) {
 				hmp->phys[phy_idx++] = phy;
 				hmp->mii_if.advertising = mdio_read(dev, phy, MII_ADVERTISE);
-				printk(KERN_INFO "%s: MII PHY found at address %d, status "
-					   "0x%4.4x advertising %4.4x.\n",
-					   dev->name, phy, mii_status, hmp->mii_if.advertising);
+//				printk(KERN_INFO "%s: MII PHY found at address %d, status "
+//					   "0x%4.4x advertising %4.4x.\n",
+;
 			}
 		}
 		hmp->mii_cnt = phy_idx;
@@ -804,8 +804,8 @@ static int __devinit read_eeprom(void __iomem *ioaddr, int location)
 	bogus_cnt = 1000;
 	while ((readb(ioaddr + EECmdStatus) & 0x40)  && --bogus_cnt > 0);
 	if (hamachi_debug > 5)
-		printk("   EEPROM status is %2.2x after %d ticks.\n",
-			   (int)readb(ioaddr + EECmdStatus), 1000- bogus_cnt);
+//		printk("   EEPROM status is %2.2x after %d ticks.\n",
+;
 	return readb(ioaddr + EEData);
 }
 
@@ -864,8 +864,8 @@ static int hamachi_open(struct net_device *dev)
 		return i;
 
 	if (hamachi_debug > 1)
-		printk(KERN_DEBUG "%s: hamachi_open() irq %d.\n",
-			   dev->name, dev->irq);
+//		printk(KERN_DEBUG "%s: hamachi_open() irq %d.\n",
+;
 
 	hamachi_init_ring(dev);
 
@@ -909,8 +909,8 @@ static int hamachi_open(struct net_device *dev)
 			writew(0x006C, ioaddr + FIFOcfg);
 			break;
 		default :
-			printk(KERN_WARNING "%s:  Unsupported external memory config!\n",
-				dev->name);
+//			printk(KERN_WARNING "%s:  Unsupported external memory config!\n",
+;
 			/* Default to no FIFO */
 			writew(0x0000, ioaddr + FIFOcfg);
 			break;
@@ -951,13 +951,13 @@ static int hamachi_open(struct net_device *dev)
 	tx_int_var = hmp->tx_int_var;
 
 	if (hamachi_debug > 1) {
-		printk("max_tx_latency: %d, max_tx_gap: %d, min_tx_pkt: %d\n",
-			tx_int_var & 0x00ff, (tx_int_var & 0x00ff00) >> 8,
-			(tx_int_var & 0x00ff0000) >> 16);
-		printk("max_rx_latency: %d, max_rx_gap: %d, min_rx_pkt: %d\n",
-			rx_int_var & 0x00ff, (rx_int_var & 0x00ff00) >> 8,
-			(rx_int_var & 0x00ff0000) >> 16);
-		printk("rx_int_var: %x, tx_int_var: %x\n", rx_int_var, tx_int_var);
+//		printk("max_tx_latency: %d, max_tx_gap: %d, min_tx_pkt: %d\n",
+//			tx_int_var & 0x00ff, (tx_int_var & 0x00ff00) >> 8,
+;
+//		printk("max_rx_latency: %d, max_rx_gap: %d, min_rx_pkt: %d\n",
+//			rx_int_var & 0x00ff, (rx_int_var & 0x00ff00) >> 8,
+;
+;
 	}
 
 	writel(tx_int_var, ioaddr + TxIntrCtrl);
@@ -983,8 +983,8 @@ static int hamachi_open(struct net_device *dev)
 	writew(0x0001, ioaddr + RxCmd);
 
 	if (hamachi_debug > 2) {
-		printk(KERN_DEBUG "%s: Done hamachi_open(), status: Rx %x Tx %x.\n",
-			   dev->name, readw(ioaddr + RxStatus), readw(ioaddr + TxStatus));
+//		printk(KERN_DEBUG "%s: Done hamachi_open(), status: Rx %x Tx %x.\n",
+;
 	}
 	/* Set the timer to check for link beat. */
 	init_timer(&hmp->timer);
@@ -1035,17 +1035,17 @@ static void hamachi_timer(unsigned long data)
 	int next_tick = 10*HZ;
 
 	if (hamachi_debug > 2) {
-		printk(KERN_INFO "%s: Hamachi Autonegotiation status %4.4x, LPA "
-			   "%4.4x.\n", dev->name, readw(ioaddr + ANStatus),
-			   readw(ioaddr + ANLinkPartnerAbility));
-		printk(KERN_INFO "%s: Autonegotiation regs %4.4x %4.4x %4.4x "
-		       "%4.4x %4.4x %4.4x.\n", dev->name,
-		       readw(ioaddr + 0x0e0),
-		       readw(ioaddr + 0x0e2),
-		       readw(ioaddr + 0x0e4),
-		       readw(ioaddr + 0x0e6),
-		       readw(ioaddr + 0x0e8),
-		       readw(ioaddr + 0x0eA));
+//		printk(KERN_INFO "%s: Hamachi Autonegotiation status %4.4x, LPA "
+//			   "%4.4x.\n", dev->name, readw(ioaddr + ANStatus),
+;
+//		printk(KERN_INFO "%s: Autonegotiation regs %4.4x %4.4x %4.4x "
+//		       "%4.4x %4.4x %4.4x.\n", dev->name,
+//		       readw(ioaddr + 0x0e0),
+//		       readw(ioaddr + 0x0e2),
+//		       readw(ioaddr + 0x0e4),
+//		       readw(ioaddr + 0x0e6),
+//		       readw(ioaddr + 0x0e8),
+;
 	}
 	/* We could do something here... nah. */
 	hmp->timer.expires = RUN_AT(next_tick);
@@ -1058,20 +1058,20 @@ static void hamachi_tx_timeout(struct net_device *dev)
 	struct hamachi_private *hmp = netdev_priv(dev);
 	void __iomem *ioaddr = hmp->base;
 
-	printk(KERN_WARNING "%s: Hamachi transmit timed out, status %8.8x,"
-		   " resetting...\n", dev->name, (int)readw(ioaddr + TxStatus));
+//	printk(KERN_WARNING "%s: Hamachi transmit timed out, status %8.8x,"
+;
 
 	{
-		printk(KERN_DEBUG "  Rx ring %p: ", hmp->rx_ring);
+;
 		for (i = 0; i < RX_RING_SIZE; i++)
-			printk(KERN_CONT " %8.8x",
-			       le32_to_cpu(hmp->rx_ring[i].status_n_length));
-		printk(KERN_CONT "\n");
-		printk(KERN_DEBUG"  Tx ring %p: ", hmp->tx_ring);
+//			printk(KERN_CONT " %8.8x",
+;
+;
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_CONT " %4.4x",
-			       le32_to_cpu(hmp->tx_ring[i].status_n_length));
-		printk(KERN_CONT "\n");
+//			printk(KERN_CONT " %4.4x",
+;
+;
 	}
 
 	/* Reinit the hardware and make sure the Rx and Tx processes
@@ -1226,7 +1226,7 @@ static netdev_tx_t hamachi_start_xmit(struct sk_buff *skb,
 	 */
 	if (hmp->tx_full) {
 		/* We should NEVER reach this point -KDU */
-		printk(KERN_WARNING "%s: Hamachi transmit queue full at slot %d.\n",dev->name, hmp->cur_tx);
+;
 
 		/* Wake the potentially-idle transmit channel. */
 		/* If we don't need to read status, DON'T -KDU */
@@ -1289,8 +1289,8 @@ static netdev_tx_t hamachi_start_xmit(struct sk_buff *skb,
 	}
 
 	if (hamachi_debug > 4) {
-		printk(KERN_DEBUG "%s: Hamachi transmit frame #%d queued in slot %d.\n",
-			   dev->name, hmp->cur_tx, entry);
+//		printk(KERN_DEBUG "%s: Hamachi transmit frame #%d queued in slot %d.\n",
+;
 	}
 	return NETDEV_TX_OK;
 }
@@ -1318,8 +1318,8 @@ static irqreturn_t hamachi_interrupt(int irq, void *dev_instance)
 		u32 intr_status = readl(ioaddr + InterruptClear);
 
 		if (hamachi_debug > 4)
-			printk(KERN_DEBUG "%s: Hamachi interrupt, status %4.4x.\n",
-				   dev->name, intr_status);
+//			printk(KERN_DEBUG "%s: Hamachi interrupt, status %4.4x.\n",
+;
 
 		if (intr_status == 0)
 			break;
@@ -1375,23 +1375,23 @@ static irqreturn_t hamachi_interrupt(int irq, void *dev_instance)
 			hamachi_error(dev, intr_status);
 
 		if (--boguscnt < 0) {
-			printk(KERN_WARNING "%s: Too much work at interrupt, status=0x%4.4x.\n",
-				   dev->name, intr_status);
+//			printk(KERN_WARNING "%s: Too much work at interrupt, status=0x%4.4x.\n",
+;
 			break;
 		}
 	} while (1);
 
 	if (hamachi_debug > 3)
-		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
-			   dev->name, readl(ioaddr + IntrStatus));
+//		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
+;
 
 #ifndef final_version
 	/* Code that should never be run!  Perhaps remove after testing.. */
 	{
 		static int stopit = 10;
 		if (dev->start == 0  &&  --stopit < 0) {
-			printk(KERN_ERR "%s: Emergency stop, looping startup interrupt.\n",
-				   dev->name);
+//			printk(KERN_ERR "%s: Emergency stop, looping startup interrupt.\n",
+;
 			free_irq(irq, dev);
 		}
 	}
@@ -1410,8 +1410,8 @@ static int hamachi_rx(struct net_device *dev)
 	int boguscnt = (hmp->dirty_rx + RX_RING_SIZE) - hmp->cur_rx;
 
 	if (hamachi_debug > 4) {
-		printk(KERN_DEBUG " In hamachi_rx(), entry %d status %4.4x.\n",
-			   entry, hmp->rx_ring[entry].status_n_length);
+//		printk(KERN_DEBUG " In hamachi_rx(), entry %d status %4.4x.\n",
+;
 	}
 
 	/* If EOP is set on the next entry, it's a new packet. Send it up. */
@@ -1431,28 +1431,28 @@ static int hamachi_rx(struct net_device *dev)
 		buf_addr = (u8 *) hmp->rx_skbuff[entry]->data;
 		frame_status = get_unaligned_le32(&(buf_addr[data_size - 12]));
 		if (hamachi_debug > 4)
-			printk(KERN_DEBUG "  hamachi_rx() status was %8.8x.\n",
-				frame_status);
+//			printk(KERN_DEBUG "  hamachi_rx() status was %8.8x.\n",
+;
 		if (--boguscnt < 0)
 			break;
 		if ( ! (desc_status & DescEndPacket)) {
-			printk(KERN_WARNING "%s: Oversized Ethernet frame spanned "
-				   "multiple buffers, entry %#x length %d status %4.4x!\n",
-				   dev->name, hmp->cur_rx, data_size, desc_status);
-			printk(KERN_WARNING "%s: Oversized Ethernet frame %p vs %p.\n",
-				   dev->name, desc, &hmp->rx_ring[hmp->cur_rx % RX_RING_SIZE]);
-			printk(KERN_WARNING "%s: Oversized Ethernet frame -- next status %x/%x last status %x.\n",
-				   dev->name,
-				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0xffff0000,
-				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0x0000ffff,
-				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx-1) % RX_RING_SIZE].status_n_length));
+//			printk(KERN_WARNING "%s: Oversized Ethernet frame spanned "
+//				   "multiple buffers, entry %#x length %d status %4.4x!\n",
+;
+//			printk(KERN_WARNING "%s: Oversized Ethernet frame %p vs %p.\n",
+;
+//			printk(KERN_WARNING "%s: Oversized Ethernet frame -- next status %x/%x last status %x.\n",
+//				   dev->name,
+//				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0xffff0000,
+//				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0x0000ffff,
+;
 			dev->stats.rx_length_errors++;
 		} /* else  Omit for prototype errata??? */
 		if (frame_status & 0x00380000) {
 			/* There was an error. */
 			if (hamachi_debug > 2)
-				printk(KERN_DEBUG "  hamachi_rx() Rx error was %8.8x.\n",
-					   frame_status);
+//				printk(KERN_DEBUG "  hamachi_rx() Rx error was %8.8x.\n",
+;
 			dev->stats.rx_errors++;
 			if (frame_status & 0x00600000)
 				dev->stats.rx_length_errors++;
@@ -1473,25 +1473,25 @@ static int hamachi_rx(struct net_device *dev)
 
 #ifndef final_version
 			if (hamachi_debug > 4)
-				printk(KERN_DEBUG "  hamachi_rx() normal Rx pkt length %d"
-					   " of %d, bogus_cnt %d.\n",
-					   pkt_len, data_size, boguscnt);
+//				printk(KERN_DEBUG "  hamachi_rx() normal Rx pkt length %d"
+//					   " of %d, bogus_cnt %d.\n",
+;
 			if (hamachi_debug > 5)
-				printk(KERN_DEBUG"%s:  rx status %8.8x %8.8x %8.8x %8.8x %8.8x.\n",
-					   dev->name,
-					   *(s32*)&(buf_addr[data_size - 20]),
-					   *(s32*)&(buf_addr[data_size - 16]),
-					   *(s32*)&(buf_addr[data_size - 12]),
-					   *(s32*)&(buf_addr[data_size - 8]),
-					   *(s32*)&(buf_addr[data_size - 4]));
+//				printk(KERN_DEBUG"%s:  rx status %8.8x %8.8x %8.8x %8.8x %8.8x.\n",
+//					   dev->name,
+//					   *(s32*)&(buf_addr[data_size - 20]),
+//					   *(s32*)&(buf_addr[data_size - 16]),
+//					   *(s32*)&(buf_addr[data_size - 12]),
+//					   *(s32*)&(buf_addr[data_size - 8]),
+;
 #endif
 			/* Check if the packet is long enough to accept without copying
 			   to a minimally-sized skbuff. */
 			if (pkt_len < rx_copybreak &&
 			    (skb = dev_alloc_skb(pkt_len + 2)) != NULL) {
 #ifdef RX_CHECKSUM
-				printk(KERN_ERR "%s: rx_copybreak non-zero "
-				  "not good with RX_CHECKSUM\n", dev->name);
+//				printk(KERN_ERR "%s: rx_copybreak non-zero "
+;
 #endif
 				skb_reserve(skb, 2);	/* 16 byte align the IP header */
 				pci_dma_sync_single_for_cpu(hmp->pci_dev,
@@ -1627,11 +1627,11 @@ static void hamachi_error(struct net_device *dev, int intr_status)
 
 	if (intr_status & (LinkChange|NegotiationChange)) {
 		if (hamachi_debug > 1)
-			printk(KERN_INFO "%s: Link changed: AutoNegotiation Ctrl"
-				   " %4.4x, Status %4.4x %4.4x Intr status %4.4x.\n",
-				   dev->name, readw(ioaddr + 0x0E0), readw(ioaddr + 0x0E2),
-				   readw(ioaddr + ANLinkPartnerAbility),
-				   readl(ioaddr + IntrStatus));
+//			printk(KERN_INFO "%s: Link changed: AutoNegotiation Ctrl"
+//				   " %4.4x, Status %4.4x %4.4x Intr status %4.4x.\n",
+//				   dev->name, readw(ioaddr + 0x0E0), readw(ioaddr + 0x0E2),
+//				   readw(ioaddr + ANLinkPartnerAbility),
+;
 		if (readw(ioaddr + ANStatus) & 0x20)
 			writeb(0x01, ioaddr + LEDCtrl);
 		else
@@ -1645,8 +1645,8 @@ static void hamachi_error(struct net_device *dev, int intr_status)
 	}
 	if ((intr_status & ~(LinkChange|StatsMax|NegotiationChange|IntrRxDone|IntrTxDone)) &&
 	    hamachi_debug)
-		printk(KERN_ERR "%s: Something Wicked happened! %4.4x.\n",
-		       dev->name, intr_status);
+//		printk(KERN_ERR "%s: Something Wicked happened! %4.4x.\n",
+;
 	/* Hmmmmm, it's not clear how to recover from PCI faults. */
 	if (intr_status & (IntrTxPCIErr | IntrTxPCIFault))
 		dev->stats.tx_fifo_errors++;
@@ -1664,11 +1664,11 @@ static int hamachi_close(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (hamachi_debug > 1) {
-		printk(KERN_DEBUG "%s: Shutting down ethercard, status was Tx %4.4x Rx %4.4x Int %2.2x.\n",
-			   dev->name, readw(ioaddr + TxStatus),
-			   readw(ioaddr + RxStatus), readl(ioaddr + IntrStatus));
-		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
-			   dev->name, hmp->cur_tx, hmp->dirty_tx, hmp->cur_rx, hmp->dirty_rx);
+//		printk(KERN_DEBUG "%s: Shutting down ethercard, status was Tx %4.4x Rx %4.4x Int %2.2x.\n",
+//			   dev->name, readw(ioaddr + TxStatus),
+;
+//		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
+;
 	}
 
 	/* Disable interrupts by clearing the interrupt mask. */
@@ -1680,27 +1680,27 @@ static int hamachi_close(struct net_device *dev)
 
 #ifdef __i386__
 	if (hamachi_debug > 2) {
-		printk(KERN_DEBUG "  Tx ring at %8.8x:\n",
-			   (int)hmp->tx_ring_dma);
+//		printk(KERN_DEBUG "  Tx ring at %8.8x:\n",
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_DEBUG " %c #%d desc. %8.8x %8.8x.\n",
-				   readl(ioaddr + TxCurPtr) == (long)&hmp->tx_ring[i] ? '>' : ' ',
-				   i, hmp->tx_ring[i].status_n_length, hmp->tx_ring[i].addr);
-		printk(KERN_DEBUG "  Rx ring %8.8x:\n",
-			   (int)hmp->rx_ring_dma);
+//			printk(KERN_DEBUG " %c #%d desc. %8.8x %8.8x.\n",
+//				   readl(ioaddr + TxCurPtr) == (long)&hmp->tx_ring[i] ? '>' : ' ',
+;
+//		printk(KERN_DEBUG "  Rx ring %8.8x:\n",
+;
 		for (i = 0; i < RX_RING_SIZE; i++) {
-			printk(KERN_DEBUG " %c #%d desc. %4.4x %8.8x\n",
-				   readl(ioaddr + RxCurPtr) == (long)&hmp->rx_ring[i] ? '>' : ' ',
-				   i, hmp->rx_ring[i].status_n_length, hmp->rx_ring[i].addr);
+//			printk(KERN_DEBUG " %c #%d desc. %4.4x %8.8x\n",
+//				   readl(ioaddr + RxCurPtr) == (long)&hmp->rx_ring[i] ? '>' : ' ',
+;
 			if (hamachi_debug > 6) {
 				if (*(u8*)hmp->rx_skbuff[i]->data != 0x69) {
 					u16 *addr = (u16 *)
 						hmp->rx_skbuff[i]->data;
 					int j;
-					printk(KERN_DEBUG "Addr: ");
+;
 					for (j = 0; j < 0x50; j++)
-						printk(" %4.4x", addr[j]);
-					printk("\n");
+;
+;
 				}
 			}
 		}
@@ -1885,9 +1885,9 @@ static int netdev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 			return -EPERM;
 		writel(d[0], np->base + TxIntrCtrl);
 		writel(d[1], np->base + RxIntrCtrl);
-		printk(KERN_NOTICE "%s: tx %08x, rx %08x intr\n", dev->name,
-		  (u32) readl(np->base + TxIntrCtrl),
-		  (u32) readl(np->base + RxIntrCtrl));
+//		printk(KERN_NOTICE "%s: tx %08x, rx %08x intr\n", dev->name,
+//		  (u32) readl(np->base + TxIntrCtrl),
+;
 		rc = 0;
 	}
 
@@ -1937,7 +1937,7 @@ static int __init hamachi_init (void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 	return pci_register_driver(&hamachi_driver);
 }

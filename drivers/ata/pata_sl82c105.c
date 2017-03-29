@@ -317,9 +317,17 @@ static int sl82c105_init_one(struct pci_dev *dev, const struct pci_device_id *id
 	rev = sl82c105_bridge_revision(dev);
 
 	if (rev == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &dev->dev, "pata_sl82c105: Unable to find bridge, disabling DMA.\n");
+#else
+		dev_;
+#endif
 	else if (rev <= 5)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &dev->dev, "pata_sl82c105: Early bridge revision, no DMA available.\n");
+#else
+		dev_;
+#endif
 	else
 		ppi[0] = &info_dma;
 

@@ -2534,7 +2534,11 @@ static bool DAC960_RegisterBlockDevice(DAC960_Controller_T *Controller)
 	/* for now, let all request queues share controller's lock */
   	RequestQueue = blk_init_queue(DAC960_RequestFunction,&Controller->queue_lock);
   	if (!RequestQueue) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DAC960: failure to allocate request queue\n");
+#else
+		;
+#endif
 		continue;
   	}
   	Controller->RequestQueue[n] = RequestQueue;
@@ -3596,7 +3600,11 @@ static void DAC960_V1_ProcessCompletedCommand(DAC960_Command_T *Command)
 
 #ifdef FORCE_RETRY_FAILURE_DEBUG
       if (!(++retry_count % 10000)) {
+#ifdef CONFIG_DEBUG_PRINTK
 	      printk("V1 error retry failure test\n");
+#else
+	      ;
+#endif
 	      normal_completion = false;
               DAC960_V1_ReadWriteError(Command);
       }
@@ -4684,7 +4692,11 @@ static void DAC960_V2_ProcessCompletedCommand(DAC960_Command_T *Command)
 
 #ifdef FORCE_RETRY_FAILURE_DEBUG
       if (!(++retry_count % 10000)) {
+#ifdef CONFIG_DEBUG_PRINTK
 	      printk("V2 error retry failure test\n");
+#else
+	      ;
+#endif
 	      normal_completion = false;
 	      DAC960_V2_ReadWriteError(Command);
       }
@@ -5758,8 +5770,12 @@ static void DAC960_Message(DAC960_MessageLevel_T MessageLevel,
   Length = vsprintf(Buffer, Format, Arguments);
   va_end(Arguments);
   if (Controller == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
     printk("%sDAC960#%d: %s", DAC960_MessageLevelMap[MessageLevel],
 	   DAC960_ControllerCount, Buffer);
+#else
+    ;
+#endif
   else if (MessageLevel == DAC960_AnnounceLevel ||
 	   MessageLevel == DAC960_InfoLevel)
     {
@@ -5779,19 +5795,31 @@ static void DAC960_Message(DAC960_MessageLevel_T MessageLevel,
 	    {
 	      static int AnnouncementLines = 0;
 	      if (++AnnouncementLines <= 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%sDAC960: %s", DAC960_MessageLevelMap[MessageLevel],
 		       Buffer);
+#else
+		;
+#endif
 	    }
 	  else
 	    {
 	      if (BeginningOfLine)
 		{
 		  if (Buffer[0] != '\n' || Length > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk("%sDAC960#%d: %s",
 			   DAC960_MessageLevelMap[MessageLevel],
 			   Controller->ControllerNumber, Buffer);
+#else
+		    ;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 	      else printk("%s", Buffer);
+#else
+	      else ;
+#endif
 	    }
 	}
       else if (DAC960_CheckStatusBuffer(Controller, Length))
@@ -5810,13 +5838,21 @@ static void DAC960_Message(DAC960_MessageLevel_T MessageLevel,
 	  if (time_after_eq(jiffies, Controller->LastProgressReportTime
 	      + DAC960_ProgressReportingInterval))
 	    {
+#ifdef CONFIG_DEBUG_PRINTK
 	      printk("%sDAC960#%d: %s", DAC960_MessageLevelMap[MessageLevel],
 		     Controller->ControllerNumber, Buffer);
+#else
+	      ;
+#endif
 	      Controller->LastProgressReportTime = jiffies;
 	    }
 	}
+#ifdef CONFIG_DEBUG_PRINTK
       else printk("%sDAC960#%d: %s", DAC960_MessageLevelMap[MessageLevel],
 		  Controller->ControllerNumber, Buffer);
+#else
+      else ;
+#endif
     }
   else if (MessageLevel == DAC960_UserCriticalLevel)
     {
@@ -5824,15 +5860,27 @@ static void DAC960_Message(DAC960_MessageLevel_T MessageLevel,
 	     Buffer);
       Controller->UserStatusLength += Length;
       if (Buffer[0] != '\n' || Length > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%sDAC960#%d: %s", DAC960_MessageLevelMap[MessageLevel],
 	       Controller->ControllerNumber, Buffer);
+#else
+	;
+#endif
     }
   else
     {
       if (BeginningOfLine)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%sDAC960#%d: %s", DAC960_MessageLevelMap[MessageLevel],
 	       Controller->ControllerNumber, Buffer);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
       else printk("%s", Buffer);
+#else
+      else ;
+#endif
     }
   BeginningOfLine = (Buffer[Length-1] == '\n');
 }

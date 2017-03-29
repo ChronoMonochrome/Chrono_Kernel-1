@@ -465,8 +465,8 @@ static u8 _rtl92ce_halset_sysclk(struct ieee80211_hw *hw, u8 data)
 			if ((tmpvalue & BIT(6)))
 				break;
 
-			printk(KERN_ERR "wait for BIT(6) return value %x\n",
-			       tmpvalue);
+//			printk(KERN_ERR "wait for BIT(6) return value %x\n",
+;
 			if (waitcount == 0)
 				break;
 
@@ -1261,8 +1261,8 @@ static u8 _rtl92s_set_sysclk(struct ieee80211_hw *hw, u8 data)
 			if ((tmp & BIT(6)))
 				break;
 
-			printk(KERN_ERR "wait for BIT(6) return value %x\n",
-			       tmp);
+//			printk(KERN_ERR "wait for BIT(6) return value %x\n",
+;
 
 			if (waitcnt == 0)
 				break;
@@ -1321,7 +1321,7 @@ static void _rtl92s_phy_set_rfhalt(struct ieee80211_hw *hw)
 	if (u1btmp & BIT(7)) {
 		u1btmp &= ~(BIT(6) | BIT(7));
 		if (!_rtl92s_set_sysclk(hw, u1btmp)) {
-			printk(KERN_ERR "Switch ctrl path fail\n");
+;
 			return;
 		}
 	}

@@ -238,10 +238,22 @@ static void snd_usbmidi_input_data(struct snd_usb_midi_in_endpoint* ep, int port
 #ifdef DUMP_PACKETS
 static void dump_urb(const char *type, const u8 *data, int length)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "%s packet: [", type);
+#else
+	;
+#endif
 	for (; length > 0; ++data, --length)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", *data);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" ]\n");
+#else
+	;
+#endif
 }
 #else
 #define dump_urb(type, data, length) /* nothing */
@@ -1717,7 +1729,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		snd_printdd(KERN_INFO "MIDIStreaming version %02x.%02x\n",
 			    ms_header->bcdMSC[1], ms_header->bcdMSC[0]);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "MIDIStreaming interface descriptor not found\n");
+#else
+		;
+#endif
 
 	epidx = 0;
 	for (i = 0; i < intfd->bNumEndpoints; ++i) {
@@ -1734,7 +1750,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		if (usb_endpoint_dir_out(ep)) {
 			if (endpoints[epidx].out_ep) {
 				if (++epidx >= MIDI_MAX_ENDPOINTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING "too many endpoints\n");
+#else
+					;
+#endif
 					break;
 				}
 			}
@@ -1754,7 +1774,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		} else {
 			if (endpoints[epidx].in_ep) {
 				if (++epidx >= MIDI_MAX_ENDPOINTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING "too many endpoints\n");
+#else
+					;
+#endif
 					break;
 				}
 			}

@@ -20,8 +20,12 @@ static void pmf_gpio_set_##name(struct gpio_runtime *rt, int on)\
 	if (unlikely(!rt)) return;				\
 	rc = pmf_call_function(rt->node, #name "-mute", &args);	\
 	if (rc && rc != -ENODEV)				\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pmf_gpio_set_" #name	\
 		" failed, rc: %d\n", rc);			\
+#else
+		;
+#endif
 	rt->implementation_private &= ~(1<<bit);		\
 	rt->implementation_private |= (!!on << bit);		\
 }								\
@@ -43,8 +47,12 @@ static void pmf_gpio_set_hw_reset(struct gpio_runtime *rt, int on)
 	if (unlikely(!rt)) return;
 	rc = pmf_call_function(rt->node, "hw-reset", &args);
 	if (rc)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pmf_gpio_set_hw_reset"
 		       " failed, rc: %d\n", rc);
+#else
+		;
+#endif
 }
 
 static void pmf_gpio_all_amps_off(struct gpio_runtime *rt)

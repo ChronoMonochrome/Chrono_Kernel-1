@@ -2883,7 +2883,11 @@ static int __devinit snd_cmipci_create_gameport(struct cmipci *cm, int dev)
 	}
 
 	if (!r) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cmipci: cannot reserve joystick ports\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 

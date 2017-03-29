@@ -887,7 +887,11 @@ static int __init sa1100_serial_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: SA11x0 driver\n");
+#else
+	;
+#endif
 
 	sa1100_init_ports();
 

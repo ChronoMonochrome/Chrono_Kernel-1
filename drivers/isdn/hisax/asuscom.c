@@ -230,7 +230,11 @@ Start_IPAC:
 		goto Start_IPAC;
 	}
 	if (!icnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ASUS IRQ LOOP\n");
+#else
+		;
+#endif
 	writereg(cs->hw.asus.adr, cs->hw.asus.isac, IPAC_MASK, 0xFF);
 	writereg(cs->hw.asus.adr, cs->hw.asus.isac, IPAC_MASK, 0xC0);
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -324,7 +328,11 @@ setup_asuscom(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, Asuscom_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Asuscom ISDNLink driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_ASUSCOM)
 		return (0);
 #ifdef __ISAPNP__
@@ -338,13 +346,21 @@ setup_asuscom(struct IsdnCard *card)
 					ipid->vendor, ipid->function, pnp_d))) {
 					int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "HiSax: %s detected\n",
 						(char *)ipid->driver_data);
+#else
+					;
+#endif
 					pnp_disable_dev(pnp_d);
 					err = pnp_activate_dev(pnp_d);
 					if (err<0) {
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
 							__func__, err);
+#else
+						;
+#endif
 						return(0);
 					}
 					card->para[1] = pnp_port_start(pnp_d, 0);
@@ -364,7 +380,11 @@ setup_asuscom(struct IsdnCard *card)
 			pnp_c = NULL;
 		} 
 		if (!ipid->card_vendor) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "AsusPnP: no ISAPnP card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 	}
@@ -373,14 +393,22 @@ setup_asuscom(struct IsdnCard *card)
 	cs->hw.asus.cfg_reg = card->para[1];
 	cs->irq = card->para[0];
 	if (!request_region(cs->hw.asus.cfg_reg, bytecnt, "asuscom isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: ISDNLink config port %x-%x already in use\n",
 		       cs->hw.asus.cfg_reg,
 		       cs->hw.asus.cfg_reg + bytecnt);
+#else
+		;
+#endif
 		return (0);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ISDNLink: defined at 0x%x IRQ %d\n",
 		cs->hw.asus.cfg_reg, cs->irq);
+#else
+	;
+#endif
 	setup_isac(cs);
 	cs->BC_Read_Reg = &ReadHSCX;
 	cs->BC_Write_Reg = &WriteHSCX;
@@ -399,7 +427,11 @@ setup_asuscom(struct IsdnCard *card)
 		cs->readisacfifo = &ReadISACfifo_IPAC;
 		cs->writeisacfifo = &WriteISACfifo_IPAC;
 		cs->irq_func = &asuscom_interrupt_ipac;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Asus: IPAC version %x\n", val);
+#else
+		;
+#endif
 	} else {
 		cs->subtyp = ASUS_ISACHSCX;
 		cs->hw.asus.adr = cs->hw.asus.cfg_reg + ASUS_ADR;
@@ -414,8 +446,12 @@ setup_asuscom(struct IsdnCard *card)
 		cs->irq_func = &asuscom_interrupt;
 		ISACVersion(cs, "ISDNLink:");
 		if (HscxVersion(cs, "ISDNLink:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 		     	"ISDNLink: wrong HSCX versions check IO address\n");
+#else
+			;
+#endif
 			release_io_asuscom(cs);
 			return (0);
 		}

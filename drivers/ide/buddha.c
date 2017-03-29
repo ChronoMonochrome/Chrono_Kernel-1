@@ -204,8 +204,12 @@ fail_base2:
 		if (type != BOARD_XSURF)
 			z_writeb(0, buddha_board+BUDDHA_IRQ_MR);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: %s IDE controller\n",
 				 buddha_board_name[type]);
+#else
+		;
+#endif
 
 		for (i = 0; i < buddha_num_hwifs; i++) {
 			unsigned long base, ctl, irq_port;

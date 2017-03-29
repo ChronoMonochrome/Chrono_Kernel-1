@@ -84,8 +84,12 @@ static psmouse_ret_t ps2pp_process_byte(struct psmouse *psmouse)
 
 #ifdef DEBUG
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "psmouse.c: Received PS2++ packet #%x, but don't know how to handle.\n",
 				(packet[1] >> 4) | (packet[0] & 0x30));
+#else
+			;
+#endif
 #endif
 		}
 	} else {
@@ -382,7 +386,11 @@ int ps2pp_init(struct psmouse *psmouse, bool set_properties)
 		}
 
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "logips2pp: Detected unknown logitech mouse model %d\n", model);
+#else
+		;
+#endif
 	}
 
 	if (set_properties) {

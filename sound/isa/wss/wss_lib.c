@@ -201,8 +201,12 @@ void snd_wss_out(struct snd_wss *chip, unsigned char reg, unsigned char value)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "out: auto calibration time out "
 			   "- reg = 0x%x, value = 0x%x\n", reg, value);
+#else
+		;
+#endif
 #endif
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | reg);
 	wss_outb(chip, CS4231P(REG), value);
@@ -218,8 +222,12 @@ unsigned char snd_wss_in(struct snd_wss *chip, unsigned char reg)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "in: auto calibration time out "
 			   "- reg = 0x%x\n", reg);
+#else
+		;
+#endif
 #endif
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | reg);
 	mb();
@@ -236,7 +244,11 @@ void snd_cs4236_ext_out(struct snd_wss *chip, unsigned char reg,
 	wss_outb(chip, CS4231P(REG), val);
 	chip->eimage[CS4236_REG(reg)] = val;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "ext out : reg = 0x%x, val = 0x%x\n", reg, val);
+#else
+	;
+#endif
 #endif
 }
 EXPORT_SYMBOL(snd_cs4236_ext_out);
@@ -252,8 +264,12 @@ unsigned char snd_cs4236_ext_in(struct snd_wss *chip, unsigned char reg)
 	{
 		unsigned char res;
 		res = wss_inb(chip, CS4231P(REG));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ext in : reg = 0x%x, val = 0x%x\n",
 		       reg, res);
+#else
+		;
+#endif
 		return res;
 	}
 #endif
@@ -264,91 +280,159 @@ EXPORT_SYMBOL(snd_cs4236_ext_in);
 
 static void snd_wss_debug(struct snd_wss *chip)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"CS4231 REGS:      INDEX = 0x%02x  "
 		"                 STATUS = 0x%02x\n",
 					wss_inb(chip, CS4231P(REGSEL)),
 					wss_inb(chip, CS4231P(STATUS)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x00: left input      = 0x%02x  "
 		"  0x10: alt 1 (CFIG 2)  = 0x%02x\n",
 					snd_wss_in(chip, 0x00),
 					snd_wss_in(chip, 0x10));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x01: right input     = 0x%02x  "
 		"  0x11: alt 2 (CFIG 3)  = 0x%02x\n",
 					snd_wss_in(chip, 0x01),
 					snd_wss_in(chip, 0x11));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x02: GF1 left input  = 0x%02x  "
 		"  0x12: left line in    = 0x%02x\n",
 					snd_wss_in(chip, 0x02),
 					snd_wss_in(chip, 0x12));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x03: GF1 right input = 0x%02x  "
 		"  0x13: right line in   = 0x%02x\n",
 					snd_wss_in(chip, 0x03),
 					snd_wss_in(chip, 0x13));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x04: CD left input   = 0x%02x  "
 		"  0x14: timer low       = 0x%02x\n",
 					snd_wss_in(chip, 0x04),
 					snd_wss_in(chip, 0x14));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x05: CD right input  = 0x%02x  "
 		"  0x15: timer high      = 0x%02x\n",
 					snd_wss_in(chip, 0x05),
 					snd_wss_in(chip, 0x15));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x06: left output     = 0x%02x  "
 		"  0x16: left MIC (PnP)  = 0x%02x\n",
 					snd_wss_in(chip, 0x06),
 					snd_wss_in(chip, 0x16));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x07: right output    = 0x%02x  "
 		"  0x17: right MIC (PnP) = 0x%02x\n",
 					snd_wss_in(chip, 0x07),
 					snd_wss_in(chip, 0x17));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x08: playback format = 0x%02x  "
 		"  0x18: IRQ status      = 0x%02x\n",
 					snd_wss_in(chip, 0x08),
 					snd_wss_in(chip, 0x18));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x09: iface (CFIG 1)  = 0x%02x  "
 		"  0x19: left line out   = 0x%02x\n",
 					snd_wss_in(chip, 0x09),
 					snd_wss_in(chip, 0x19));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0a: pin control     = 0x%02x  "
 		"  0x1a: mono control    = 0x%02x\n",
 					snd_wss_in(chip, 0x0a),
 					snd_wss_in(chip, 0x1a));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0b: init & status   = 0x%02x  "
 		"  0x1b: right line out  = 0x%02x\n",
 					snd_wss_in(chip, 0x0b),
 					snd_wss_in(chip, 0x1b));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0c: revision & mode = 0x%02x  "
 		"  0x1c: record format   = 0x%02x\n",
 					snd_wss_in(chip, 0x0c),
 					snd_wss_in(chip, 0x1c));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0d: loopback        = 0x%02x  "
 		"  0x1d: var freq (PnP)  = 0x%02x\n",
 					snd_wss_in(chip, 0x0d),
 					snd_wss_in(chip, 0x1d));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0e: ply upr count   = 0x%02x  "
 		"  0x1e: ply lwr count   = 0x%02x\n",
 					snd_wss_in(chip, 0x0e),
 					snd_wss_in(chip, 0x1e));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"  0x0f: rec upr count   = 0x%02x  "
 		"  0x1f: rec lwr count   = 0x%02x\n",
 					snd_wss_in(chip, 0x0f),
 					snd_wss_in(chip, 0x1f));
+#else
+	;
+#endif
 }
 
 #endif
@@ -379,16 +463,24 @@ void snd_wss_mce_up(struct snd_wss *chip)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG
 			   "mce_up - auto calibration time out (0)\n");
+#else
+		;
+#endif
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	chip->mce_bit |= CS4231_MCE;
 	timeout = wss_inb(chip, CS4231P(REGSEL));
 	if (timeout == 0x80)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "mce_up [0x%lx]: "
 			   "serious init problem - codec still busy\n",
 			   chip->port);
+#else
+		;
+#endif
 	if (!(timeout & CS4231_MCE))
 		wss_outb(chip, CS4231P(REGSEL),
 			 chip->mce_bit | (timeout & 0x1f));
@@ -407,9 +499,13 @@ void snd_wss_mce_down(struct snd_wss *chip)
 
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "mce_down [0x%lx] - "
 			   "auto calibration time out (0)\n",
 			   (long)CS4231P(REGSEL));
+#else
+		;
+#endif
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	chip->mce_bit &= ~CS4231_MCE;
@@ -417,9 +513,13 @@ void snd_wss_mce_down(struct snd_wss *chip)
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | (timeout & 0x1f));
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	if (timeout == 0x80)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "mce_down [0x%lx]: "
 			   "serious init problem - codec still busy\n",
 			   chip->port);
+#else
+		;
+#endif
 	if ((timeout & CS4231_MCE) == 0 || !(chip->hardware & hw_mask))
 		return;
 
@@ -557,7 +657,11 @@ static unsigned char snd_wss_get_format(struct snd_wss *chip,
 	if (channels > 1)
 		rformat |= CS4231_STEREO;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "get_format: 0x%x (mode=0x%x)\n", format, mode);
+#else
+	;
+#endif
 #endif
 	return rformat;
 }
@@ -807,7 +911,11 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "init: (1)\n");
+#else
+	;
+#endif
 #endif
 	snd_wss_mce_up(chip);
 	spin_lock_irqsave(&chip->reg_lock, flags);
@@ -822,7 +930,11 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "init: (2)\n");
+#else
+	;
+#endif
 #endif
 
 	snd_wss_mce_up(chip);
@@ -835,8 +947,12 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "init: (3) - afei = 0x%x\n",
 		   chip->image[CS4231_ALT_FEATURE_1]);
+#else
+	;
+#endif
 #endif
 
 	spin_lock_irqsave(&chip->reg_lock, flags);
@@ -852,7 +968,11 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "init: (4)\n");
+#else
+	;
+#endif
 #endif
 
 	snd_wss_mce_up(chip);
@@ -865,7 +985,11 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_calibrate_mute(chip, 0);
 
 #ifdef SNDRV_DEBUG_MCE
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "init: (5)\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1379,10 +1503,14 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 6:
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING
 						"unknown CS4235 chip "
 						"(enhanced version = 0x%x)\n",
 						id);
+#else
+					;
+#endif
 				}
 			} else if ((id & 0x1f) == 0x0b) {	/* CS4236/B */
 				switch (id >> 5) {
@@ -1393,10 +1521,14 @@ static int snd_wss_probe(struct snd_wss *chip)
 					chip->hardware = WSS_HW_CS4236B;
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING
 						"unknown CS4236 chip "
 						"(enhanced version = 0x%x)\n",
 						id);
+#else
+					;
+#endif
 				}
 			} else if ((id & 0x1f) == 0x08) {	/* CS4237B */
 				chip->hardware = WSS_HW_CS4237B;
@@ -1407,10 +1539,14 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 7:
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING
 						"unknown CS4237B chip "
 						"(enhanced version = 0x%x)\n",
 						id);
+#else
+					;
+#endif
 				}
 			} else if ((id & 0x1f) == 0x09) {	/* CS4238B */
 				chip->hardware = WSS_HW_CS4238B;
@@ -1420,10 +1556,14 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 7:
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING
 						"unknown CS4238B chip "
 						"(enhanced version = 0x%x)\n",
 						id);
+#else
+					;
+#endif
 				}
 			} else if ((id & 0x1f) == 0x1e) {	/* CS4239 */
 				chip->hardware = WSS_HW_CS4239;
@@ -1433,15 +1573,23 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 6:
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING
 						"unknown CS4239 chip "
 						"(enhanced version = 0x%x)\n",
 						id);
+#else
+					;
+#endif
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING
 					   "unknown CS4236/CS423xB chip "
 					   "(enhanced version = 0x%x)\n", id);
+#else
+				;
+#endif
 			}
 		}
 	}

@@ -208,7 +208,7 @@ if(pDevice->byReAssocCount > 0) {   //reject scan when re-associating!
  }
 
 	 pMgmt->eScanType = WMAC_SCAN_PASSIVE;
-         //printk("SIOCSIWSCAN:WLAN_CMD_BSSID_SCAN\n");
+;
 	bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, NULL);
 	spin_unlock_irq(&pDevice->lock);
 
@@ -1642,7 +1642,7 @@ int iwctl_siwauth(struct net_device *dev,
 		//if(pDevice->bWPADEVUp==TRUE)
 		  // printk("iwctl_siwauth:set WPADEV to enable successful*******\n");
 		//else
-		 //  printk("iwctl_siwauth:set WPADEV to enable fail?????\n");
+;
 		break;
 	case IW_AUTH_RX_UNENCRYPTED_EAPOL:
 		break;
@@ -1904,7 +1904,7 @@ int iwctl_siwmlme(struct net_device *dev,
 	switch(mlme->cmd){
 	case IW_MLME_DEAUTH:
 		//this command seems to be not complete,please test it --einsnliu
-		//printk("iwctl_siwmlme--->send DEAUTH\n");
+;
 		/* bScheduleCommand((void *) pDevice,
 		   WLAN_CMD_DEAUTH,
 		   (PBYTE)&reason); */

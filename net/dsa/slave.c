@@ -381,8 +381,8 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 
 	ret = register_netdev(slave_dev);
 	if (ret) {
-		printk(KERN_ERR "%s: error %d registering interface %s\n",
-				master->name, ret, slave_dev->name);
+//		printk(KERN_ERR "%s: error %d registering interface %s\n",
+;
 		free_netdev(slave_dev);
 		return NULL;
 	}

@@ -2231,8 +2231,8 @@ static int __init moschip7720_init(void)
 	if (retval)
 		goto failed_port_device_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	/* Register with the usb */
 	retval = usb_register(&usb_driver);

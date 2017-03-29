@@ -405,8 +405,12 @@ static int put_ak_reg(struct snd_kcontrol *kcontrol, int addr,
 		nval = mask - nval;
 	if (AK_GET_NEEDSMSB(kcontrol->private_value))
 		nval |= 0x80;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "DEBUG - AK writing reg: chip %x addr %x,
 	   nval %x\n", chip, addr, nval); */
+#else
+	/* ;
+#endif
 	snd_akm4xxx_write(ak, chip, addr, nval);
 	return 1;
 }

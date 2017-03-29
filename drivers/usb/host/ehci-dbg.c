@@ -1006,12 +1006,12 @@ static ssize_t debug_lpm_write(struct file *file, const char __user *user_buf,
 		}
 		temp |= PORT_LPM;
 		ehci_writel(ehci, temp, portsc);
-		printk(KERN_INFO "force enable LPM for port %lu\n", port);
+;
 	} else if (strncmp(buf, "hird=", 5) == 0) {
 		unsigned long hird;
 		if (strict_strtoul(buf + 5, 16, &hird))
 			return -EINVAL;
-		printk(KERN_INFO "setting hird %s %lu\n", buf + 6, hird);
+;
 		temp = ehci_readl(ehci, &ehci->regs->command);
 		temp &= ~CMD_HIRD;
 		temp |= hird << 24;
@@ -1032,7 +1032,7 @@ static ssize_t debug_lpm_write(struct file *file, const char __user *user_buf,
 		}
 		temp &= ~PORT_LPM;
 		ehci_writel(ehci, temp, portsc);
-		printk(KERN_INFO "disabled LPM for port %lu\n", port);
+;
 	} else
 		return -EOPNOTSUPP;
 	return count;

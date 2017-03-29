@@ -222,9 +222,9 @@ static int __init nf_conntrack_sane_init(void)
 				 sane[i][j].tuple.src.l3num, ports[i]);
 			ret = nf_conntrack_helper_register(&sane[i][j]);
 			if (ret) {
-				printk(KERN_ERR "nf_ct_sane: failed to "
-				       "register helper for pf: %d port: %d\n",
-					sane[i][j].tuple.src.l3num, ports[i]);
+//				printk(KERN_ERR "nf_ct_sane: failed to "
+//				       "register helper for pf: %d port: %d\n",
+;
 				nf_conntrack_sane_fini();
 				return ret;
 			}

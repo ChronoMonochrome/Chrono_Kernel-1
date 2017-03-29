@@ -329,11 +329,23 @@ static int browse_rb(struct rb_root *root)
 		struct vm_area_struct *vma;
 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
 		if (vma->vm_start < prev)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("vm_start %lx prev %lx\n", vma->vm_start, prev), i = -1;
+#else
+			;
+#endif
 		if (vma->vm_start < pend)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("vm_start %lx pend %lx\n", vma->vm_start, pend);
+#else
+			;
+#endif
 		if (vma->vm_start > vma->vm_end)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("vm_end %lx < vm_start %lx\n", vma->vm_end, vma->vm_start);
+#else
+			;
+#endif
 		i++;
 		pn = nd;
 		prev = vma->vm_start;
@@ -344,7 +356,11 @@ static int browse_rb(struct rb_root *root)
 		j++;
 	}
 	if (i != j)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("backwards %d, forwards %d\n", j, i), i = 0;
+#else
+		;
+#endif
 	return i;
 }
 
@@ -358,10 +374,18 @@ void validate_mm(struct mm_struct *mm)
 		i++;
 	}
 	if (i != mm->map_count)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
+#else
+		;
+#endif
 	i = browse_rb(&mm->mm_rb);
 	if (i != mm->map_count)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("map_count %d rb %d\n", mm->map_count, i), bug = 1;
+#else
+		;
+#endif
 	BUG_ON(bug);
 }
 #else

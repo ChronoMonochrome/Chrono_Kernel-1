@@ -289,7 +289,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, rtc);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AT91 Real Time Clock driver.\n");
+#else
+	;
+#endif
 	return 0;
 }
 

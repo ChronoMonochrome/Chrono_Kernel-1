@@ -296,7 +296,11 @@ setup_telespci(struct IsdnCard *card)
 #endif
 
 	strcpy(tmp, telespci_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Teles/PCI driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_TELESPCI)
 		return (0);
 
@@ -305,16 +309,28 @@ setup_telespci(struct IsdnCard *card)
 			return(0);
 		cs->irq = dev_tel->irq;
 		if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Teles: No IRQ for PCI card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 		cs->hw.teles0.membase = ioremap(pci_resource_start(dev_tel, 0),
 			PAGE_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Found: Zoran, base-address: 0x%llx, irq: 0x%x\n",
 			(unsigned long long)pci_resource_start(dev_tel, 0),
 			dev_tel->irq);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TelesPCI: No PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 
@@ -327,10 +343,14 @@ setup_telespci(struct IsdnCard *card)
 	writel(0x61000000, cs->hw.teles0.membase + 0x40);
 	/* writel(0x00800000, cs->hw.teles0.membase + 0x200); */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "HiSax: Teles PCI config irq:%d mem:%p\n",
 	       cs->irq,
 	       cs->hw.teles0.membase);
+#else
+	;
+#endif
 
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
@@ -345,8 +365,12 @@ setup_telespci(struct IsdnCard *card)
 	cs->irq_flags |= IRQF_SHARED;
 	ISACVersion(cs, "TelesPCI:");
 	if (HscxVersion(cs, "TelesPCI:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		 "TelesPCI: wrong HSCX versions check IO/MEM addresses\n");
+#else
+		;
+#endif
 		release_io_telespci(cs);
 		return (0);
 	}

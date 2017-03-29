@@ -417,7 +417,11 @@ static unsigned int dsp56k_poll(struct file *file, poll_table *wait)
 		return POLLIN | POLLRDNORM | POLLOUT;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DSP56k driver: Unknown minor device: %d\n", dev);
+#else
+		;
+#endif
 		return 0;
 	}
 }
@@ -496,12 +500,20 @@ static int __init dsp56k_init_driver(void)
 	int err = 0;
 
 	if(!MACH_IS_ATARI || !ATARIHW_PRESENT(DSP56K)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DSP56k driver: Hardware not present\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if(register_chrdev(DSP56K_MAJOR, "dsp56k", &dsp56k_fops)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DSP56k driver: Unable to register driver\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	dsp56k_class = class_create(THIS_MODULE, "dsp56k");
@@ -512,7 +524,11 @@ static int __init dsp56k_init_driver(void)
 	device_create(dsp56k_class, NULL, MKDEV(DSP56K_MAJOR, 0), NULL,
 		      "dsp56k");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 	goto out;
 
 out_chrdev:

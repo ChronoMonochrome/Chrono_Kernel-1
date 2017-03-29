@@ -208,8 +208,12 @@ static int acq_close(struct inode *inode, struct file *file)
 	if (expect_close == 42) {
 		acq_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		acq_keepalive();
 	}
 	clear_bit(0, &acq_is_open);
@@ -266,7 +270,11 @@ static int __devinit acq_probe(struct platform_device *dev)
 							WATCHDOG_MINOR, ret);
 		goto unreg_regions;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. (nowayout=%d)\n", nowayout);
+#else
+	;
+#endif
 
 	return 0;
 unreg_regions:
@@ -308,8 +316,12 @@ static int __init acq_init(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	      "WDT driver for Acquire single board computer initialising.\n");
+#else
+	;
+#endif
 
 	err = platform_driver_register(&acquirewdt_driver);
 	if (err)
@@ -332,7 +344,11 @@ static void __exit acq_exit(void)
 {
 	platform_device_unregister(acq_platform_device);
 	platform_driver_unregister(&acquirewdt_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(acq_init);

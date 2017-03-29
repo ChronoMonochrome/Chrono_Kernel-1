@@ -129,7 +129,7 @@ static struct sk_buff* ieee80211_ADDBA(struct ieee80211_device* ieee, u8* Dst, P
 	if (ACT_ADDBARSP == type)
 	{
 		// Status Code
-		printk("=====>to send ADDBARSP\n");
+;
 		tmp = cpu_to_le16(StatusCode);
 		memcpy(tag, (u8*)&tmp, 2);
 		tag += 2;
@@ -310,7 +310,7 @@ int ieee80211_rx_ADDBAReq( struct ieee80211_device* ieee, struct sk_buff *skb)
 	pBaTimeoutVal = (u16*)(tag + 5);
 	pBaStartSeqCtrl = (PSEQUENCE_CONTROL)(req + 7);
 
-	printk("====================>rx ADDBAREQ from :%pM\n", dst);
+;
 //some other capability is not ready now.
 	if(	(ieee->current_network.qos_data.active == 0) ||
 		(ieee->pHTInfo->bCurrentHTSupport == false)) //||

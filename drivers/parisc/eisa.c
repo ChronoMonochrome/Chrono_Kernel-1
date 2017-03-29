@@ -46,6 +46,7 @@
 #include <asm/eisa_eeprom.h>
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define EISA_DBG(msg, arg... ) printk(KERN_DEBUG "eisa: " msg , ## arg )
 #else
 #define EISA_DBG(msg, arg... )  
@@ -55,6 +56,9 @@
 #define MIRAGE_EEPROM_BASE_ADDR 0xF00C0400
 
 static DEFINE_SPINLOCK(eisa_irq_lock);
+#else
+#define EISA_DBG(msg, arg... ) ;
+#endif
 
 void __iomem *eisa_eeprom_addr __read_mostly;
 
@@ -242,7 +246,11 @@ static irqreturn_t eisa_irq(int wax_irq, void *intr_dev)
 
 static irqreturn_t dummy_irq2_handler(int _, void *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "eisa: uhh, irq2?\n");
+#else
+	;
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -305,8 +313,12 @@ static int __init eisa_probe(struct parisc_device *dev)
 
 	char *name = is_mongoose(dev) ? "Mongoose" : "Wax";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s EISA Adapter found at 0x%08lx\n", 
 		name, (unsigned long)dev->hpa.start);
+#else
+	;
+#endif
 
 	eisa_dev.hba.dev = dev;
 	eisa_dev.hba.iommu = ccio_get_iommu(dev);
@@ -403,9 +415,13 @@ static unsigned int eisa_irq_configured;
 void eisa_make_irq_level(int num)
 {
 	if (eisa_irq_configured& (1<<num)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "IRQ %d polarity configured twice (last to level)\n", 
 		       num);
+#else
+		;
+#endif
 	}
 	eisa_irq_level |= (1<<num); /* set the corresponding bit */
 	eisa_irq_configured |= (1<<num); /* set the corresponding bit */
@@ -414,9 +430,13 @@ void eisa_make_irq_level(int num)
 void eisa_make_irq_edge(int num)
 {
 	if (eisa_irq_configured& (1<<num)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING 
 		       "IRQ %d polarity configured twice (last to edge)\n",
 		       num);
+#else
+		;
+#endif
 	}
 	eisa_irq_level &= ~(1<<num); /* clear the corresponding bit */
 	eisa_irq_configured |= (1<<num); /* set the corresponding bit */

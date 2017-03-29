@@ -54,7 +54,7 @@ static int nf_conntrack_tstamp_init_sysctl(struct net *net)
 	net->ct.tstamp_sysctl_header = register_net_sysctl_table(net,
 			nf_net_netfilter_sysctl_path, table);
 	if (!net->ct.tstamp_sysctl_header) {
-		printk(KERN_ERR "nf_ct_tstamp: can't register to sysctl.\n");
+;
 		goto out_register;
 	}
 	return 0;
@@ -93,8 +93,8 @@ int nf_conntrack_tstamp_init(struct net *net)
 	if (net_eq(net, &init_net)) {
 		ret = nf_ct_extend_register(&tstamp_extend);
 		if (ret < 0) {
-			printk(KERN_ERR "nf_ct_tstamp: Unable to register "
-					"extension\n");
+//			printk(KERN_ERR "nf_ct_tstamp: Unable to register "
+;
 			goto out_extend_register;
 		}
 	}

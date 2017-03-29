@@ -143,9 +143,13 @@ static int selinux_set_mapping(struct policydb *pol,
 
 		p_out->value = string_to_security_class(pol, p_in->name);
 		if (!p_out->value) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "SELinux:  Class %s not defined in policy.\n",
 			       p_in->name);
+#else
+			;
+#endif
 			if (pol->reject_unknown)
 				goto err;
 			p_out->num_perms = 0;
@@ -163,9 +167,13 @@ static int selinux_set_mapping(struct policydb *pol,
 			p_out->perms[k] = string_to_av_perm(pol, p_out->value,
 							    p_in->perms[k]);
 			if (!p_out->perms[k]) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "SELinux:  Permission %s in class %s not defined in policy.\n",
 				       p_in->perms[k], p_in->name);
+#else
+				;
+#endif
 				if (pol->reject_unknown)
 					goto err;
 				print_unknown_handle = true;
@@ -177,8 +185,12 @@ static int selinux_set_mapping(struct policydb *pol,
 	}
 
 	if (print_unknown_handle)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SELinux: the above unknown classes and permissions will be %s\n",
 		       pol->allow_unknown ? "allowed" : "denied");
+#else
+		;
+#endif
 
 	*out_map_p = out_map;
 	*out_map_size = i;
@@ -669,7 +681,11 @@ static void context_struct_compute_av(struct context *scontext,
 
 	if (unlikely(!tclass || tclass > policydb.p_classes.nprim)) {
 		if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "SELinux:  Invalid class %hu\n", tclass);
+#else
+			;
+#endif
 		return;
 	}
 
@@ -1824,7 +1840,11 @@ static inline int convert_context_handle_invalid_context(struct context *context
 		return -EINVAL;
 
 	if (!context_struct_to_string(context, &s, &len)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SELinux:  Context %s would be invalid if enforcing\n", s);
+#else
+		;
+#endif
 		kfree(s);
 	}
 	return 0;
@@ -1874,8 +1894,12 @@ static int convert_context(u32 key,
 					      c->len, &ctx, SECSID_NULL);
 		kfree(s);
 		if (!rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SELinux:  Context %s became valid (mapped).\n",
 			       c->str);
+#else
+			;
+#endif
 			/* Replace string with mapped representation. */
 			kfree(c->str);
 			memcpy(c, &ctx, sizeof(*c));
@@ -1976,8 +2000,12 @@ bad:
 	context_destroy(c);
 	c->str = s;
 	c->len = len;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SELinux:  Context %s became invalid (unmapped).\n",
 	       c->str);
+#else
+	;
+#endif
 	rc = 0;
 	goto out;
 }
@@ -2061,9 +2089,17 @@ int security_load_policy(void *data, size_t len)
 	newpolicydb.len = len;
 	/* If switching between different policy types, log MLS status */
 	if (policydb.mls_enabled && !newpolicydb.mls_enabled)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SELinux: Disabling MLS support...\n");
+#else
+		;
+#endif
 	else if (!policydb.mls_enabled && newpolicydb.mls_enabled)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SELinux: Enabling MLS support...\n");
+#else
+		;
+#endif
 
 	rc = policydb_load_isids(&newpolicydb, &newsidtab);
 	if (rc) {

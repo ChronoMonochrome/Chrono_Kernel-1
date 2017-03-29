@@ -76,8 +76,8 @@ static int ebi2_lcd_probe(struct platform_device *pdev)
 						pdev->resource[i].end -
 						pdev->resource[i].start + 1);
 				if (!ebi2_base) {
-					printk(KERN_ERR
-						"ebi2_base ioremap failed!\n");
+//					printk(KERN_ERR
+;
 					return -ENOMEM;
 				}
 				ebi2_lcd_cfg0 = (void *)(ebi2_base + 0x20);
@@ -88,8 +88,8 @@ static int ebi2_lcd_probe(struct platform_device *pdev)
 						pdev->resource[i].end -
 						pdev->resource[i].start + 1);
 				if (!lcd01_base) {
-					printk(KERN_ERR
-						"lcd01_base ioremap failed!\n");
+//					printk(KERN_ERR
+;
 					return -ENOMEM;
 				}
 			} else if (!strncmp(pdev->resource[i].name,
@@ -98,8 +98,8 @@ static int ebi2_lcd_probe(struct platform_device *pdev)
 						pdev->resource[i].end -
 						pdev->resource[i].start + 1);
 				if (!lcd02_base) {
-					printk(KERN_ERR
-						"lcd02_base ioremap failed!\n");
+//					printk(KERN_ERR
+;
 					return -ENOMEM;
 				}
 			}
@@ -137,7 +137,7 @@ static int ebi2_lcd_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "ebi2_lcd_probe: platform_device_add_data failed!\n");
+;
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}

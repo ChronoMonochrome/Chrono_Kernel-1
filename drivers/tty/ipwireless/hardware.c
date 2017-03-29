@@ -78,6 +78,7 @@ static void report_timing(void)
 
 		timing_stats.last_report_time = jiffies;
 		if (!first)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 			       ": %u us elapsed - read %lu bytes in %u us, wrote %lu bytes in %u us\n",
 			       jiffies_to_usecs(since),
@@ -85,6 +86,9 @@ static void report_timing(void)
 			       jiffies_to_usecs(timing_stats.read_time),
 			       timing_stats.write_bytes,
 			       jiffies_to_usecs(timing_stats.write_time));
+#else
+			;
+#endif
 
 		timing_stats.read_time = 0;
 		timing_stats.write_time = 0;
@@ -627,8 +631,12 @@ static void queue_received_packet(struct ipw_hardware *hw,
 
 	/* Discard packet if channel index is out of range. */
 	if (channel_idx >= NL_NUM_OF_ADDRESSES) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 		       ": data packet has bad address %u\n", address);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -770,9 +778,13 @@ static void handle_received_CTRL_packet(struct ipw_hardware *hw,
 	unsigned int changed_mask;
 
 	if (len != sizeof(struct ipw_control_packet_body)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 		       ": control packet was %d bytes - wrong size!\n",
 		       len);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -861,8 +873,12 @@ static void do_receive_packet(struct ipw_hardware *hw)
 	if (hw->hw_version == HW_VERSION_1) {
 		len = inw(hw->base_port + IODRR);
 		if (len > hw->ll_mtu) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 			       ": received a packet of %u bytes - longer than the MTU!\n", len);
+#else
+			;
+#endif
 			outw(DCR_RXDONE | DCR_RXRESET, hw->base_port + IODCR);
 			return;
 		}
@@ -877,8 +893,12 @@ static void do_receive_packet(struct ipw_hardware *hw)
 	} else {
 		len = inw(hw->base_port);
 		if (len > hw->ll_mtu) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 			       ": received a packet of %u bytes - longer than the MTU!\n", len);
+#else
+			;
+#endif
 			writew(MEMRX_PCINTACKK,
 				&hw->memory_info_regs->memreg_pc_interrupt_ack);
 			return;
@@ -1123,8 +1143,12 @@ static irqreturn_t ipwireless_handle_v2_v3_interrupt(int irq,
 		if (hw->memreg_tx == &hw->memory_info_regs->memreg_tx_new) {
 			memtx = readw(&hw->memory_info_regs->memreg_tx_old);
 			if (memtx & MEMTX_TX) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 					": Using memreg_tx_old\n");
+#else
+				;
+#endif
 				hw->memreg_tx =
 					&hw->memory_info_regs->memreg_tx_old;
 			} else {
@@ -1164,8 +1188,12 @@ static irqreturn_t ipwireless_handle_v2_v3_interrupt(int irq,
 			 */
 			if (memtx_serial != 0) {
 				hw->serial_number_detected = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 					": memreg_tx serial num detected\n");
+#else
+				;
+#endif
 
 				spin_lock_irqsave(&hw->lock, flags);
 				hw->rx_ready++;
@@ -1192,18 +1220,30 @@ static irqreturn_t ipwireless_handle_v2_v3_interrupt(int irq,
 	else if (!rx_repeat) {
 		if (hw->memreg_tx == &hw->memory_info_regs->memreg_tx_new) {
 			if (hw->serial_number_detected)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING IPWIRELESS_PCCARD_NAME
 					": spurious interrupt - new_tx mode\n");
+#else
+				;
+#endif
 			else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING IPWIRELESS_PCCARD_NAME
 					": no valid memreg_tx value - switching to the old memreg_tx\n");
+#else
+				;
+#endif
 				hw->memreg_tx =
 					&hw->memory_info_regs->memreg_tx_old;
 				try_mem_tx_old = 1;
 			}
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING IPWIRELESS_PCCARD_NAME
 					": spurious interrupt - old_tx mode\n");
+#else
+			;
+#endif
 	}
 
 	} while (try_mem_tx_old == 1);
@@ -1497,7 +1537,11 @@ static void handle_setup_get_version_rsp(struct ipw_hardware *hw,
 {
 	del_timer(&hw->setup_timer);
 	hw->initializing = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO IPWIRELESS_PCCARD_NAME ": card is ready.\n");
+#else
+	;
+#endif
 
 	if (vers_no == TL_SETUP_VERSION)
 		__handle_setup_get_version_rsp(hw);
@@ -1531,8 +1575,12 @@ static void handle_received_SETUP_packet(struct ipw_hardware *hw,
 	const union ipw_setup_rx_msg *rx_msg = (const union ipw_setup_rx_msg *) data;
 
 	if (address != ADDR_SETUP_PROT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 		       ": setup packet has bad address %d\n", address);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -1547,27 +1595,43 @@ static void handle_received_SETUP_packet(struct ipw_hardware *hw,
 		if (ipwireless_debug) {
 			unsigned int channel_idx = rx_msg->open_msg.port_no - 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 			       ": OPEN_MSG [channel %u] reply received\n",
 			       channel_idx);
+#else
+			;
+#endif
 		}
 		break;
 
 	case TL_SETUP_SIGNO_INFO_MSG_ACK:
 		if (ipwireless_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 			       ": card successfully configured as NDISWAN\n");
+#else
+			;
+#endif
 		break;
 
 	case TL_SETUP_SIGNO_REBOOT_MSG:
 		if (hw->to_setup)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 			       ": Setup not completed - ignoring reboot msg\n");
+#else
+			;
+#endif
 		else {
 			struct ipw_setup_reboot_msg_ack *packet;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 			       ": Acknowledging REBOOT message\n");
+#else
+			;
+#endif
 			packet = alloc_ctrl_packet(
 					sizeof(struct ipw_setup_reboot_msg_ack),
 					ADDR_SETUP_PROT, TL_PROTOCOLID_SETUP,
@@ -1581,9 +1645,13 @@ static void handle_received_SETUP_packet(struct ipw_hardware *hw,
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 		       ": unknown setup message %u received\n",
 		       (unsigned int) rx_msg->sig_no);
+#else
+		;
+#endif
 	}
 }
 
@@ -1662,8 +1730,12 @@ void ipwireless_init_hardware_v2_v3(struct ipw_hardware *hw)
 {
 	hw->initializing = 1;
 	hw->init_loops = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 	       ": waiting for card to start up...\n");
+#else
+	;
+#endif
 	ipwireless_setup_timer((unsigned long) hw);
 }
 
@@ -1676,16 +1748,24 @@ static void ipwireless_setup_timer(unsigned long data)
 	if (hw->init_loops == TL_SETUP_MAX_VERSION_QRY &&
 			hw->hw_version == HW_VERSION_2 &&
 			hw->memreg_tx == &hw->memory_info_regs->memreg_tx_new) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 				": failed to startup using TX2, trying TX\n");
+#else
+		;
+#endif
 
 		hw->memreg_tx = &hw->memory_info_regs->memreg_tx_old;
 		hw->init_loops = 0;
 	}
 	/* Give up after a certain number of retries */
 	if (hw->init_loops == TL_SETUP_MAX_VERSION_QRY) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 		       ": card failed to start up!\n");
+#else
+		;
+#endif
 		hw->initializing = 0;
 	} else {
 		/* Do not attempt to write to the board if it is not present. */

@@ -4051,9 +4051,9 @@ int btrfs_relocate_block_group(struct btrfs_root *extent_root, u64 group_start)
 		goto out;
 	}
 
-	printk(KERN_INFO "btrfs: relocating block group %llu flags %llu\n",
-	       (unsigned long long)rc->block_group->key.objectid,
-	       (unsigned long long)rc->block_group->flags);
+//	printk(KERN_INFO "btrfs: relocating block group %llu flags %llu\n",
+//	       (unsigned long long)rc->block_group->key.objectid,
+;
 
 	btrfs_start_delalloc_inodes(fs_info->tree_root, 0);
 	btrfs_wait_ordered_extents(fs_info->tree_root, 0, 0);
@@ -4073,8 +4073,8 @@ int btrfs_relocate_block_group(struct btrfs_root *extent_root, u64 group_start)
 		if (rc->extents_found == 0)
 			break;
 
-		printk(KERN_INFO "btrfs: found %llu extents\n",
-			(unsigned long long)rc->extents_found);
+//		printk(KERN_INFO "btrfs: found %llu extents\n",
+;
 
 		if (rc->stage == MOVE_DATA_EXTENTS && rc->found_file_extent) {
 			btrfs_wait_ordered_range(rc->data_inode, 0, (u64)-1);

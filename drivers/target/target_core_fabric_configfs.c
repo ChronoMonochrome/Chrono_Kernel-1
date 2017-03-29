@@ -60,7 +60,11 @@ static void target_fabric_setup_##_name##_cit(struct target_fabric_configfs *tf)
 	cit->ct_group_ops = _group_ops;					\
 	cit->ct_attrs = _attrs;						\
 	cit->ct_owner = tf->tf_module;					\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Setup generic %s\n", __stringify(_name));		\
+#else
+	;
+#endif
 }
 
 /* Start of tfc_tpg_mappedlun_cit */
@@ -202,10 +206,14 @@ static ssize_t target_fabric_mappedlun_store_write_protect(
 			TRANSPORT_LUNFLAGS_READ_WRITE,
 			lacl->se_lun_nacl);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s_ConfigFS: Changed Initiator ACL: %s"
 		" Mapped LUN: %u Write Protect bit to %s\n",
 		TPG_TFO(se_tpg)->get_fabric_name(),
 		lacl->initiatorname, lacl->mapped_lun, (op) ? "ON" : "OFF");
+#else
+	;
+#endif
 
 	return count;
 

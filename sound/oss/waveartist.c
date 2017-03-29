@@ -209,10 +209,22 @@ waveartist_reset(wavnc_info *devc)
 	} while (--timeout);
 
 	if (timeout == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "WaveArtist: reset timeout ");
+#else
+		;
+#endif
 		if (res != (unsigned int)-1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(res=%04X)", res);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		return 1;
 	}
 	return 0;
@@ -232,12 +244,24 @@ waveartist_cmd(wavnc_info *devc,
 	unsigned int i;
 
 	if (debug_flg & DEBUG_CMD) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("waveartist_cmd: cmd=");
+#else
+		;
+#endif
 
 		for (i = 0; i < nr_cmd; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%04X ", cmd[i]);
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	if (inb(io_base + STATR) & CMD_RF) {
@@ -249,7 +273,11 @@ waveartist_cmd(wavnc_info *devc,
 		old_data = inw(io_base + CMDR);
 
 		if (debug_flg & DEBUG_CMD)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("flushed %04X...", old_data);
+#else
+			;
+#endif
 
 		udelay(10);
 	}
@@ -282,14 +310,30 @@ waveartist_cmd(wavnc_info *devc,
 
 	if (debug_flg & DEBUG_CMD) {
 		if (!timed_out) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("waveartist_cmd: resp=");
+#else
+			;
+#endif
 
 			for (i = 0; i < nr_resp; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%04X ", resp[i]);
+#else
+				;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("waveartist_cmd: timed out\n");
+#else
+			;
+#endif
 	}
 
 	return timed_out ? 1 : 0;
@@ -428,8 +472,12 @@ waveartist_output_block(int dev, unsigned long buf, int __count, int intrflag)
 	unsigned int	count = __count; 
 
 	if (debug_flg & DEBUG_OUT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("waveartist: output block, buf=0x%lx, count=0x%x...\n",
 			buf, count);
+#else
+		;
+#endif
 	/*
 	 * 16 bit data
 	 */
@@ -473,8 +521,12 @@ waveartist_start_input(int dev, unsigned long buf, int __count, int intrflag)
 	unsigned int	count = __count;
 
 	if (debug_flg & DEBUG_IN)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("waveartist: start input, buf=0x%lx, count=0x%x...\n",
 			buf, count);
+#else
+		;
+#endif
 
 	if (portc->audio_format & (AFMT_S16_LE | AFMT_S16_BE))	/* 16 bit data */
 		count >>= 1;
@@ -573,39 +625,71 @@ waveartist_prepare_for_input(int dev, int bsize, int bcount)
 	spin_lock_irqsave(&waveartist_lock, flags);
 
 	if (waveartist_cmd2(devc, WACMD_INPUTFORMAT, bits))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the "
 		       "record format to %d\n", portc->audio_format);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_INPUTCHANNELS, portc->channels))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting record "
 		       "to %d channels\n", portc->channels);
+#else
+		;
+#endif
 
 	/*
 	 * write cmd SetSampleSpeedTimeConstant
 	 */
 	if (waveartist_cmd2(devc, WACMD_INPUTSPEED, speed))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the record "
 		       "speed to %dHz.\n", portc->speed);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_INPUTDMA, 1))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the record "
 		       "data path to 0x%X\n", 1);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_INPUTFORMAT, bits))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the record "
 		       "format to %d\n", portc->audio_format);
+#else
+		;
+#endif
 
 	devc->xfer_count = 0;
 	spin_unlock_irqrestore(&waveartist_lock, flags);
 	waveartist_halt_input(dev);
 
 	if (debug_flg & DEBUG_INTR) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA CTLR reg: 0x%02X.\n",
 		       inb(devc->hw.io_base + CTLR));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA STAT reg: 0x%02X.\n",
 		       inb(devc->hw.io_base + STATR));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA IRQS reg: 0x%02X.\n",
 		       inb(devc->hw.io_base + IRQSTAT));
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -629,29 +713,57 @@ waveartist_prepare_for_output(int dev, int bsize, int bcount)
 
 	if (waveartist_cmd2(devc, WACMD_OUTPUTSPEED, speed) &&
 	    waveartist_cmd2(devc, WACMD_OUTPUTSPEED, speed))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the playback "
 		       "speed to %dHz.\n", portc->speed);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_OUTPUTCHANNELS, portc->channels))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the playback "
 		       "to %d channels\n", portc->channels);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_OUTPUTDMA, 0))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the playback "
 		       "data path to 0x%X\n", 0);
+#else
+		;
+#endif
 
 	if (waveartist_cmd2(devc, WACMD_OUTPUTFORMAT, bits))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: error setting the playback "
 		       "format to %d\n", portc->audio_format);
+#else
+		;
+#endif
 
 	devc->xfer_count = 0;
 	spin_unlock_irqrestore(&waveartist_lock, flags);
 	waveartist_halt_output(dev);
 
 	if (debug_flg & DEBUG_INTR) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA CTLR reg: 0x%02X.\n",inb(devc->hw.io_base + CTLR));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA STAT reg: 0x%02X.\n",inb(devc->hw.io_base + STATR));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WA IRQS reg: 0x%02X.\n",inb(devc->hw.io_base + IRQSTAT));
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -732,12 +844,28 @@ waveartist_trigger(int dev, int state)
 	unsigned long	flags;
 
 	if (debug_flg & DEBUG_TRIGGER) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("wavnc: audio trigger ");
+#else
+		;
+#endif
 		if (state & PCM_ENABLE_INPUT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("in ");
+#else
+			;
+#endif
 		if (state & PCM_ENABLE_OUTPUT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("out");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	spin_lock_irqsave(&waveartist_lock, flags);
@@ -837,13 +965,21 @@ waveartist_intr(int irq, void *dev_id)
 	status    = inb(devc->hw.io_base + STATR);
 
 	if (debug_flg & DEBUG_INTR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("waveartist_intr: stat=%02x, irqstat=%02x\n",
 		       status, irqstatus);
+#else
+		;
+#endif
 
 	if (status & IRQ_REQ)	/* Clear interrupt */
 		waveartist_iack(devc);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: unexpected interrupt\n");
+#else
+		;
+#endif
 
 	if (irqstatus & 0x01) {
 		int temp = 1;
@@ -859,11 +995,19 @@ waveartist_intr(int irq, void *dev_id)
 			temp = 0;
 		}
 		if (temp)	//default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "waveartist: Unknown interrupt\n");
+#else
+			;
+#endif
 	}
 	if (irqstatus & 0x2)
 		// We do not use SB mode natively...
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: Unexpected SB interrupt...\n");
+#else
+		;
+#endif
 	spin_unlock(&waveartist_lock);
 	return IRQ_HANDLED;
 }
@@ -1209,7 +1353,11 @@ waveartist_mixer_reset(wavnc_info *devc)
 	int i;
 
 	if (debug_flg & DEBUG_MIXER)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: mixer_reset\n", devc->hw.name);
+#else
+		;
+#endif
 
 	/*
 	 * reset mixer cmd
@@ -1333,26 +1481,42 @@ static int __init probe_waveartist(struct address_info *hw_config)
 	wavnc_info *devc = &adev_info[nr_waveartist_devs];
 
 	if (nr_waveartist_devs >= MAX_AUDIO_DEV) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: too many audio devices\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
 	if (!request_region(hw_config->io_base, 15, hw_config->name))  {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "WaveArtist: I/O port conflict\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
 	if (hw_config->irq > 15 || hw_config->irq < 0) {
 		release_region(hw_config->io_base, 15);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "WaveArtist: Bad IRQ %d\n",
 		       hw_config->irq);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	if (hw_config->dma != 3) {
 		release_region(hw_config->io_base, 15);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "WaveArtist: Bad DMA %d\n",
 		       hw_config->dma);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -1453,8 +1617,12 @@ static void __exit unload_waveartist(struct address_info *hw)
 		for (; i < nr_waveartist_devs; i++)
 			adev_info[i] = adev_info[i + 1];
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "waveartist: can't find device "
 		       "to unload\n");
+#else
+		;
+#endif
 }
 
 #ifdef CONFIG_ARCH_NETWINDER
@@ -1549,7 +1717,11 @@ vnc_volume_slider(wavnc_info *devc)
 		old_slider_volume = volume;
 
 		if (debug_flg & DEBUG_MIXER)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Slider volume: %d.\n", volume);
+#else
+			;
+#endif
 	}
 
 	return old_slider_volume;

@@ -49,7 +49,11 @@ static int stv6110x_read_reg(struct stv6110x_state *stv6110x, u8 reg, u8 *data)
 
 	ret = i2c_transfer(stv6110x->i2c, msg, 2);
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(FE_ERROR, 1, "I/O Error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 	*data = b1[0];
@@ -77,7 +81,11 @@ static int stv6110x_write_regs(struct stv6110x_state *stv6110x, int start, u8 da
 
 	ret = i2c_transfer(stv6110x->i2c, &msg, 1);
 	if (ret != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(FE_ERROR, 1, "I/O Error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -97,7 +105,11 @@ static int stv6110x_init(struct dvb_frontend *fe)
 	ret = stv6110x_write_regs(stv6110x, 0, stv6110x->regs,
 				  ARRAY_SIZE(stv6110x->regs));
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(FE_ERROR, 1, "Initialization failed");
+#else
+		d;
+#endif
 		return -1;
 	}
 
@@ -294,7 +306,11 @@ static int stv6110x_set_mode(struct dvb_frontend *fe, enum tuner_mode mode)
 
 	ret = stv6110x_write_reg(stv6110x, STV6110x_CTRL1, stv6110x->regs[STV6110x_CTRL1]);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(FE_ERROR, 1, "I/O Error");
+#else
+		d;
+#endif
 		return -EIO;
 	}
 
@@ -395,7 +411,11 @@ struct stv6110x_devctl *stv6110x_attach(struct dvb_frontend *fe,
 	fe->tuner_priv		= stv6110x;
 	fe->ops.tuner_ops	= stv6110x_ops;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Attaching STV6110x\n", __func__);
+#else
+	;
+#endif
 	return stv6110x->devctl;
 }
 EXPORT_SYMBOL(stv6110x_attach);

@@ -435,7 +435,11 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
 			chip->csp = xcsp->private_data;
 			chip->hardware = SB_HW_16CSP;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO PFX "warning - CSP chip not detected on soundcard #%i\n", dev + 1);
+#else
+			;
+#endif
 		}
 	}
 #endif

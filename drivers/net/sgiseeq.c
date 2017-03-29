@@ -252,31 +252,31 @@ static void sgiseeq_dump_rings(void)
 	if (once)
 		return;
 	once++;
-	printk("RING DUMP:\n");
+;
 	for (i = 0; i < SEEQ_RX_BUFFERS; i++) {
-		printk("RX [%d]: @(%p) [%08x,%08x,%08x] ",
-		       i, (&r[i]), r[i].rdma.pbuf, r[i].rdma.cntinfo,
-		       r[i].rdma.pnext);
+//		printk("RX [%d]: @(%p) [%08x,%08x,%08x] ",
+//		       i, (&r[i]), r[i].rdma.pbuf, r[i].rdma.cntinfo,
+;
 		i += 1;
-		printk("-- [%d]: @(%p) [%08x,%08x,%08x]\n",
-		       i, (&r[i]), r[i].rdma.pbuf, r[i].rdma.cntinfo,
-		       r[i].rdma.pnext);
+//		printk("-- [%d]: @(%p) [%08x,%08x,%08x]\n",
+//		       i, (&r[i]), r[i].rdma.pbuf, r[i].rdma.cntinfo,
+;
 	}
 	for (i = 0; i < SEEQ_TX_BUFFERS; i++) {
-		printk("TX [%d]: @(%p) [%08x,%08x,%08x] ",
-		       i, (&t[i]), t[i].tdma.pbuf, t[i].tdma.cntinfo,
-		       t[i].tdma.pnext);
+//		printk("TX [%d]: @(%p) [%08x,%08x,%08x] ",
+//		       i, (&t[i]), t[i].tdma.pbuf, t[i].tdma.cntinfo,
+;
 		i += 1;
-		printk("-- [%d]: @(%p) [%08x,%08x,%08x]\n",
-		       i, (&t[i]), t[i].tdma.pbuf, t[i].tdma.cntinfo,
-		       t[i].tdma.pnext);
+//		printk("-- [%d]: @(%p) [%08x,%08x,%08x]\n",
+//		       i, (&t[i]), t[i].tdma.pbuf, t[i].tdma.cntinfo,
+;
 	}
-	printk("INFO: [rx_new = %d rx_old=%d] [tx_new = %d tx_old = %d]\n",
-	       gpriv->rx_new, gpriv->rx_old, gpriv->tx_new, gpriv->tx_old);
-	printk("RREGS: rx_cbptr[%08x] rx_ndptr[%08x] rx_ctrl[%08x]\n",
-	       hregs->rx_cbptr, hregs->rx_ndptr, hregs->rx_ctrl);
-	printk("TREGS: tx_cbptr[%08x] tx_ndptr[%08x] tx_ctrl[%08x]\n",
-	       hregs->tx_cbptr, hregs->tx_ndptr, hregs->tx_ctrl);
+//	printk("INFO: [rx_new = %d rx_old=%d] [tx_new = %d tx_old = %d]\n",
+;
+//	printk("RREGS: rx_cbptr[%08x] rx_ndptr[%08x] rx_ctrl[%08x]\n",
+;
+//	printk("TREGS: tx_cbptr[%08x] tx_ndptr[%08x] tx_ctrl[%08x]\n",
+;
 }
 #endif
 
@@ -380,8 +380,8 @@ memory_squeeze:
 					dev->stats.rx_packets++;
 					dev->stats.rx_bytes += len;
 				} else {
-					printk(KERN_NOTICE "%s: Memory squeeze, deferring packet.\n",
-						dev->name);
+//					printk(KERN_NOTICE "%s: Memory squeeze, deferring packet.\n",
+;
 					dev->stats.rx_dropped++;
 				}
 			} else {
@@ -530,7 +530,7 @@ static int sgiseeq_open(struct net_device *dev)
 	int err;
 
 	if (request_irq(irq, sgiseeq_interrupt, 0, sgiseeqstr, dev)) {
-		printk(KERN_ERR "Seeq8003: Can't get irq %d\n", dev->irq);
+;
 		return -EAGAIN;
 	}
 
@@ -647,7 +647,7 @@ static int sgiseeq_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 static void timeout(struct net_device *dev)
 {
-	printk(KERN_NOTICE "%s: transmit timed out, resetting\n", dev->name);
+;
 	sgiseeq_reset(dev);
 
 	dev->trans_start = jiffies; /* prevent tx timeout */
@@ -732,7 +732,7 @@ static int __devinit sgiseeq_probe(struct platform_device *pdev)
 
 	dev = alloc_etherdev(sizeof (struct sgiseeq_private));
 	if (!dev) {
-		printk(KERN_ERR "Sgiseeq: Etherdev alloc failed, aborting.\n");
+;
 		err = -ENOMEM;
 		goto err_out;
 	}
@@ -744,7 +744,7 @@ static int __devinit sgiseeq_probe(struct platform_device *pdev)
 	sr = dma_alloc_noncoherent(&pdev->dev, sizeof(*sp->srings),
 				&sp->srings_dma, GFP_KERNEL);
 	if (!sr) {
-		printk(KERN_ERR "Sgiseeq: Page alloc failed, aborting.\n");
+;
 		err = -ENOMEM;
 		goto err_out_free_dev;
 	}
@@ -791,13 +791,13 @@ static int __devinit sgiseeq_probe(struct platform_device *pdev)
 	dev->irq		= irq;
 
 	if (register_netdev(dev)) {
-		printk(KERN_ERR "Sgiseeq: Cannot register net device, "
-		       "aborting.\n");
+//		printk(KERN_ERR "Sgiseeq: Cannot register net device, "
+;
 		err = -ENODEV;
 		goto err_out_free_page;
 	}
 
-	printk(KERN_INFO "%s: %s %pM\n", dev->name, sgiseeqstr, dev->dev_addr);
+;
 
 	return 0;
 
@@ -836,7 +836,7 @@ static struct platform_driver sgiseeq_driver = {
 static int __init sgiseeq_module_init(void)
 {
 	if (platform_driver_register(&sgiseeq_driver)) {
-		printk(KERN_ERR "Driver registration failed\n");
+;
 		return -ENODEV;
 	}
 

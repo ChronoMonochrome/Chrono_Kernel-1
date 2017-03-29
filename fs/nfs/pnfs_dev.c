@@ -49,8 +49,8 @@ nfs4_print_deviceid(const struct nfs4_deviceid *id)
 {
 	u32 *p = (u32 *)id;
 
-	dprintk("%s: device id= [%x%x%x%x]\n", __func__,
-		p[0], p[1], p[2], p[3]);
+//	dprintk("%s: device id= [%x%x%x%x]\n", __func__,
+;
 }
 EXPORT_SYMBOL_GPL(nfs4_print_deviceid);
 #endif

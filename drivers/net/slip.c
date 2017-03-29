@@ -249,8 +249,8 @@ static int sl_realloc_bufs(struct slip *sl, int mtu)
 	if (xbuff == NULL || rbuff == NULL)  {
 #endif
 		if (mtu >= sl->mtu) {
-			printk(KERN_WARNING "%s: unable to grow slip buffers, MTU change cancelled.\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: unable to grow slip buffers, MTU change cancelled.\n",
+;
 			err = -ENOBUFS;
 		}
 		goto done;
@@ -330,7 +330,7 @@ static void sl_bump(struct slip *sl)
 		if (c & SL_TYPE_COMPRESSED_TCP) {
 			/* ignore compressed packets when CSLIP is off */
 			if (!(sl->mode & SL_MODE_CSLIP)) {
-				printk(KERN_WARNING "%s: compressed packet ignored\n", dev->name);
+;
 				return;
 			}
 			/* make sure we've reserved enough space for uncompress
@@ -347,7 +347,7 @@ static void sl_bump(struct slip *sl)
 				/* turn on header compression */
 				sl->mode |= SL_MODE_CSLIP;
 				sl->mode &= ~SL_MODE_ADAPTIVE;
-				printk(KERN_INFO "%s: header compression turned on\n", dev->name);
+;
 			}
 			sl->rbuff[0] &= 0x4f;
 			if (slhc_remember(sl->slcomp, sl->rbuff, count) <= 0)
@@ -360,7 +360,7 @@ static void sl_bump(struct slip *sl)
 
 	skb = dev_alloc_skb(count);
 	if (skb == NULL) {
-		printk(KERN_WARNING "%s: memory squeeze, dropping packet.\n", dev->name);
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -379,7 +379,7 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
 	int actual, count;
 
 	if (len > sl->mtu) {		/* Sigh, shouldn't occur BUT ... */
-		printk(KERN_WARNING "%s: truncating oversized transmit packet!\n", sl->dev->name);
+;
 		sl->dev->stats.tx_dropped++;
 		sl_unlock(sl);
 		return;
@@ -463,10 +463,10 @@ static void sl_tx_timeout(struct net_device *dev)
 			/* 20 sec timeout not reached */
 			goto out;
 		}
-		printk(KERN_WARNING "%s: transmit timed out, %s?\n",
-			dev->name,
-			(tty_chars_in_buffer(sl->tty) || sl->xleft) ?
-				"bad line quality" : "driver error");
+//		printk(KERN_WARNING "%s: transmit timed out, %s?\n",
+//			dev->name,
+//			(tty_chars_in_buffer(sl->tty) || sl->xleft) ?
+;
 		sl->xleft = 0;
 		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
 		sl_unlock(sl);
@@ -486,7 +486,7 @@ sl_xmit(struct sk_buff *skb, struct net_device *dev)
 	spin_lock(&sl->lock);
 	if (!netif_running(dev)) {
 		spin_unlock(&sl->lock);
-		printk(KERN_WARNING "%s: xmit call when iface is down\n", dev->name);
+;
 		dev_kfree_skb(skb);
 		return NETDEV_TX_OK;
 	}
@@ -1301,30 +1301,30 @@ static int __init slip_init(void)
 	if (slip_maxdev < 4)
 		slip_maxdev = 4; /* Sanity */
 
-	printk(KERN_INFO "SLIP: version %s (dynamic channels, max=%d)"
-#ifdef CONFIG_SLIP_MODE_SLIP6
-	       " (6 bit encapsulation enabled)"
-#endif
-	       ".\n",
-	       SLIP_VERSION, slip_maxdev);
+//	printk(KERN_INFO "SLIP: version %s (dynamic channels, max=%d)"
+//#ifdef CONFIG_SLIP_MODE_SLIP6
+//	       " (6 bit encapsulation enabled)"
+//#endif
+//	       ".\n",
+;
 #if defined(SL_INCLUDE_CSLIP)
-	printk(KERN_INFO "CSLIP: code copyright 1989 Regents of the University of California.\n");
+;
 #endif
 #ifdef CONFIG_SLIP_SMART
-	printk(KERN_INFO "SLIP linefill/keepalive option.\n");
+;
 #endif
 
 	slip_devs = kzalloc(sizeof(struct net_device *)*slip_maxdev,
 								GFP_KERNEL);
 	if (!slip_devs) {
-		printk(KERN_ERR "SLIP: Can't allocate slip devices array.\n");
+;
 		return -ENOMEM;
 	}
 
 	/* Fill in our line protocol discipline, and register it */
 	status = tty_register_ldisc(N_SLIP, &sl_ldisc);
 	if (status != 0) {
-		printk(KERN_ERR "SLIP: can't register line discipline (err = %d)\n", status);
+;
 		kfree(slip_devs);
 	}
 	return status;
@@ -1373,8 +1373,8 @@ static void __exit slip_exit(void)
 
 		sl = netdev_priv(dev);
 		if (sl->tty) {
-			printk(KERN_ERR "%s: tty discipline still running\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: tty discipline still running\n",
+;
 			/* Intentionally leak the control block. */
 			dev->destructor = NULL;
 		}
@@ -1387,7 +1387,7 @@ static void __exit slip_exit(void)
 
 	i = tty_unregister_ldisc(N_SLIP);
 	if (i != 0)
-		printk(KERN_ERR "SLIP: can't unregister line discipline (err = %d)\n", i);
+;
 }
 
 module_init(slip_init);
@@ -1445,7 +1445,7 @@ static void sl_keepalive(unsigned long sls)
 			if (sl->outfill)
 				/* outfill timer must be deleted too */
 				(void)del_timer(&sl->outfill_timer);
-			printk(KERN_DEBUG "%s: no packets received during keepalive timeout, hangup.\n", sl->dev->name);
+;
 			/* this must hangup tty & close slip */
 			tty_hangup(sl->tty);
 			/* I think we need not something else */

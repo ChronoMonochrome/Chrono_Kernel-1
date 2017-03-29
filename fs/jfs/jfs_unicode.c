@@ -56,11 +56,11 @@ int jfs_strfromUCS_le(char *to, const __le16 * from,
 				if (unlikely(warn)) {
 					warn--;
 					warn_again--;
-					printk(KERN_ERR
-			"non-latin1 character 0x%x found in JFS file name\n",
-					       le16_to_cpu(from[i]));
-					printk(KERN_ERR
-				"mount with iocharset=utf8 to access\n");
+//					printk(KERN_ERR
+//			"non-latin1 character 0x%x found in JFS file name\n",
+;
+//					printk(KERN_ERR
+;
 				}
 
 			}

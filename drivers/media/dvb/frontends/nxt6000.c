@@ -48,7 +48,11 @@ static int nxt6000_writereg(struct nxt6000_state* state, u8 reg, u8 data)
 	int ret;
 
 	if ((ret = i2c_transfer(state->i2c, &msg, 1)) != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("nxt6000: nxt6000_write error (reg: 0x%02X, data: 0x%02X, ret: %d)\n", reg, data, ret);
+#else
+		d;
+#endif
 
 	return (ret != 1) ? -EFAULT : 0;
 }
@@ -66,7 +70,11 @@ static u8 nxt6000_readreg(struct nxt6000_state* state, u8 reg)
 	ret = i2c_transfer(state->i2c, msgs, 2);
 
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("nxt6000: nxt6000_read error (reg: 0x%02X, ret: %d)\n", reg, ret);
+#else
+		d;
+#endif
 
 	return b1[0];
 }
@@ -213,118 +221,270 @@ static void nxt6000_dump_status(struct nxt6000_state *state)
 	u8 val;
 
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("RS_COR_STAT: 0x%02X\n", nxt6000_readreg(fe, RS_COR_STAT));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("VIT_SYNC_STATUS: 0x%02X\n", nxt6000_readreg(fe, VIT_SYNC_STATUS));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_COR_STAT: 0x%02X\n", nxt6000_readreg(fe, OFDM_COR_STAT));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_SYR_STAT: 0x%02X\n", nxt6000_readreg(fe, OFDM_SYR_STAT));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RCVD_1: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RCVD_1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RCVD_2: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RCVD_2));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RCVD_3: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RCVD_3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RCVD_4: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RCVD_4));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RESERVED_1: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RESERVED_1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("OFDM_TPS_RESERVED_2: 0x%02X\n", nxt6000_readreg(fe, OFDM_TPS_RESERVED_2));
+#else
+	;
+#endif
 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("NXT6000 status:");
+#else
+	;
+#endif
 
 	val = nxt6000_readreg(state, RS_COR_STAT);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" DATA DESCR LOCK: %d,", val & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" DATA SYNC LOCK: %d,", (val >> 1) & 0x01);
+#else
+	;
+#endif
 
 	val = nxt6000_readreg(state, VIT_SYNC_STATUS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" VITERBI LOCK: %d,", (val >> 7) & 0x01);
+#else
+	;
+#endif
 
 	switch ((val >> 4) & 0x07) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: 1/2,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: 2/3,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: 3/4,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: 5/6,");
+#else
+		;
+#endif
 		break;
 
 	case 0x04:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: 7/8,");
+#else
+		;
+#endif
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" VITERBI CODERATE: Reserved,");
+#else
+		;
+#endif
 
 	}
 
 	val = nxt6000_readreg(state, OFDM_COR_STAT);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CHCTrack: %d,", (val >> 7) & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" TPSLock: %d,", (val >> 6) & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" SYRLock: %d,", (val >> 5) & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" AGCLock: %d,", (val >> 4) & 0x01);
+#else
+	;
+#endif
 
 	switch (val & 0x0F) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: IDLE,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: WAIT_AGC,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: WAIT_SYR,");
+#else
+		;
+#endif
 		break;
 
 	case 0x04:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: WAIT_PPM,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: WAIT_TRL,");
+#else
+		;
+#endif
 		break;
 
 	case 0x05:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: WAIT_TPS,");
+#else
+		;
+#endif
 		break;
 
 	case 0x06:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: MONITOR_TPS,");
+#else
+		;
+#endif
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" CoreState: Reserved,");
+#else
+		;
+#endif
 
 	}
 
 	val = nxt6000_readreg(state, OFDM_SYR_STAT);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" SYRLock: %d,", (val >> 4) & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" SYRMode: %s,", (val >> 2) & 0x01 ? "8K" : "2K");
+#else
+	;
+#endif
 
 	switch ((val >> 4) & 0x03) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" SYRGuard: 1/32,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" SYRGuard: 1/16,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" SYRGuard: 1/8,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" SYRGuard: 1/4,");
+#else
+		;
+#endif
 		break;
 	}
 
@@ -333,77 +493,145 @@ static void nxt6000_dump_status(struct nxt6000_state *state)
 	switch ((val >> 4) & 0x07) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: 1/2,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: 2/3,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: 3/4,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: 5/6,");
+#else
+		;
+#endif
 		break;
 
 	case 0x04:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: 7/8,");
+#else
+		;
+#endif
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSLP: Reserved,");
+#else
+		;
+#endif
 
 	}
 
 	switch (val & 0x07) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: 1/2,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: 2/3,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: 3/4,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: 5/6,");
+#else
+		;
+#endif
 		break;
 
 	case 0x04:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: 7/8,");
+#else
+		;
+#endif
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSHP: Reserved,");
+#else
+		;
+#endif
 
 	}
 
 	val = nxt6000_readreg(state, OFDM_TPS_RCVD_4);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" TPSMode: %s,", val & 0x01 ? "8K" : "2K");
+#else
+	;
+#endif
 
 	switch ((val >> 4) & 0x03) {
 
 	case 0x00:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSGuard: 1/32,");
+#else
+		;
+#endif
 		break;
 
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSGuard: 1/16,");
+#else
+		;
+#endif
 		break;
 
 	case 0x02:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSGuard: 1/8,");
+#else
+		;
+#endif
 		break;
 
 	case 0x03:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" TPSGuard: 1/4,");
+#else
+		;
+#endif
 		break;
 
 	}
@@ -413,8 +641,16 @@ static void nxt6000_dump_status(struct nxt6000_state *state)
 	val = nxt6000_readreg(state, RF_AGC_STATUS);
 	val = nxt6000_readreg(state, RF_AGC_STATUS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" RF AGC LOCK: %d,", (val >> 4) & 0x01);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static int nxt6000_read_status(struct dvb_frontend* fe, fe_status_t* status)

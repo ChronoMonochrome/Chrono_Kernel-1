@@ -47,7 +47,7 @@ krb5_make_rc4_seq_num(struct krb5_ctx *kctx, int direction, s32 seqnum,
 	unsigned char plain[8];
 	s32 code;
 
-	dprintk("RPC:       %s:\n", __func__);
+;
 	cipher = crypto_alloc_blkcipher(kctx->gk5e->encrypt_name, 0,
 					CRYPTO_ALG_ASYNC);
 	if (IS_ERR(cipher))
@@ -105,7 +105,7 @@ krb5_get_rc4_seq_num(struct krb5_ctx *kctx, unsigned char *cksum,
 	unsigned char plain[8];
 	s32 code;
 
-	dprintk("RPC:       %s:\n", __func__);
+;
 	cipher = crypto_alloc_blkcipher(kctx->gk5e->encrypt_name, 0,
 					CRYPTO_ALG_ASYNC);
 	if (IS_ERR(cipher))
@@ -144,7 +144,7 @@ krb5_get_seq_num(struct krb5_ctx *kctx,
 	unsigned char plain[8];
 	struct crypto_blkcipher *key = kctx->seq;
 
-	dprintk("RPC:       krb5_get_seq_num:\n");
+;
 
 	if (kctx->enctype == ENCTYPE_ARCFOUR_HMAC)
 		return krb5_get_rc4_seq_num(kctx, cksum, buf,

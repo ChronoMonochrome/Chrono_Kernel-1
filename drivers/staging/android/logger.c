@@ -419,7 +419,7 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
 				tmp[i] =
 				    log->buffer[logger_offset(log->w_off + i)];
 			tmp[i] = '\0';
-			printk("%s\n", tmp);
+;
 		}
 	}
 
@@ -754,13 +754,13 @@ static int __init init_log(struct logger_log *log)
 
 	ret = misc_register(&log->misc);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "logger: failed to register misc "
-		       "device for log '%s'!\n", log->misc.name);
+//		printk(KERN_ERR "logger: failed to register misc "
+;
 		return ret;
 	}
 
-	printk(KERN_INFO "logger: created %luK log '%s'\n",
-	       (unsigned long) log->size >> 10, log->misc.name);
+//	printk(KERN_INFO "logger: created %luK log '%s'\n",
+;
 
 	return 0;
 }

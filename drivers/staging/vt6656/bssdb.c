@@ -983,7 +983,7 @@ void BSSvSecondCallBack(void *hDeviceContext)
 if(pDevice->byReAssocCount > 0) {
        pDevice->byReAssocCount++;
    if((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != TRUE)) {  //10 sec timeout
-                     printk("Re-association timeout!!!\n");
+;
 		   pDevice->byReAssocCount = 0;
                      #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
                     // if(pDevice->bWPASuppWextEnabled == TRUE)

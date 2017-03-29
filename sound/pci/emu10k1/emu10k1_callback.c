@@ -105,8 +105,12 @@ snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
 			vp = &emu->voices[best[i].voice];
 			if ((ch = vp->ch) < 0) {
 				/*
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "synth_get_voice: ch < 0 (%d) ??", i);
+#else
+				;
+#endif
 				*/
 				continue;
 			}

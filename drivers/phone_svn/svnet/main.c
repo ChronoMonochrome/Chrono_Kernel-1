@@ -814,7 +814,11 @@ static int __init svnet_init(void)
 	struct svnet *sn = NULL;
 	struct net_device *ndev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[%s]\n",__func__);
+#else
+	;
+#endif
 	ndev = alloc_netdev(sizeof(struct svnet), "svnet%d", svnet_setup);
 	if (!ndev) {
 		r = -ENOMEM;

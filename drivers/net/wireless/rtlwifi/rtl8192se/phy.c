@@ -1022,8 +1022,8 @@ static bool _rtl92s_phy_bb_config_parafile(struct ieee80211_hw *hw)
 	rtstatus = _rtl92s_phy_config_bb(hw, BASEBAND_CONFIG_AGC_TAB);
 
 	if (rtstatus != true) {
-		printk(KERN_ERR  "_rtl92s_phy_bb_config_parafile(): "
-		       "AGC Table Fail\n");
+//		printk(KERN_ERR  "_rtl92s_phy_bb_config_parafile(): "
+;
 		goto phy_BB8190_Config_ParaFile_Fail;
 	}
 

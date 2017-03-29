@@ -118,8 +118,16 @@ static int tmio_mmc_next_sg(struct tmio_mmc_host *host)
 	do { \
 		if (status & TMIO_STAT_##a) { \
 			if (i++) \
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" | "); \
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(#a); \
+#else
+			;
+#endif
 		} \
 	} while (0)
 
@@ -148,7 +156,11 @@ static void pr_debug_status(u32 status)
 	STATUS_TO_TEXT(RXRDY, status, i);
 	STATUS_TO_TEXT(TXRQ, status, i);
 	STATUS_TO_TEXT(ILL_ACCESS, status, i);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 #else

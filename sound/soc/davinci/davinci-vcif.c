@@ -138,7 +138,11 @@ static int davinci_vcif_hw_params(struct snd_pcm_substream *substream,
 			    DAVINCI_VC_CTRL_WD_UNSIGNED, 0);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "davinci-vcif: unsupported PCM format");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

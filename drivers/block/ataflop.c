@@ -621,7 +621,11 @@ static void fd_error( void )
 		fd_end_request_cur(-EIO);
 	}
 	else if (fd_request->errors == RECALIBRATE_ERRORS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "fd%d: recalibrating\n", SelectedDrive );
+#else
+		;
+#endif
 		if (SelectedDrive != -1)
 			SUD.track = -1;
 	}
@@ -1060,7 +1064,11 @@ static void fd_rwsec_done1(int status)
 	MFPDELAY();
 
 	if (ReqCmd == WRITE && (status & FDCSTAT_WPROT)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "fd%d: is write protected\n", SelectedDrive );
+#else
+		;
+#endif
 		goto err_end;
 	}	
 	if ((status & FDCSTAT_RECNF) &&
@@ -1079,8 +1087,12 @@ static void fd_rwsec_done1(int status)
 			}
 			else {
 				if (SUD.flags & FTD_MSG)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "fd%d: Auto-detected floppy type %s\n",
 					       SelectedDrive, SUDT->name );
+#else
+					;
+#endif
 				Probing=0;
 			}
 		} else {	
@@ -1220,7 +1232,11 @@ static void fd_writetrack_done( int status )
 	stop_timeout();
 
 	if (status & FDCSTAT_WPROT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "fd%d: is write protected\n", SelectedDrive );
+#else
+		;
+#endif
 		goto err_end;
 	}	
 	if (status & FDCSTAT_LOST) {
@@ -1457,12 +1473,20 @@ repeat:
 	else {
 		/* user supplied disk type */
 		if (--type >= NUM_DISK_MINORS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "fd%d: invalid disk format", drive );
+#else
+			;
+#endif
 			fd_end_request_cur(-EIO);
 			goto repeat;
 		}
 		if (minor2disktype[type].drive_types > DriveType)  {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "fd%d: unsupported disk format", drive );
+#else
+			;
+#endif
 			fd_end_request_cur(-EIO);
 			goto repeat;
 		}
@@ -1803,11 +1827,19 @@ static void __init config_types( void )
 	if (ATARIHW_PRESENT(FDCSPEED))
 		dma_wd.fdc_speed = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Probing floppy drive(s):\n");
+#else
+	;
+#endif
 	for( drive = 0; drive < FD_MAX_UNITS; drive++ ) {
 		fd_probe( drive );
 		if (UD.connected) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "fd%d\n", drive);
+#else
+			;
+#endif
 			++cnt;
 		}
 	}
@@ -1976,9 +2008,13 @@ static int __init atari_floppy_init (void)
 	blk_register_region(MKDEV(FLOPPY_MAJOR, 0), 256, THIS_MODULE,
 				floppy_find, NULL, NULL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Atari floppy driver: max. %cD, %strack buffering\n",
 	       DriveType == 0 ? 'D' : DriveType == 1 ? 'H' : 'E',
 	       UseTrackbuffer ? "" : "no ");
+#else
+	;
+#endif
 	config_types();
 
 	return 0;

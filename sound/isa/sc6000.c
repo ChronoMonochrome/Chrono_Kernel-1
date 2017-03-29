@@ -284,7 +284,11 @@ static int __devinit sc6000_dsp_reset(char __iomem *vport)
 static int __devinit sc6000_hw_cfg_write(char __iomem *vport, const int *cfg)
 {
 	if (sc6000_write(vport, COMMAND_6C) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "CMD 0x%x: failed!\n", COMMAND_6C);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	if (sc6000_write(vport, COMMAND_5C) < 0) {
@@ -415,14 +419,22 @@ static int __devinit sc6000_init_board(char __iomem *vport,
 	 * if we have something different, we have to be warned.
 	 */
 	if (strncmp("SC-6000", answer, 7))
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Warning: non SC-6000 audio card!\n");
+#else
+		;
+#endif
 
 	if (sc6000_dsp_get_answer(vport, GET_DSP_VERSION, version, 2) < 2) {
 		snd_printk(KERN_ERR "sc6000_dsp_version: failed!\n");
 		return -ENODEV;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Detected model: %s, DSP version %d.%d\n",
 		answer, version[0], version[1]);
+#else
+	;
+#endif
 
 	/* set configuration */
 	sc6000_write(vport, COMMAND_5C);
@@ -693,7 +705,11 @@ static int __devexit snd_sc6000_remove(struct device *devptr, unsigned int dev)
 	char __iomem **vport = card->private_data;
 
 	if (sc6000_setup_board(*vport, 0) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "sc6000_setup_board failed on exit!\n");
+#else
+		;
+#endif
 
 	release_region(port[dev], 0x10);
 	release_region(mss_port[dev], 4);

@@ -1005,10 +1005,10 @@ static int dhdsdio_txpkt(dhd_bus_t *bus, struct sk_buff *pkt, uint chan,
 	if (DHD_BYTES_ON() &&
 	    (((DHD_CTL_ON() && (chan == SDPCM_CONTROL_CHANNEL)) ||
 	      (DHD_DATA_ON() && (chan != SDPCM_CONTROL_CHANNEL))))) {
-		printk(KERN_DEBUG "Tx Frame:\n");
+;
 		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, frame, len);
 	} else if (DHD_HDRS_ON()) {
-		printk(KERN_DEBUG "TxHdr:\n");
+;
 		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 				     frame, min_t(u16, len, 16));
 	}
@@ -1339,11 +1339,11 @@ int dhd_bus_txctl(struct dhd_bus *bus, unsigned char *msg, uint msglen)
 	if (ret == -1) {
 #ifdef DHD_DEBUG
 		if (DHD_BYTES_ON() && DHD_CTL_ON()) {
-			printk(KERN_DEBUG "Tx Frame:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 					     frame, len);
 		} else if (DHD_HDRS_ON()) {
-			printk(KERN_DEBUG "TxHdr:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 					     frame, min_t(u16, len, 16));
 		}
@@ -1983,7 +1983,7 @@ static int dhdsdio_mem_dump(dhd_bus_t *bus)
 	}
 
 	/* Read mem content */
-	printk(KERN_DEBUG "Dump dongle memory");
+;
 	databuf = buf;
 	while (size) {
 		read_size = min(MEMBLOCK, size);
@@ -1993,14 +1993,14 @@ static int dhdsdio_mem_dump(dhd_bus_t *bus)
 			kfree(buf);
 			return -1;
 		}
-		printk(".");
+;
 
 		/* Decrement size and increment start address */
 		size -= read_size;
 		start += read_size;
 		databuf += read_size;
 	}
-	printk(KERN_DEBUG "Done\n");
+;
 
 	/* free buf before return !!! */
 	if (write_to_file(bus->dhd, buf, bus->ramsize)) {
@@ -2082,7 +2082,7 @@ static int dhdsdio_readconsole(dhd_bus_t *bus)
 			if (line[n - 1] == '\r')
 				n--;
 			line[n] = 0;
-			printk(KERN_DEBUG "CONSOLE: %s\n", line);
+;
 		}
 	}
 break2:
@@ -3128,7 +3128,7 @@ gotpkt:
 
 #ifdef DHD_DEBUG
 	if (DHD_BYTES_ON() && DHD_CTL_ON()) {
-		printk(KERN_DEBUG "RxCtrl:\n");
+;
 		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, bus->rxctl, len);
 	}
 #endif
@@ -3321,7 +3321,7 @@ static u8 dhdsdio_rxglom(dhd_bus_t *bus, u8 rxseq)
 		}
 #ifdef DHD_DEBUG
 		if (DHD_GLOM_ON()) {
-			printk(KERN_DEBUG "SUPERFRAME:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 				pfirst->data, min_t(int, pfirst->len, 48));
 		}
@@ -3405,7 +3405,7 @@ static u8 dhdsdio_rxglom(dhd_bus_t *bus, u8 rxseq)
 			doff = SDPCM_DOFFSET_VALUE(&dptr[SDPCM_FRAMETAG_LEN]);
 #ifdef DHD_DEBUG
 			if (DHD_GLOM_ON()) {
-				printk(KERN_DEBUG "subframe:\n");
+;
 				print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 						     dptr, 32);
 			}
@@ -3486,7 +3486,7 @@ static u8 dhdsdio_rxglom(dhd_bus_t *bus, u8 rxseq)
 			}
 #ifdef DHD_DEBUG
 			if (DHD_BYTES_ON() && DHD_DATA_ON()) {
-				printk(KERN_DEBUG "Rx Subframe Data:\n");
+;
 				print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 						     dptr, dlen);
 			}
@@ -3840,11 +3840,11 @@ static uint dhdsdio_readframes(dhd_bus_t *bus, uint maxframes, bool *finished)
 
 #ifdef DHD_DEBUG
 			if (DHD_BYTES_ON() && DHD_DATA_ON()) {
-				printk(KERN_DEBUG "Rx Data:\n");
+;
 				print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 						     rxbuf, len);
 			} else if (DHD_HDRS_ON()) {
-				printk(KERN_DEBUG "RxHdr:\n");
+;
 				print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 						     bus->rxhdr, SDPCM_HDRLEN);
 			}
@@ -3903,7 +3903,7 @@ static uint dhdsdio_readframes(dhd_bus_t *bus, uint maxframes, bool *finished)
 		}
 #ifdef DHD_DEBUG
 		if (DHD_BYTES_ON() || DHD_HDRS_ON()) {
-			printk(KERN_DEBUG "RxHdr:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 					     bus->rxhdr, SDPCM_HDRLEN);
 		}
@@ -4080,7 +4080,7 @@ static uint dhdsdio_readframes(dhd_bus_t *bus, uint maxframes, bool *finished)
 
 #ifdef DHD_DEBUG
 		if (DHD_BYTES_ON() && DHD_DATA_ON()) {
-			printk(KERN_DEBUG "Rx Data:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,
 					     pkt->data, len);
 		}
@@ -4094,7 +4094,7 @@ deliver:
 					__func__, len));
 #ifdef DHD_DEBUG
 				if (DHD_GLOM_ON()) {
-					printk(KERN_DEBUG "Glom Data:\n");
+;
 					print_hex_dump_bytes("",
 							     DUMP_PREFIX_OFFSET,
 							     pkt->data, len);
@@ -4586,8 +4586,8 @@ static void dhdsdio_pktgen(dhd_bus_t *bus)
 	/* Display current count if appropriate */
 	if (bus->pktgen_print && (++bus->pktgen_ptick >= bus->pktgen_print)) {
 		bus->pktgen_ptick = 0;
-		printk(KERN_DEBUG "%s: send attempts %d rcvd %d\n",
-		       __func__, bus->pktgen_sent, bus->pktgen_rcvd);
+//		printk(KERN_DEBUG "%s: send attempts %d rcvd %d\n",
+;
 	}
 
 	/* For recv mode, just make sure dongle has started sending */
@@ -4658,7 +4658,7 @@ static void dhdsdio_pktgen(dhd_bus_t *bus)
 #ifdef DHD_DEBUG
 		if (DHD_BYTES_ON() && DHD_DATA_ON()) {
 			data = (u8 *) (pkt->data) + SDPCM_HDRLEN;
-			printk(KERN_DEBUG "dhdsdio_pktgen: Tx Data:\n");
+;
 			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, data,
 					     pkt->len - SDPCM_HDRLEN);
 		}
@@ -5172,8 +5172,8 @@ dhdsdio_probe_attach(struct dhd_bus *bus, void *sdh, void *regsva, u16 devid)
 		DHD_ERROR(("%s: FAILED to return to SI_ENUM_BASE\n", __func__));
 
 #ifdef DHD_DEBUG
-	printk(KERN_DEBUG "F1 signature read @0x18000000=0x%4x\n",
-	       bcmsdh_reg_read(bus->sdh, SI_ENUM_BASE, 4));
+//	printk(KERN_DEBUG "F1 signature read @0x18000000=0x%4x\n",
+;
 
 #endif				/* DHD_DEBUG */
 

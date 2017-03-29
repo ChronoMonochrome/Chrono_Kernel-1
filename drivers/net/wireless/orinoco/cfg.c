@@ -224,10 +224,10 @@ static int orinoco_set_wiphy_params(struct wiphy *wiphy, u32 changed)
 			if (wiphy->frag_threshold < 0)
 				frag_value = 0;
 			else {
-				printk(KERN_WARNING "%s: Fixed fragmentation "
-				       "is not supported on this firmware. "
-				       "Using MWO robust instead.\n",
-				       priv->ndev->name);
+//				printk(KERN_WARNING "%s: Fixed fragmentation "
+//				       "is not supported on this firmware. "
+//				       "Using MWO robust instead.\n",
+;
 				frag_value = 1;
 			}
 		} else {

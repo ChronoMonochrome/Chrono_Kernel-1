@@ -227,14 +227,14 @@ static int __init root_nfs_data(char *cmdline)
 	strcpy(tmp, NFS_ROOT);
 
 	if (root_server_path[0] != '\0') {
-		dprintk("Root-NFS: DHCPv4 option 17: %s\n",
-			root_server_path);
+//		dprintk("Root-NFS: DHCPv4 option 17: %s\n",
+;
 		if (root_nfs_parse_options(root_server_path, tmp, tmplen))
 			goto out_optionstoolong;
 	}
 
 	if (cmdline[0] != '\0') {
-		dprintk("Root-NFS: nfsroot=%s\n", cmdline);
+;
 		if (root_nfs_parse_options(cmdline, tmp, tmplen))
 			goto out_optionstoolong;
 	}
@@ -274,13 +274,13 @@ out:
 	kfree(tmp);
 	return retval;
 out_nomem:
-	printk(KERN_ERR "Root-NFS: could not allocate memory\n");
+;
 	goto out;
 out_optionstoolong:
-	printk(KERN_ERR "Root-NFS: mount options string too long\n");
+;
 	goto out;
 out_devnametoolong:
-	printk(KERN_ERR "Root-NFS: root device name too long.\n");
+;
 	goto out;
 }
 
@@ -296,7 +296,7 @@ int __init nfs_root_data(char **root_device, char **root_data)
 {
 	servaddr = root_server_addr;
 	if (servaddr == htonl(INADDR_NONE)) {
-		printk(KERN_ERR "Root-NFS: no NFS server address\n");
+;
 		return -1;
 	}
 

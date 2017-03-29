@@ -337,7 +337,7 @@ static void _rtl92cu_read_board_type(struct ieee80211_hw *hw, u8 *contents)
 	rtlefuse->board_type = boardType;
 	if (IS_HIGHT_PA(rtlefuse->board_type))
 		rtlefuse->external_pa = 1;
-	printk(KERN_INFO "rtl8192cu: Board Type %x\n", rtlefuse->board_type);
+;
 
 #ifdef CONFIG_ANTENNA_DIVERSITY
 	/* Antenna Diversity setting. */
@@ -346,8 +346,8 @@ static void _rtl92cu_read_board_type(struct ieee80211_hw *hw, u8 *contents)
 	else
 		rtl_efuse->antenna_cfg = registry_par->antdiv_cfg; /* 0:OFF, */
 
-	printk(KERN_INFO "rtl8192cu: Antenna Config %x\n",
-	       rtl_efuse->antenna_cfg);
+//	printk(KERN_INFO "rtl8192cu: Antenna Config %x\n",
+;
 #endif
 }
 
@@ -384,71 +384,71 @@ static void _update_bt_param(_adapter *padapter)
 	pbtpriv->bBTNonTrafficModeSet = _FALSE;
 	pbtpriv->CurrentState = 0;
 	pbtpriv->PreviousState = 0;
-	printk(KERN_INFO "rtl8192cu: BT Coexistance = %s\n",
-	       (pbtpriv->BT_Coexist == _TRUE) ? "enable" : "disable");
+//	printk(KERN_INFO "rtl8192cu: BT Coexistance = %s\n",
+;
 	if (pbtpriv->BT_Coexist) {
 		if (pbtpriv->BT_Ant_Num == Ant_x2)
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "Ant_Num = Antx2\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 		else if (pbtpriv->BT_Ant_Num == Ant_x1)
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "Ant_Num = Antx1\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 		switch (pbtpriv->BT_CoexistType) {
 		case BT_2Wire:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_2Wire\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		case BT_ISSC_3Wire:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_ISSC_3Wire\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		case BT_Accel:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_Accel\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		case BT_CSR_BC4:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_CSR_BC4\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		case BT_CSR_BC8:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_CSR_BC8\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		case BT_RTL8756:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = BT_RTL8756\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		default:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
-			       "CoexistType = Unknown\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+;
 			break;
 		}
-		printk(KERN_INFO "rtl8192cu: BlueTooth BT_Ant_isolation = %d\n",
-		       pbtpriv->BT_Ant_isolation);
+//		printk(KERN_INFO "rtl8192cu: BlueTooth BT_Ant_isolation = %d\n",
+;
 		switch (pbtpriv->BT_Service) {
 		case BT_OtherAction:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
-			       "BT_OtherAction\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+;
 			break;
 		case BT_SCO:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
-			       "BT_SCO\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+;
 			break;
 		case BT_Busy:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
-			       "BT_Busy\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+;
 			break;
 		case BT_OtherBusy:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
-			       "BT_OtherBusy\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+;
 			break;
 		default:
-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
-			       "BT_Idle\n");
+//			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+;
 			break;
 		}
-		printk(KERN_INFO "rtl8192cu: BT_RadioSharedType = 0x%x\n",
-		       pbtpriv->BT_RadioSharedType);
+//		printk(KERN_INFO "rtl8192cu: BT_RadioSharedType = 0x%x\n",
+;
 	}
 }
 
@@ -526,7 +526,7 @@ static void _rtl92cu_read_adapter_info(struct ieee80211_hw *hw)
 		usvalue = *(u16 *)&hwinfo[EEPROM_MAC_ADDR + i];
 		*((u16 *) (&rtlefuse->dev_addr[i])) = usvalue;
 	}
-	printk(KERN_INFO "rtl8192cu: MAC address: %pM\n", rtlefuse->dev_addr);
+;
 	_rtl92cu_read_txpower_info_from_hwpg(hw,
 					   rtlefuse->autoload_failflag, hwinfo);
 	rtlefuse->eeprom_vid = *(u16 *)&hwinfo[EEPROM_VID];
@@ -665,7 +665,7 @@ static int _rtl92cu_init_power_on(struct ieee80211_hw *hw)
 	rtl_write_word(rtlpriv, REG_APS_FSMCO, value16);
 	do {
 		if (!(rtl_read_word(rtlpriv, REG_APS_FSMCO) & APFM_ONMAC)) {
-			printk(KERN_INFO "rtl8192cu: MAC auto ON okay!\n");
+;
 			break;
 		}
 		if (pollingCount++ > 100) {
@@ -819,7 +819,7 @@ static void _rtl92cu_init_chipN_one_out_ep_priority(struct ieee80211_hw *hw,
 	}
 	_rtl92c_init_chipN_reg_priority(hw, value, value, value, value,
 					value, value);
-	printk(KERN_INFO "rtl8192cu: Tx queue select: 0x%02x\n", queue_sel);
+;
 }
 
 static void _rtl92cu_init_chipN_two_out_ep_priority(struct ieee80211_hw *hw,
@@ -863,7 +863,7 @@ static void _rtl92cu_init_chipN_two_out_ep_priority(struct ieee80211_hw *hw,
 		hiQ = valueHi;
 	}
 	_rtl92c_init_chipN_reg_priority(hw, beQ, bkQ, viQ, voQ, mgtQ, hiQ);
-	printk(KERN_INFO "rtl8192cu: Tx queue select: 0x%02x\n", queue_sel);
+;
 }
 
 static void _rtl92cu_init_chipN_three_out_ep_priority(struct ieee80211_hw *hw,

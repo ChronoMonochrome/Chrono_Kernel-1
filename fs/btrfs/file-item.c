@@ -218,11 +218,11 @@ static int __btrfs_lookup_bio_sums(struct btrfs_root *root,
 						offset + bvec->bv_len - 1,
 						EXTENT_NODATASUM, GFP_NOFS);
 				} else {
-					printk(KERN_INFO "btrfs no csum found "
-					       "for inode %llu start %llu\n",
-					       (unsigned long long)
-					       btrfs_ino(inode),
-					       (unsigned long long)offset);
+//					printk(KERN_INFO "btrfs no csum found "
+//					       "for inode %llu start %llu\n",
+//					       (unsigned long long)
+//					       btrfs_ino(inode),
+;
 				}
 				item = NULL;
 				btrfs_release_path(path);

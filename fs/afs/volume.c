@@ -375,7 +375,7 @@ int afs_volume_release_fileserver(struct afs_vnode *vnode,
 		if (!server->fs_state) {
 			server->fs_dead_jif = jiffies + HZ * 10;
 			server->fs_state = result;
-			printk("kAFS: SERVER DEAD state=%d\n", result);
+;
 		}
 		spin_unlock(&server->fs_lock);
 		goto try_next_server;

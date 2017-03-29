@@ -477,8 +477,12 @@ static int __init ixp2000_uengine_init(void)
 #endif
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Detected unknown IXP2000 model (%.8x)\n",
 			(unsigned int)ixp2000_reg_read(IXP_PRODUCT_ID));
+#else
+		;
+#endif
 		ixp2000_uengine_mask = 0x00000000;
 		break;
 	}

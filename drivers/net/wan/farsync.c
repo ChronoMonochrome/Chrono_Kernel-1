@@ -516,13 +516,13 @@ static int fst_debug_mask = { FST_DEBUG };
 #define dbg(F, fmt, args...)					\
 do {								\
 	if (fst_debug_mask & (F))				\
-		printk(KERN_DEBUG pr_fmt(fmt), ##args);		\
+;
 } while (0)
 #else
 #define dbg(F, fmt, args...)					\
 do {								\
 	if (0)							\
-		printk(KERN_DEBUG pr_fmt(fmt), ##args);		\
+;
 } while (0)
 #endif
 
@@ -1731,24 +1731,24 @@ set_conf_from_info(struct fst_card_info *card, struct fst_port_info *port,
 		FST_WRB(card, suConfig.idleCode, info->idleCode);
 #if FST_DEBUG
 		if (info->valid & FSTVAL_TE1) {
-			printk("Setting TE1 data\n");
-			printk("Line Speed = %d\n", info->lineSpeed);
-			printk("Start slot = %d\n", info->startingSlot);
-			printk("Clock source = %d\n", info->clockSource);
-			printk("Framing = %d\n", my_framing);
-			printk("Structure = %d\n", info->structure);
-			printk("interface = %d\n", info->interface);
-			printk("Coding = %d\n", info->coding);
-			printk("Line build out = %d\n", info->lineBuildOut);
-			printk("Equaliser = %d\n", info->equalizer);
-			printk("Transparent mode = %d\n",
-			       info->transparentMode);
-			printk("Loop mode = %d\n", info->loopMode);
-			printk("Range = %d\n", info->range);
-			printk("Tx Buffer mode = %d\n", info->txBufferMode);
-			printk("Rx Buffer mode = %d\n", info->rxBufferMode);
-			printk("LOS Threshold = %d\n", info->losThreshold);
-			printk("Idle Code = %d\n", info->idleCode);
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+//			printk("Transparent mode = %d\n",
+;
+;
+;
+;
+;
+;
+;
 		}
 #endif
 	}

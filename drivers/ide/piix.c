@@ -409,9 +409,17 @@ static void __devinit piix_check_450nx(void)
 			no_piix_dma = 2;
 	}
 	if(no_piix_dma)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRV_NAME ": 450NX errata present, disabling IDE DMA.\n");
+#else
+		;
+#endif
 	if(no_piix_dma == 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRV_NAME ": A BIOS update may resolve this.\n");
+#else
+		;
+#endif
 }		
 
 static const struct pci_device_id piix_pci_tbl[] = {

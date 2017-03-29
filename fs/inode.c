@@ -1721,9 +1721,9 @@ void init_special_inode(struct inode *inode, umode_t mode, dev_t rdev)
 	else if (S_ISSOCK(mode))
 		inode->i_fop = &bad_sock_fops;
 	else
-		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
-				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
-				  inode->i_ino);
+//		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
+//				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
+;
 }
 EXPORT_SYMBOL(init_special_inode);
 

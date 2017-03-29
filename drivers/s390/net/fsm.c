@@ -23,8 +23,12 @@ init_fsm(char *name, const char **state_names, const char **event_names, int nr_
 
 	this = kzalloc(sizeof(fsm_instance), order);
 	if (this == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"fsm(%s): init_fsm: Couldn't alloc instance\n", name);
+#else
+		;
+#endif
 		return NULL;
 	}
 	strlcpy(this->name, name, sizeof(this->name));
@@ -32,8 +36,12 @@ init_fsm(char *name, const char **state_names, const char **event_names, int nr_
 
 	f = kzalloc(sizeof(fsm), order);
 	if (f == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"fsm(%s): init_fsm: Couldn't alloc fsm\n", name);
+#else
+		;
+#endif
 		kfree_fsm(this);
 		return NULL;
 	}
@@ -45,8 +53,12 @@ init_fsm(char *name, const char **state_names, const char **event_names, int nr_
 
 	m = kcalloc(nr_states*nr_events, sizeof(fsm_function_t), order);
 	if (m == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"fsm(%s): init_fsm: Couldn't alloc jumptable\n", name);
+#else
+		;
+#endif
 		kfree_fsm(this);
 		return NULL;
 	}
@@ -78,8 +90,12 @@ kfree_fsm(fsm_instance *this)
 		}
 		kfree(this);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"fsm: kfree_fsm called with NULL argument\n");
+#else
+		;
+#endif
 }
 
 #if FSM_DEBUG_HISTORY
@@ -92,18 +108,30 @@ fsm_print_history(fsm_instance *fi)
 	if (fi->history_size >= FSM_HISTORY_SIZE)
 		idx = fi->history_index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): History:\n", fi->name);
+#else
+	;
+#endif
 	for (i = 0; i < fi->history_size; i++) {
 		int e = fi->history[idx].event;
 		int s = fi->history[idx++].state;
 		idx %= FSM_HISTORY_SIZE;
 		if (e == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "  S=%s\n",
 			       fi->f->state_names[s]);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "  S=%s E=%s\n",
 			       fi->f->state_names[s],
 			       fi->f->event_names[e]);
+#else
+			;
+#endif
 	}
 	fi->history_size = fi->history_index = 0;
 }
@@ -132,8 +160,12 @@ static void
 fsm_expire_timer(fsm_timer *this)
 {
 #if FSM_TIMER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): Timer %p expired\n",
 	       this->fi->name, this);
+#else
+	;
+#endif
 #endif
 	fsm_event(this->fi, this->expire_event, this->event_arg);
 }
@@ -145,8 +177,12 @@ fsm_settimer(fsm_instance *fi, fsm_timer *this)
 	this->tl.function = (void *)fsm_expire_timer;
 	this->tl.data = (long)this;
 #if FSM_TIMER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): Create timer %p\n", fi->name,
 	       this);
+#else
+	;
+#endif
 #endif
 	init_timer(&this->tl);
 }
@@ -155,8 +191,12 @@ void
 fsm_deltimer(fsm_timer *this)
 {
 #if FSM_TIMER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): Delete timer %p\n", this->fi->name,
 		this);
+#else
+	;
+#endif
 #endif
 	del_timer(&this->tl);
 }
@@ -166,8 +206,12 @@ fsm_addtimer(fsm_timer *this, int millisec, int event, void *arg)
 {
 
 #if FSM_TIMER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): Add timer %p %dms\n",
 	       this->fi->name, this, millisec);
+#else
+	;
+#endif
 #endif
 
 	init_timer(&this->tl);
@@ -186,8 +230,12 @@ fsm_modtimer(fsm_timer *this, int millisec, int event, void *arg)
 {
 
 #if FSM_TIMER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fsm(%s): Restart timer %p %dms\n",
 		this->fi->name, this, millisec);
+#else
+	;
+#endif
 #endif
 
 	del_timer(&this->tl);

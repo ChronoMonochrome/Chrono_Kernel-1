@@ -312,7 +312,11 @@ static int __init isapnp_fmi_probe(void)
 	}
 
 	i = pnp_port_start(dev, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "radio-sf16fmi: PnP reports card at %#x\n", i);
+#else
+	;
+#endif
 
 	return i;
 }

@@ -317,7 +317,7 @@ void rxrpc_reject_packet(struct rxrpc_local *local, struct sk_buff *skb)
 	CHECK_SLAB_OKAY(&local->usage);
 
 	if (!atomic_inc_not_zero(&local->usage)) {
-		printk("resurrected on reject\n");
+;
 		BUG();
 	}
 

@@ -342,9 +342,13 @@ static int __devinit snd_aw2_create(struct snd_card *card,
 	snd_card_set_dev(card, &pci->dev);
 	*rchip = chip;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Audiowerk 2 sound card (saa7146 chipset) detected and "
 	       "managed\n");
+#else
+	;
+#endif
 	return 0;
 }
 

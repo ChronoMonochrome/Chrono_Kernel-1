@@ -208,10 +208,14 @@ static int __init init_sbc_gxx(void)
 	}
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk( KERN_INFO"%s: IO:0x%x-0x%x MEM:0x%x-0x%x\n",
 		sbc_gxx_map.name,
 		PAGE_IO, PAGE_IO+PAGE_IO_SIZE-1,
 		WINDOW_START, WINDOW_START+WINDOW_LENGTH-1 );
+#else
+	;
+#endif
 
 	/* Probe for chip. */
 	all_mtd = do_map_probe( "cfi_probe", &sbc_gxx_map );

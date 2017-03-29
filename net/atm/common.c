@@ -82,12 +82,12 @@ static struct sk_buff *alloc_tx(struct atm_vcc *vcc, unsigned int size)
 static void vcc_sock_destruct(struct sock *sk)
 {
 	if (atomic_read(&sk->sk_rmem_alloc))
-		printk(KERN_DEBUG "%s: rmem leakage (%d bytes) detected.\n",
-		       __func__, atomic_read(&sk->sk_rmem_alloc));
+//		printk(KERN_DEBUG "%s: rmem leakage (%d bytes) detected.\n",
+;
 
 	if (atomic_read(&sk->sk_wmem_alloc))
-		printk(KERN_DEBUG "%s: wmem leakage (%d bytes) detected.\n",
-		       __func__, atomic_read(&sk->sk_wmem_alloc));
+//		printk(KERN_DEBUG "%s: wmem leakage (%d bytes) detected.\n",
+;
 }
 
 static void vcc_def_wakeup(struct sock *sk)

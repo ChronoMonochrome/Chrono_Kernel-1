@@ -152,7 +152,11 @@ static int wf_max6690_attach(struct i2c_adapter *adapter)
 		loc = of_get_property(dev, "hwsensor-location", NULL);
 		if (loc == NULL || addr == 0)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("found max6690, loc=%s addr=0x%02x\n", loc, addr);
+#else
+		;
+#endif
 		wf_max6690_create(adapter, addr, loc);
 	}
 

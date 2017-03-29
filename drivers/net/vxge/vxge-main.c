@@ -2774,8 +2774,8 @@ static int vxge_open(struct net_device *dev)
 			goto out2;
 		}
 	}
-	printk(KERN_INFO "%s: Receive Hashing Offload %s\n", dev->name,
-	       hldev->config.rth_en ? "enabled" : "disabled");
+//	printk(KERN_INFO "%s: Receive Hashing Offload %s\n", dev->name,
+;
 
 	for (i = 0; i < vdev->no_of_vpath; i++) {
 		vpath = &vdev->vpaths[i];
@@ -4218,8 +4218,8 @@ int vxge_fw_upgrade(struct vxgedev *vdev, char *fw_name, int override)
 		goto out;
 	}
 
-	printk(KERN_NOTICE "Upgrade to firmware version %d.%d.%d commencing\n",
-	       maj, min, bld);
+//	printk(KERN_NOTICE "Upgrade to firmware version %d.%d.%d commencing\n",
+;
 
 	/* Flash the adapter with the new firmware */
 	status = vxge_hw_flash_fw(hldev);
@@ -4230,9 +4230,9 @@ int vxge_fw_upgrade(struct vxgedev *vdev, char *fw_name, int override)
 		goto out;
 	}
 
-	printk(KERN_NOTICE "Upgrade of firmware successful!  Adapter must be "
-	       "hard reset before using, thus requiring a system reboot or a "
-	       "hotplug event.\n");
+//	printk(KERN_NOTICE "Upgrade of firmware successful!  Adapter must be "
+//	       "hard reset before using, thus requiring a system reboot or a "
+;
 
 out:
 	release_firmware(fw);

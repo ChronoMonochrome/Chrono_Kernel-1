@@ -209,7 +209,11 @@ static void mshutdown(struct IsdnCardState *cs)
 {
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG"Shutting down serial ....");
+#else
+	;
+#endif
 #endif
 	
 	/*
@@ -232,7 +236,11 @@ static void mshutdown(struct IsdnCardState *cs)
 	serial_inp(cs, UART_RX);    /* read data port to reset things */
 	
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" done\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -318,20 +326,32 @@ static inline void receive_chars(struct IsdnCardState *cs,
 			break;
 		cs->hw.elsa.rcvbuf[cs->hw.elsa.rcvcnt++] = ch;
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DR%02x:%02x...", ch, *status);
+#else
+		;
+#endif
 #endif
 		if (*status & (UART_LSR_BI | UART_LSR_PE |
 			       UART_LSR_FE | UART_LSR_OE)) {
 					
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("handling exept....");
+#else
+			;
+#endif
 #endif
 		}
 		*status = serial_inp(cs, UART_LSR);
 	} while (*status & UART_LSR_DR);
 	if (cs->hw.elsa.MFlag == 2) {
 		if (!(skb = dev_alloc_skb(cs->hw.elsa.rcvcnt)))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ElsaSER: receive out of memory\n");
+#else
+			;
+#endif
 		else {
 			memcpy(skb_put(skb, cs->hw.elsa.rcvcnt), cs->hw.elsa.rcvbuf, 
 				cs->hw.elsa.rcvcnt);
@@ -373,7 +393,11 @@ static inline void transmit_chars(struct IsdnCardState *cs, int *intr_done)
 		modem_fill(cs->hw.elsa.bcs);
 
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("THRE...");
+#else
+	;
+#endif
 #endif
 	if (intr_done)
 		*intr_done = 0;
@@ -390,21 +414,33 @@ static void rs_interrupt_elsa(struct IsdnCardState *cs)
 	int pass_counter = 0;
 	
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "rs_interrupt_single(%d)...", cs->irq);
+#else
+	;
+#endif
 #endif
 
 	do {
 		status = serial_inp(cs, UART_LSR);
 		debugl1(cs,"rs LSR %02x", status);
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("status = %x...", status);
+#else
+		;
+#endif
 #endif
 		if (status & UART_LSR_DR)
 			receive_chars(cs, &status);
 		if (status & UART_LSR_THRE)
 			transmit_chars(cs, NULL);
 		if (pass_counter++ > RS_ISR_PASS_LIMIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("rs_single loop break.\n");
+#else
+			;
+#endif
 			break;
 		}
 		iir = serial_inp(cs, UART_IIR);
@@ -415,7 +451,11 @@ static void rs_interrupt_elsa(struct IsdnCardState *cs)
 		}
 	} while (!(iir & UART_IIR_NO_INT));
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("end.\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -576,7 +616,11 @@ modem_l2l1(struct PStack *st, int pr, void *arg)
 		interruptible_sleep_on(&bcs->cs->dc.isac.arcofi_wait);
 		bcs->cs->hw.elsa.MFlag=1;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"ElsaSer: unknown pr %x\n", pr);
+#else
+		;
+#endif
 	}
 }
 
@@ -624,20 +668,32 @@ init_modem(struct IsdnCardState *cs) {
 	cs->bcs[1].BC_Close = close_elsastate;
 	if (!(cs->hw.elsa.rcvbuf = kmalloc(MAX_MODEM_BUF,
 		GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Elsa: No modem mem hw.elsa.rcvbuf\n");
+#else
+		;
+#endif
 		return;
 	}
 	if (!(cs->hw.elsa.transbuf = kmalloc(MAX_MODEM_BUF,
 		GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Elsa: No modem mem hw.elsa.transbuf\n");
+#else
+		;
+#endif
 		kfree(cs->hw.elsa.rcvbuf);
 		cs->hw.elsa.rcvbuf = NULL;
 		return;
 	}
 	if (mstartup(cs)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: problem startup modem\n");
+#else
+		;
+#endif
 	}
 	modem_set_init(cs);
 }

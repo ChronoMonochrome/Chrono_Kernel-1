@@ -170,8 +170,12 @@ static int atp867x_get_active_clocks_shifted(struct ata_port *ap,
 	case 1 ... 6:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ATP867X: active %dclk is invalid. "
 			"Using 12clk.\n", clk);
+#else
+		;
+#endif
 	case 9 ... 12:
 		clocks = 7;	/* 12 clk */
 		break;
@@ -202,8 +206,12 @@ static int atp867x_get_recover_clocks_shifted(unsigned int clk)
 	case 15:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ATP867X: recover %dclk is invalid. "
 			"Using default 12clk.\n", clk);
+#else
+		;
+#endif
 	case 12:	/* default 12 clk */
 		clocks = 0;
 		break;
@@ -293,8 +301,12 @@ static void atp867x_check_res(struct pci_dev *pdev)
 	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
 		start = pci_resource_start(pdev, i);
 		len   = pci_resource_len(pdev, i);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ATP867X: resource start:len=%lx:%lx\n",
 			start, len);
+#else
+		;
+#endif
 	}
 }
 
@@ -303,6 +315,7 @@ static void atp867x_check_ports(struct ata_port *ap, int port)
 	struct ata_ioports *ioaddr = &ap->ioaddr;
 	struct atp867x_priv *dp = ap->private_data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "ATP867X: port[%d] addresses\n"
 		"  cmd_addr	=0x%llx, 0x%llx\n"
 		"  ctl_addr	=0x%llx, 0x%llx\n"
@@ -344,6 +357,9 @@ static void atp867x_check_ports(struct ata_port *ap, int port)
 		(unsigned long long)dp->slave_piospd,
 		(unsigned long long)dp->eightb_piospd,
 		(unsigned long)dp->pci66mhz);
+#else
+	;
+#endif
 }
 #endif
 
@@ -383,8 +399,12 @@ static void atp867x_fixup(struct ata_host *host)
 	if (v < 0x80) {
 		v = 0x80;
 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, v);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ATP867X: set latency timer of device %s"
 			" to %d\n", pci_name(pdev), v);
+#else
+		;
+#endif
 	}
 
 	/*
@@ -436,8 +456,12 @@ static int atp867x_ata_pci_sff_init_host(struct ata_host *host)
 	atp867x_check_res(pdev);
 
 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ATP867X: iomap[%d]=0x%llx\n", i,
 			(unsigned long long)(host->iomap[i]));
+#else
+		;
+#endif
 #endif
 
 	/*
@@ -500,14 +524,22 @@ static int atp867x_init_one(struct pci_dev *pdev,
 	int rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
 		return rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ATP867X: ATP867 ATA UDMA133 controller (rev %02X)",
 		pdev->device);
+#else
+	;
+#endif
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, ATP867X_NUM_PORTS);
 	if (!host) {

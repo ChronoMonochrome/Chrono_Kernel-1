@@ -355,19 +355,27 @@ int ssb_bus_scan(struct ssb_bus *bus,
 		dev->bus = bus;
 		dev->ops = bus->ops;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX
 			    "Core %d found: %s "
 			    "(cc 0x%03X, rev 0x%02X, vendor 0x%04X)\n",
 			    i, ssb_core_name(dev->id.coreid),
 			    dev->id.coreid, dev->id.revision, dev->id.vendor);
+#else
+		;
+#endif
 
 		switch (dev->id.coreid) {
 		case SSB_DEV_80211:
 			nr_80211_cores++;
 			if (nr_80211_cores > 1) {
 				if (!we_support_multiple_80211_cores(bus)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					ssb_dprintk(KERN_INFO PFX "Ignoring additional "
 						    "802.11 core\n");
+#else
+					ssb_d;
+#endif
 					continue;
 				}
 			}
@@ -375,8 +383,12 @@ int ssb_bus_scan(struct ssb_bus *bus,
 		case SSB_DEV_EXTIF:
 #ifdef CONFIG_SSB_DRIVER_EXTIF
 			if (bus->extif.dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_printk(KERN_WARNING PFX
 					   "WARNING: Multiple EXTIFs found\n");
+#else
+				ssb_;
+#endif
 				break;
 			}
 			bus->extif.dev = dev;
@@ -384,8 +396,12 @@ int ssb_bus_scan(struct ssb_bus *bus,
 			break;
 		case SSB_DEV_CHIPCOMMON:
 			if (bus->chipco.dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_printk(KERN_WARNING PFX
 					   "WARNING: Multiple ChipCommon found\n");
+#else
+				ssb_;
+#endif
 				break;
 			}
 			bus->chipco.dev = dev;
@@ -394,8 +410,12 @@ int ssb_bus_scan(struct ssb_bus *bus,
 		case SSB_DEV_MIPS_3302:
 #ifdef CONFIG_SSB_DRIVER_MIPS
 			if (bus->mipscore.dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_printk(KERN_WARNING PFX
 					   "WARNING: Multiple MIPS cores found\n");
+#else
+				ssb_;
+#endif
 				break;
 			}
 			bus->mipscore.dev = dev;
@@ -416,8 +436,12 @@ int ssb_bus_scan(struct ssb_bus *bus,
 				}
 			}
 			if (bus->pcicore.dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_printk(KERN_WARNING PFX
 					   "WARNING: Multiple PCI(E) cores found\n");
+#else
+				ssb_;
+#endif
 				break;
 			}
 			bus->pcicore.dev = dev;

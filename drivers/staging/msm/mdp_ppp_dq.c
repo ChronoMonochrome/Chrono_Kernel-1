@@ -60,8 +60,8 @@ inline void mdp_ppp_outdw(uint32_t addr, uint32_t data)
 			node = kmalloc(sizeof(struct mdp_ppp_roi_cmd_set),
 				GFP_KERNEL);
 			if (!node) {
-				printk(KERN_ERR
-					"MDP_PPP: not enough memory.\n");
+//				printk(KERN_ERR
+;
 				mdp_ppp_ret_code = -EINVAL;
 				return;
 			}

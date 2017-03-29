@@ -307,19 +307,35 @@ static int __devinit en_pci_probe(struct pci_dev *dev_netjet,
 		return(0);
 	cs->irq = dev_netjet->irq;
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "enter:now PCI: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	cs->hw.njet.base = pci_resource_start(dev_netjet, 0);
 	if (!cs->hw.njet.base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "enter:now PCI: No IO-Adr for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	/* checks Sub-Vendor ID because system crashes with Traverse-Card */
 	if ((dev_netjet->subsystem_vendor != 0x55) ||
 	    (dev_netjet->subsystem_device != 0x02)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "enter:now: You tried to load this driver with an incompatible TigerJet-card\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Use type=20 for Traverse NetJet PCI Card.\n");
+#else
+		;
+#endif
 		return(0);
 	}
 
@@ -355,14 +371,22 @@ static int __devinit en_cs_init_rest(struct IsdnCard *card,
 {
 	const int bytecnt = 256;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"enter:now PCI: PCI card configured at 0x%lx IRQ %d\n",
 		cs->hw.njet.base, cs->irq);
+#else
+	;
+#endif
 	if (!request_region(cs->hw.njet.base, bytecnt, "Fn_ISDN")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: enter:now config port %lx-%lx already in use\n",
 		       cs->hw.njet.base,
 		       cs->hw.njet.base + bytecnt);
+#else
+		;
+#endif
 		return (0);
 	}
 
@@ -399,7 +423,11 @@ setup_enternow_pci(struct IsdnCard *card)
 #endif
 
         strcpy(tmp, enternow_pci_rev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Formula-n Europe AG enter:now ISDN PCI driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_ENTERNOW)
 		return(0);
 	test_and_clear_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags);
@@ -412,7 +440,11 @@ setup_enternow_pci(struct IsdnCard *card)
 			if (!ret)
 				return(0);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
                         printk(KERN_WARNING "enter:now PCI: No PCI card found\n");
+#else
+                        ;
+#endif
 			return(0);
 		}
 

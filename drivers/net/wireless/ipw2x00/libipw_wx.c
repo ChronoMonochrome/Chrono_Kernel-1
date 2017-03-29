@@ -402,8 +402,8 @@ int libipw_wx_set_encode(struct libipw_device *ieee,
 			kfree(new_crypt);
 			new_crypt = NULL;
 
-			printk(KERN_WARNING "%s: could not initialize WEP: "
-			       "load module lib80211_crypt_wep\n", dev->name);
+//			printk(KERN_WARNING "%s: could not initialize WEP: "
+;
 			return -EOPNOTSUPP;
 		}
 		*crypt = new_crypt;
@@ -481,7 +481,7 @@ int libipw_wx_set_encode(struct libipw_device *ieee,
 	if (ieee->reset_on_keychange &&
 	    ieee->iw_mode != IW_MODE_INFRA &&
 	    ieee->reset_port && ieee->reset_port(dev)) {
-		printk(KERN_DEBUG "%s: reset_port failed\n", dev->name);
+;
 		return -EINVAL;
 	}
 	return 0;

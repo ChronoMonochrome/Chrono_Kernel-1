@@ -528,8 +528,12 @@ static void smk_cipso_doi(void)
 
 	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
 	if (rc != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:%d remove rc = %d\n",
 		       __func__, __LINE__, rc);
+#else
+		;
+#endif
 
 	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
 	if (doip == NULL)
@@ -543,15 +547,23 @@ static void smk_cipso_doi(void)
 
 	rc = netlbl_cfg_cipsov4_add(doip, &nai);
 	if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
 		       __func__, __LINE__, rc);
+#else
+		;
+#endif
 		kfree(doip);
 		return;
 	}
 	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
 	if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:%d map add rc = %d\n",
 		       __func__, __LINE__, rc);
+#else
+		;
+#endif
 		kfree(doip);
 		return;
 	}
@@ -571,15 +583,23 @@ static void smk_unlbl_ambient(char *oldambient)
 	if (oldambient != NULL) {
 		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
 		if (rc != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s:%d remove rc = %d\n",
 			       __func__, __LINE__, rc);
+#else
+			;
+#endif
 	}
 
 	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient, PF_INET,
 				      NULL, NULL, &nai);
 	if (rc != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:%d add rc = %d\n",
 		       __func__, __LINE__, rc);
+#else
+		;
+#endif
 }
 
 /*

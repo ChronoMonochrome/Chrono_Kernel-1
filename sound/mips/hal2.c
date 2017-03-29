@@ -666,7 +666,11 @@ static int hal2_capture_trigger(struct snd_pcm_substream *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 		hal2->adc.pcm_indirect.hw_io = hal2->adc.buffer_dma;
 		hal2->adc.pcm_indirect.hw_data = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "buffer_dma %x\n", hal2->adc.buffer_dma);
+#else
+		;
+#endif
 		hal2_start_adc(hal2);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -800,8 +804,12 @@ static int hal2_detect(struct snd_hal2 *hal2)
 	major = (rev & H2_REV_MAJOR_CHIP_M) >> 4;
 	minor = (rev & H2_REV_MINOR_CHIP_M);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SGI HAL2 revision %i.%i.%i\n",
 	       board, major, minor);
+#else
+	;
+#endif
 
 	return 0;
 }

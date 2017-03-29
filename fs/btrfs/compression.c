@@ -126,12 +126,12 @@ static int check_compressed_csum(struct inode *inode,
 		kunmap_atomic(kaddr);
 
 		if (csum != *cb_sum) {
-			printk(KERN_INFO "btrfs csum failed ino %llu "
-			       "extent %llu csum %u "
-			       "wanted %u mirror %d\n",
-			       (unsigned long long)btrfs_ino(inode),
-			       (unsigned long long)disk_start,
-			       csum, *cb_sum, cb->mirror_num);
+//			printk(KERN_INFO "btrfs csum failed ino %llu "
+//			       "extent %llu csum %u "
+//			       "wanted %u mirror %d\n",
+//			       (unsigned long long)btrfs_ino(inode),
+//			       (unsigned long long)disk_start,
+;
 			ret = -EIO;
 			goto fail;
 		}
@@ -411,8 +411,8 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
 			bio_add_page(bio, page, PAGE_CACHE_SIZE, 0);
 		}
 		if (bytes_left < PAGE_CACHE_SIZE) {
-			printk("bytes left %lu compress len %lu nr %lu\n",
-			       bytes_left, cb->compressed_len, cb->nr_pages);
+//			printk("bytes left %lu compress len %lu nr %lu\n",
+;
 		}
 		bytes_left -= PAGE_CACHE_SIZE;
 		first_byte += PAGE_CACHE_SIZE;

@@ -170,7 +170,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
 	 */
 	nt = kzalloc(sizeof(*nt), GFP_KERNEL);
 	if (!nt) {
-		printk(KERN_ERR "netconsole: failed to allocate memory\n");
+;
 		goto fail;
 	}
 
@@ -308,8 +308,8 @@ static ssize_t store_enabled(struct netconsole_target *nt,
 	if (enabled < 0 || enabled > 1)
 		return -EINVAL;
 	if (enabled == nt->enabled) {
-		printk(KERN_INFO "netconsole: network logging has already %s\n",
-				nt->enabled ? "started" : "stopped");
+//		printk(KERN_INFO "netconsole: network logging has already %s\n",
+;
 		return -EINVAL;
 	}
 
@@ -325,7 +325,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
 		if (err)
 			return err;
 
-		printk(KERN_INFO "netconsole: network logging started\n");
+;
 
 	} else {	/* 0 */
 		netpoll_cleanup(&nt->np);
@@ -343,9 +343,9 @@ static ssize_t store_dev_name(struct netconsole_target *nt,
 	size_t len;
 
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -366,9 +366,9 @@ static ssize_t store_local_port(struct netconsole_target *nt,
 	int rv;
 
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -385,9 +385,9 @@ static ssize_t store_remote_port(struct netconsole_target *nt,
 	int rv;
 
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -402,9 +402,9 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
 			      size_t count)
 {
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -418,9 +418,9 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
 			       size_t count)
 {
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -436,9 +436,9 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
 	u8 remote_mac[ETH_ALEN];
 
 	if (nt->enabled) {
-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
-				"disable to update parameters\n",
-				config_item_name(&nt->item));
+//		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+//				"disable to update parameters\n",
+;
 		return -EINVAL;
 	}
 
@@ -552,7 +552,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
 	 */
 	nt = kzalloc(sizeof(*nt), GFP_KERNEL);
 	if (!nt) {
-		printk(KERN_ERR "netconsole: failed to allocate memory\n");
+;
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -663,17 +663,17 @@ static int netconsole_netdev_event(struct notifier_block *this,
 	}
 	spin_unlock_irqrestore(&target_list_lock, flags);
 	if (stopped) {
-		printk(KERN_INFO "netconsole: network logging stopped on "
-		       "interface %s as it ", dev->name);
+//		printk(KERN_INFO "netconsole: network logging stopped on "
+;
 		switch (event) {
 		case NETDEV_UNREGISTER:
-			printk(KERN_CONT "unregistered\n");
+;
 			break;
 		case NETDEV_RELEASE:
-			printk(KERN_CONT "released slaves\n");
+;
 			break;
 		case NETDEV_JOIN:
-			printk(KERN_CONT "is joining a master device\n");
+;
 			break;
 		}
 	}
@@ -759,7 +759,7 @@ static int __init init_netconsole(void)
 		goto undonotifier;
 
 	register_console(&netconsole);
-	printk(KERN_INFO "netconsole: network logging started\n");
+;
 
 	return err;
 
@@ -767,7 +767,7 @@ undonotifier:
 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
 
 fail:
-	printk(KERN_ERR "netconsole: cleaning up\n");
+;
 
 	/*
 	 * Remove all targets and destroy them (only targets created

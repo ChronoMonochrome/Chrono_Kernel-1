@@ -37,17 +37,17 @@
 static int gs_debug;
 
 #ifdef DEBUG
-#define gs_dprintk(f, str...) if (gs_debug & f) printk (str)
-#else
-#define gs_dprintk(f, str...) /* nothing */
-#endif
-
-#define func_enter() gs_dprintk (GS_DEBUG_FLOW, "gs: enter %s\n", __func__)
-#define func_exit()  gs_dprintk (GS_DEBUG_FLOW, "gs: exit  %s\n", __func__)
-
-#define RS_EVENT_WRITE_WAKEUP	1
-
-module_param(gs_debug, int, 0644);
+//#define gs_dprintk(f, str...) if (gs_debug & f) printk (str)
+//#else
+//#define gs_dprintk(f, str...) /* nothing */
+//#endif
+//
+//#define func_enter() gs_dprintk (GS_DEBUG_FLOW, "gs: enter %s\n", __func__)
+//#define func_exit()  gs_dprintk (GS_DEBUG_FLOW, "gs: exit  %s\n", __func__)
+//
+//#define RS_EVENT_WRITE_WAKEUP	1
+//
+;
 
 
 int gs_put_char(struct tty_struct * tty, unsigned char ch)
@@ -534,17 +534,17 @@ void gs_close(struct tty_struct * tty, struct file * filp)
 	}
 
 	if ((tty->count == 1) && (port->port.count != 1)) {
-		printk(KERN_ERR "gs: gs_close port %p: bad port count;"
+;
 		       " tty->count is 1, port count is %d\n", port, port->port.count);
 		port->port.count = 1;
 	}
 	if (--port->port.count < 0) {
-		printk(KERN_ERR "gs: gs_close port %p: bad port count: %d\n", port, port->port.count);
+;
 		port->port.count = 0;
 	}
 
 	if (port->port.count) {
-		gs_dprintk(GS_DEBUG_CLOSE, "gs_close port %p: count: %d\n", port, port->port.count);
+;
 		spin_unlock_irqrestore(&port->port.lock, flags);
 		func_exit ();
 		return;
@@ -633,12 +633,12 @@ void gs_set_termios (struct tty_struct * tty,
 	}
 
 	if(old_termios && (gs_debug & GS_DEBUG_TERMIOS)) {
-		if(tiosp->c_iflag != old_termios->c_iflag)  printk("c_iflag changed\n");
-		if(tiosp->c_oflag != old_termios->c_oflag)  printk("c_oflag changed\n");
-		if(tiosp->c_cflag != old_termios->c_cflag)  printk("c_cflag changed\n");
-		if(tiosp->c_lflag != old_termios->c_lflag)  printk("c_lflag changed\n");
-		if(tiosp->c_line  != old_termios->c_line)   printk("c_line changed\n");
-		if(!memcmp(tiosp->c_cc, old_termios->c_cc, NCC)) printk("c_cc changed\n");
+;
+;
+;
+;
+;
+;
 	}
 
 	baudrate = tty_get_baud_rate(tty);

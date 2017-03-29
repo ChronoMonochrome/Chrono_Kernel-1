@@ -369,27 +369,27 @@ static int nilfs_ioctl_move_inode_block(struct inode *inode,
 
 	if (unlikely(ret < 0)) {
 		if (ret == -ENOENT)
-			printk(KERN_CRIT
-			       "%s: invalid virtual block address (%s): "
-			       "ino=%llu, cno=%llu, offset=%llu, "
-			       "blocknr=%llu, vblocknr=%llu\n",
-			       __func__, vdesc->vd_flags ? "node" : "data",
-			       (unsigned long long)vdesc->vd_ino,
-			       (unsigned long long)vdesc->vd_cno,
-			       (unsigned long long)vdesc->vd_offset,
-			       (unsigned long long)vdesc->vd_blocknr,
-			       (unsigned long long)vdesc->vd_vblocknr);
+//			printk(KERN_CRIT
+//			       "%s: invalid virtual block address (%s): "
+//			       "ino=%llu, cno=%llu, offset=%llu, "
+//			       "blocknr=%llu, vblocknr=%llu\n",
+//			       __func__, vdesc->vd_flags ? "node" : "data",
+//			       (unsigned long long)vdesc->vd_ino,
+//			       (unsigned long long)vdesc->vd_cno,
+//			       (unsigned long long)vdesc->vd_offset,
+//			       (unsigned long long)vdesc->vd_blocknr,
+;
 		return ret;
 	}
 	if (unlikely(!list_empty(&bh->b_assoc_buffers))) {
-		printk(KERN_CRIT "%s: conflicting %s buffer: ino=%llu, "
-		       "cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu\n",
-		       __func__, vdesc->vd_flags ? "node" : "data",
-		       (unsigned long long)vdesc->vd_ino,
-		       (unsigned long long)vdesc->vd_cno,
-		       (unsigned long long)vdesc->vd_offset,
-		       (unsigned long long)vdesc->vd_blocknr,
-		       (unsigned long long)vdesc->vd_vblocknr);
+//		printk(KERN_CRIT "%s: conflicting %s buffer: ino=%llu, "
+//		       "cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu\n",
+//		       __func__, vdesc->vd_flags ? "node" : "data",
+//		       (unsigned long long)vdesc->vd_ino,
+//		       (unsigned long long)vdesc->vd_cno,
+//		       (unsigned long long)vdesc->vd_offset,
+//		       (unsigned long long)vdesc->vd_blocknr,
+;
 		brelse(bh);
 		return -EEXIST;
 	}
@@ -566,8 +566,8 @@ int nilfs_ioctl_prepare_clean_segments(struct the_nilfs *nilfs,
 	return 0;
 
  failed:
-	printk(KERN_ERR "NILFS: GC failed during preparation: %s: err=%d\n",
-	       msg, ret);
+//	printk(KERN_ERR "NILFS: GC failed during preparation: %s: err=%d\n",
+;
 	return ret;
 }
 
@@ -664,8 +664,8 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
 
 	ret = nilfs_ioctl_move_blocks(inode->i_sb, &argv[0], kbufs[0]);
 	if (ret < 0)
-		printk(KERN_ERR "NILFS: GC failed during preparation: "
-			"cannot read source blocks: err=%d\n", ret);
+//		printk(KERN_ERR "NILFS: GC failed during preparation: "
+;
 	else {
 		if (nilfs_sb_need_update(nilfs))
 			set_nilfs_discontinued(nilfs);

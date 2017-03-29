@@ -48,11 +48,19 @@ static void vortex_fix_latency(struct pci_dev *vortex)
 {
 	int rc;
 	if (!(rc = pci_write_config_byte(vortex, 0x40, 0xff))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO CARD_NAME
 			       ": vortex latency is 0xff\n");
+#else
+			;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING CARD_NAME
 				": could not set vortex latency: pci error 0x%x\n", rc);
+#else
+		;
+#endif
 	}
 }
 
@@ -70,11 +78,19 @@ static void vortex_fix_agp_bridge(struct pci_dev *via)
 	if (!(rc = pci_read_config_byte(via, 0x42, &value))
 			&& ((value & 0x10)
 				|| !(rc = pci_write_config_byte(via, 0x42, value | 0x10)))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO CARD_NAME
 				": bridge config is 0x%x\n", value | 0x10);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING CARD_NAME
 				": could not set vortex latency: pci error 0x%x\n", rc);
+#else
+		;
+#endif
 	}
 }
 
@@ -97,7 +113,11 @@ static void __devinit snd_vortex_workaround(struct pci_dev *vortex, int fix)
 					PCI_DEVICE_ID_AMD_FE_GATE_7007, NULL);
 		}
 		if (via) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO CARD_NAME ": Activating latency workaround...\n");
+#else
+			;
+#endif
 			vortex_fix_latency(vortex);
 			vortex_fix_agp_bridge(via);
 		}
@@ -343,11 +363,19 @@ snd_vortex_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 	chip->rev = pci->revision;
 #ifdef CHIP_AU8830
 	if ((chip->rev) != 0xfe && (chip->rev) != 0xfa) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT
 		       "vortex: The revision (%x) of your card has not been seen before.\n",
 		       chip->rev);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT
 		       "vortex: Please email the results of 'lspci -vv' to openvortex-dev@nongnu.org.\n");
+#else
+		;
+#endif
 		snd_card_free(card);
 		err = -ENODEV;
 		return err;

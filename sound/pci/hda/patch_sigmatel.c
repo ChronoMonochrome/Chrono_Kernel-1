@@ -3164,7 +3164,11 @@ static int create_controls_idx(struct hda_codec *codec, const char *pfx,
 static int add_spec_dacs(struct sigmatel_spec *spec, hda_nid_t nid)
 {
 	if (spec->multiout.num_dacs > 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "stac92xx: No space for DAC 0x%x\n", nid);
+#else
+		;
+#endif
 		return 1;
 	} else {
 		snd_BUG_ON(spec->multiout.dac_nids != spec->dac_nids);
@@ -3183,7 +3187,11 @@ static int add_spec_extra_dacs(struct sigmatel_spec *spec, hda_nid_t nid)
 			return 0;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "stac92xx: No space for extra DAC 0x%x\n", nid);
+#else
+	;
+#endif
 	return 1;
 }
 
@@ -5233,8 +5241,12 @@ static int patch_stac925x(struct hda_codec *codec)
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_925x_REF;
 			goto again;
 		}
@@ -5289,8 +5301,12 @@ again:
 			conn, STAC92HD73_DAC_COUNT + 2) - 1;
 
 	if (num_dacs < 3 || num_dacs > 5) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hda_codec: Could not determine "
 		       "number of channels defaulting to DAC count\n");
+#else
+		;
+#endif
 		num_dacs = STAC92HD73_DAC_COUNT;
 	}
 	spec->init = stac92hd73xx_core_init;
@@ -5375,8 +5391,12 @@ again:
 
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_92HD73XX_REF;
 			goto again;
 		}
@@ -5619,8 +5639,12 @@ again:
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_92HD83XXX_REF;
 			goto again;
 		}
@@ -5930,8 +5954,12 @@ again:
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_92HD71BXX_REF;
 			goto again;
 		}
@@ -5981,7 +6009,11 @@ static int patch_stac922x(struct hda_codec *codec)
 		/* Intel Macs have all same PCI SSID, so we need to check
 		 * codec SSID to distinguish the exact models
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: STAC922x, Apple subsys_id=%x\n", codec->subsystem_id);
+#else
+		;
+#endif
 		switch (codec->subsystem_id) {
 
 		case 0x106b0800:
@@ -6039,8 +6071,12 @@ static int patch_stac922x(struct hda_codec *codec)
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_D945_REF;
 			goto again;
 		}
@@ -6164,8 +6200,12 @@ static int patch_stac927x(struct hda_codec *codec)
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_D965_REF;
 			goto again;
 		}
@@ -6287,8 +6327,12 @@ static int patch_stac9205(struct hda_codec *codec)
 	err = stac92xx_parse_auto_config(codec);
 	if (!err) {
 		if (spec->board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hda_codec: No auto-config is "
 			       "available, default to model=ref\n");
+#else
+			;
+#endif
 			spec->board_config = STAC_9205_REF;
 			goto again;
 		}

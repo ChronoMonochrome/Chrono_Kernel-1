@@ -26,7 +26,11 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define pr_devinit(fmt, args...) ({ static const __devinitconst char __fmt[] = fmt; printk(__fmt, ## args); })
+#else
+#define pr_devinit(fmt, args...) ({ static const __devinitconst char __fmt[] = fmt; ;
+#endif
 
 #define DRIVER_NAME "gpio-addr-flash"
 #define PFX DRIVER_NAME ": "

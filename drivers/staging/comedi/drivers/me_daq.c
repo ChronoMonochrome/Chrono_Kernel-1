@@ -459,8 +459,8 @@ static int me_ai_insn_read(struct comedi_device *dev,
 		    (readw(dev_private->me_regbase +
 			   ME_READ_AD_FIFO) ^ 0x800) & 0x0FFF;
 	} else {
-		printk(KERN_ERR "comedi%d: Cannot get single value\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: Cannot get single value\n",
+;
 		return -EIO;
 	}
 
@@ -641,8 +641,8 @@ static int me2600_xilinx_download(struct comedi_device *dev,
 	if (value & 0x20) {
 		/* Disable interrupt */
 		writel(0x00, dev_private->plx_regbase + PLX_INTCSR);
-		printk(KERN_ERR "comedi%d: Xilinx download failed\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: Xilinx download failed\n",
+;
 		return -EIO;
 	}
 
@@ -729,20 +729,20 @@ static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	}
 
-	printk(KERN_ERR
-	       "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
-	       dev->minor, it->options[0], it->options[1]);
+//	printk(KERN_ERR
+//	       "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+;
 	return -EIO;
 
 found:
-	printk(KERN_INFO "comedi%d: found %s at PCI bus %d, slot %d\n",
-	       dev->minor, me_boards[i].name,
-	       pci_device->bus->number, PCI_SLOT(pci_device->devfn));
+//	printk(KERN_INFO "comedi%d: found %s at PCI bus %d, slot %d\n",
+//	       dev->minor, me_boards[i].name,
+;
 
 	/* Enable PCI device and request PCI regions */
 	if (comedi_pci_enable(pci_device, ME_DRIVER_NAME) < 0) {
-		printk(KERN_ERR "comedi%d: Failed to enable PCI device and "
-		       "request regions\n", dev->minor);
+//		printk(KERN_ERR "comedi%d: Failed to enable PCI device and "
+;
 		return -EIO;
 	}
 
@@ -756,7 +756,7 @@ found:
 	    ioremap(plx_regbase_tmp, plx_regbase_size_tmp);
 	dev_private->plx_regbase_size = plx_regbase_size_tmp;
 	if (!dev_private->plx_regbase) {
-		printk("comedi%d: Failed to remap I/O memory\n", dev->minor);
+;
 		return -ENOMEM;
 	}
 
@@ -766,11 +766,11 @@ found:
 	swap_regbase_size_tmp = pci_resource_len(pci_device, 5);
 
 	if (!swap_regbase_tmp)
-		printk(KERN_ERR "comedi%d: Swap not present\n", dev->minor);
+;
 
 	/*---------------------------------------------- Workaround start ---*/
 	if (plx_regbase_tmp & 0x0080) {
-		printk(KERN_ERR "comedi%d: PLX-Bug detected\n", dev->minor);
+;
 
 		if (swap_regbase_tmp) {
 			regbase_tmp = plx_regbase_tmp;
@@ -806,8 +806,8 @@ found:
 	dev_private->me_regbase_size = me_regbase_size_tmp;
 	dev_private->me_regbase = ioremap(me_regbase_tmp, me_regbase_size_tmp);
 	if (!dev_private->me_regbase) {
-		printk(KERN_ERR "comedi%d: Failed to remap I/O memory\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: Failed to remap I/O memory\n",
+;
 		return -ENOMEM;
 	}
 	/* Download firmware and reset card */
@@ -867,8 +867,8 @@ found:
 	subdevice->insn_config = me_dio_insn_config;
 	subdevice->io_bits = 0;
 
-	printk(KERN_INFO "comedi%d: " ME_DRIVER_NAME " attached.\n",
-	       dev->minor);
+//	printk(KERN_INFO "comedi%d: " ME_DRIVER_NAME " attached.\n",
+;
 	return 0;
 }
 

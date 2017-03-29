@@ -234,7 +234,7 @@ static ctl_table svcrdma_root_table[] = {
 
 void svc_rdma_cleanup(void)
 {
-	dprintk("SVCRDMA Module Removed, deregister RPC RDMA transport\n");
+;
 	destroy_workqueue(svc_rdma_wq);
 	if (svcrdma_table_header) {
 		unregister_sysctl_table(svcrdma_table_header);
@@ -247,12 +247,12 @@ void svc_rdma_cleanup(void)
 
 int svc_rdma_init(void)
 {
-	dprintk("SVCRDMA Module Init, register RPC RDMA transport\n");
-	dprintk("\tsvcrdma_ord      : %d\n", svcrdma_ord);
-	dprintk("\tmax_requests     : %d\n", svcrdma_max_requests);
-	dprintk("\tsq_depth         : %d\n",
-		svcrdma_max_requests * RPCRDMA_SQ_DEPTH_MULT);
-	dprintk("\tmax_inline       : %d\n", svcrdma_max_req_size);
+;
+;
+;
+//	dprintk("\tsq_depth         : %d\n",
+;
+;
 
 	svc_rdma_wq = alloc_workqueue("svc_rdma", 0, 0);
 	if (!svc_rdma_wq)
@@ -269,7 +269,7 @@ int svc_rdma_init(void)
 						SLAB_HWCACHE_ALIGN,
 						NULL);
 	if (!svc_rdma_map_cachep) {
-		printk(KERN_INFO "Could not allocate map cache.\n");
+;
 		goto err0;
 	}
 
@@ -281,7 +281,7 @@ int svc_rdma_init(void)
 				  SLAB_HWCACHE_ALIGN,
 				  NULL);
 	if (!svc_rdma_ctxt_cachep) {
-		printk(KERN_INFO "Could not allocate WR ctxt cache.\n");
+;
 		goto err1;
 	}
 

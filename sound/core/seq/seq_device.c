@@ -325,7 +325,11 @@ int snd_seq_device_register_driver(char *id, struct snd_seq_dev_ops *entry,
 		return -ENOMEM;
 	}
 	if (ops->driver & DRIVER_LOADED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "driver_register: driver '%s' already exists\n", id);
+#else
+		;
+#endif
 		unlock_driver(ops);
 		snd_seq_autoload_unlock();
 		return -EBUSY;

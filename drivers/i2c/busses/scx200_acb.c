@@ -363,11 +363,23 @@ static s32 scx200_acb_smbus_xfer(struct i2c_adapter *adapter,
 	dev_dbg(&adapter->dev, "transfer done, result: %d", rc);
 	if (buffer) {
 		int i;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" data:");
+#else
+		;
+#endif
 		for (i = 0; i < len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", buffer[i]);
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	return rc;
@@ -459,7 +471,11 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
 
 	rc = scx200_acb_probe(iface);
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": probe failed\n");
+#else
+		;
+#endif
 		return rc;
 	}
 

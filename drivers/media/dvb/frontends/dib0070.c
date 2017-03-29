@@ -38,11 +38,23 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "turn on debugging (default: 0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) do { \
 	if (debug) { \
 		printk(KERN_DEBUG "DiB0070: "); \
+#else
+#define d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(args); \
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n"); \
+#else
+		;
+#endif
 	} \
 } while (0)
 
@@ -87,7 +99,11 @@ static u16 dib0070_read_reg(struct dib0070_state *state, u8 reg)
 	u16 ret;
 
 	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return 0;
 	}
 
@@ -104,7 +120,11 @@ static u16 dib0070_read_reg(struct dib0070_state *state, u8 reg)
 	state->msg[1].len = 2;
 
 	if (i2c_transfer(state->i2c, state->msg, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DiB0070 I2C read failed\n");
+#else
+		;
+#endif
 		ret = 0;
 	} else
 		ret = (state->i2c_read_buffer[0] << 8)
@@ -119,7 +139,11 @@ static int dib0070_write_reg(struct dib0070_state *state, u8 reg, u16 val)
 	int ret;
 
 	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	state->i2c_write_buffer[0] = reg;
@@ -133,7 +157,11 @@ static int dib0070_write_reg(struct dib0070_state *state, u8 reg, u16 val)
 	state->msg[0].len = 3;
 
 	if (i2c_transfer(state->i2c, state->msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DiB0070 I2C write failed\n");
+#else
+		;
+#endif
 		ret = -EREMOTEIO;
 	} else
 		ret = 0;
@@ -206,7 +234,11 @@ static int dib0070_captrim(struct dib0070_state *state, enum frontend_tune_state
 
 		adc = dib0070_read_reg(state, 0x19);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("CAPTRIM=%hd; ADC = %hd (ADC) & %dmV", state->captrim, adc, (u32) adc*(u32)1800/(u32)1024);
+#else
+		d;
+#endif
 
 		if (adc >= 400) {
 			adc -= 400;
@@ -217,7 +249,11 @@ static int dib0070_captrim(struct dib0070_state *state, enum frontend_tune_state
 		}
 
 		if (adc < state->adc_diff) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("CAPTRIM=%hd is closer to target (%hd/%hd)", state->captrim, adc, state->adc_diff);
+#else
+			d;
+#endif
 			state->adc_diff = adc;
 			state->fcaptrim = state->captrim;
 
@@ -244,7 +280,11 @@ static int dib0070_set_ctrl_lo5(struct dvb_frontend *fe, u8 vco_bias_trim, u8 hf
 {
 	struct dib0070_state *state = fe->tuner_priv;
     u16 lo5 = (third_order_filt << 14) | (0 << 13) | (1 << 12) | (3 << 9) | (cp_current << 6) | (hf_div_trim << 3) | (vco_bias_trim << 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("CTRL_LO5: 0x%x", lo5);
+#else
+	d;
+#endif
 	return dib0070_write_reg(state, 0x15, lo5);
 }
 
@@ -259,7 +299,11 @@ void dib0070_ctrl_agc_filter(struct dvb_frontend *fe, u8 open)
 		dib0070_write_reg(state, 0x1b, 0x4112);
 	if (state->cfg->vga_filter != 0) {
 		dib0070_write_reg(state, 0x1a, state->cfg->vga_filter);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("vga filter register is set to %x", state->cfg->vga_filter);
+#else
+		d;
+#endif
 	} else
 		dib0070_write_reg(state, 0x1a, 0x0009);
 	}
@@ -383,7 +427,11 @@ static int dib0070_tune_digital(struct dvb_frontend *fe, struct dvb_frontend_par
     }
 
     if (*tune_state == CT_TUNER_START) {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Tuning for Band: %hd (%d kHz)", band, freq);
+#else
+	d;
+#endif
 	if (state->current_rf != freq) {
 		u8 REFDIV;
 		u32 FBDiv, Rest, FREF, VCOF_kHz;
@@ -461,12 +509,36 @@ static int dib0070_tune_digital(struct dvb_frontend *fe, struct dvb_frontend_par
 		dib0070_write_reg(state, 0x20,
 			0x0040 | 0x0020 | 0x0010 | 0x0008 | 0x0002 | 0x0001 | state->current_tune_table_index->tuner_enable);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("REFDIV: %hd, FREF: %d", REFDIV, FREF);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("FBDIV: %d, Rest: %d", FBDiv, Rest);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Num: %hd, Den: %hd, SD: %hd", (u16) Rest, Den, (state->lo4 >> 12) & 0x1);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("HFDIV code: %hd", state->current_tune_table_index->hfdiv);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("VCO = %hd", state->current_tune_table_index->vco_band);
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("VCOF: ((%hd*%d) << 1))", state->current_tune_table_index->vco_multi, freq);
+#else
+		d;
+#endif
 
 		*tune_state = CT_TUNER_STEP_0;
 	} else { /* we are already tuned to this frequency - the configuration is correct  */
@@ -627,7 +699,11 @@ static void dib0070_wbd_offset_calibration(struct dib0070_state *state)
     u8 gain;
     for (gain = 6; gain < 8; gain++) {
 	state->wbd_offset_3_3[gain - 6] = ((dib0070_read_wbd_offset(state, gain) * 8 * 18 / 33 + 1) / 2);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Gain: %d, WBDOffset (3.3V) = %hd", gain, state->wbd_offset_3_3[gain-6]);
+#else
+	d;
+#endif
     }
 }
 
@@ -667,10 +743,18 @@ static int dib0070_reset(struct dvb_frontend *fe)
 		state->revision = DIB0070S_P1A;
 
 	/* P1F or not */
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Revision: %x", state->revision);
+#else
+	d;
+#endif
 
 	if (state->revision == DIB0070_P1D) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Error: this driver is not to be used meant for P1D or earlier");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -762,7 +846,11 @@ struct dvb_frontend *dib0070_attach(struct dvb_frontend *fe, struct i2c_adapter 
 	if (dib0070_reset(fe) != 0)
 		goto free_mem;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DiB0070: successfully identified\n");
+#else
+	;
+#endif
 	memcpy(&fe->ops.tuner_ops, &dib0070_ops, sizeof(struct dvb_tuner_ops));
 
 	fe->tuner_priv = state;

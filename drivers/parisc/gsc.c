@@ -38,7 +38,11 @@ int gsc_alloc_irq(struct gsc_irq *i)
 {
 	int irq = txn_alloc_irq(GSC_EIM_WIDTH);
 	if (irq < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cannot get irq\n");
+#else
+		;
+#endif
 		return irq;
 	}
 
@@ -57,7 +61,11 @@ int gsc_claim_irq(struct gsc_irq *i, int irq)
 
 	irq = txn_claim_irq(irq);
 	if (irq < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cannot claim irq %d\n", c);
+#else
+		;
+#endif
 		return irq;
 	}
 
@@ -221,12 +229,24 @@ int gsc_common_setup(struct parisc_device *parent, struct gsc_asic *gsc_asic)
 	}
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s IRQ %d EIM 0x%x", gsc_asic->name,
 			parent->irq, gsc_asic->eim);
+#else
+	;
+#endif
 	if (gsc_readl(gsc_asic->hpa + OFFSET_IMR))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  IMR is non-zero! (0x%x)",
 				gsc_readl(gsc_asic->hpa + OFFSET_IMR));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;

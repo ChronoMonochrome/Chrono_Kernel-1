@@ -373,16 +373,40 @@ static void ace_dump_mem(void *base, int len)
 	int i, j;
 
 	for (i = 0; i < len; i += 16) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%.8x:", i);
+#else
+		;
+#endif
 		for (j = 0; j < 16; j++) {
 			if (!(j % 4))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%.2x", ptr[i + j]);
+#else
+			;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" ");
+#else
+		;
+#endif
 		for (j = 0; j < 16; j++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", isprint(ptr[i + j]) ? ptr[i + j] : '.');
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 #else

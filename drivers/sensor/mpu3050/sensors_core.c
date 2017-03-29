@@ -27,7 +27,11 @@ static void set_sensor_attr(struct device *dev, struct device_attribute *attribu
 	{
 		if( ( device_create_file( dev, attributes[i] )) < 0 )
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[SENSOR CORE] fail!!! device_create_file( dev, attributes[%d] )\n", i);
+#else
+			;
+#endif
 		}
 	}
 }
@@ -69,7 +73,11 @@ void sensors_unregister(struct device *dev)
 
 static int __init sensors_class_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[SENSORS CORE] sensors_class_init\n");
+#else
+	;
+#endif
 	sensors_class = class_create(THIS_MODULE, "sensors");
 
 	if (IS_ERR(sensors_class))

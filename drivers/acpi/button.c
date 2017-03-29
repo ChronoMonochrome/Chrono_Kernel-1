@@ -414,7 +414,11 @@ static int acpi_button_add(struct acpi_device *device)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s]\n", name, acpi_device_bid(device));
+#else
+	;
+#endif
 	return 0;
 
  err_remove_fs:

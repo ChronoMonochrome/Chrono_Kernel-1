@@ -114,7 +114,11 @@ static unsigned short snd_cs46xx_codec_read(struct snd_cs46xx *chip,
 
 	tmp = snd_cs46xx_peekBA0(chip, BA0_ACCTL);
 	if ((tmp & ACCTL_VFRM) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING  "cs46xx: ACCTL_VFRM not set 0x%x\n",tmp);
+#else
+		;
+#endif
 		snd_cs46xx_pokeBA0(chip, BA0_ACCTL, (tmp & (~ACCTL_ESYN)) | ACCTL_VFRM );
 		msleep(50);
 		tmp = snd_cs46xx_peekBA0(chip, BA0_ACCTL + offset);
@@ -195,9 +199,13 @@ static unsigned short snd_cs46xx_codec_read(struct snd_cs46xx *chip,
 	 *  ACSDA = Status Data Register = 474h
 	 */
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "e) reg = 0x%x, val = 0x%x, BA0_ACCAD = 0x%x\n", reg,
 			snd_cs46xx_peekBA0(chip, BA0_ACSDA),
 			snd_cs46xx_peekBA0(chip, BA0_ACCAD));
+#else
+	;
+#endif
 #endif
 
 	//snd_cs46xx_peekBA0(chip, BA0_ACCAD);
@@ -3799,12 +3807,20 @@ int __devinit snd_cs46xx_create(struct snd_card *card,
 	}
 
 	if (external_amp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "Crystal EAPD support forced on.\n");
+#else
+		;
+#endif
 		chip->amplifier_ctrl = amp_voyetra;
 	}
 
 	if (thinkpad) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "Activating CLKRUN hack for Thinkpad.\n");
+#else
+		;
+#endif
 		chip->active_ctrl = clkrun_hack;
 		clkrun_init(chip);
 	}

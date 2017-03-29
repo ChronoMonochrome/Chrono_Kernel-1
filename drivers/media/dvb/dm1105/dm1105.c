@@ -672,7 +672,11 @@ static void dm1105_emit_key(struct work_struct *work)
 	u8 data;
 
 	if (ir_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: received byte 0x%04x\n", __func__, ircom);
+#else
+		;
+#endif
 
 	data = (ircom >> 8) & 0x7f;
 

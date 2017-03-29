@@ -2972,8 +2972,12 @@ static void bfq_init_prio_data(struct bfq_queue *bfqq, struct io_context *ioc)
 
 	if (bfqq->entity.new_ioprio < 0 ||
 	    bfqq->entity.new_ioprio >= IOPRIO_BE_NR) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "bfq_init_prio_data: new_ioprio %d\n",
 				 bfqq->entity.new_ioprio);
+#else
+		;
+#endif
 		BUG();
 	}
 

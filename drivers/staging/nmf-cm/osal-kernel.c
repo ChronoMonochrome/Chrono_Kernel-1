@@ -681,10 +681,10 @@ void OSAL_Write64(t_nmf_trace_channel channel, t_uint8 isTimestamped, t_uint64 v
 void OSAL_Log(const char *format, int param1, int param2, int param3, int param4, int param5, int param6)
 {
 	if (cm_use_ftrace)
-		trace_printk(format,
-			     param1, param2, param3, param4, param5, param6);
+//		trace_printk(format,
+;
 	else
-		printk(format, param1, param2, param3, param4, param5, param6);
+;
 }
 
 /**

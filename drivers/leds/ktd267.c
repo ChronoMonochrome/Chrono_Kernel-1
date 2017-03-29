@@ -35,7 +35,11 @@
 #ifndef KTD267_DEBUG
 #define ktd267_dbg(fmt,...)
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 #define ktd267_dbg(fmt,...)   printk(KERN_DEBUG " KTD267 DEBUG: %s[%d]"fmt,__FUNCTION__,__LINE__, ##__VA_ARGS__);
+#else
+#define ktd267_dbg(fmt,...)   ;
+#endif
 #endif
 
 /*************************************************************************

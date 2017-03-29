@@ -673,11 +673,19 @@ static inline int sanity_check(SLMP_INFO *info,
 		"Warning: null synclinkmp_struct for (%s) in %s\n";
 
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badinfo, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 	if (info->magic != MGSL_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badmagic, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #else
@@ -722,8 +730,12 @@ static int open(struct tty_struct *tty, struct file *filp)
 
 	line = tty->index;
 	if ((line < 0) || (line >= synclinkmp_device_count)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d): open with invalid line #%d.\n",
 			__FILE__,__LINE__,line);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -733,8 +745,12 @@ static int open(struct tty_struct *tty, struct file *filp)
 	if (sanity_check(info, tty->name, "open"))
 		return -ENODEV;
 	if ( info->init_error ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s device is not allocated, init error=%d\n",
 			__FILE__,__LINE__,info->device_name,info->init_error);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -742,8 +758,12 @@ static int open(struct tty_struct *tty, struct file *filp)
 	info->port.tty = tty;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s open(), old ref count = %d\n",
 			 __FILE__,__LINE__,tty->driver->name, info->port.count);
+#else
+		;
+#endif
 
 	/* If port is closing, signal caller to try again */
 	if (tty_hung_up_p(filp) || info->port.flags & ASYNC_CLOSING){
@@ -775,14 +795,22 @@ static int open(struct tty_struct *tty, struct file *filp)
 	retval = block_til_ready(tty, filp, info);
 	if (retval) {
 		if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d):%s block_til_ready() returned %d\n",
 				 __FILE__,__LINE__, info->device_name, retval);
+#else
+			;
+#endif
 		goto cleanup;
 	}
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s open() success\n",
 			 __FILE__,__LINE__, info->device_name);
+#else
+		;
+#endif
 	retval = 0;
 
 cleanup:
@@ -807,8 +835,12 @@ static void close(struct tty_struct *tty, struct file *filp)
 		return;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s close() entry, count=%d\n",
 			 __FILE__,__LINE__, info->device_name, info->port.count);
+#else
+		;
+#endif
 
 	if (tty_port_close_start(&info->port, tty, filp) == 0)
 		goto cleanup;
@@ -826,8 +858,12 @@ static void close(struct tty_struct *tty, struct file *filp)
 	info->port.tty = NULL;
 cleanup:
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s close() exit, count=%d\n", __FILE__,__LINE__,
 			tty->driver->name, info->port.count);
+#else
+		;
+#endif
 }
 
 /* Called by tty_hangup() when a hangup is signaled.
@@ -839,8 +875,12 @@ static void hangup(struct tty_struct *tty)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s hangup()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "hangup"))
 		return;
@@ -867,8 +907,12 @@ static void set_termios(struct tty_struct *tty, struct ktermios *old_termios)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s set_termios()\n", __FILE__,__LINE__,
 			tty->driver->name );
+#else
+		;
+#endif
 
 	change_params(info);
 
@@ -920,8 +964,12 @@ static int write(struct tty_struct *tty,
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s write() count=%d\n",
 		       __FILE__,__LINE__,info->device_name,count);
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "write"))
 		goto cleanup;
@@ -985,8 +1033,12 @@ start:
 
 cleanup:
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s write() returning=%d\n",
 			__FILE__,__LINE__,info->device_name,ret);
+#else
+		;
+#endif
 	return ret;
 }
 
@@ -999,8 +1051,12 @@ static int put_char(struct tty_struct *tty, unsigned char ch)
 	int ret = 0;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s put_char(%d)\n",
 			__FILE__,__LINE__,info->device_name,ch);
+#else
+		;
+#endif
 	}
 
 	if (sanity_check(info, tty->name, "put_char"))
@@ -1035,8 +1091,12 @@ static void send_xchar(struct tty_struct *tty, char ch)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s send_xchar(%d)\n",
 			 __FILE__,__LINE__, info->device_name, ch );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "send_xchar"))
 		return;
@@ -1062,8 +1122,12 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
 		return;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s wait_until_sent() entry\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "wait_until_sent"))
 		return;
@@ -1113,8 +1177,12 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
 
 exit:
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s wait_until_sent() exit\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 }
 
 /* Return the count of free bytes in transmit buffer
@@ -1136,8 +1204,12 @@ static int write_room(struct tty_struct *tty)
 	}
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s write_room()=%d\n",
 		       __FILE__, __LINE__, info->device_name, ret);
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -1150,8 +1222,12 @@ static void flush_chars(struct tty_struct *tty)
 	unsigned long flags;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s flush_chars() entry tx_count=%d\n",
 			__FILE__,__LINE__,info->device_name,info->tx_count);
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "flush_chars"))
 		return;
@@ -1161,8 +1237,12 @@ static void flush_chars(struct tty_struct *tty)
 		return;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s flush_chars() entry, starting transmitter\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 
@@ -1189,8 +1269,12 @@ static void flush_buffer(struct tty_struct *tty)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s flush_buffer() entry\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "flush_buffer"))
 		return;
@@ -1214,8 +1298,12 @@ static void tx_hold(struct tty_struct *tty)
 		return;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_hold()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	if (info->tx_enabled)
@@ -1234,8 +1322,12 @@ static void tx_release(struct tty_struct *tty)
 		return;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_release()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	if (!info->tx_enabled)
@@ -1260,8 +1352,12 @@ static int ioctl(struct tty_struct *tty,
 	void __user *argp = (void __user *)arg;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s ioctl() cmd=%08X\n", __FILE__,__LINE__,
 			info->device_name, cmd );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "ioctl"))
 		return -ENODEV;
@@ -1451,8 +1547,12 @@ static int chars_in_buffer(struct tty_struct *tty)
 		return 0;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s chars_in_buffer()=%d\n",
 		       __FILE__, __LINE__, info->device_name, info->tx_count);
+#else
+		;
+#endif
 
 	return info->tx_count;
 }
@@ -1465,8 +1565,12 @@ static void throttle(struct tty_struct * tty)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s throttle() entry\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "throttle"))
 		return;
@@ -1490,8 +1594,12 @@ static void unthrottle(struct tty_struct * tty)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s unthrottle() entry\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "unthrottle"))
 		return;
@@ -1521,8 +1629,12 @@ static int set_break(struct tty_struct *tty, int break_state)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s set_break(%d)\n",
 			 __FILE__,__LINE__, info->device_name, break_state);
+#else
+		;
+#endif
 
 	if (sanity_check(info, tty->name, "set_break"))
 		return -EINVAL;
@@ -1602,7 +1714,11 @@ static netdev_tx_t hdlcdev_xmit(struct sk_buff *skb,
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s:hdlc_xmit(%s)\n",__FILE__,dev->name);
+#else
+		;
+#endif
 
 	/* stop sending until this frame completes */
 	netif_stop_queue(dev);
@@ -1645,7 +1761,11 @@ static int hdlcdev_open(struct net_device *dev)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s:hdlcdev_open(%s)\n",__FILE__,dev->name);
+#else
+		;
+#endif
 
 	/* generic HDLC layer open processing */
 	if ((rc = hdlc_open(dev)))
@@ -1654,7 +1774,11 @@ static int hdlcdev_open(struct net_device *dev)
 	/* arbitrate between network and tty opens */
 	spin_lock_irqsave(&info->netlock, flags);
 	if (info->port.count != 0 || info->netcount != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: hdlc_open returning busy\n", dev->name);
+#else
+		;
+#endif
 		spin_unlock_irqrestore(&info->netlock, flags);
 		return -EBUSY;
 	}
@@ -1702,7 +1826,11 @@ static int hdlcdev_close(struct net_device *dev)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s:hdlcdev_close(%s)\n",__FILE__,dev->name);
+#else
+		;
+#endif
 
 	netif_stop_queue(dev);
 
@@ -1736,7 +1864,11 @@ static int hdlcdev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	unsigned int flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s:hdlcdev_ioctl(%s)\n",__FILE__,dev->name);
+#else
+		;
+#endif
 
 	/* return error if TTY interface open */
 	if (info->port.count)
@@ -1832,7 +1964,11 @@ static void hdlcdev_tx_timeout(struct net_device *dev)
 	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hdlcdev_tx_timeout(%s)\n",dev->name);
+#else
+		;
+#endif
 
 	dev->stats.tx_errors++;
 	dev->stats.tx_aborted_errors++;
@@ -1870,11 +2006,19 @@ static void hdlcdev_rx(SLMP_INFO *info, char *buf, int size)
 	struct net_device *dev = info->netdev;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hdlcdev_rx(%s)\n",dev->name);
+#else
+		;
+#endif
 
 	if (skb == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: can't alloc skb, dropping packet\n",
 		       dev->name);
+#else
+		;
+#endif
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -1936,7 +2080,11 @@ static int hdlcdev_init(SLMP_INFO *info)
 
 	/* register objects with HDLC layer */
 	if ((rc = register_hdlc_device(dev))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s:unable to register hdlc device\n",__FILE__);
+#else
+		;
+#endif
 		free_netdev(dev);
 		return rc;
 	}
@@ -2004,8 +2152,12 @@ static void bh_handler(struct work_struct *work)
 		return;
 
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s bh_handler() entry\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	info->bh_running = true;
 
@@ -2013,8 +2165,12 @@ static void bh_handler(struct work_struct *work)
 
 		/* Process work item */
 		if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "%s(%d):%s bh_handler() work item action=%d\n",
 				__FILE__,__LINE__,info->device_name, action);
+#else
+			;
+#endif
 
 		switch (action) {
 
@@ -2029,22 +2185,34 @@ static void bh_handler(struct work_struct *work)
 			break;
 		default:
 			/* unknown work item ID */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d):%s Unknown work item ID=%08X!\n",
 				__FILE__,__LINE__,info->device_name,action);
+#else
+			;
+#endif
 			break;
 		}
 	}
 
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s bh_handler() exit\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 }
 
 static void bh_receive(SLMP_INFO *info)
 {
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s bh_receive()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	while( rx_get_frame(info) );
 }
@@ -2054,8 +2222,12 @@ static void bh_transmit(SLMP_INFO *info)
 	struct tty_struct *tty = info->port.tty;
 
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s bh_transmit() entry\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	if (tty)
 		tty_wakeup(tty);
@@ -2064,8 +2236,12 @@ static void bh_transmit(SLMP_INFO *info)
 static void bh_status(SLMP_INFO *info)
 {
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s bh_status() entry\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	info->ri_chkcount = 0;
 	info->dsr_chkcount = 0;
@@ -2095,8 +2271,12 @@ static void isr_timer(SLMP_INFO * info)
 	info->irq_occurred = true;
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_timer()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 }
 
 static void isr_rxint(SLMP_INFO * info)
@@ -2114,8 +2294,12 @@ static void isr_rxint(SLMP_INFO * info)
 		write_reg(info, SR2, status2);
 	
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_rxint status=%02X %02x\n",
 			__FILE__,__LINE__,info->device_name,status,status2);
+#else
+		;
+#endif
 
 	if (info->params.mode == MGSL_MODE_ASYNC) {
 		if (status & BRKD) {
@@ -2166,8 +2350,12 @@ static void isr_rxrdy(SLMP_INFO * info)
  	struct	mgsl_icount *icount = &info->icount;
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_rxrdy\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	while((status = read_reg(info,CST0)) & BIT0)
 	{
@@ -2178,8 +2366,12 @@ static void isr_rxrdy(SLMP_INFO * info)
 		icount->rx++;
 
 		if ( status & (PE + FRME + OVRN) ) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d):%s rxerr=%04X\n",
 				__FILE__,__LINE__,info->device_name,status);
+#else
+			;
+#endif
 
 			/* update error statistics */
 			if (status & PE)
@@ -2218,10 +2410,14 @@ static void isr_rxrdy(SLMP_INFO * info)
 	}
 
 	if ( debug_level >= DEBUG_LEVEL_ISR ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s rx=%d brk=%d parity=%d frame=%d overrun=%d\n",
 			__FILE__,__LINE__,info->device_name,
 			icount->rx,icount->brk,icount->parity,
 			icount->frame,icount->overrun);
+#else
+		;
+#endif
 	}
 
 	if ( tty )
@@ -2231,8 +2427,12 @@ static void isr_rxrdy(SLMP_INFO * info)
 static void isr_txeom(SLMP_INFO * info, unsigned char status)
 {
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_txeom status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status);
+#else
+		;
+#endif
 
 	write_reg(info, TXDMA + DIR, 0x00); /* disable Tx DMA IRQs */
 	write_reg(info, TXDMA + DSR, 0xc0); /* clear IRQs and disable DMA */
@@ -2296,8 +2496,12 @@ static void isr_txint(SLMP_INFO * info)
 	write_reg(info, SR1, status);
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_txint status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status);
+#else
+		;
+#endif
 
 	if (status & (UDRN + IDLE))
 		isr_txeom(info, status);
@@ -2319,8 +2523,12 @@ static void isr_txint(SLMP_INFO * info)
 static void isr_txrdy(SLMP_INFO * info)
 {
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_txrdy() tx_count=%d\n",
 			__FILE__,__LINE__,info->device_name,info->tx_count);
+#else
+		;
+#endif
 
 	if (info->params.mode != MGSL_MODE_ASYNC) {
 		/* disable TXRDY IRQ, enable IDLE IRQ */
@@ -2358,8 +2566,12 @@ static void isr_rxdmaok(SLMP_INFO * info)
 	write_reg(info, RXDMA + DSR, (unsigned char)(status | 1));
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_rxdmaok(), status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status);
+#else
+		;
+#endif
 
 	info->pending_bh |= BH_RECEIVE;
 }
@@ -2375,8 +2587,12 @@ static void isr_rxdmaerror(SLMP_INFO * info)
 	write_reg(info, RXDMA + DSR, (unsigned char)(status | 1));
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_rxdmaerror(), status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status);
+#else
+		;
+#endif
 
 	info->rx_overflow = true;
 	info->pending_bh |= BH_RECEIVE;
@@ -2391,8 +2607,12 @@ static void isr_txdmaok(SLMP_INFO * info)
 	write_reg(info, TXDMA + DCMD, SWABORT);	/* reset/init DMA channel */
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_txdmaok(), status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status_reg1);
+#else
+		;
+#endif
 
 	/* program TXRDY as FIFO empty flag, enable TXRDY IRQ */
 	write_reg16(info, TRC0, 0);
@@ -2411,8 +2631,12 @@ static void isr_txdmaerror(SLMP_INFO * info)
 	write_reg(info, TXDMA + DSR, (unsigned char)(status | 1));
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s isr_txdmaerror(), status=%02x\n",
 			__FILE__,__LINE__,info->device_name,status);
+#else
+		;
+#endif
 }
 
 /* handle input serial signal changes
@@ -2422,8 +2646,12 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
  	struct	mgsl_icount *icount;
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):isr_io_pin status=%04X\n",
 			__FILE__,__LINE__,status);
+#else
+		;
+#endif
 
 	if (status & (MISCSTATUS_CTS_LATCHED | MISCSTATUS_DCD_LATCHED |
 	              MISCSTATUS_DSR_LATCHED | MISCSTATUS_RI_LATCHED) ) {
@@ -2480,13 +2708,21 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
 		if ( (info->port.flags & ASYNC_CHECK_CD) &&
 		     (status & MISCSTATUS_DCD_LATCHED) ) {
 			if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s CD now %s...", info->device_name,
 				       (status & SerialSignal_DCD) ? "on" : "off");
+#else
+				;
+#endif
 			if (status & SerialSignal_DCD)
 				wake_up_interruptible(&info->port.open_wait);
 			else {
 				if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("doing serial hangup...");
+#else
+					;
+#endif
 				if (info->port.tty)
 					tty_hangup(info->port.tty);
 			}
@@ -2498,7 +2734,11 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
 				if (info->port.tty->hw_stopped) {
 					if (status & SerialSignal_CTS) {
 						if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("CTS tx start...");
+#else
+							;
+#endif
 			 			info->port.tty->hw_stopped = 0;
 						tx_start(info);
 						info->pending_bh |= BH_TRANSMIT;
@@ -2507,7 +2747,11 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
 				} else {
 					if (!(status & SerialSignal_CTS)) {
 						if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("CTS tx stop...");
+#else
+							;
+#endif
 			 			info->port.tty->hw_stopped = 1;
 						tx_stop(info);
 					}
@@ -2537,8 +2781,12 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 	unsigned short tmp;
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%d): synclinkmp_interrupt(%d)entry.\n",
 			__FILE__, __LINE__, info->irq_level);
+#else
+		;
+#endif
 
 	spin_lock(&info->lock);
 
@@ -2551,9 +2799,13 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 		timerstatus0 = read_reg(info, ISR2);
 
 		if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s(%d):%s status0=%02x, dmastatus0=%02x, timerstatus0=%02x\n",
 				__FILE__, __LINE__, info->device_name,
 				status0, dmastatus0, timerstatus0);
+#else
+			;
+#endif
 
 		if (info->port_count == 4) {
 			/* get status for SCA1 (ports 2-3) */
@@ -2563,9 +2815,13 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 			timerstatus1 = read_reg(info->port_array[2], ISR2);
 
 			if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(%d):%s status1=%02x, dmastatus1=%02x, timerstatus1=%02x\n",
 					__FILE__,__LINE__,info->device_name,
 					status1,dmastatus1,timerstatus1);
+#else
+				;
+#endif
 		}
 
 		if (!status0 && !dmastatus0 && !timerstatus0 &&
@@ -2628,8 +2884,12 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 		     port->pending_bh && !port->bh_running &&
 		     !port->bh_requested ) {
 			if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(%d):%s queueing bh task.\n",
 					__FILE__,__LINE__,port->device_name);
+#else
+				;
+#endif
 			schedule_work(&port->task);
 			port->bh_requested = true;
 		}
@@ -2638,8 +2898,12 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 	spin_unlock(&info->lock);
 
 	if ( debug_level >= DEBUG_LEVEL_ISR )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%d):synclinkmp_interrupt(%d)exit.\n",
 			__FILE__, __LINE__, info->irq_level);
+#else
+		;
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -2648,7 +2912,11 @@ static irqreturn_t synclinkmp_interrupt(int dummy, void *dev_id)
 static int startup(SLMP_INFO * info)
 {
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_releaseup()\n",__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	if (info->port.flags & ASYNC_INITIALIZED)
 		return 0;
@@ -2691,8 +2959,12 @@ static void shutdown(SLMP_INFO * info)
 		return;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s synclinkmp_shutdown()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	/* clear status wait queue because status changes */
 	/* can't happen after shutting down the hardware */
@@ -2767,8 +3039,12 @@ static void change_params(SLMP_INFO *info)
 		return;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s change_params()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	cflag = info->port.tty->termios->c_cflag;
 
@@ -2863,8 +3139,12 @@ static int get_stats(SLMP_INFO * info, struct mgsl_icount __user *user_icount)
 	int err;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s get_params()\n",
 			 __FILE__,__LINE__, info->device_name);
+#else
+		;
+#endif
 
 	if (!user_icount) {
 		memset(&info->icount, 0, sizeof(info->icount));
@@ -2883,16 +3163,24 @@ static int get_params(SLMP_INFO * info, MGSL_PARAMS __user *user_params)
 {
 	int err;
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s get_params()\n",
 			 __FILE__,__LINE__, info->device_name);
+#else
+		;
+#endif
 
 	mutex_lock(&info->port.mutex);
 	COPY_TO_USER(err,user_params, &info->params, sizeof(MGSL_PARAMS));
 	mutex_unlock(&info->port.mutex);
 	if (err) {
 		if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "%s(%d):%s get_params() user buffer copy failed\n",
 				__FILE__,__LINE__,info->device_name);
+#else
+			;
+#endif
 		return -EFAULT;
 	}
 
@@ -2906,13 +3194,21 @@ static int set_params(SLMP_INFO * info, MGSL_PARAMS __user *new_params)
 	int err;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s set_params\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 	COPY_FROM_USER(err,&tmp_params, new_params, sizeof(MGSL_PARAMS));
 	if (err) {
 		if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "%s(%d):%s set_params() user buffer copy failed\n",
 				__FILE__,__LINE__,info->device_name);
+#else
+			;
+#endif
 		return -EFAULT;
 	}
 
@@ -2932,14 +3228,22 @@ static int get_txidle(SLMP_INFO * info, int __user *idle_mode)
 	int err;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s get_txidle()=%d\n",
 			 __FILE__,__LINE__, info->device_name, info->idle_mode);
+#else
+		;
+#endif
 
 	COPY_TO_USER(err,idle_mode, &info->idle_mode, sizeof(int));
 	if (err) {
 		if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "%s(%d):%s get_txidle() user buffer copy failed\n",
 				__FILE__,__LINE__,info->device_name);
+#else
+			;
+#endif
 		return -EFAULT;
 	}
 
@@ -2951,8 +3255,12 @@ static int set_txidle(SLMP_INFO * info, int idle_mode)
  	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s set_txidle(%d)\n",
 			__FILE__,__LINE__,info->device_name, idle_mode );
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	info->idle_mode = idle_mode;
@@ -2966,8 +3274,12 @@ static int tx_enable(SLMP_INFO * info, int enable)
  	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_enable(%d)\n",
 			__FILE__,__LINE__,info->device_name, enable);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	if ( enable ) {
@@ -2989,8 +3301,12 @@ static int tx_abort(SLMP_INFO * info)
  	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_abort()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	if ( info->tx_active && info->params.mode == MGSL_MODE_HDLC ) {
@@ -3013,8 +3329,12 @@ static int rx_enable(SLMP_INFO * info, int enable)
  	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s rx_enable(%d)\n",
 			__FILE__,__LINE__,info->device_name,enable);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	if ( enable ) {
@@ -3047,8 +3367,12 @@ static int wait_mgsl_event(SLMP_INFO * info, int __user *mask_ptr)
 	}
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s wait_mgsl_event(%d)\n",
 			__FILE__,__LINE__,info->device_name,mask);
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 
@@ -3224,8 +3548,12 @@ static int tiocmget(struct tty_struct *tty)
 		((info->serial_signals & SerialSignal_CTS) ? TIOCM_CTS:0);
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tiocmget() value=%08X\n",
 			 __FILE__,__LINE__, info->device_name, result );
+#else
+		;
+#endif
 	return result;
 }
 
@@ -3238,8 +3566,12 @@ static int tiocmset(struct tty_struct *tty,
  	unsigned long flags;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tiocmset(%x,%x)\n",
 			__FILE__,__LINE__,info->device_name, set, clear);
+#else
+		;
+#endif
 
 	if (set & TIOCM_RTS)
 		info->serial_signals |= SerialSignal_RTS;
@@ -3297,8 +3629,12 @@ static int block_til_ready(struct tty_struct *tty, struct file *filp,
 	struct tty_port *port = &info->port;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s block_til_ready()\n",
 			 __FILE__,__LINE__, tty->driver->name );
+#else
+		;
+#endif
 
 	if (filp->f_flags & O_NONBLOCK || tty->flags & (1 << TTY_IO_ERROR)){
 		/* nonblock mode is set or port is not enabled */
@@ -3321,8 +3657,12 @@ static int block_til_ready(struct tty_struct *tty, struct file *filp,
 	add_wait_queue(&port->open_wait, &wait);
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s block_til_ready() before block, count=%d\n",
 			 __FILE__,__LINE__, tty->driver->name, port->count );
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock, flags);
 	if (!tty_hung_up_p(filp)) {
@@ -3355,8 +3695,12 @@ static int block_til_ready(struct tty_struct *tty, struct file *filp,
 		}
 
 		if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d):%s block_til_ready() count=%d\n",
 				 __FILE__,__LINE__, tty->driver->name, port->count );
+#else
+			;
+#endif
 
 		tty_unlock();
 		schedule();
@@ -3371,8 +3715,12 @@ static int block_til_ready(struct tty_struct *tty, struct file *filp,
 	port->blocked_open--;
 
 	if (debug_level >= DEBUG_LEVEL_INFO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s block_til_ready() after, count=%d\n",
 			 __FILE__,__LINE__, tty->driver->name, port->count );
+#else
+		;
+#endif
 
 	if (!retval)
 		port->flags |= ASYNC_NORMAL_ACTIVE;
@@ -3428,9 +3776,13 @@ static int alloc_dma_bufs(SLMP_INFO *info)
 		info->rx_buf_count = SCAMAXDESC;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s Allocating %d TX and %d RX DMA buffers.\n",
 			__FILE__,__LINE__, info->device_name,
 			info->tx_buf_count,info->rx_buf_count);
+#else
+		;
+#endif
 
 	if ( alloc_buf_list( info ) < 0 ||
 		alloc_frame_bufs(info,
@@ -3442,8 +3794,12 @@ static int alloc_dma_bufs(SLMP_INFO *info)
 					info->tx_buf_list_ex,
 					info->tx_buf_count) < 0 ||
 		alloc_tmp_rx_buf(info) < 0 ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s Can't allocate DMA buffer memory\n",
 			__FILE__,__LINE__, info->device_name);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -3557,8 +3913,12 @@ static void free_tmp_rx_buf(SLMP_INFO *info)
 static int claim_resources(SLMP_INFO *info)
 {
 	if (request_mem_region(info->phys_memory_base,SCA_MEM_SIZE,"synclinkmp") == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s mem addr conflict, Addr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_memory_base);
+#else
+		;
+#endif
 		info->init_error = DiagStatus_AddressConflict;
 		goto errout;
 	}
@@ -3566,8 +3926,12 @@ static int claim_resources(SLMP_INFO *info)
 		info->shared_mem_requested = true;
 
 	if (request_mem_region(info->phys_lcr_base + info->lcr_offset,128,"synclinkmp") == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s lcr mem addr conflict, Addr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_lcr_base);
+#else
+		;
+#endif
 		info->init_error = DiagStatus_AddressConflict;
 		goto errout;
 	}
@@ -3575,8 +3939,12 @@ static int claim_resources(SLMP_INFO *info)
 		info->lcr_mem_requested = true;
 
 	if (request_mem_region(info->phys_sca_base + info->sca_offset,SCA_BASE_SIZE,"synclinkmp") == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s sca mem addr conflict, Addr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_sca_base);
+#else
+		;
+#endif
 		info->init_error = DiagStatus_AddressConflict;
 		goto errout;
 	}
@@ -3584,8 +3952,12 @@ static int claim_resources(SLMP_INFO *info)
 		info->sca_base_requested = true;
 
 	if (request_mem_region(info->phys_statctrl_base + info->statctrl_offset,SCA_REG_SIZE,"synclinkmp") == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s stat/ctrl mem addr conflict, Addr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_statctrl_base);
+#else
+		;
+#endif
 		info->init_error = DiagStatus_AddressConflict;
 		goto errout;
 	}
@@ -3595,16 +3967,24 @@ static int claim_resources(SLMP_INFO *info)
 	info->memory_base = ioremap_nocache(info->phys_memory_base,
 								SCA_MEM_SIZE);
 	if (!info->memory_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s Can't map shared memory, MemAddr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_memory_base );
+#else
+		;
+#endif
 		info->init_error = DiagStatus_CantAssignPciResources;
 		goto errout;
 	}
 
 	info->lcr_base = ioremap_nocache(info->phys_lcr_base, PAGE_SIZE);
 	if (!info->lcr_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s Can't map LCR memory, MemAddr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_lcr_base );
+#else
+		;
+#endif
 		info->init_error = DiagStatus_CantAssignPciResources;
 		goto errout;
 	}
@@ -3612,8 +3992,12 @@ static int claim_resources(SLMP_INFO *info)
 
 	info->sca_base = ioremap_nocache(info->phys_sca_base, PAGE_SIZE);
 	if (!info->sca_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s Can't map SCA memory, MemAddr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_sca_base );
+#else
+		;
+#endif
 		info->init_error = DiagStatus_CantAssignPciResources;
 		goto errout;
 	}
@@ -3622,16 +4006,24 @@ static int claim_resources(SLMP_INFO *info)
 	info->statctrl_base = ioremap_nocache(info->phys_statctrl_base,
 								PAGE_SIZE);
 	if (!info->statctrl_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s Can't map SCA Status/Control memory, MemAddr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_statctrl_base );
+#else
+		;
+#endif
 		info->init_error = DiagStatus_CantAssignPciResources;
 		goto errout;
 	}
 	info->statctrl_base += info->statctrl_offset;
 
 	if ( !memory_test(info) ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):Shared Memory Test failed for device %s MemAddr=%08X\n",
 			__FILE__,__LINE__,info->device_name, info->phys_memory_base );
+#else
+		;
+#endif
 		info->init_error = DiagStatus_MemoryError;
 		goto errout;
 	}
@@ -3646,8 +4038,12 @@ errout:
 static void release_resources(SLMP_INFO *info)
 {
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s release_resources() entry\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 
 	if ( info->irq_requested ) {
 		free_irq(info->irq_level, info);
@@ -3692,8 +4088,12 @@ static void release_resources(SLMP_INFO *info)
 	}
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s release_resources() exit\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 }
 
 /* Add the specified device instance data structure to the
@@ -3726,6 +4126,7 @@ static void add_device(SLMP_INFO *info)
 	else if ( info->max_frame_size > 65535 )
 		info->max_frame_size = 65535;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk( "SyncLink MultiPort %s: "
 		"Mem=(%08x %08X %08x %08X) IRQ=%d MaxFrameSize=%u\n",
 		info->device_name,
@@ -3735,6 +4136,9 @@ static void add_device(SLMP_INFO *info)
 		info->phys_lcr_base,
 		info->irq_level,
 		info->max_frame_size );
+#else
+	;
+#endif
 
 #if SYNCLINK_GENERIC_HDLC
 	hdlcdev_init(info);
@@ -3758,8 +4162,12 @@ static SLMP_INFO *alloc_dev(int adapter_num, int port_num, struct pci_dev *pdev)
 		 GFP_KERNEL);
 
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d) Error can't allocate device instance data for adapter %d, port %d\n",
 			__FILE__,__LINE__, adapter_num, port_num);
+#else
+		;
+#endif
 	} else {
 		tty_port_init(&info->port);
 		info->port.ops = &port_ops;
@@ -3869,10 +4277,14 @@ static void device_init(int adapter_num, struct pci_dev *pdev)
 					port_array[0]->irq_flags,
 					port_array[0]->device_name,
 					port_array[0]) < 0 ) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "%s(%d):%s Can't request interrupt, IRQ=%d\n",
 				__FILE__,__LINE__,
 				port_array[0]->device_name,
 				port_array[0]->irq_level );
+#else
+			;
+#endif
 		}
 		else {
 			port_array[0]->irq_requested = true;
@@ -3913,12 +4325,20 @@ static void synclinkmp_cleanup(void)
 	SLMP_INFO *info;
 	SLMP_INFO *tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Unloading %s %s\n", driver_name, driver_version);
+#else
+	;
+#endif
 
 	if (serial_driver) {
 		if ((rc = tty_unregister_driver(serial_driver)))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d) failed to unregister tty driver err=%d\n",
 			       __FILE__,__LINE__,rc);
+#else
+			;
+#endif
 		put_tty_driver(serial_driver);
 	}
 
@@ -3962,10 +4382,18 @@ static int __init synclinkmp_init(void)
   		BREAKPOINT();
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
  	printk("%s %s\n", driver_name, driver_version);
+#else
+ 	;
+#endif
 
 	if ((rc = pci_register_driver(&synclinkmp_pci_driver)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s:failed to register PCI driver, error=%d\n",__FILE__,rc);
+#else
+		;
+#endif
 		return rc;
 	}
 
@@ -3992,16 +4420,24 @@ static int __init synclinkmp_init(void)
 	serial_driver->flags = TTY_DRIVER_REAL_RAW;
 	tty_set_operations(serial_driver, &ops);
 	if ((rc = tty_register_driver(serial_driver)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):Couldn't register serial driver\n",
 			__FILE__,__LINE__);
+#else
+		;
+#endif
 		put_tty_driver(serial_driver);
 		serial_driver = NULL;
 		goto error;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
  	printk("%s %s, tty major#%d\n",
 		driver_name, driver_version,
 		serial_driver->major);
+#else
+ 	;
+#endif
 
 	return 0;
 
@@ -4118,8 +4554,12 @@ static void set_rate( SLMP_INFO *info, u32 data_rate )
 static void rx_stop(SLMP_INFO *info)
 {
 	if (debug_level >= DEBUG_LEVEL_ISR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s rx_stop()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	write_reg(info, CMD, RXRESET);
 
@@ -4141,8 +4581,12 @@ static void rx_start(SLMP_INFO *info)
 	int i;
 
 	if (debug_level >= DEBUG_LEVEL_ISR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s rx_start()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	write_reg(info, CMD, RXRESET);
 
@@ -4196,8 +4640,12 @@ static void rx_start(SLMP_INFO *info)
 static void tx_start(SLMP_INFO *info)
 {
 	if (debug_level >= DEBUG_LEVEL_ISR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_start() tx_count=%d\n",
 			 __FILE__,__LINE__, info->device_name,info->tx_count );
+#else
+		;
+#endif
 
 	if (!info->tx_enabled ) {
 		write_reg(info, CMD, TXRESET);
@@ -4266,8 +4714,12 @@ static void tx_start(SLMP_INFO *info)
 static void tx_stop( SLMP_INFO *info )
 {
 	if (debug_level >= DEBUG_LEVEL_ISR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s tx_stop()\n",
 			 __FILE__,__LINE__, info->device_name );
+#else
+		;
+#endif
 
 	del_timer(&info->tx_timer);
 
@@ -4945,8 +5397,12 @@ CheckAgain:
 	}
 
 	if ( debug_level >= DEBUG_LEVEL_BH )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d):%s rx_get_frame() status=%04X size=%d\n",
 			__FILE__,__LINE__,info->device_name,status,framesize);
+#else
+		;
+#endif
 
 	if ( debug_level >= DEBUG_LEVEL_DATA )
 		trace_block(info,info->rx_buf_list_ex[StartIndex].virt_addr,
@@ -5306,8 +5762,12 @@ static int adapter_test( SLMP_INFO *info )
 {
 	unsigned long flags;
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):Testing device %s\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 
 	spin_lock_irqsave(&info->lock,flags);
 	init_adapter(info);
@@ -5325,8 +5785,12 @@ static int adapter_test( SLMP_INFO *info )
 			info->port_array[0]->port_count += 2;
 	}
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):Register test failure for device %s Addr=%08lX\n",
 			__FILE__,__LINE__,info->device_name, (unsigned long)(info->phys_sca_base));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -5334,8 +5798,12 @@ static int adapter_test( SLMP_INFO *info )
 		!irq_test(info->port_array[1]) ||
 		 (info->port_count == 4 && !irq_test(info->port_array[2])) ||
 		 (info->port_count == 4 && !irq_test(info->port_array[3]))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):Interrupt test failure for device %s IRQ=%d\n",
 			__FILE__,__LINE__,info->device_name, (unsigned short)(info->irq_level) );
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -5343,14 +5811,22 @@ static int adapter_test( SLMP_INFO *info )
 		!loopback_test(info->port_array[1]) ||
 		 (info->port_count == 4 && !loopback_test(info->port_array[2])) ||
 		 (info->port_count == 4 && !loopback_test(info->port_array[3]))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):DMA test failure for device %s\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):device %s passed diagnostics\n",
 			__FILE__,__LINE__,info->device_name );
+#else
+		;
+#endif
 
 	info->port_array[0]->init_error = 0;
 	info->port_array[1]->init_error = 0;
@@ -5440,9 +5916,17 @@ static void trace_block(SLMP_INFO *info,const char* data, int count, int xmit)
 	int i;
 	int linecount;
 	if (xmit)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s tx data:\n",info->device_name);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s rx data:\n",info->device_name);
+#else
+		;
+#endif
 
 	while(count) {
 		if (count > 16)
@@ -5451,16 +5935,36 @@ static void trace_block(SLMP_INFO *info,const char* data, int count, int xmit)
 			linecount = count;
 
 		for(i=0;i<linecount;i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02X ",(unsigned char)data[i]);
+#else
+			;
+#endif
 		for(;i<17;i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("   ");
+#else
+			;
+#endif
 		for(i=0;i<linecount;i++) {
 			if (data[i]>=040 && data[i]<=0176)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%c",data[i]);
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(".");
+#else
+				;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 
 		data  += linecount;
 		count -= linecount;
@@ -5476,8 +5980,12 @@ static void tx_timeout(unsigned long context)
 	unsigned long flags;
 
 	if ( debug_level >= DEBUG_LEVEL_INFO )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s(%d):%s tx_timeout()\n",
 			__FILE__,__LINE__,info->device_name);
+#else
+		;
+#endif
 	if(info->tx_active && info->params.mode == MGSL_MODE_HDLC) {
 		info->icount.txtimeout++;
 	}
@@ -5588,7 +6096,11 @@ static int __devinit synclinkmp_init_one (struct pci_dev *dev,
 					  const struct pci_device_id *ent)
 {
 	if (pci_enable_device(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("error enabling pci device %p\n", dev);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	device_init( ++synclinkmp_adapter_count, dev );

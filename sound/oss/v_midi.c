@@ -175,7 +175,11 @@ struct vmidi_memory
 static void __init attach_v_midi (struct address_info *hw_config)
 {
 	struct vmidi_memory *m;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Attaching v_midi device.....\n"); */
+#else
+	/* ;
+#endif
 
 	midi1 = sound_alloc_mididev();
 	if (midi1 == -1)
@@ -187,7 +191,11 @@ static void __init attach_v_midi (struct address_info *hw_config)
 	m = kmalloc(sizeof(struct vmidi_memory), GFP_KERNEL);
 	if (m == NULL)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Loopback MIDI: Failed to allocate memory\n");
+#else
+		;
+#endif
 		sound_unload_mididev(midi1);
 		return;
 	}
@@ -208,7 +216,11 @@ static void __init attach_v_midi (struct address_info *hw_config)
 
 	midi_devs[midi2] = &m->m_ops[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("VMIDI1: %d   VMIDI2: %d\n",midi1,midi2); */
+#else
+	/* ;
+#endif
 
 	/* for MIDI-1 */
 	v_devc[0] = &m->v_ops[0];
@@ -252,7 +264,11 @@ static void __init attach_v_midi (struct address_info *hw_config)
 	midi_devs[midi2]->converter->id = "V_MIDI 2";
 
 	sequencer_init();
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Attached v_midi device\n"); */
+#else
+	/* ;
+#endif
 }
 
 static inline int __init probe_v_midi(struct address_info *hw_config)
@@ -272,7 +288,11 @@ static struct address_info cfg; /* dummy */
 
 static int __init init_vmidi(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("MIDI Loopback device driver\n");
+#else
+	;
+#endif
 	if (!probe_v_midi(&cfg))
 		return -ENODEV;
 	attach_v_midi(&cfg);

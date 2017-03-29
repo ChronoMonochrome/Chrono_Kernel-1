@@ -144,9 +144,17 @@ static const struct file_operations phone_fops =
 
 static int __init telephony_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Linux telephony interface: v1.00\n");
+#else
+	;
+#endif
 	if (register_chrdev(PHONE_MAJOR, "telephony", &phone_fops)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("phonedev: unable to get major %d\n", PHONE_MAJOR);
+#else
+		;
+#endif
 		return -EIO;
 	}
 

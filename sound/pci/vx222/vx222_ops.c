@@ -108,7 +108,11 @@ static void vx2_outb(struct vx_core *chip, int offset, unsigned char val)
 {
 	outb(val, vx2_reg_addr(chip, offset));
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "outb: %x -> %x\n", val, vx2_reg_addr(chip, offset));
+#else
+	;
+#endif
 	*/
 }
 
@@ -129,7 +133,11 @@ static unsigned int vx2_inl(struct vx_core *chip, int offset)
 static void vx2_outl(struct vx_core *chip, int offset, unsigned int val)
 {
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "outl: %x -> %x\n", val, vx2_reg_addr(chip, offset));
+#else
+	;
+#endif
 	*/
 	outl(val, vx2_reg_addr(chip, offset));
 }

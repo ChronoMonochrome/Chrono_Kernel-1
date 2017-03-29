@@ -82,13 +82,25 @@ static void vlynq_dump_regs(struct vlynq_device *dev)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "VLYNQ local=%p remote=%p\n",
 			dev->local, dev->remote);
+#else
+	;
+#endif
 	for (i = 0; i < 32; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "VLYNQ: local %d: %08x\n",
 			i + 1, ((u32 *)dev->local)[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "VLYNQ: remote %d: %08x\n",
 			i + 1, ((u32 *)dev->remote)[i]);
+#else
+		;
+#endif
 	}
 }
 
@@ -98,10 +110,22 @@ static void vlynq_dump_mem(u32 *base, int count)
 
 	for (i = 0; i < (count + 3) / 4; i++) {
 		if (i % 4 == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "\nMEM[0x%04x]:", i * 4);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " 0x%08x", *(base + i));
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -330,12 +354,20 @@ static int vlynq_device_match(struct device *dev,
 		if (ids->id == vdev->dev_id) {
 			vdev->divisor = ids->divisor;
 			vlynq_set_drvdata(vdev, ids);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Driver found for VLYNQ "
 				"device: %08x\n", vdev->dev_id);
+#else
+			;
+#endif
 			return 1;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Not using the %08x VLYNQ device's driver"
 			" for VLYNQ device: %08x\n", ids->id, vdev->dev_id);
+#else
+		;
+#endif
 		ids++;
 	}
 	return 0;
@@ -411,9 +443,13 @@ static int __vlynq_try_remote(struct vlynq_device *dev)
 				&dev->local->control);
 
 		if (vlynq_linked(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 				"%s: using remote clock divisor %d\n",
 				dev_name(&dev->dev), i - vlynq_rdiv1 + 1);
+#else
+			;
+#endif
 			dev->divisor = i;
 			return 0;
 		} else {
@@ -448,9 +484,13 @@ static int __vlynq_try_local(struct vlynq_device *dev)
 				&dev->local->control);
 
 		if (vlynq_linked(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 				"%s: using local clock divisor %d\n",
 				dev_name(&dev->dev), i - vlynq_ldiv1 + 1);
+#else
+			;
+#endif
 			dev->divisor = i;
 			return 0;
 		} else {
@@ -482,8 +522,12 @@ static int __vlynq_try_external(struct vlynq_device *dev)
 			&dev->local->control);
 
 	if (vlynq_linked(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: using external clock\n",
 			dev_name(&dev->dev));
+#else
+		;
+#endif
 			dev->divisor = vlynq_div_external;
 		return 0;
 	}
@@ -533,10 +577,14 @@ static int __vlynq_enable_device(struct vlynq_device *dev)
 			vlynq_ldiv1), &dev->local->control);
 		writel(0, &dev->remote->control);
 		if (vlynq_linked(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 				"%s: using local clock divisor %d\n",
 				dev_name(&dev->dev),
 				dev->divisor - vlynq_ldiv1 + 1);
+#else
+			;
+#endif
 			return 0;
 		}
 		break;
@@ -553,10 +601,14 @@ static int __vlynq_enable_device(struct vlynq_device *dev)
 			VLYNQ_CTRL_CLOCK_DIV(dev->divisor -
 			vlynq_rdiv1), &dev->remote->control);
 		if (vlynq_linked(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 				"%s: using remote clock divisor %d\n",
 				dev_name(&dev->dev),
 				dev->divisor - vlynq_rdiv1 + 1);
+#else
+			;
+#endif
 			return 0;
 		}
 		break;
@@ -731,9 +783,13 @@ static int vlynq_probe(struct platform_device *pdev)
 		goto fail_register;
 	platform_set_drvdata(pdev, dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: regs 0x%p, irq %d, mem 0x%p\n",
 	       dev_name(&dev->dev), (void *)dev->regs_start, dev->irq,
 	       (void *)dev->mem_start);
+#else
+	;
+#endif
 
 	dev->dev_id = 0;
 	dev->divisor = vlynq_div_auto;
@@ -743,7 +799,11 @@ static int vlynq_probe(struct platform_device *pdev)
 		((struct plat_vlynq_ops *)(dev->dev.platform_data))->off(dev);
 	}
 	if (dev->dev_id)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Found a VLYNQ device: %08x\n", dev->dev_id);
+#else
+		;
+#endif
 
 	return 0;
 

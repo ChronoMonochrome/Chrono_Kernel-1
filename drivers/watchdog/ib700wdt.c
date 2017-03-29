@@ -246,8 +246,12 @@ static int ibwdt_close(struct inode *inode, struct file *file)
 	if (expect_close == 42) {
 		ibwdt_disable();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		     "WDT device closed unexpectedly.  WDT will not stop!\n");
+#else
+		;
+#endif
 		ibwdt_ping();
 	}
 	clear_bit(0, &ibwdt_is_open);
@@ -302,8 +306,12 @@ static int __devinit ibwdt_probe(struct platform_device *dev)
 	 * if not reset to the default */
 	if (ibwdt_set_heartbeat(timeout)) {
 		ibwdt_set_heartbeat(WATCHDOG_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 0<=x<=30, using %d\n", timeout);
+#else
+		;
+#endif
 	}
 
 	res = misc_register(&ibwdt_miscdev);
@@ -353,8 +361,12 @@ static int __init ibwdt_init(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"WDT driver for IB700 single board computer initialising.\n");
+#else
+	;
+#endif
 
 	err = platform_driver_register(&ibwdt_driver);
 	if (err)
@@ -378,7 +390,11 @@ static void __exit ibwdt_exit(void)
 {
 	platform_device_unregister(ibwdt_platform_device);
 	platform_driver_unregister(&ibwdt_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(ibwdt_init);

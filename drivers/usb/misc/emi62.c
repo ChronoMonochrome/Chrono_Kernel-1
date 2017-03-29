@@ -295,7 +295,7 @@ static int __init emi62_init (void)
 	int retval;
 	retval = usb_register (&emi62_driver);
 	if (retval)
-		printk(KERN_ERR "adi-emi: registration failed\n");
+;
 	return retval;
 }
 

@@ -26,15 +26,15 @@
 
 #undef DWMAC_DMA_DEBUG
 #ifdef DWMAC_DMA_DEBUG
-#define DWMAC_LIB_DBG(fmt, args...)  printk(fmt, ## args)
-#else
-#define DWMAC_LIB_DBG(fmt, args...)  do { } while (0)
-#endif
-
-/* CSR1 enables the transmit DMA to check for new descriptor */
-void dwmac_enable_dma_transmission(void __iomem *ioaddr)
-{
-	writel(1, ioaddr + DMA_XMT_POLL_DEMAND);
+//#define DWMAC_LIB_DBG(fmt, args...)  printk(fmt, ## args)
+//#else
+//#define DWMAC_LIB_DBG(fmt, args...)  do { } while (0)
+//#endif
+//
+///* CSR1 enables the transmit DMA to check for new descriptor */
+//void dwmac_enable_dma_transmission(void __iomem *ioaddr)
+//{
+;
 }
 
 void dwmac_enable_dma_irq(void __iomem *ioaddr)

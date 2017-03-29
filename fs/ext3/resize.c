@@ -38,11 +38,11 @@ static int verify_group_input(struct super_block *sb,
 		input->blocks_count - 2 - overhead - sbi->s_itb_per_group;
 
 	if (test_opt(sb, DEBUG))
-		printk(KERN_DEBUG "EXT3-fs: adding %s group %u: %u blocks "
-		       "(%d free, %u reserved)\n",
-		       ext3_bg_has_super(sb, input->group) ? "normal" :
-		       "no-super", input->group, input->blocks_count,
-		       free_blocks_count, input->reserved_blocks);
+//		printk(KERN_DEBUG "EXT3-fs: adding %s group %u: %u blocks "
+//		       "(%d free, %u reserved)\n",
+//		       ext3_bg_has_super(sb, input->group) ? "normal" :
+//		       "no-super", input->group, input->blocks_count,
+;
 
 	if (group != sbi->s_groups_count)
 		ext3_warning(sb, __func__,
@@ -440,9 +440,9 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	int err;
 
 	if (test_opt(sb, DEBUG))
-		printk(KERN_DEBUG
-		       "EXT3-fs: ext3_add_new_gdb: adding group block %lu\n",
-		       gdb_num);
+//		printk(KERN_DEBUG
+//		       "EXT3-fs: ext3_add_new_gdb: adding group block %lu\n",
+;
 
 	/*
 	 * If we are not using the primary superblock/GDT copy don't resize,
@@ -1005,17 +1005,17 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
 	o_blocks_count = le32_to_cpu(es->s_blocks_count);
 
 	if (test_opt(sb, DEBUG))
-		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK
-		       " up to "E3FSBLK" blocks\n",
-		       o_blocks_count, n_blocks_count);
+//		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK
+//		       " up to "E3FSBLK" blocks\n",
+;
 
 	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
 		return 0;
 
 	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
-		printk(KERN_ERR "EXT3-fs: filesystem on %s:"
-			" too large to resize to "E3FSBLK" blocks safely\n",
-			sb->s_id, n_blocks_count);
+//		printk(KERN_ERR "EXT3-fs: filesystem on %s:"
+//			" too large to resize to "E3FSBLK" blocks safely\n",
+;
 		if (sizeof(sector_t) < 8)
 			ext3_warning(sb, __func__,
 			"CONFIG_LBDAF not enabled\n");
@@ -1108,8 +1108,8 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
 	if ((err = ext3_journal_stop(handle)))
 		goto exit_put;
 	if (test_opt(sb, DEBUG))
-		printk(KERN_DEBUG "EXT3-fs: extended group to %u blocks\n",
-		       le32_to_cpu(es->s_blocks_count));
+//		printk(KERN_DEBUG "EXT3-fs: extended group to %u blocks\n",
+;
 	update_backups(sb, EXT3_SB(sb)->s_sbh->b_blocknr, (char *)es,
 		       sizeof(struct ext3_super_block));
 exit_put:

@@ -590,8 +590,12 @@ static int sscape_upload_microcode(struct snd_card *card, int version)
 	}
 	err = upload_dma_data(sscape, init_fw->data, init_fw->size);
 	if (err == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "sscape: MIDI firmware loaded %d KBs\n",
 				init_fw->size >> 10);
+#else
+		;
+#endif
 
 	release_firmware(init_fw);
 
@@ -1010,8 +1014,12 @@ static int __devinit create_sscape(int dev, struct snd_card *card)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sscape: %s card detected at 0x%x, using IRQ %d, DMA %d\n",
 			 name, sscape->io_base, irq[dev], dma[dev]);
+#else
+	;
+#endif
 
 	/*
 	 * Check that the user didn't pass us garbage data ...
@@ -1154,9 +1162,13 @@ static int __devinit snd_sscape_match(struct device *pdev, unsigned int i)
 	if (irq[i] == SNDRV_AUTO_IRQ ||
 	    mpu_irq[i] == SNDRV_AUTO_IRQ ||
 	    dma[i] == SNDRV_AUTO_DMA) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "sscape: insufficient parameters, "
 		       "need IO, IRQ, MPU-IRQ and DMA\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -1251,7 +1263,11 @@ static int __devinit sscape_pnp_detect(struct pnp_card_link *pcard,
 
 	if (!pnp_is_active(dev)) {
 		if (pnp_activate_dev(dev) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "sscape: device is inactive\n");
+#else
+			;
+#endif
 			return -EBUSY;
 		}
 	}

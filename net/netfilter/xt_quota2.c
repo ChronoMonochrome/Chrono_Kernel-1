@@ -245,13 +245,13 @@ static int quota_mt2_check(const struct xt_mtchk_param *par)
 
 	q->name[sizeof(q->name)-1] = '\0';
 	if (*q->name == '.' || strchr(q->name, '/') != NULL) {
-		printk(KERN_ERR "xt_quota.3: illegal name\n");
+;
 		return -EINVAL;
 	}
 
 	q->master = q2_get_counter(q);
 	if (q->master == NULL) {
-		printk(KERN_ERR "xt_quota.3: memory alloc failure\n");
+;
 		return -ENOMEM;
 	}
 

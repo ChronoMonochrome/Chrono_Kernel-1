@@ -688,12 +688,36 @@ void saa7146_write_out_dma(struct saa7146_dev* dev, int which, struct saa7146_vi
 	/* upload */
 	saa7146_write(dev, MC2, (MASK_02<<(which-1))|(MASK_18<<(which-1)));
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_even:     0x%08x\n", which,vdma->base_even);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_odd:      0x%08x\n", which,vdma->base_odd);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.prot_addr:     0x%08x\n", which,vdma->prot_addr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_page:     0x%08x\n", which,vdma->base_page);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.pitch:         0x%08x\n", which,vdma->pitch);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.num_line_byte: 0x%08x\n", which,vdma->num_line_byte);
+#else
+	;
+#endif
 */
 }
 
@@ -1027,13 +1051,41 @@ void saa7146_set_capture(struct saa7146_dev *dev, struct saa7146_buf *buf, struc
 	}
 
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_even:     0x%08x\n", 1,saa7146_read(dev,BASE_EVEN1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_odd:      0x%08x\n", 1,saa7146_read(dev,BASE_ODD1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.prot_addr:     0x%08x\n", 1,saa7146_read(dev,PROT_ADDR1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.base_page:     0x%08x\n", 1,saa7146_read(dev,BASE_PAGE1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.pitch:         0x%08x\n", 1,saa7146_read(dev,PITCH1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d.num_line_byte: 0x%08x\n", 1,saa7146_read(dev,NUM_LINE_BYTE1));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vdma%d => vptr      : 0x%08x\n", 1,saa7146_read(dev,PCI_VDP1));
+#else
+	;
+#endif
 */
 
 	/* write the address of the rps-program */

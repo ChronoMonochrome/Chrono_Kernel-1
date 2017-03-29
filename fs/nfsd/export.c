@@ -104,7 +104,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
 	dom = auth_domain_find(buf);
 	if (!dom)
 		goto out;
-	dprintk("found domain %s\n", buf);
+;
 
 	err = -EINVAL;
 	if ((len=qword_get(&mesg, buf, PAGE_SIZE)) <= 0)
@@ -112,12 +112,12 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
 	fsidtype = simple_strtoul(buf, &ep, 10);
 	if (*ep)
 		goto out;
-	dprintk("found fsidtype %d\n", fsidtype);
+;
 	if (key_len(fsidtype)==0) /* invalid type */
 		goto out;
 	if ((len=qword_get(&mesg, buf, PAGE_SIZE)) <= 0)
 		goto out;
-	dprintk("found fsid length %d\n", len);
+;
 	if (len != key_len(fsidtype))
 		goto out;
 
@@ -141,7 +141,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
 	len = qword_get(&mesg, buf, PAGE_SIZE);
 	if (len < 0)
 		goto out;
-	dprintk("Path seems to be <%s>\n", buf);
+;
 	err = 0;
 	if (len == 0) {
 		set_bit(CACHE_NEGATIVE, &key.h.flags);
@@ -153,7 +153,7 @@ static int expkey_parse(struct cache_detail *cd, char *mesg, int mlen)
 		if (err)
 			goto out;
 
-		dprintk("Found the path %s\n", buf);
+;
 
 		ek = svc_expkey_update(&key, ek);
 		if (!ek)
@@ -378,13 +378,13 @@ static int check_export(struct inode *inode, int *flags, unsigned char *uuid)
 	if (!(inode->i_sb->s_type->fs_flags & FS_REQUIRES_DEV) &&
 	    !(*flags & NFSEXP_FSID) &&
 	    uuid == NULL) {
-		dprintk("exp_export: export of non-dev fs without fsid\n");
+;
 		return -EINVAL;
 	}
 
 	if (!inode->i_sb->s_export_op ||
 	    !inode->i_sb->s_export_op->fh_to_dentry) {
-		dprintk("exp_export: export of invalid fs type.\n");
+;
 		return -EINVAL;
 	}
 
@@ -845,14 +845,14 @@ exp_rootfh(svc_client *clp, char *name, struct knfsd_fh *f, int maxsize)
 	err = -EPERM;
 	/* NB: we probably ought to check that it's NUL-terminated */
 	if (kern_path(name, 0, &path)) {
-		printk("nfsd: exp_rootfh path not found %s", name);
+;
 		return err;
 	}
 	inode = path.dentry->d_inode;
 
-	dprintk("nfsd: exp_rootfh(%s [%p] %s:%s/%ld)\n",
-		 name, path.dentry, clp->name,
-		 inode->i_sb->s_id, inode->i_ino);
+//	dprintk("nfsd: exp_rootfh(%s [%p] %s:%s/%ld)\n",
+//		 name, path.dentry, clp->name,
+;
 	exp = exp_parent(clp, &path);
 	if (IS_ERR(exp)) {
 		err = PTR_ERR(exp);
@@ -1224,7 +1224,7 @@ int
 nfsd_export_init(void)
 {
 	int rv;
-	dprintk("nfsd: initializing export module.\n");
+;
 
 	rv = cache_register_net(&svc_export_cache, &init_net);
 	if (rv)
@@ -1253,11 +1253,11 @@ void
 nfsd_export_shutdown(void)
 {
 
-	dprintk("nfsd: shutting down export module.\n");
+;
 
 	cache_unregister_net(&svc_expkey_cache, &init_net);
 	cache_unregister_net(&svc_export_cache, &init_net);
 	svcauth_unix_purge();
 
-	dprintk("nfsd: export shutdown complete.\n");
+;
 }

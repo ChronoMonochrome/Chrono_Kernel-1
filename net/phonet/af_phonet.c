@@ -510,8 +510,8 @@ static int __init phonet_init(void)
 	pn_sock_init();
 	err = sock_register(&phonet_proto_family);
 	if (err) {
-		printk(KERN_ALERT
-			"phonet protocol family initialization failed\n");
+//		printk(KERN_ALERT
+;
 		goto err_sock;
 	}
 

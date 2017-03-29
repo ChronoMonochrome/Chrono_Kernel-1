@@ -93,9 +93,9 @@ isl_upload_firmware(islpci_private *priv)
 
 		rc = request_firmware(&fw_entry, priv->firmware, PRISM_FW_PDEV);
 		if (rc) {
-			printk(KERN_ERR
-			       "%s: request_firmware() failed for '%s'\n",
-			       "prism54", priv->firmware);
+//			printk(KERN_ERR
+//			       "%s: request_firmware() failed for '%s'\n",
+;
 			return rc;
 		}
 		/* prepare the Direct Memory Base register */
@@ -105,9 +105,9 @@ isl_upload_firmware(islpci_private *priv)
 		fw_len = fw_entry->size;
 
 		if (fw_len % 4) {
-			printk(KERN_ERR
-			       "%s: firmware '%s' size is not multiple of 32bit, aborting!\n",
-			       "prism54", priv->firmware);
+//			printk(KERN_ERR
+//			       "%s: firmware '%s' size is not multiple of 32bit, aborting!\n",
+;
 			release_firmware(fw_entry);
 			return -EILSEQ; /* Illegal byte sequence  */;
 		}
@@ -147,8 +147,8 @@ isl_upload_firmware(islpci_private *priv)
 		BUG_ON(fw_len != 0);
 
 		/* Firmware version is at offset 40 (also for "newmac") */
-		printk(KERN_DEBUG "%s: firmware version: %.8s\n",
-		       priv->ndev->name, fw_entry->data + 40);
+//		printk(KERN_DEBUG "%s: firmware version: %.8s\n",
+;
 
 		release_firmware(fw_entry);
 	}
@@ -410,7 +410,7 @@ islpci_close(struct net_device *ndev)
 {
 	islpci_private *priv = netdev_priv(ndev);
 
-	printk(KERN_DEBUG "%s: islpci_close ()\n", ndev->name);
+;
 
 	netif_stop_queue(ndev);
 
@@ -464,20 +464,20 @@ islpci_upload_fw(islpci_private *priv)
 
 	old_state = islpci_set_state(priv, PRV_STATE_BOOT);
 
-	printk(KERN_DEBUG "%s: uploading firmware...\n", priv->ndev->name);
+;
 
 	rc = isl_upload_firmware(priv);
 	if (rc) {
 		/* error uploading the firmware */
-		printk(KERN_ERR "%s: could not upload firmware ('%s')\n",
-		       priv->ndev->name, priv->firmware);
+//		printk(KERN_ERR "%s: could not upload firmware ('%s')\n",
+;
 
 		islpci_set_state(priv, old_state);
 		return rc;
 	}
 
-	printk(KERN_DEBUG "%s: firmware upload complete\n",
-	       priv->ndev->name);
+//	printk(KERN_DEBUG "%s: firmware upload complete\n",
+;
 
 	islpci_set_state(priv, PRV_STATE_POSTBOOT);
 
@@ -512,14 +512,14 @@ islpci_reset_if(islpci_private *priv)
 		/* If we're here it's because our IRQ hasn't yet gone through.
 		 * Retry a bit more...
 		 */
-		printk(KERN_ERR "%s: no 'reset complete' IRQ seen - retrying\n",
-			priv->ndev->name);
+//		printk(KERN_ERR "%s: no 'reset complete' IRQ seen - retrying\n",
+;
 	}
 
 	finish_wait(&priv->reset_done, &wait);
 
 	if (result) {
-		printk(KERN_ERR "%s: interface reset failure\n", priv->ndev->name);
+;
 		return result;
 	}
 
@@ -535,7 +535,7 @@ islpci_reset_if(islpci_private *priv)
 	down_write(&priv->mib_sem);
 	result = mgt_commit(priv);
 	if (result) {
-		printk(KERN_ERR "%s: interface reset failure\n", priv->ndev->name);
+;
 		up_write(&priv->mib_sem);
 		return result;
 	}
@@ -543,7 +543,7 @@ islpci_reset_if(islpci_private *priv)
 
 	islpci_set_state(priv, PRV_STATE_READY);
 
-	printk(KERN_DEBUG "%s: interface reset complete\n", priv->ndev->name);
+;
 	return 0;
 }
 
@@ -560,7 +560,7 @@ islpci_reset(islpci_private *priv, int reload_firmware)
 	else
 		islpci_set_state(priv, PRV_STATE_POSTBOOT);
 
-	printk(KERN_DEBUG "%s: resetting device...\n", priv->ndev->name);
+;
 
 	/* disable all device interrupts in case they weren't */
 	isl38xx_disable_interrupts(priv->device_base);
@@ -605,8 +605,8 @@ islpci_reset(islpci_private *priv, int reload_firmware)
 	 * firmware and reset interface */
 		rc = islpci_upload_fw(priv);
 		if (rc) {
-			printk(KERN_ERR "%s: islpci_reset: failure\n",
-				priv->ndev->name);
+//			printk(KERN_ERR "%s: islpci_reset: failure\n",
+;
 			return rc;
 		}
 	}
@@ -614,7 +614,7 @@ islpci_reset(islpci_private *priv, int reload_firmware)
 	/* finally reset interface */
 	rc = islpci_reset_if(priv);
 	if (rc)
-		printk(KERN_ERR "prism54: Your card/socket may be faulty, or IRQ line too busy :(\n");
+;
 	return rc;
 }
 
@@ -627,7 +627,7 @@ islpci_alloc_memory(islpci_private *priv)
 	int counter;
 
 #if VERBOSE > SHOW_ERROR_MESSAGES
-	printk(KERN_DEBUG "islpci_alloc_memory\n");
+;
 #endif
 
 	/* remap the PCI device base address to accessible */
@@ -635,7 +635,7 @@ islpci_alloc_memory(islpci_private *priv)
 	      ioremap(pci_resource_start(priv->pdev, 0),
 		      ISL38XX_PCI_MEM_SIZE))) {
 		/* error in remapping the PCI device memory address range */
-		printk(KERN_ERR "PCI memory remapping failed\n");
+;
 		return -1;
 	}
 
@@ -655,8 +655,8 @@ islpci_alloc_memory(islpci_private *priv)
 
 	if (!priv->driver_mem_address) {
 		/* error allocating the block of PCI memory */
-		printk(KERN_ERR "%s: could not allocate DMA memory, aborting!",
-		       "prism54");
+//		printk(KERN_ERR "%s: could not allocate DMA memory, aborting!",
+;
 		return -1;
 	}
 
@@ -694,7 +694,7 @@ islpci_alloc_memory(islpci_private *priv)
 		 * include any required allignment operations */
 		if (!(skb = dev_alloc_skb(MAX_FRAGMENT_SIZE_RX + 2))) {
 			/* error allocating an sk_buff structure elements */
-			printk(KERN_ERR "Error allocating skb.\n");
+;
 			skb = NULL;
 			goto out_free;
 		}
@@ -710,7 +710,7 @@ islpci_alloc_memory(islpci_private *priv)
 		if (!priv->pci_map_rx_address[counter]) {
 			/* error mapping the buffer to device
 			   accessible memory address */
-			printk(KERN_ERR "failed to map skb DMA'able\n");
+;
 			goto out_free;
 		}
 	}
@@ -948,8 +948,8 @@ islpci_set_state(islpci_private *priv, islpci_state_t new_state)
 		break;
 	}
 #if 0
-	printk(KERN_DEBUG "%s: state transition %d -> %d (off#%d)\n",
-	       priv->ndev->name, old_state, new_state, priv->state_off);
+//	printk(KERN_DEBUG "%s: state transition %d -> %d (off#%d)\n",
+;
 #endif
 
 	/* invariants */

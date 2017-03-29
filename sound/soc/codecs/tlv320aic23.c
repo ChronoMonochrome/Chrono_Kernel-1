@@ -86,7 +86,11 @@ static int tlv320aic23_write(struct snd_soc_codec *codec, unsigned int reg,
 	 */
 
 	if (reg > 9 && reg != 15) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s Invalid register R%u\n", __func__, reg);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -381,8 +385,12 @@ static int set_sample_rate_control(struct snd_soc_codec *codec, int mclk,
 	{
 		u32 adc, dac;
 		get_current_sample_rates(codec, mclk, &adc, &dac);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "actual samplerate = %u,%u reg=%x\n",
 			adc, dac, data);
+#else
+		;
+#endif
 	}
 #endif
 	return 0;
@@ -623,7 +631,11 @@ static int tlv320aic23_probe(struct snd_soc_codec *codec)
 	struct aic23 *aic23 = snd_soc_codec_get_drvdata(codec);
 	int reg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AIC23 Audio Codec %s\n", AIC23_VERSION);
+#else
+	;
+#endif
 	codec->control_data = aic23->control_data;
 	codec->hw_write = (hw_write_t)i2c_master_send;
 	codec->hw_read = NULL;

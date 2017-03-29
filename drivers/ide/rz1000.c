@@ -28,12 +28,20 @@ static int __devinit rz1000_disable_readahead(struct pci_dev *dev)
 
 	if (!pci_read_config_word (dev, 0x40, &reg) &&
 	    !pci_write_config_word(dev, 0x40, reg & 0xdfff)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: disabled chipset read-ahead "
 			"(buggy RZ1000/RZ1001)\n", pci_name(dev));
+#else
+		;
+#endif
 		return 0;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: serialized, disabled unmasking "
 			"(buggy RZ1000/RZ1001)\n", pci_name(dev));
+#else
+		;
+#endif
 		return 1;
 	}
 }

@@ -49,7 +49,7 @@ struct sk_buff *ath_rxbuf_alloc(struct ath_common *common,
 		if (off != 0)
 			skb_reserve(skb, common->cachelsz - off);
 	} else {
-		printk(KERN_ERR "skbuff alloc of size %u failed\n", len);
+;
 		return NULL;
 	}
 
@@ -69,7 +69,7 @@ int ath_printk(const char *level, struct ath_common *common,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	rtn = printk("%sath: %pV", level, &vaf);
+;
 
 	va_end(args);
 

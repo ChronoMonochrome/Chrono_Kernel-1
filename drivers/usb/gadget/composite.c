@@ -45,7 +45,6 @@
 #define USB_BUFSIZ	1024
 #define USB_DT_OTG_SIZE 5
 
-
 static struct usb_composite_driver *composite;
 static int (*composite_gadget_bind)(struct usb_composite_dev *cdev);
 
@@ -655,8 +654,8 @@ int usb_remove_config(struct usb_composite_dev *cdev,
 {
 	unsigned long flags;
 
-	printk(KERN_DEBUG "usb: %s cdev->config=%p, config=%p\n",
-			__func__, cdev->config, config);
+//	printk(KERN_DEBUG "usb: %s cdev->config=%p, config=%p\n",
+;
 	spin_lock_irqsave(&cdev->lock, flags);
 
 	if (cdev->config == config)
@@ -836,12 +835,12 @@ int usb_string_id(struct usb_composite_dev *cdev)
 		 * supported languages */
 		/* 255 reserved as well? -- mina86 */
 		cdev->next_string_id++;
-		printk(KERN_DEBUG "usb: %s cdev(0x%p)->next_string_id=%d\n",
-			__func__, cdev, cdev->next_string_id);
+//		printk(KERN_DEBUG "usb: %s cdev(0x%p)->next_string_id=%d\n",
+;
 		return cdev->next_string_id;
 	}
-	printk(KERN_DEBUG "usb: %s error cdev(0x%p)->next_string_id=%d\n",
-		__func__, cdev, cdev->next_string_id);
+//	printk(KERN_DEBUG "usb: %s error cdev(0x%p)->next_string_id=%d\n",
+;
 	return -ENODEV;
 }
 
@@ -865,8 +864,8 @@ int usb_string_ids_tab(struct usb_composite_dev *cdev, struct usb_string *str)
 {
 	int next = cdev->next_string_id;
 
-	printk(KERN_DEBUG "usb: %s --cdev(0x%p)->next_string_id=%d\n",
-		__func__, cdev, cdev->next_string_id);
+//	printk(KERN_DEBUG "usb: %s --cdev(0x%p)->next_string_id=%d\n",
+;
 	for (; str->s; ++str) {
 		if (unlikely(next >= 254))
 			return -ENODEV;
@@ -900,8 +899,8 @@ int usb_string_ids_tab(struct usb_composite_dev *cdev, struct usb_string *str)
 int usb_string_ids_n(struct usb_composite_dev *c, unsigned n)
 {
 	unsigned next = c->next_string_id;
-	printk(KERN_DEBUG "usb: %s --cdev(0x%p)->next_string_id=%d\n",
-		__func__, c, c->next_string_id);
+//	printk(KERN_DEBUG "usb: %s --cdev(0x%p)->next_string_id=%d\n",
+;
 	if (unlikely(n > 254 || (unsigned)next + n > 254))
 		return -ENODEV;
 	c->next_string_id += n;
@@ -961,7 +960,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				count_configs(cdev, USB_DT_DEVICE);
 			value = min(w_length, (u16) sizeof cdev->desc);
 			memcpy(req->buf, &cdev->desc, value);
-			printk(KERN_DEBUG "usb: GET_DES\n");
+;
 			break;
 		case USB_DT_DEVICE_QUALIFIER:
 			if (!gadget_is_dualspeed(gadget))
@@ -1012,7 +1011,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		spin_lock(&cdev->lock);
 		value = set_config(cdev, ctrl, w_value);
 		spin_unlock(&cdev->lock);
-		printk(KERN_DEBUG "usb: SET_CON\n");
+;
 		break;
 	case USB_REQ_GET_CONFIGURATION:
 		if (ctrl->bRequestType != USB_DIR_IN)
@@ -1144,7 +1143,7 @@ static void composite_disconnect(struct usb_gadget *gadget)
 	/* REVISIT:  should we have config and device level
 	 * disconnect callbacks?
 	 */
-	printk(KERN_DEBUG "usb: %s\n", __func__);
+;
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (cdev->config)
 		reset_config(cdev);
@@ -1271,9 +1270,9 @@ static int composite_bind(struct usb_gadget *gadget)
 	if (bcdDevice)
 		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
 
-	printk(KERN_DEBUG "usb: %s idVendor=0x%x, idProduct=0x%x\n",
-			__func__, idVendor, idProduct);
-	printk(KERN_DEBUG "usb: %s bcdDevice=0x%x\n", __func__, bcdDevice);
+//	printk(KERN_DEBUG "usb: %s idVendor=0x%x, idProduct=0x%x\n",
+;
+;
 
 	/* string overrides */
 	if (iManufacturer || !cdev->desc.iManufacturer) {
@@ -1290,8 +1289,8 @@ static int composite_bind(struct usb_gadget *gadget)
 			override_id(cdev, &cdev->desc.iManufacturer);
 	}
 
-	printk(KERN_DEBUG "usb: %s composite_manufacturer=%s\n",
-			__func__, composite_manufacturer);
+//	printk(KERN_DEBUG "usb: %s composite_manufacturer=%s\n",
+;
 
 	if (iProduct || (!cdev->desc.iProduct && composite->iProduct))
 		cdev->product_override =

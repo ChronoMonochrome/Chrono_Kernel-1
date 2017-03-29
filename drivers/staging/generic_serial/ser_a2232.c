@@ -340,7 +340,7 @@ static int  a2232_set_real_termios(void *ptr)
 		}
 	}
 	if (rate == A2232_BAUD_TABLE_NOAVAIL){
-		printk("a2232: Board %d Port %d unsupported baud rate: %d baud. Using another.\n",port->which_a2232,port->which_port_on_a2232,baud);
+;
 		// This is useful for both (turbo or normal) Crystal versions.
 		rate = A2232PARAM_B9600;
 	}
@@ -355,23 +355,23 @@ static int  a2232_set_real_termios(void *ptr)
 		case CS7: 	a2232_param |= A2232PARAM_7Bit; break;
 		case CS6: 	a2232_param |= A2232PARAM_6Bit; break;
 		case CS5: 	a2232_param |= A2232PARAM_5Bit; break;
-		default:	printk("a2232: Board %d Port %d unsupported character size: %d. Using 8 data bits.\n",
-					port->which_a2232,port->which_port_on_a2232,chsize);
+//		default:	printk("a2232: Board %d Port %d unsupported character size: %d. Using 8 data bits.\n",
+;
 				a2232_param |= A2232PARAM_8Bit; break;
 	}
 
 	// get number of stop bits
 	stopb  = cflag & CSTOPB;
 	if (stopb){ // two stop bits instead of one
-		printk("a2232: Board %d Port %d 2 stop bits unsupported. Using 1 stop bit.\n",
-			port->which_a2232,port->which_port_on_a2232);
+//		printk("a2232: Board %d Port %d 2 stop bits unsupported. Using 1 stop bit.\n",
+;
 	}
 
 	// Warn if RTS/CTS not wanted
 	if (!(cflag & CRTSCTS)){
 #ifndef A2232_SUPPRESS_RTSCTS_WARNING
-		printk("a2232: Board %d Port %d cannot switch off firmware-implemented RTS/CTS hardware flow control.\n",
-			port->which_a2232,port->which_port_on_a2232);
+//		printk("a2232: Board %d Port %d cannot switch off firmware-implemented RTS/CTS hardware flow control.\n",
+;
 #endif
 	}
 
@@ -552,10 +552,10 @@ int ch, err, n, p;
 									/*	A2232EVENT_CarrierOn and A2232EVENT_CarrierOff are
 										handled in a separate queue and should not occur here. */
 								case A2232EVENT_Sync:
-									printk("A2232: 65EC02 software sent SYNC event, don't know what to do. Ignoring.");
+;
 									break;
 								default:
-									printk("A2232: 65EC02 software broken, unknown event type %d occurred.\n",ibuf[bufpos-1]);
+;
 								} /* event type switch */
 								break;
  							case A2232INCTL_CHAR:
@@ -564,7 +564,7 @@ int ch, err, n, p;
 								bufpos++;
 								break;
  							default:
-								printk("A2232: 65EC02 software broken, unknown data type %d occurred.\n",cbuf[bufpos]);
+;
 								bufpos++;
 							} /* switch on input data type */
 						} /* while there's something in the buffer */
@@ -701,8 +701,8 @@ static int a2232_init_drivers(void)
 	a2232_driver->flags = TTY_DRIVER_REAL_RAW;
 	tty_set_operations(a2232_driver, &a2232_ops);
 	if ((error = tty_register_driver(a2232_driver))) {
-		printk(KERN_ERR "A2232: Couldn't register A2232 driver, error = %d\n",
-		       error);
+//		printk(KERN_ERR "A2232: Couldn't register A2232 driver, error = %d\n",
+;
 		put_tty_driver(a2232_driver);
 		return 1;
 	}
@@ -741,12 +741,12 @@ static int __init a2232board_init(void)
 		if (!zorro_request_device(z,"A2232 driver"))
 			continue;
 
-		printk("Commodore A2232 found (#%d).\n",nr_a2232);
+;
 
 		zd_a2232[nr_a2232] = z;
 
 		boardaddr = ZTWO_VADDR( z->resource.start );
-		printk("Board is located at address 0x%x, size is 0x%x.\n", boardaddr, (unsigned int) ((z->resource.end+1) - (z->resource.start)));
+;
 
 		mem = (volatile struct a2232memory *) boardaddr;
 
@@ -756,13 +756,13 @@ static int __init a2232board_init(void)
 		from += sizeof(start);
 		to += start;
 		while(bcount--) *to++ = *from++;
-		printk("65EC02 software uploaded to the A2232 memory.\n");
+;
   
 		mem->Common.Crystal = A2232_UNKNOWN;  /* use automatic speed check */
   
 		/* start 6502 running */
 		(void) mem->ResetBoard;
-		printk("A2232's 65EC02 CPU up and running.\n");
+;
   
 		/* wait until speed detector has finished */
 		for (bcount = 0; bcount < 2000; bcount++) {
@@ -770,10 +770,10 @@ static int __init a2232board_init(void)
 			if (mem->Common.Crystal)
 				break;
 		}
-		printk((mem->Common.Crystal?"A2232 oscillator crystal detected by 65EC02 software: ":"65EC02 software could not determine A2232 oscillator crystal: "));
+;
 		switch (mem->Common.Crystal){
 		case A2232_UNKNOWN:
-			printk("Unknown crystal.\n");
+;
 			break;
  		case A2232_NORMAL:
 			printk ("Normal crystal.\n");

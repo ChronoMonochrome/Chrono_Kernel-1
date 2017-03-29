@@ -305,8 +305,12 @@ static int rs5c_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 		buf &= ~RS5C_CTRL1_AALE;
 
 	if (i2c_smbus_write_byte_data(client, addr, buf) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: can't update alarm\n",
 			rs5c->rtc->name);
+#else
+		;
+#endif
 		status = -EIO;
 	} else
 		rs5c->regs[RS5C_REG_CTRL1] = buf;
@@ -399,8 +403,12 @@ static int rs5c_set_alarm(struct device *dev, struct rtc_wkalrm *t)
 		addr = RS5C_ADDR(RS5C_REG_CTRL1);
 		buf[0] = rs5c->regs[RS5C_REG_CTRL1] | RS5C_CTRL1_AALE;
 		if (i2c_smbus_write_byte_data(client, addr, buf[0]) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: can't enable alarm\n",
 				rs5c->rtc->name);
+#else
+			;
+#endif
 		rs5c->regs[RS5C_REG_CTRL1] = buf[0];
 	}
 

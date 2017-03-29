@@ -2805,8 +2805,8 @@ static struct platform_driver udc_driver = {
 
 static int __init qe_udc_init(void)
 {
-	printk(KERN_INFO "%s: %s, %s\n", driver_name, driver_desc,
-			DRIVER_VERSION);
+//	printk(KERN_INFO "%s: %s, %s\n", driver_name, driver_desc,
+;
 	return platform_driver_register(&udc_driver);
 }
 

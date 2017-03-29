@@ -235,8 +235,12 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
 	}
 
 	if (!error)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &dev->dev,
 				"power state changed by ACPI to D%d\n", state);
+#else
+		dev_;
+#endif
 
 	return error;
 }
@@ -387,12 +391,20 @@ static int __init acpi_pci_init(void)
 	int ret;
 
 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_MSI) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO"ACPI FADT declares the system doesn't support MSI, so disable it\n");
+#else
+		;
+#endif
 		pci_no_msi();
 	}
 
 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
+#else
+		;
+#endif
 		pcie_no_aspm();
 	}
 

@@ -323,8 +323,8 @@ void t3e3_if_config(struct channel *sc, u32 cmd, char *set,
 		break;
 	case SBE_2T3E3_PORT_WRITE_REGS:
 #if 0
-		printk(KERN_DEBUG "SBE_2T3E3_PORT_WRITE_REGS, 0x%x, 0x%x, 0x%x\n",
-		       ((int*)data)[0], ((int*)data)[1], ((int*)data)[2]);
+//		printk(KERN_DEBUG "SBE_2T3E3_PORT_WRITE_REGS, 0x%x, 0x%x, 0x%x\n",
+;
 #endif
 		t3e3_reg_write(sc, data);
 		*rlen = 0;

@@ -47,8 +47,8 @@ int __devinit mal_register_commac(struct mal_instance	*mal,
 	if ((mal->tx_chan_mask & commac->tx_chan_mask) ||
 	    (mal->rx_chan_mask & commac->rx_chan_mask)) {
 		spin_unlock_irqrestore(&mal->lock, flags);
-		printk(KERN_WARNING "mal%d: COMMAC channels conflict!\n",
-		       mal->index);
+//		printk(KERN_WARNING "mal%d: COMMAC channels conflict!\n",
+;
 		return -EBUSY;
 	}
 
@@ -90,9 +90,9 @@ int mal_set_rcbs(struct mal_instance *mal, int channel, unsigned long size)
 	MAL_DBG(mal, "set_rbcs(%d, %lu)" NL, channel, size);
 
 	if (size & 0xf) {
-		printk(KERN_WARNING
-		       "mal%d: incorrect RX size %lu for the channel %d\n",
-		       mal->index, size, channel);
+//		printk(KERN_WARNING
+//		       "mal%d: incorrect RX size %lu for the channel %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -242,10 +242,10 @@ static irqreturn_t mal_serr(int irq, void *dev_instance)
 			 * incorrect physical address in BD (i.e. bug)
 			 */
 			if (net_ratelimit())
-				printk(KERN_ERR
-				       "mal%d: system error, "
-				       "PLB (ESR = 0x%08x)\n",
-				       mal->index, esr);
+//				printk(KERN_ERR
+//				       "mal%d: system error, "
+//				       "PLB (ESR = 0x%08x)\n",
+;
 			return IRQ_HANDLED;
 		}
 
@@ -253,9 +253,9 @@ static irqreturn_t mal_serr(int irq, void *dev_instance)
 		 * EBC setup
 		 */
 		if (net_ratelimit())
-			printk(KERN_ERR
-			       "mal%d: system error, OPB (ESR = 0x%08x)\n",
-			       mal->index, esr);
+//			printk(KERN_ERR
+//			       "mal%d: system error, OPB (ESR = 0x%08x)\n",
+;
 	}
 	return IRQ_HANDLED;
 }
@@ -320,9 +320,9 @@ static irqreturn_t mal_txde(int irq, void *dev_instance)
 	MAL_DBG(mal, "txde %08x" NL, deir);
 
 	if (net_ratelimit())
-		printk(KERN_ERR
-		       "mal%d: TX descriptor error (TXDEIR = 0x%08x)\n",
-		       mal->index, deir);
+//		printk(KERN_ERR
+//		       "mal%d: TX descriptor error (TXDEIR = 0x%08x)\n",
+;
 
 	return IRQ_HANDLED;
 }
@@ -474,7 +474,7 @@ static void mal_reset(struct mal_instance *mal)
 		--n;
 
 	if (unlikely(!n))
-		printk(KERN_ERR "mal%d: reset timeout\n", mal->index);
+;
 }
 
 int mal_get_regs_len(struct mal_instance *mal)
@@ -530,9 +530,9 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 
 	mal = kzalloc(sizeof(struct mal_instance), GFP_KERNEL);
 	if (!mal) {
-		printk(KERN_ERR
-		       "mal%d: out of memory allocating MAL structure!\n",
-		       index);
+//		printk(KERN_ERR
+//		       "mal%d: out of memory allocating MAL structure!\n",
+;
 		return -ENOMEM;
 	}
 	mal->index = index;
@@ -543,9 +543,9 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 
 	prop = of_get_property(ofdev->dev.of_node, "num-tx-chans", NULL);
 	if (prop == NULL) {
-		printk(KERN_ERR
-		       "mal%d: can't find MAL num-tx-chans property!\n",
-		       index);
+//		printk(KERN_ERR
+//		       "mal%d: can't find MAL num-tx-chans property!\n",
+;
 		err = -ENODEV;
 		goto fail;
 	}
@@ -553,9 +553,9 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 
 	prop = of_get_property(ofdev->dev.of_node, "num-rx-chans", NULL);
 	if (prop == NULL) {
-		printk(KERN_ERR
-		       "mal%d: can't find MAL num-rx-chans property!\n",
-		       index);
+//		printk(KERN_ERR
+//		       "mal%d: can't find MAL num-rx-chans property!\n",
+;
 		err = -ENODEV;
 		goto fail;
 	}
@@ -563,15 +563,15 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 
 	dcr_base = dcr_resource_start(ofdev->dev.of_node, 0);
 	if (dcr_base == 0) {
-		printk(KERN_ERR
-		       "mal%d: can't find DCR resource!\n", index);
+//		printk(KERN_ERR
+;
 		err = -ENODEV;
 		goto fail;
 	}
 	mal->dcr_host = dcr_map(ofdev->dev.of_node, dcr_base, 0x100);
 	if (!DCR_MAP_OK(mal->dcr_host)) {
-		printk(KERN_ERR
-		       "mal%d: failed to map DCRs !\n", index);
+//		printk(KERN_ERR
+;
 		err = -ENODEV;
 		goto fail;
 	}
@@ -582,8 +582,8 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 		mal->features |= (MAL_FTR_CLEAR_ICINTSTAT |
 				MAL_FTR_COMMON_ERR_INT);
 #else
-		printk(KERN_ERR "%s: Support for 405EZ not enabled!\n",
-				ofdev->dev.of_node->full_name);
+//		printk(KERN_ERR "%s: Support for 405EZ not enabled!\n",
+;
 		err = -ENODEV;
 		goto fail;
 #endif
@@ -603,8 +603,8 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 	if (mal->txeob_irq == NO_IRQ || mal->rxeob_irq == NO_IRQ ||
 	    mal->serr_irq == NO_IRQ || mal->txde_irq == NO_IRQ ||
 	    mal->rxde_irq == NO_IRQ) {
-		printk(KERN_ERR
-		       "mal%d: failed to map interrupts !\n", index);
+//		printk(KERN_ERR
+;
 		err = -ENODEV;
 		goto fail_unmap;
 	}
@@ -645,9 +645,9 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 		dma_alloc_coherent(&ofdev->dev, bd_size, &mal->bd_dma,
 				   GFP_KERNEL);
 	if (mal->bd_virt == NULL) {
-		printk(KERN_ERR
-		       "mal%d: out of memory allocating RX/TX descriptors!\n",
-		       index);
+//		printk(KERN_ERR
+//		       "mal%d: out of memory allocating RX/TX descriptors!\n",
+;
 		err = -ENOMEM;
 		goto fail_unmap;
 	}
@@ -698,10 +698,10 @@ static int __devinit mal_probe(struct platform_device *ofdev)
 	/* Enable EOB interrupt */
 	mal_enable_eob_irq(mal);
 
-	printk(KERN_INFO
-	       "MAL v%d %s, %d TX channels, %d RX channels\n",
-	       mal->version, ofdev->dev.of_node->full_name,
-	       mal->num_tx_chans, mal->num_rx_chans);
+//	printk(KERN_INFO
+//	       "MAL v%d %s, %d TX channels, %d RX channels\n",
+//	       mal->version, ofdev->dev.of_node->full_name,
+;
 
 	/* Advertise this instance to the rest of the world */
 	wmb();
@@ -740,9 +740,9 @@ static int __devexit mal_remove(struct platform_device *ofdev)
 
 	if (!list_empty(&mal->list)) {
 		/* This is *very* bad */
-		printk(KERN_EMERG
-		       "mal%d: commac list is not empty on remove!\n",
-		       mal->index);
+//		printk(KERN_EMERG
+//		       "mal%d: commac list is not empty on remove!\n",
+;
 		WARN_ON(1);
 	}
 

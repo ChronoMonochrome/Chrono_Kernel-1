@@ -118,8 +118,8 @@ static unsigned long calc_rate(unsigned long oldjif, unsigned long newjif,
 
 	/* see can_stat_update() - this should NEVER happen! */
 	if (count > (ULONG_MAX / HZ)) {
-		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
-		       count);
+//		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
+;
 		return 99999999;
 	}
 
@@ -475,8 +475,8 @@ void can_init_proc(void)
 	can_dir = proc_mkdir("can", init_net.proc_net);
 
 	if (!can_dir) {
-		printk(KERN_INFO "can: failed to create /proc/net/can . "
-		       "CONFIG_PROC_FS missing?\n");
+//		printk(KERN_INFO "can: failed to create /proc/net/can . "
+;
 		return;
 	}
 

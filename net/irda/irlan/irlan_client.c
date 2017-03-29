@@ -320,7 +320,7 @@ static void print_ret_code(__u8 code)
 {
 	switch(code) {
 	case 0:
-		printk(KERN_INFO "Success\n");
+;
 		break;
 	case 1:
 		IRDA_WARNING("IrLAN: Insufficient resources\n");

@@ -115,10 +115,18 @@ static void on20_log_adapter( PIA *pi, char * scratch, int verbose )
 
 {       char    *mode_string[2] = {"4-bit","8-bit"};
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("%s: on20 %s, OnSpec 90c20 at 0x%x, ",
                 pi->device,ON20_VERSION,pi->port);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+        ;
+#endif
 
 }
 

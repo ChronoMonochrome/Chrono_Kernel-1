@@ -226,8 +226,12 @@ bool pxa2xx_ac97_try_warm_reset(struct snd_ac97 *ac97)
 		BUG();
 	gsr = GSR | gsr_bits;
 	if (!(gsr & (GSR_PCR | GSR_SCR))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: warm reset timeout (GSR=%#lx)\n",
 				 __func__, gsr);
+#else
+		;
+#endif
 
 		return false;
 	}
@@ -259,8 +263,12 @@ bool pxa2xx_ac97_try_cold_reset(struct snd_ac97 *ac97)
 
 	gsr = GSR | gsr_bits;
 	if (!(gsr & (GSR_PCR | GSR_SCR))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: cold reset timeout (GSR=%#lx)\n",
 				 __func__, gsr);
+#else
+		;
+#endif
 
 		return false;
 	}

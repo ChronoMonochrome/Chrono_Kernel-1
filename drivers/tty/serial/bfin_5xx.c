@@ -626,12 +626,20 @@ static int bfin_serial_startup(struct uart_port *port)
 	dma_addr_t dma_handle;
 
 	if (request_dma(uart->rx_dma_channel, "BFIN_UART_RX") < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unable to attach Blackfin UART RX DMA channel\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
 	if (request_dma(uart->tx_dma_channel, "BFIN_UART_TX") < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unable to attach Blackfin UART TX DMA channel\n");
+#else
+		;
+#endif
 		free_dma(uart->rx_dma_channel);
 		return -EBUSY;
 	}
@@ -669,14 +677,22 @@ static int bfin_serial_startup(struct uart_port *port)
 # endif
 	if (request_irq(uart->port.irq, bfin_serial_rx_int, IRQF_DISABLED,
 	     "BFIN_UART_RX", uart)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unable to attach BlackFin UART RX interrupt\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
 	if (request_irq
 	    (uart->port.irq+1, bfin_serial_tx_int, IRQF_DISABLED,
 	     "BFIN_UART_TX", uart)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unable to attach BlackFin UART TX interrupt\n");
+#else
+		;
+#endif
 		free_irq(uart->port.irq, uart);
 		return -EBUSY;
 	}
@@ -708,14 +724,22 @@ static int bfin_serial_startup(struct uart_port *port)
 
 		if (uart_dma_ch_rx &&
 			request_dma(uart_dma_ch_rx, "BFIN_UART_RX") < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE"Fail to attach UART interrupt\n");
+#else
+			;
+#endif
 			free_irq(uart->port.irq, uart);
 			free_irq(uart->port.irq + 1, uart);
 			return -EBUSY;
 		}
 		if (uart_dma_ch_tx &&
 			request_dma(uart_dma_ch_tx, "BFIN_UART_TX") < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Fail to attach UART interrupt\n");
+#else
+			;
+#endif
 			free_dma(uart_dma_ch_rx);
 			free_irq(uart->port.irq, uart);
 			free_irq(uart->port.irq + 1, uart);
@@ -832,8 +856,12 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
 	 */
 	if (termios->c_cflag & CSTOPB) {
 		if (ANOMALY_05000231)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "STOP bits other than 1 is not "
 				"supported in case of anomaly 05000231.\n");
+#else
+			;
+#endif
 		else
 			lcr |= STB;
 	}

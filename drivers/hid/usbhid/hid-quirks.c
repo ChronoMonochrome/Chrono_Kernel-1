@@ -249,9 +249,13 @@ int usbhid_quirks_init(char **quirks_param)
 
 		if (m != 3 ||
 				usbhid_modify_dquirk(idVendor, idProduct, quirks) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 					"Could not parse HID quirk module param %s\n",
 					quirks_param[n]);
+#else
+			;
+#endif
 		}
 	}
 

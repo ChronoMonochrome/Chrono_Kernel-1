@@ -66,7 +66,11 @@ static int sa1100dog_open(struct inode *inode, struct file *file)
  */
 static int sa1100dog_release(struct inode *inode, struct file *file)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "WATCHDOG: Device closed - timer will not stop\n");
+#else
+	;
+#endif
 	clear_bit(1, &sa1100wdt_users);
 	return 0;
 }
@@ -169,9 +173,13 @@ static int __init sa1100dog_init(void)
 
 	ret = misc_register(&sa1100dog_miscdev);
 	if (ret == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"SA1100/PXA2xx Watchdog Timer: timer margin %d sec\n",
 						margin);
+#else
+		;
+#endif
 	return ret;
 }
 

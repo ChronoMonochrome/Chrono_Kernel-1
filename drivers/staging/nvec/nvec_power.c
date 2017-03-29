@@ -355,7 +355,7 @@ static void nvec_power_poll(struct work_struct *work)
         buf[1] = bat_iter[counter++];
 	nvec_write_async(power->nvec, buf, 2);
 
-//	printk("%02x %02x\n", buf[0], buf[1]);
+;
 
 	schedule_delayed_work(to_delayed_work(work), msecs_to_jiffies(5000));
 };

@@ -263,8 +263,12 @@ static int epia_test_proto( PIA *pi, char * scratch, int verbose )
         epia_disconnect(pi);
 
         if (verbose)  {
+#ifdef CONFIG_DEBUG_PRINTK
             printk("%s: epia: port 0x%x, mode %d, test=(%d,%d,%d)\n",
                    pi->device,pi->port,pi->mode,e[0],e[1],f);
+#else
+            ;
+#endif
         }
         
         return (e[0] && e[1]) || f;
@@ -277,10 +281,18 @@ static void epia_log_adapter( PIA *pi, char * scratch, int verbose )
 {       char    *mode_string[6] = {"4-bit","5/3","8-bit",
 				   "EPP-8","EPP-16","EPP-32"};
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("%s: epia %s, Shuttle EPIA at 0x%x, ",
                 pi->device,EPIA_VERSION,pi->port);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+        ;
+#endif
 
 }
 

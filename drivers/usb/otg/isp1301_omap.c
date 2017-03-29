@@ -140,7 +140,7 @@ static void enable_vbus_source(struct isp1301 *isp)
 /* products will deliver OTG messages with LEDs, GUI, etc */
 static inline void notresponding(struct isp1301 *isp)
 {
-	printk(KERN_NOTICE "OTG device not responding.\n");
+;
 }
 
 
@@ -744,8 +744,8 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
 	/* A-supplied voltage fell too low; overcurrent */
 	} else if (otg_irq & A_VBUS_ERR) {
 		otg_ctrl = omap_readl(OTG_CTRL);
-		printk(KERN_ERR "otg: %s, VBUS_ERR %04x ctrl %06x\n",
-			state_name(isp), otg_irq, otg_ctrl);
+//		printk(KERN_ERR "otg: %s, VBUS_ERR %04x ctrl %06x\n",
+;
 
 		otg_ctrl |= OTG_BUSDROP;
 		otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK & ~OTG_XCEIV_INPUTS;
@@ -762,11 +762,11 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
 		int	kick = 0;
 
 		otg_ctrl = omap_readl(OTG_CTRL);
-		printk(KERN_NOTICE "otg: %s, SWITCH to %s, ctrl %06x\n",
-				state_name(isp),
-				(otg_ctrl & OTG_DRIVER_SEL)
-					? "gadget" : "host",
-				otg_ctrl);
+//		printk(KERN_NOTICE "otg: %s, SWITCH to %s, ctrl %06x\n",
+//				state_name(isp),
+//				(otg_ctrl & OTG_DRIVER_SEL)
+//					? "gadget" : "host",
+;
 		isp1301_defer_work(isp, WORK_UPDATE_ISP);
 
 		/* role is peripheral */

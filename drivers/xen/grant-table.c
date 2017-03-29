@@ -205,7 +205,11 @@ int gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
 	do {
 		flags = nflags;
 		if (flags & (GTF_reading|GTF_writing)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT "WARNING: g.e. still in use!\n");
+#else
+			;
+#endif
 			return 0;
 		}
 	} while ((nflags = sync_cmpxchg(&shared[ref].flags, flags, 0)) != flags);
@@ -224,8 +228,12 @@ void gnttab_end_foreign_access(grant_ref_t ref, int readonly,
 	} else {
 		/* XXX This needs to be fixed so that the ref and page are
 		   placed on a list to be freed up later. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "WARNING: leaking g.e. and page still in use!\n");
+#else
+		;
+#endif
 	}
 }
 EXPORT_SYMBOL_GPL(gnttab_end_foreign_access);
@@ -542,8 +550,12 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
 			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
 			if (rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 						"grant table add_to_physmap failed, err=%d\n", rc);
+#else
+				;
+#endif
 				break;
 			}
 		} while (i-- > start_idx);
@@ -590,8 +602,12 @@ int gnttab_resume(void)
 	if (!shared) {
 		shared = ioremap(xen_hvm_resume_frames, PAGE_SIZE * max_nr_gframes);
 		if (shared == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 					"Failed to ioremap gnttab share frames!");
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 	}
@@ -664,7 +680,11 @@ int gnttab_init(void)
 	gnttab_free_count = nr_init_grefs - NR_RESERVED_ENTRIES;
 	gnttab_free_head  = NR_RESERVED_ENTRIES;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Grant table initialized\n");
+#else
+	;
+#endif
 	return 0;
 
  ini_nomem:

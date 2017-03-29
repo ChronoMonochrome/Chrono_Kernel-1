@@ -539,8 +539,12 @@ static int iop_adma_alloc_chan_resources(struct dma_chan *chan)
 
 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
 		if (!slot) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IOP ADMA Channel only initialized"
 				" %d descriptor slots", idx);
+#else
+			;
+#endif
 			break;
 		}
 		hw_desc = (char *) iop_chan->device->dma_desc_pool_virt;
@@ -1597,6 +1601,7 @@ static int __devinit iop_adma_probe(struct platform_device *pdev)
 			goto err_free_iop_chan;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pdev->dev, "Intel(R) IOP: "
 	  "( %s%s%s%s%s%s%s)\n",
 	  dma_has_cap(DMA_PQ, dma_dev->cap_mask) ? "pq " : "",
@@ -1606,6 +1611,9 @@ static int __devinit iop_adma_probe(struct platform_device *pdev)
 	  dma_has_cap(DMA_MEMSET, dma_dev->cap_mask)  ? "fill " : "",
 	  dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask) ? "cpy " : "",
 	  dma_has_cap(DMA_INTERRUPT, dma_dev->cap_mask) ? "intr " : "");
+#else
+	dev_;
+#endif
 
 	dma_async_device_register(dma_dev);
 	goto out;

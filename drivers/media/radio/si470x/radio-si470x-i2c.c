@@ -552,7 +552,11 @@ static struct i2c_driver si470x_i2c_driver = {
  */
 static int __init si470x_i2c_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRIVER_DESC ", Version " DRIVER_VERSION "\n");
+#else
+	;
+#endif
 	return i2c_add_driver(&si470x_i2c_driver);
 }
 

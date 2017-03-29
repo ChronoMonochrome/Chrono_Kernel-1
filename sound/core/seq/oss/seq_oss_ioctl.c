@@ -90,12 +90,20 @@ snd_seq_oss_ioctl(struct seq_oss_devinfo *dp, unsigned int cmd, unsigned long ca
 		return snd_seq_oss_timer_ioctl(dp->timer, cmd, arg);
 
 	case SNDCTL_SEQ_PANIC:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("panic\n"));
+#else
+		debug_;
+#endif
 		snd_seq_oss_reset(dp);
 		return -EINVAL;
 
 	case SNDCTL_SEQ_SYNC:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("sync\n"));
+#else
+		debug_;
+#endif
 		if (! is_write_mode(dp->file_mode) || dp->writeq == NULL)
 			return 0;
 		while (snd_seq_oss_writeq_sync(dp->writeq))
@@ -105,55 +113,95 @@ snd_seq_oss_ioctl(struct seq_oss_devinfo *dp, unsigned int cmd, unsigned long ca
 		return 0;
 
 	case SNDCTL_SEQ_RESET:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("reset\n"));
+#else
+		debug_;
+#endif
 		snd_seq_oss_reset(dp);
 		return 0;
 
 	case SNDCTL_SEQ_TESTMIDI:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("test midi\n"));
+#else
+		debug_;
+#endif
 		if (get_user(dev, p))
 			return -EFAULT;
 		return snd_seq_oss_midi_open(dp, dev, dp->file_mode);
 
 	case SNDCTL_SEQ_GETINCOUNT:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("get in count\n"));
+#else
+		debug_;
+#endif
 		if (dp->readq == NULL || ! is_read_mode(dp->file_mode))
 			return 0;
 		return put_user(dp->readq->qlen, p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_GETOUTCOUNT:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("get out count\n"));
+#else
+		debug_;
+#endif
 		if (! is_write_mode(dp->file_mode) || dp->writeq == NULL)
 			return 0;
 		return put_user(snd_seq_oss_writeq_get_free_size(dp->writeq), p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_GETTIME:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("get time\n"));
+#else
+		debug_;
+#endif
 		return put_user(snd_seq_oss_timer_cur_tick(dp->timer), p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_RESETSAMPLES:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("reset samples\n"));
+#else
+		debug_;
+#endif
 		if (get_user(dev, p))
 			return -EFAULT;
 		return snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
 
 	case SNDCTL_SEQ_NRSYNTHS:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("nr synths\n"));
+#else
+		debug_;
+#endif
 		return put_user(dp->max_synthdev, p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_NRMIDIS:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("nr midis\n"));
+#else
+		debug_;
+#endif
 		return put_user(dp->max_mididev, p) ? -EFAULT : 0;
 
 	case SNDCTL_SYNTH_MEMAVL:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("mem avail\n"));
+#else
+		debug_;
+#endif
 		if (get_user(dev, p))
 			return -EFAULT;
 		val = snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
 		return put_user(val, p) ? -EFAULT : 0;
 
 	case SNDCTL_FM_4OP_ENABLE:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("4op\n"));
+#else
+		debug_;
+#endif
 		if (get_user(dev, p))
 			return -EFAULT;
 		snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
@@ -161,19 +209,35 @@ snd_seq_oss_ioctl(struct seq_oss_devinfo *dp, unsigned int cmd, unsigned long ca
 
 	case SNDCTL_SYNTH_INFO:
 	case SNDCTL_SYNTH_ID:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("synth info\n"));
+#else
+		debug_;
+#endif
 		return snd_seq_oss_synth_info_user(dp, arg);
 
 	case SNDCTL_SEQ_OUTOFBAND:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("out of band\n"));
+#else
+		debug_;
+#endif
 		return snd_seq_oss_oob_user(dp, arg);
 
 	case SNDCTL_MIDI_INFO:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("midi info\n"));
+#else
+		debug_;
+#endif
 		return snd_seq_oss_midi_info_user(dp, arg);
 
 	case SNDCTL_SEQ_THRESHOLD:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("threshold\n"));
+#else
+		debug_;
+#endif
 		if (! is_write_mode(dp->file_mode))
 			return 0;
 		if (get_user(val, p))
@@ -186,7 +250,11 @@ snd_seq_oss_ioctl(struct seq_oss_devinfo *dp, unsigned int cmd, unsigned long ca
 		return 0;
 
 	case SNDCTL_MIDI_PRETIME:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("pretime\n"));
+#else
+		debug_;
+#endif
 		if (dp->readq == NULL || !is_read_mode(dp->file_mode))
 			return 0;
 		if (get_user(val, p))
@@ -199,7 +267,11 @@ snd_seq_oss_ioctl(struct seq_oss_devinfo *dp, unsigned int cmd, unsigned long ca
 		return put_user(val, p) ? -EFAULT : 0;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("others\n"));
+#else
+		debug_;
+#endif
 		if (! is_write_mode(dp->file_mode))
 			return -EIO;
 		return snd_seq_oss_synth_ioctl(dp, 0, cmd, carg);

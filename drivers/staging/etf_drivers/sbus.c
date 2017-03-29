@@ -1369,10 +1369,10 @@ ETF_STATUS_CODE ETF_CB_Start (LL_HANDLE LowerHandle,
 
 #if 0
 	priv->hw_type = HIF_8601_SILICON;
-	printk(KERN_ERR "%s:[1]MY HACK hw_type = %d\n",__func__,priv->hw_type);
+;
 
 	major_revision = 2; /*Its a hack*/
-	printk(KERN_ERR "%s: MY HACK:major_revision = %d\n",__func__,major_revision);
+;
 	config_reg_len = BIT_32_REG;
 #endif
 
@@ -1431,7 +1431,7 @@ ETF_STATUS_CODE ETF_CB_Start (LL_HANDLE LowerHandle,
 	}
 	/* CW1200 Hardware detection logic :
 	CW1200 cut2.0 / CW1250 cut (1.0/1.1) */
-	printk(KERN_ERR "%s: BEFORE CHIP DETECT MY HACK:major_revision = %d\n",__func__,major_revision);
+;
 	retval = cw1200_chip_detect(priv, major_revision);
 
 	if (HIF_8601_SILICON != priv->hw_type)
@@ -1450,7 +1450,7 @@ ETF_STATUS_CODE ETF_CB_Start (LL_HANDLE LowerHandle,
 	}
 
 	/* 5. Call function to download firmware */
-	//printk(KERN_ERR "%s: MY HACK:hw_type= %d\n",__func__,priv->hw_type);
+;
 
 	if (HIF_8601_SILICON == priv->hw_type) {
 		DEBUG(DBG_MESSAGE, "CW1200 (HIF_8601_SILICON) " 

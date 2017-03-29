@@ -277,36 +277,89 @@ print_bytes (unsigned char *c, int len, int hex, int ascii)
 		x = c;
 		for (i=0;i<len;i++)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			if ((i % xmargin) == 0 && i>0) printk("\n");
+#else
+			if ((i % xmargin) == 0 && i>0) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if ((i % xmargin) == 0) printk("0x%04x:", i);
+#else
+			if ((i % xmargin) == 0) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", *x);
+#else
+			;
+#endif
 			x++;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	if (ascii)
 	{
 		x = c;
 		for (i=0;i<len;i++)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			if ((i % amargin) == 0 && i>0) printk("\n");
+#else
+			if ((i % amargin) == 0 && i>0) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if ((i % amargin) == 0) printk("0x%04x:", i);
+#else
+			if ((i % amargin) == 0) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if (*x > 26 && *x < 128) printk("%c", *x);
+#else
+			if (*x > 26 && *x < 128) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			else printk(".");
+#else
+			else ;
+#endif
 			x++;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 
 static void
 print_cmd(CommandList_struct *cp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("queue:%d\n", cp->Header.ReplyQueue);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("sglist:%d\n", cp->Header.SGList);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("sgtot:%d\n", cp->Header.SGTotal);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Tag:0x%08x/0x%08x\n", cp->Header.Tag.upper, 
 			cp->Header.Tag.lower);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("LUN:0x%02x%02x%02x%02x%02x%02x%02x%02x\n",
 		cp->Header.LUN.LunAddrBytes[0],
 		cp->Header.LUN.LunAddrBytes[1],
@@ -316,11 +369,35 @@ print_cmd(CommandList_struct *cp)
 		cp->Header.LUN.LunAddrBytes[5],
 		cp->Header.LUN.LunAddrBytes[6],
 		cp->Header.LUN.LunAddrBytes[7]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CDBLen:%d\n", cp->Request.CDBLen);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Type:%d\n",cp->Request.Type.Type);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Attr:%d\n",cp->Request.Type.Attribute);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" Dir:%d\n",cp->Request.Type.Direction);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Timeout:%d\n",cp->Request.Timeout);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk( "CDB: %02x %02x %02x %02x %02x %02x %02x %02x"
 		" %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		cp->Request.CDB[0], cp->Request.CDB[1],
@@ -334,14 +411,49 @@ print_cmd(CommandList_struct *cp)
 	printk("edesc.Addr: 0x%08x/0%08x, Len  = %d\n", 
 		cp->ErrDesc.Addr.upper, cp->ErrDesc.Addr.lower, 
 			cp->ErrDesc.Len);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("sgs..........Errorinfo:\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scsistatus:%d\n", cp->err_info->ScsiStatus);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("senselen:%d\n", cp->err_info->SenseLen);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cmd status:%d\n", cp->err_info->CommandStatus);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("resid cnt:%d\n", cp->err_info->ResidualCnt);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("offense size:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_size);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("offense byte:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_num);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("offense value:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_value);
+#else
+	;
+#endif
 			
 }
 
@@ -747,7 +859,11 @@ static void complete_scsi_command(CommandList_struct *c, int timeout,
 	/* cmd->result |= (GOOD < 1); */		/* status byte */
 
 	cmd->result |= (ei->ScsiStatus);
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Scsistatus is 0x%02x\n", ei->ScsiStatus);  */
+#else
+	/* ;
+#endif
 
 	/* copy the sense data whether we need to or not. */
 
@@ -935,9 +1051,13 @@ cciss_scsi_do_simple_cmd(ctlr_info_t *h,
 	c->Header.Tag.lower = c->busaddr;  /* Use k. address of cmd as tag */
 	// Fill in the request block...
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Using scsi3addr 0x%02x%0x2%0x2%0x2%0x2%0x2%0x2%0x2\n", 
 		scsi3addr[0], scsi3addr[1], scsi3addr[2], scsi3addr[3],
 		scsi3addr[4], scsi3addr[5], scsi3addr[6], scsi3addr[7]); */
+#else
+	/* ;
+#endif
 
 	memset(c->Request.CDB, 0, sizeof(c->Request.CDB));
 	memcpy(c->Request.CDB, cdb, cdblen);
@@ -1050,7 +1170,11 @@ cciss_scsi_do_inquiry(ctlr_info_t *h, unsigned char *scsi3addr,
 	spin_unlock_irqrestore(&h->lock, flags);
 
 	if (c == NULL) {			/* trouble... */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cmd_alloc returned NULL!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1112,7 +1236,11 @@ cciss_scsi_do_report_phys_luns(ctlr_info_t *h,
 	c = scsi_cmd_alloc(h);
 	spin_unlock_irqrestore(&h->lock, flags);
 	if (c == NULL) {			/* trouble... */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cmd_alloc returned NULL!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1203,10 +1331,14 @@ cciss_update_non_disk_devices(ctlr_info_t *h, int hostno)
 		ch = &ld_buff->LUNListLength[0];
 		num_luns = ((ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | ch[3]) / 8;
 		if (num_luns > CISS_MAX_PHYS_LUN) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING 
 				"cciss: Maximum physical LUNs (%d) exceeded.  "
 				"%d LUNs ignored.\n", CISS_MAX_PHYS_LUN, 
 				num_luns - CISS_MAX_PHYS_LUN);
+#else
+			;
+#endif
 			num_luns = CISS_MAX_PHYS_LUN;
 		}
 	}
@@ -1267,9 +1399,13 @@ cciss_update_non_disk_devices(ctlr_info_t *h, int hostno)
 		  case 0x01: /* sequential access, (tape) */
 		  case 0x08: /* medium changer */
 			if (ncurrent >= CCISS_MAX_SCSI_DEVS_PER_HBA) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "cciss%d: %s ignored, "
 					"too many devices.\n", h->ctlr,
 					scsi_device_type(this_device->devtype));
+#else
+				;
+#endif
 				break;
 			}
 			currentsd[ncurrent] = *this_device;

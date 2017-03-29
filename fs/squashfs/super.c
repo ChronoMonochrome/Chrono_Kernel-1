@@ -442,8 +442,8 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
-		"Phillip Lougher\n");
+//	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
+;
 
 	return 0;
 }

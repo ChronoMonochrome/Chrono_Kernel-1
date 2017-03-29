@@ -38,10 +38,18 @@ static struct notifier_block clamp_notifier = {
 static int clamp_set(struct wf_control *ct, s32 value)
 {
 	if (value)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "windfarm: Clamping CPU frequency to "
 		       "minimum !\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "windfarm: CPU frequency unclamped !\n");
+#else
+		;
+#endif
 	clamped = value;
 	cpufreq_update_policy(0);
 	return 0;

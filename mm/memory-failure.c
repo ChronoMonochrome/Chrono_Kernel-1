@@ -222,8 +222,12 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
 		ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
 	}
 	if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
 		       t->comm, t->pid, ret);
+#else
+		;
+#endif
 	return ret;
 }
 
@@ -584,8 +588,12 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
 	if (mapping->a_ops->error_remove_page) {
 		err = mapping->a_ops->error_remove_page(mapping, p);
 		if (err != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MCE %#lx: Failed to punch page: %d\n",
 					pfn, err);
+#else
+			;
+#endif
 		} else if (page_has_private(p) &&
 				!try_to_release_page(p, GFP_NOIO)) {
 			pr_info("MCE %#lx: failed to release buffers\n", pfn);
@@ -600,8 +608,12 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
 		if (invalidate_inode_page(p))
 			ret = RECOVERED;
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MCE %#lx: Failed to invalidate\n",
 				pfn);
+#else
+			;
+#endif
 	}
 	return ret;
 }
@@ -895,9 +907,13 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
 		} else {
 			kill = 0;
 			ttu |= TTU_IGNORE_HWPOISON;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 	"MCE %#lx: corrupted page was clean: dropped without side effects\n",
 				pfn);
+#else
+			;
+#endif
 		}
 	}
 
@@ -928,8 +944,12 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
 				 * than causing panic by unmapping. System might
 				 * survive if the page is freed later.
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 					"MCE %#lx: failed to split THP\n", pfn);
+#else
+				;
+#endif
 
 				BUG_ON(!PageHWPoison(p));
 				return SWAP_FAIL;

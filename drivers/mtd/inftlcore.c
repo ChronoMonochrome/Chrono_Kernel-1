@@ -68,7 +68,11 @@ static void inftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	inftl = kzalloc(sizeof(*inftl), GFP_KERNEL);
 
 	if (!inftl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: Out of memory for data structures\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -78,7 +82,11 @@ static void inftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	inftl->mbd.tr = tr;
 
 	if (INFTL_mount(inftl) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: could not mount device\n");
+#else
+		;
+#endif
 		kfree(inftl);
 		return;
 	}
@@ -108,13 +116,21 @@ static void inftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		  Oh no we don't have
 		   mbd.size == heads * cylinders * sectors
 		*/
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: cannot calculate a geometry to "
 		       "match size of 0x%lx.\n", inftl->mbd.size);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: using C:%d H:%d S:%d "
 			"(== 0x%lx sects)\n",
 			inftl->cylinders, inftl->heads , inftl->sectors,
 			(long)inftl->cylinders * (long)inftl->heads *
 			(long)inftl->sectors );
+#else
+		;
+#endif
 	}
 
 	if (add_mtd_blktrans_dev(&inftl->mbd)) {
@@ -124,7 +140,11 @@ static void inftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		return;
 	}
 #ifdef PSYCHO_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "INFTL: Found new inftl%c\n", inftl->mbd.devnum + 'a');
+#else
+	;
+#endif
 #endif
 	return;
 }
@@ -239,8 +259,12 @@ static u16 INFTL_findfreeblock(struct INFTLrecord *inftl, int desperate)
 			pot = 0;
 
 		if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: no free blocks found!  "
 				"EUN range = %d - %d\n", 0, inftl->LastFreeEUN);
+#else
+			;
+#endif
 			return BLOCK_NIL;
 		}
 	} while (pot != inftl->LastFreeEUN);
@@ -268,8 +292,12 @@ static u16 INFTL_foldchain(struct INFTLrecord *inftl, unsigned thisVUC, unsigned
 	thisEUN = targetEUN = inftl->VUtable[thisVUC];
 
 	if (thisEUN == BLOCK_NIL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: trying to fold non-existent "
 		       "Virtual Unit Chain %d!\n", thisVUC);
+#else
+		;
+#endif
 		return BLOCK_NIL;
 	}
 
@@ -302,16 +330,24 @@ static u16 INFTL_foldchain(struct INFTLrecord *inftl, unsigned thisVUC, unsigned
 				BlockDeleted[block] = 1;
 				continue;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "INFTL: unknown status "
 					"for block %d in EUN %d: %x\n",
 					block, thisEUN, status);
+#else
+				;
+#endif
 				break;
 			}
 		}
 
 		if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: infinite loop in Virtual "
 				"Unit Chain 0x%x\n", thisVUC);
+#else
+			;
+#endif
 			return BLOCK_NIL;
 		}
 
@@ -432,9 +468,13 @@ static u16 INFTL_makefreeblock(struct INFTLrecord *inftl, unsigned pendingblock)
 			thislen++;
 			EUN = inftl->PUtable[EUN];
 			if (thislen > 0xff00) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "INFTL: endless loop in "
 					"Virtual Chain %d: Unit %x\n",
 					chain, EUN);
+#else
+				;
+#endif
 				/*
 				 * Actually, don't return failure.
 				 * Just ignore this chain and get on with it.
@@ -451,8 +491,12 @@ static u16 INFTL_makefreeblock(struct INFTLrecord *inftl, unsigned pendingblock)
 	}
 
 	if (ChainLength < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: no Virtual Unit Chains available "
 			"for folding. Failing request\n");
+#else
+		;
+#endif
 		return BLOCK_NIL;
 	}
 
@@ -523,8 +567,12 @@ static inline u16 INFTL_findwriteunit(struct INFTLrecord *inftl, unsigned block)
 			}
 
 			if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "INFTL: infinite loop in "
 					"Virtual Unit Chain 0x%x\n", thisVUC);
+#else
+				;
+#endif
 				return BLOCK_NIL;
 			}
 
@@ -567,8 +615,12 @@ hitused:
 				 * space than actual media, or our makefreeblock
 				 * routine is missing something.
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "INFTL: cannot make free "
 					"space.\n");
+#else
+				;
+#endif
 #ifdef DEBUG
 				INFTL_dumptables(inftl);
 				INFTL_dumpVUchains(inftl);
@@ -629,8 +681,12 @@ hitused:
 
 	} while (silly2--);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "INFTL: error folding to make room for Virtual "
 		"Unit Chain 0x%x\n", thisVUC);
+#else
+	;
+#endif
 	return BLOCK_NIL;
 }
 
@@ -655,8 +711,12 @@ static void INFTL_trydeletechain(struct INFTLrecord *inftl, unsigned thisVUC)
 
 	thisEUN = inftl->VUtable[thisVUC];
 	if (thisEUN == BLOCK_NIL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "INFTL: trying to delete non-existent "
 		       "Virtual Unit Chain %d!\n", thisVUC);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -688,15 +748,23 @@ static void INFTL_trydeletechain(struct INFTLrecord *inftl, unsigned thisVUC)
 				BlockDeleted[block] = 1;
 				continue;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "INFTL: unknown status "
 					"for block %d in EUN %d: 0x%x\n",
 					block, thisEUN, status);
+#else
+				;
+#endif
 			}
 		}
 
 		if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: infinite loop in Virtual "
 				"Unit Chain 0x%x\n", thisVUC);
+#else
+			;
+#endif
 			return;
 		}
 
@@ -787,16 +855,24 @@ static int INFTL_deleteblock(struct INFTLrecord *inftl, unsigned block)
 		case SECTOR_USED:
 			goto foundit;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: unknown status for "
 				"block %d in EUN %d: 0x%x\n",
 				block, thisEUN, status);
+#else
+			;
+#endif
 			break;
 		}
 
 		if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: infinite loop in Virtual "
 				"Unit Chain 0x%x\n",
 				block / (inftl->EraseSize / SECTORSIZE));
+#else
+			;
+#endif
 			return 1;
 		}
 		thisEUN = inftl->PUtable[thisEUN];
@@ -838,8 +914,12 @@ static int inftl_writeblock(struct mtd_blktrans_dev *mbd, unsigned long block,
 		writeEUN = INFTL_findwriteunit(inftl, block);
 
 		if (writeEUN == BLOCK_NIL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "inftl_writeblock(): cannot find "
 				"block to write to\n");
+#else
+			;
+#endif
 			/*
 			 * If we _still_ haven't got a block to use,
 			 * we're screwed.
@@ -896,16 +976,24 @@ static int inftl_readblock(struct mtd_blktrans_dev *mbd, unsigned long block,
 		case SECTOR_IGNORE:
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: unknown status for "
 				"block %ld in EUN %d: 0x%04x\n",
 				block, thisEUN, status);
+#else
+			;
+#endif
 			break;
 		}
 
 		if (!silly--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "INFTL: infinite loop in "
 				"Virtual Unit Chain 0x%lx\n",
 				block / (inftl->EraseSize / SECTORSIZE));
+#else
+			;
+#endif
 			return 1;
 		}
 

@@ -296,7 +296,7 @@ static int sdla_cpuspeed(struct net_device *dev, struct ifreq *ifr)
 
 	if (data == Z80_SCC_BAD)
 	{
-		printk("%s: SCC bad\n", dev->name);
+;
 		return -EIO;
 	}
 
@@ -350,24 +350,24 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int 
 		case SDLA_RET_MODEM:
 			state = data;
 			if (*state & SDLA_MODEM_DCD_LOW)
-				printk(KERN_INFO "%s: Modem DCD unexpectedly low!\n", dev->name);
+;
 			if (*state & SDLA_MODEM_CTS_LOW)
-				printk(KERN_INFO "%s: Modem CTS unexpectedly low!\n", dev->name);
+;
 			/* I should probably do something about this! */
 			break;
 
 		case SDLA_RET_CHANNEL_OFF:
-			printk(KERN_INFO "%s: Channel became inoperative!\n", dev->name);
+;
 			/* same here */
 			break;
 
 		case SDLA_RET_CHANNEL_ON:
-			printk(KERN_INFO "%s: Channel became operative!\n", dev->name);
+;
 			/* same here */
 			break;
 
 		case SDLA_RET_DLCI_STATUS:
-			printk(KERN_INFO "%s: Status change reported by Access Node.\n", dev->name);
+;
 			len /= sizeof(struct _dlci_stat);
 			for(pstatus = data, i=0;i < len;i++,pstatus++)
 			{
@@ -382,29 +382,29 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int 
 					sprintf(line, "unknown status: %02X", pstatus->flags);
 					state = line;
 				}
-				printk(KERN_INFO "%s: DLCI %i: %s.\n", dev->name, pstatus->dlci, state);
+;
 				/* same here */
 			}
 			break;
 
 		case SDLA_RET_DLCI_UNKNOWN:
-			printk(KERN_INFO "%s: Received unknown DLCIs:", dev->name);
+;
 			len /= sizeof(short);
 			for(pdlci = data,i=0;i < len;i++,pdlci++)
 				printk(" %i", *pdlci);
-			printk("\n");
+;
 			break;
 
 		case SDLA_RET_TIMEOUT:
-			printk(KERN_ERR "%s: Command timed out!\n", dev->name);
+;
 			break;
 
 		case SDLA_RET_BUF_OVERSIZE:
-			printk(KERN_INFO "%s: Bc/CIR overflow, acceptable size is %i\n", dev->name, len);
+;
 			break;
 
 		case SDLA_RET_BUF_TOO_BIG:
-			printk(KERN_INFO "%s: Buffer size over specified max of %i\n", dev->name, len);
+;
 			break;
 
 		case SDLA_RET_CHANNEL_INACTIVE:
@@ -415,7 +415,7 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int 
 				break;
 
 		default: 
-			printk(KERN_DEBUG "%s: Cmd 0x%2.2X generated return code 0x%2.2X\n", dev->name, cmd, ret);
+;
 			/* Further processing could be done here */
 			break;
 	}
@@ -678,12 +678,12 @@ static netdev_tx_t sdla_transmit(struct sk_buff *skb,
 		case ARPHRD_FRAD:
 			if (skb->dev->type != ARPHRD_DLCI)
 			{
-				printk(KERN_WARNING "%s: Non DLCI device, type %i, tried to send on FRAD module.\n", dev->name, skb->dev->type);
+;
 				accept = 0;
 			}
 			break;
 		default:
-			printk(KERN_WARNING "%s: unknown firmware type 0x%4.4X\n", dev->name, dev->type);
+;
 			accept = 0;
 			break;
 	}
@@ -807,7 +807,7 @@ static void sdla_receive(struct net_device *dev)
 
 		if (i == CONFIG_DLCI_MAX)
 		{
-			printk(KERN_NOTICE "%s: Received packet from invalid DLCI %i, ignoring.", dev->name, dlci);
+;
 			dev->stats.rx_errors++;
 			success = 0;
 		}
@@ -819,7 +819,7 @@ static void sdla_receive(struct net_device *dev)
 		skb = dev_alloc_skb(len + sizeof(struct frhdr));
 		if (skb == NULL) 
 		{
-			printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 			dev->stats.rx_dropped++;
 			success = 0;
 		}
@@ -880,8 +880,8 @@ static irqreturn_t sdla_isr(int dummy, void *dev_id)
 
 	if (!flp->initialized)
 	{
-		printk(KERN_WARNING "%s: irq %d for uninitialized device.\n",
-		       dev->name, dev->irq);
+//		printk(KERN_WARNING "%s: irq %d for uninitialized device.\n",
+;
 		return IRQ_NONE;
 	}
 
@@ -901,7 +901,7 @@ static irqreturn_t sdla_isr(int dummy, void *dev_id)
 		case SDLA_INTR_TX:
 		case SDLA_INTR_COMPLETE:
 		case SDLA_INTR_TIMER:
-			printk(KERN_WARNING "%s: invalid irq flag 0x%02X.\n", dev->name, byte);
+;
 			break;
 	}
 
@@ -1347,7 +1347,7 @@ static int sdla_set_config(struct net_device *dev, struct ifmap *map)
 		return -EINVAL;
 
 	if (!request_region(map->base_addr, SDLA_IO_EXTENTS, dev->name)){
-		printk(KERN_WARNING "SDLA: io-port 0x%04lx in use\n", dev->base_addr);
+;
 		return -EINVAL;
 	}
 	base = map->base_addr;
@@ -1412,7 +1412,7 @@ static int sdla_set_config(struct net_device *dev, struct ifmap *map)
 		}
 	}
 
-	printk(KERN_NOTICE "%s: Unknown card type\n", dev->name);
+;
 	err = -ENODEV;
 	goto fail;
 
@@ -1626,7 +1626,7 @@ static int __init init_sdla(void)
 {
 	int err;
 
-	printk("%s.\n", version);
+;
 
 	sdla = alloc_netdev(sizeof(struct frad_local), "sdla0", setup_sdla);
 	if (!sdla) 

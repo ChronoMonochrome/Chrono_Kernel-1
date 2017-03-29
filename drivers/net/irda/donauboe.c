@@ -1086,7 +1086,7 @@ toshoboe_hard_xmit (struct sk_buff *skb, struct net_device *dev)
         }
       else
         {
-          printk(KERN_ERR DRIVER_NAME ": problem with mtt packet - ignored\n");
+;
         }
       spin_unlock_irqrestore(&self->spinlock, flags);
     }

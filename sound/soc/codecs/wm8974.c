@@ -309,9 +309,13 @@ static void pll_factors(struct pll_ *pll_div,
 		pll_div->pre_div = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"WM8974 N value %u outwith recommended range!\n",
 			Ndiv);
+#else
+		;
+#endif
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;

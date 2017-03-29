@@ -605,8 +605,12 @@ static int __init setup_transparent_hugepage(char *str)
 	}
 out:
 	if (!ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "transparent_hugepage= cannot parse, ignored\n");
+#else
+		;
+#endif
 	return ret;
 }
 __setup("transparent_hugepage=", setup_transparent_hugepage);

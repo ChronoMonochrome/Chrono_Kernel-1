@@ -553,11 +553,23 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
 		if (orig_sp != stack_addr) {
 			struct pt_regs *saved_regs =
 				(struct pt_regs *)kcb->jprobe_saved_regs.ARM_sp;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("current sp %lx does not match saved sp %lx\n",
 			       orig_sp, stack_addr);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Saved registers for jprobe %p\n", jp);
+#else
+			;
+#endif
 			show_regs(saved_regs);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Current registers\n");
+#else
+			;
+#endif
 			show_regs(regs);
 			BUG();
 		}

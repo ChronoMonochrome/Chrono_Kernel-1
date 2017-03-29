@@ -302,14 +302,30 @@ static void lx_message_dump(struct lx_rmh *rmh)
 	u8 idx = rmh->cmd_idx;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(LXRMH "command %s\n", dsp_commands[idx].dcOpName);
+#else
+	;
+#endif
 
 	for (i = 0; i != rmh->cmd_len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXRMH "\tcmd[%d] %08x\n", i, rmh->cmd[i]);
+#else
+		;
+#endif
 
 	for (i = 0; i != rmh->stat_len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXRMH "\tstat[%d]: %08x\n", i, rmh->stat[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk("\n");
+#else
+	;
+#endif
 }
 #else
 static inline void lx_message_dump(struct lx_rmh *rmh)
@@ -351,8 +367,12 @@ static int lx_message_send_atomic(struct lx6464es *chip, struct lx_rmh *rmh)
 		} else
 			udelay(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING LXP "TIMEOUT lx_message_send_atomic! "
 		   "polling failed\n");
+#else
+	;
+#endif
 
 polling_successful:
 	if ((reg & ERROR_VALUE) == 0) {
@@ -363,18 +383,30 @@ polling_successful:
 					   rmh->stat_len);
 		}
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "rmh error: %08x\n", reg);
+#else
+		;
+#endif
 
 	/* clear Reg_CSM_MR */
 	lx_dsp_reg_write(chip, eReg_CSM, 0);
 
 	switch (reg) {
 	case ED_DSP_TIMED_OUT:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP "lx_message_send: dsp timeout\n");
+#else
+		;
+#endif
 		return -ETIMEDOUT;
 
 	case ED_DSP_CRASHED:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP "lx_message_send: dsp crashed\n");
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 
@@ -904,13 +936,25 @@ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
 	}
 
 	if (err == EB_RBUFFERS_TABLE_OVERFLOW)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "lx_buffer_give EB_RBUFFERS_TABLE_OVERFLOW\n");
+#else
+		;
+#endif
 
 	if (err == EB_INVALID_STREAM)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "lx_buffer_give EB_INVALID_STREAM\n");
+#else
+		;
+#endif
 
 	if (err == EB_CMD_REFUSED)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "lx_buffer_give EB_CMD_REFUSED\n");
+#else
+		;
+#endif
 
  done:
 	spin_unlock_irqrestore(&chip->msg_lock, flags);
@@ -983,8 +1027,12 @@ int lx_level_unmute(struct lx6464es *chip, int is_capture, int unmute)
 	chip->rmh.cmd[1] = (u32)(mute_mask >> (u64)32);	       /* hi part */
 	chip->rmh.cmd[2] = (u32)(mute_mask & (u64)0xFFFFFFFF); /* lo part */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk("mute %x %x %x\n", chip->rmh.cmd[0], chip->rmh.cmd[1],
 		   chip->rmh.cmd[2]);
+#else
+	;
+#endif
 
 	err = lx_message_send_atomic(chip, &chip->rmh);
 

@@ -332,7 +332,11 @@ static void snd_pcm_proc_info_read(struct snd_pcm_substream *substream,
 
 	info = kmalloc(sizeof(*info), GFP_KERNEL);
 	if (! info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "snd_pcm_proc_info_read: cannot malloc\n");
+#else
+		;
+#endif
 		return;
 	}
 

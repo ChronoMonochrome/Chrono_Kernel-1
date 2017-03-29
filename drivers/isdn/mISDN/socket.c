@@ -73,13 +73,21 @@ mISDN_send(struct mISDNchannel *ch, struct sk_buff *skb)
 
 	msk = container_of(ch, struct mISDN_sock, ch);
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s len %d %p\n", __func__, skb->len, skb);
+#else
+		;
+#endif
 	if (msk->sk.sk_state == MISDN_CLOSED)
 		return -EUNATCH;
 	__net_timestamp(skb);
 	err = sock_queue_rcv_skb(&msk->sk, skb);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: error %d\n", __func__, err);
+#else
+		;
+#endif
 	return err;
 }
 
@@ -90,7 +98,11 @@ mISDN_ctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 
 	msk = container_of(ch, struct mISDN_sock, ch);
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p, %x, %p)\n", __func__, ch, cmd, arg);
+#else
+		;
+#endif
 	switch (cmd) {
 	case CLOSE_CHANNEL:
 		msk->sk.sk_state = MISDN_CLOSED;
@@ -121,9 +133,13 @@ mISDN_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
 	int		copied, err;
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: len %d, flags %x ch.nr %d, proto %x\n",
 			__func__, (int)len, flags, _pms(sk)->ch.nr,
 			sk->sk_protocol);
+#else
+		;
+#endif
 	if (flags & (MSG_OOB))
 		return -EOPNOTSUPP;
 
@@ -151,8 +167,12 @@ mISDN_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
 		}
 	} else {
 		if (msg->msg_namelen)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: too small namelen %d\n",
 			    __func__, msg->msg_namelen);
+#else
+			;
+#endif
 		msg->msg_namelen = 0;
 	}
 
@@ -186,9 +206,13 @@ mISDN_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
 	struct sockaddr_mISDN	*maddr;
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: len %d flags %x ch %d proto %x\n",
 		     __func__, (int)len, msg->msg_flags, _pms(sk)->ch.nr,
 		     sk->sk_protocol);
+#else
+		;
+#endif
 
 	if (msg->msg_flags & MSG_OOB)
 		return -EOPNOTSUPP;
@@ -227,8 +251,12 @@ mISDN_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
 	}
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: ID:%x\n",
 		     __func__, mISDN_HEAD_ID(skb));
+#else
+		;
+#endif
 
 	err = -ENODEV;
 	if (!_pms(sk)->ch.peer)
@@ -254,7 +282,11 @@ data_sock_release(struct socket *sock)
 	struct sock *sk = sock->sk;
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p) sk=%p\n", __func__, sock, sk);
+#else
+		;
+#endif
 	if (!sk)
 		return 0;
 	switch (sk->sk_protocol) {
@@ -423,8 +455,12 @@ static int data_sock_setsockopt(struct socket *sock, int level, int optname,
 	int err = 0, opt = 0;
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p, %d, %x, %p, %d)\n", __func__, sock,
 		    level, optname, optval, len);
+#else
+		;
+#endif
 
 	lock_sock(sk);
 
@@ -487,7 +523,11 @@ data_sock_bind(struct socket *sock, struct sockaddr *addr, int addr_len)
 	int err = 0;
 
 	if (*debug & DEBUG_SOCKET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p) sk=%p\n", __func__, sock, sk);
+#else
+		;
+#endif
 	if (addr_len != sizeof(struct sockaddr_mISDN))
 		return -EINVAL;
 	if (!maddr || maddr->family != AF_ISDN)
@@ -636,7 +676,11 @@ base_sock_release(struct socket *sock)
 {
 	struct sock *sk = sock->sk;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s(%p) sk=%p\n", __func__, sock, sk);
+#else
+	;
+#endif
 	if (!sk)
 		return 0;
 

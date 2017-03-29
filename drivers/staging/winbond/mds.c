@@ -477,7 +477,7 @@ Mds_Tx(struct wbsoft_priv *adapter)
 			FragmentCount = PacketSize/FragmentThreshold + 1;
 			stmp = PacketSize + FragmentCount*32 + 8; /* 931130.5.c 8:MIC */
 			if ((XmitBufSize + stmp) >= MAX_USB_TX_BUFFER) {
-				printk("[Mds_Tx] Excess max tx buffer.\n");
+;
 				break; /* buffer is not enough */
 			}
 

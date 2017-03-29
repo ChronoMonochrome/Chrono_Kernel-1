@@ -893,7 +893,11 @@ static int __init mce_amd_init(void)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Huh? What family is that: %d?!\n", c->x86);
+#else
+		;
+#endif
 		kfree(fam_ops);
 		return -EINVAL;
 	}

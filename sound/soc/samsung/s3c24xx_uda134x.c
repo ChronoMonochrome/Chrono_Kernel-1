@@ -281,7 +281,11 @@ static int s3c24xx_uda134x_probe(struct platform_device *pdev)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "S3C24XX_UDA134X SoC Audio driver\n");
+#else
+	;
+#endif
 
 	s3c24xx_uda134x_l3_pins = pdev->dev.platform_data;
 	if (s3c24xx_uda134x_l3_pins == NULL) {

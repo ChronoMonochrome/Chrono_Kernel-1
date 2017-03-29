@@ -201,7 +201,11 @@ static int configure_rate(struct snd_pcm_substream *substream,
 		sampling_frequency = CODEC_SAMPLING_FREQ_48KHZ;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("not supported frequnecy \n");
+#else
+		;
+#endif
 		stm_error("not supported frequnecy \n");
 		return -EINVAL;
 	}
@@ -1261,9 +1265,17 @@ static int u8500_tdm_mode_ctrl_put(struct snd_kcontrol *kcontrol,
 	chip->tdm8_ch_mode = uinfo->value.enumerated.item[0];
 
 	if (ENABLE == chip->tdm8_ch_mode)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n TDM 8 channel mode enabled\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n TDM 8 channel mode disabled\n");
+#else
+		;
+#endif
 
 	changed = 1;
 
@@ -1849,7 +1861,11 @@ static int snd_u8500_alsa_pcm_open(struct snd_pcm_substream *substream)
 		status = u8500_acodec_open(I2S_CLIENT_MSP1, stream_id);
 
 		if (status) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("failed in getting open\n");
+#else
+			;
+#endif
 			return -1;
 		}
 
@@ -2033,7 +2049,11 @@ static int snd_u8500_alsa_pcm_prepare(struct snd_pcm_substream *substream)
 
 		error = u8500_acodec_open(I2S_CLIENT_MSP1, stream_id);
 		if (error) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("failed in getting open\n");
+#else
+			;
+#endif
 			return -1;
 		}
 		if ((error =

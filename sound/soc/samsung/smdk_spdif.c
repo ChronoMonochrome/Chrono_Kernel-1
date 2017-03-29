@@ -28,31 +28,47 @@ static int set_audio_clock_heirachy(struct platform_device *pdev)
 
 	fout_epll = clk_get(NULL, "fout_epll");
 	if (IS_ERR(fout_epll)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Cannot find fout_epll.\n",
 				__func__);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	mout_epll = clk_get(NULL, "mout_epll");
 	if (IS_ERR(mout_epll)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Cannot find mout_epll.\n",
 				__func__);
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto out1;
 	}
 
 	sclk_audio0 = clk_get(&pdev->dev, "sclk_audio");
 	if (IS_ERR(sclk_audio0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Cannot find sclk_audio.\n",
 				__func__);
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto out2;
 	}
 
 	sclk_spdif = clk_get(NULL, "sclk_spdif");
 	if (IS_ERR(sclk_spdif)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Cannot find sclk_spdif.\n",
 				__func__);
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto out3;
 	}

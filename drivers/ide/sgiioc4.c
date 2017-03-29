@@ -315,7 +315,11 @@ static int __devinit ide_dma_sgiioc4(ide_hwif_t *hwif,
 	int num_ports = sizeof(struct ioc4_dma_regs);
 	void *pad;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "    %s: MMIO-DMA\n", hwif->name);
+#else
+	;
+#endif
 
 	if (request_mem_region(dma_base, num_ports, hwif->name) == NULL) {
 		printk(KERN_ERR "%s(%s) -- ERROR: addresses 0x%08lx to 0x%08lx "
@@ -366,8 +370,12 @@ static void sgiioc4_configure_for_dma(int dma_direction, ide_drive_t *drive)
 	ioc4_dma = readl((void __iomem *)ioc4_dma_addr);
 
 	if (ioc4_dma & IOC4_S_DMA_ACTIVE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(%s): Warning!! DMA from previous "
 		       "transfer was still active\n", __func__, drive->name);
+#else
+		;
+#endif
 		writel(IOC4_S_DMA_STOP, (void __iomem *)ioc4_dma_addr);
 		ioc4_dma = sgiioc4_ide_dma_stop(hwif, dma_base);
 
@@ -378,9 +386,13 @@ static void sgiioc4_configure_for_dma(int dma_direction, ide_drive_t *drive)
 
 	ioc4_dma = readl((void __iomem *)ioc4_dma_addr);
 	if (ioc4_dma & IOC4_S_DMA_ERROR) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(%s): Warning!! DMA Error during "
 		       "previous transfer, status 0x%x\n",
 		       __func__, drive->name, ioc4_dma);
+#else
+		;
+#endif
 		writel(IOC4_S_DMA_STOP, (void __iomem *)ioc4_dma_addr);
 		ioc4_dma = sgiioc4_ide_dma_stop(hwif, dma_base);
 
@@ -427,9 +439,13 @@ static int sgiioc4_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 
 		while (cur_len) {
 			if (count++ >= IOC4_PRD_ENTRIES) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "%s: DMA table too small\n",
 				       drive->name);
+#else
+				;
+#endif
 				return 0;
 			} else {
 				u32 bcount =
@@ -585,8 +601,12 @@ static unsigned int __devinit pci_init_sgiioc4(struct pci_dev *dev)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: IDE controller at PCI slot %s, revision %d\n",
 			 DRV_NAME, pci_name(dev), dev->revision);
+#else
+	;
+#endif
 
 	if (dev->revision < IOC4_SUPPORTED_FIRMWARE_REV) {
 		printk(KERN_ERR "Skipping %s IDE controller in slot %s: "

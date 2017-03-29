@@ -62,19 +62,31 @@ static int __init md_setup(char *str)
 		str++;
 	}
 	if (get_option(&str, &minor) != 2) {	/* MD Number */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "md: Too few arguments supplied to md=.\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	str1 = str;
 	for (ent=0 ; ent< md_setup_ents ; ent++)
 		if (md_setup_args[ent].minor == minor &&
 		    md_setup_args[ent].partitioned == partitioned) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "md: md=%s%d, Specified more than once. "
 			       "Replacing previous definition.\n", partitioned?"d":"", minor);
+#else
+			;
+#endif
 			break;
 		}
 	if (ent >= ARRAY_SIZE(md_setup_args)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "md: md=%s%d - too many md initialisations\n", partitioned?"d":"", minor);
+#else
+		;
+#endif
 		return 0;
 	}
 	if (ent >= md_setup_ents)
@@ -84,7 +96,11 @@ static int __init md_setup(char *str)
 		if (level == 0 || level == LEVEL_LINEAR) {
 			if (get_option(&str, &factor) != 2 ||	/* Chunk Size */
 					get_option(&str, &fault) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "md: Too few arguments supplied to md=.\n");
+#else
+				;
+#endif
 				return 0;
 			}
 			md_setup_args[ent].level = level;
@@ -104,8 +120,12 @@ static int __init md_setup(char *str)
 		pername="super-block";
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "md: Will configure md%d (%s) from %s, below.\n",
 		minor, pername, str);
+#else
+	;
+#endif
 	md_setup_args[ent].device_names = str;
 	md_setup_args[ent].partitioned = partitioned;
 	md_setup_args[ent].minor = minor;
@@ -153,7 +173,11 @@ static void __init md_setup_drive(void)
 			if (rdev)
 				dev = new_decode_dev(rdev);
 			if (!dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "md: Unknown device name: %s\n", devname);
+#else
+				;
+#endif
 				break;
 			}
 
@@ -166,9 +190,13 @@ static void __init md_setup_drive(void)
 		if (!i)
 			continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md: Loading md%s%d: %s\n",
 			partitioned ? "_d" : "", minor,
 			md_setup_args[ent].device_names);
+#else
+		;
+#endif
 
 		fd = sys_open(name, 0, 0);
 		if (fd < 0) {
@@ -177,9 +205,13 @@ static void __init md_setup_drive(void)
 			continue;
 		}
 		if (sys_ioctl(fd, SET_ARRAY_INFO, 0) == -EBUSY) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "md: Ignoring md=%d, already autodetected. (Use raid=noautodetect)\n",
 			       minor);
+#else
+			;
+#endif
 			sys_close(fd);
 			continue;
 		}
@@ -225,7 +257,11 @@ static void __init md_setup_drive(void)
 		if (!err)
 			err = sys_ioctl(fd, RUN_ARRAY, 0);
 		if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "md: starting md%d failed\n", minor);
+#else
+			;
+#endif
 		else {
 			/* reread the partition table.
 			 * I (neilb) and not sure why this is needed, but I cannot
@@ -278,8 +314,16 @@ static void __init autodetect_raid(void)
 	 * Since we don't want to detect and use half a raid array, we need to
 	 * wait for the known devices to complete their probing
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "md: Waiting for all devices to be available before autodetect\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "md: If you don't use raid, use raid=noautodetect\n");
+#else
+	;
+#endif
 
 	wait_for_device_probe();
 
@@ -295,7 +339,11 @@ void __init md_run_setup(void)
 	create_dev("/dev/md0", MKDEV(MD_MAJOR, 0));
 
 	if (raid_noautodetect)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md: Skipping autodetection of RAID arrays. (raid=autodetect will force)\n");
+#else
+		;
+#endif
 	else
 		autodetect_raid();
 	md_setup_drive();

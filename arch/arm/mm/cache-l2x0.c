@@ -433,9 +433,17 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
 	outer_cache.inv_all = l2x0_inv_all;
 	outer_cache.disable = l2x0_disable;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s cache controller enabled\n", type);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "l2x0: %d ways, CACHE_ID 0x%08x, AUX_CTRL 0x%08x, Cache size: %d B\n",
 			l2x0_ways, l2x0_cache_id, aux, l2x0_size);
+#else
+	;
+#endif
 }
 
 #ifdef CONFIG_OF

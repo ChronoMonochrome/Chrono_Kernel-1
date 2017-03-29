@@ -1244,8 +1244,12 @@ static int __init crash_notes_memory_init(void)
 	/* Allocate memory for saving cpu registers. */
 	crash_notes = alloc_percpu(note_buf_t);
 	if (!crash_notes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Kexec: Memory allocation for saving cpu register"
 		" states failed\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	return 0;
@@ -1581,7 +1585,11 @@ int kernel_kexec(void)
 #endif
 	{
 		kernel_restart_prepare(NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Starting new kernel\n");
+#else
+		;
+#endif
 		machine_shutdown();
 	}
 

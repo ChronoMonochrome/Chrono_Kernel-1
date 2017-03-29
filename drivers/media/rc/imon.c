@@ -1560,10 +1560,22 @@ static void imon_incoming_packet(struct imon_context *ictx,
 	}
 
 	if (debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "intf%d decoded packet: ", intf);
+#else
+		;
+#endif
 		for (i = 0; i < len; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", buf[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	press_type = imon_parse_press_type(ictx, buf, ktype);
@@ -1773,7 +1785,11 @@ static void imon_get_ffdc_type(struct imon_context *ictx)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " (id 0x%02x)\n", ffdc_cfg_byte);
+#else
+	;
+#endif
 
 	ictx->display_type = detected_display_type;
 	ictx->rc_type = allowed_protos;

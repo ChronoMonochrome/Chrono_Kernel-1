@@ -346,7 +346,7 @@ init_ath5k_pci(void)
 
 	ret = pci_register_driver(&ath5k_pci_driver);
 	if (ret) {
-		printk(KERN_ERR "ath5k_pci: can't register pci driver\n");
+;
 		return ret;
 	}
 

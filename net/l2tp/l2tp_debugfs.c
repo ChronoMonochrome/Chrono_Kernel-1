@@ -317,11 +317,11 @@ static int __init l2tp_debugfs_init(void)
 	if (tunnels == NULL)
 		rc = -EIO;
 
-	printk(KERN_INFO "L2TP debugfs support\n");
+;
 
 out:
 	if (rc)
-		printk(KERN_WARNING "l2tp debugfs: unable to init\n");
+;
 
 	return rc;
 }

@@ -67,7 +67,11 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 
 	card = b1_alloc_card(1);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pcmcia: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -91,8 +95,12 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 	}
 	b1_reset(card->port);
 	if ((retval = b1_detect(card->port, card->cardtype)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "b1pcmcia: NO card at 0x%x (%d)\n",
 		       card->port, retval);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_free_irq;
 	}
@@ -122,8 +130,12 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 		default    : cardname = "B1 PCMCIA"; break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "b1pcmcia: AVM %s at i/o %#x, irq %d, revision %d\n",
 	       cardname, card->port, card->irq, card->revision);
+#else
+	;
+#endif
 
 	list_add(&card->list, &cards);
 	return cinfo->capi_ctrl.cnr;
@@ -210,7 +222,11 @@ static int __init b1pcmcia_init(void)
 
 	strlcpy(capi_driver_b1pcmcia.revision, rev, 32);
 	register_capi_driver(&capi_driver_b1pcmcia);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "b1pci: revision %s\n", rev);
+#else
+	;
+#endif
 
 	return 0;
 }

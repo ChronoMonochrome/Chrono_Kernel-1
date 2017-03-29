@@ -239,7 +239,11 @@ static int __init asr_get_base_address(void)
 		return -EBUSY;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "found %sASR @ addr %#x\n", type, asr_base);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -332,8 +336,12 @@ static int asr_release(struct inode *inode, struct file *file)
 	if (asr_expect_close == 42)
 		asr_disable();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 				"unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		asr_toggle();
 	}
 	clear_bit(0, &asr_is_open);

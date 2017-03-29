@@ -962,10 +962,10 @@ static u16 mdio_ctrl_hw(struct nic *nic, u32 addr, u32 dir, u32 reg, u16 data)
 			break;
 	}
 	spin_unlock_irqrestore(&nic->mdio_lock, flags);
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "%s:addr=%d, reg=%d, data_in=0x%04X, data_out=0x%04X\n",
-		     dir == mdi_read ? "READ" : "WRITE",
-		     addr, reg, data, data_out);
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//		     "%s:addr=%d, reg=%d, data_in=0x%04X, data_out=0x%04X\n",
+//		     dir == mdi_read ? "READ" : "WRITE",
+;
 	return (u16)data_out;
 }
 
@@ -1025,19 +1025,19 @@ static u16 mdio_ctrl_phy_mii_emulated(struct nic *nic,
 			return	ADVERTISE_10HALF |
 				ADVERTISE_10FULL;
 		default:
-			netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-				     "%s:addr=%d, reg=%d, data=0x%04X: unimplemented emulation!\n",
-				     dir == mdi_read ? "READ" : "WRITE",
-				     addr, reg, data);
+//			netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//				     "%s:addr=%d, reg=%d, data=0x%04X: unimplemented emulation!\n",
+//				     dir == mdi_read ? "READ" : "WRITE",
+;
 			return 0xFFFF;
 		}
 	} else {
 		switch (reg) {
 		default:
-			netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-				     "%s:addr=%d, reg=%d, data=0x%04X: unimplemented emulation!\n",
-				     dir == mdi_read ? "READ" : "WRITE",
-				     addr, reg, data);
+//			netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//				     "%s:addr=%d, reg=%d, data=0x%04X: unimplemented emulation!\n",
+//				     dir == mdi_read ? "READ" : "WRITE",
+;
 			return 0xFFFF;
 		}
 	}
@@ -1154,15 +1154,15 @@ static void e100_configure(struct nic *nic, struct cb *cb, struct sk_buff *skb)
 		}
 	}
 
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "[00-07]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
-		     c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7]);
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "[08-15]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
-		     c[8], c[9], c[10], c[11], c[12], c[13], c[14], c[15]);
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "[16-23]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
-		     c[16], c[17], c[18], c[19], c[20], c[21], c[22], c[23]);
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//		     "[00-07]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
+;
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//		     "[08-15]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
+;
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//		     "[16-23]=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
+;
 }
 
 /*************************************************************************
@@ -1444,15 +1444,15 @@ static int e100_phy_init(struct nic *nic)
 			return -EAGAIN;
 		}
 	} else
-		netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-			     "phy_addr = %d\n", nic->mii.phy_id);
+//		netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+;
 
 	/* Get phy ID */
 	id_lo = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID1);
 	id_hi = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID2);
 	nic->phy = (u32)id_hi << 16 | (u32)id_lo;
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "phy ID = 0x%08X\n", nic->phy);
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+;
 
 	/* Select the phy and isolate the rest */
 	for (addr = 0; addr < 32; addr++) {
@@ -1562,9 +1562,9 @@ static void e100_set_multicast_list(struct net_device *netdev)
 {
 	struct nic *nic = netdev_priv(netdev);
 
-	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
-		     "mc_count=%d, flags=0x%04X\n",
-		     netdev_mc_count(netdev), netdev->flags);
+//	netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+//		     "mc_count=%d, flags=0x%04X\n",
+;
 
 	if (netdev->flags & IFF_PROMISC)
 		nic->flags |= promiscuous;
@@ -1637,8 +1637,8 @@ static void e100_update_stats(struct nic *nic)
 
 
 	if (e100_exec_cmd(nic, cuc_dump_reset, 0))
-		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
-			     "exec cuc_dump_reset failed\n");
+//		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
+;
 }
 
 static void e100_adjust_adaptive_ifs(struct nic *nic, int speed, int duplex)
@@ -1669,8 +1669,8 @@ static void e100_watchdog(unsigned long data)
 	struct ethtool_cmd cmd = { .cmd = ETHTOOL_GSET };
 	u32 speed;
 
-	netif_printk(nic, timer, KERN_DEBUG, nic->netdev,
-		     "right now = %ld\n", jiffies);
+//	netif_printk(nic, timer, KERN_DEBUG, nic->netdev,
+;
 
 	/* mii library handles link maintenance tasks */
 
@@ -1742,8 +1742,8 @@ static netdev_tx_t e100_xmit_frame(struct sk_buff *skb,
 		   Issue a NOP command followed by a 1us delay before
 		   issuing the Tx command. */
 		if (e100_exec_cmd(nic, cuc_nop, 0))
-			netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
-				     "exec cuc_nop failed\n");
+//			netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
+;
 		udelay(1);
 	}
 
@@ -1752,14 +1752,14 @@ static netdev_tx_t e100_xmit_frame(struct sk_buff *skb,
 	switch (err) {
 	case -ENOSPC:
 		/* We queued the skb, but now we're out of space. */
-		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
-			     "No space for CB\n");
+//		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
+;
 		netif_stop_queue(netdev);
 		break;
 	case -ENOMEM:
 		/* This is a hard error - log it. */
-		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
-			     "Out of Tx resources, returning skb\n");
+//		netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
+;
 		netif_stop_queue(netdev);
 		return NETDEV_TX_BUSY;
 	}
@@ -1780,10 +1780,10 @@ static int e100_tx_clean(struct nic *nic)
 	    cb->status & cpu_to_le16(cb_complete);
 	    cb = nic->cb_to_clean = cb->next) {
 		rmb(); /* read skb after status */
-		netif_printk(nic, tx_done, KERN_DEBUG, nic->netdev,
-			     "cb[%d]->status = 0x%04X\n",
-			     (int)(((void*)cb - (void*)nic->cbs)/sizeof(struct cb)),
-			     cb->status);
+//		netif_printk(nic, tx_done, KERN_DEBUG, nic->netdev,
+//			     "cb[%d]->status = 0x%04X\n",
+//			     (int)(((void*)cb - (void*)nic->cbs)/sizeof(struct cb)),
+;
 
 		if (likely(cb->skb != NULL)) {
 			dev->stats.tx_packets++;
@@ -1926,8 +1926,8 @@ static int e100_rx_indicate(struct nic *nic, struct rx *rx,
 		sizeof(struct rfd), PCI_DMA_BIDIRECTIONAL);
 	rfd_status = le16_to_cpu(rfd->status);
 
-	netif_printk(nic, rx_status, KERN_DEBUG, nic->netdev,
-		     "status=0x%04X\n", rfd_status);
+//	netif_printk(nic, rx_status, KERN_DEBUG, nic->netdev,
+;
 	rmb(); /* read size after status bit */
 
 	/* If data isn't ready, nothing to indicate */
@@ -2139,8 +2139,8 @@ static irqreturn_t e100_intr(int irq, void *dev_id)
 	struct nic *nic = netdev_priv(netdev);
 	u8 stat_ack = ioread8(&nic->csr->scb.stat_ack);
 
-	netif_printk(nic, intr, KERN_DEBUG, nic->netdev,
-		     "stat_ack = 0x%02X\n", stat_ack);
+//	netif_printk(nic, intr, KERN_DEBUG, nic->netdev,
+;
 
 	if (stat_ack == stat_ack_not_ours ||	/* Not our interrupt */
 	   stat_ack == stat_ack_not_present)	/* Hardware is ejected */
@@ -2280,8 +2280,8 @@ static void e100_tx_timeout_task(struct work_struct *work)
 	struct nic *nic = container_of(work, struct nic, tx_timeout_task);
 	struct net_device *netdev = nic->netdev;
 
-	netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
-		     "scb.status=0x%02X\n", ioread8(&nic->csr->scb.status));
+//	netif_printk(nic, tx_err, KERN_DEBUG, nic->netdev,
+;
 
 	rtnl_lock();
 	if (netif_running(netdev)) {

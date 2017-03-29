@@ -722,6 +722,7 @@ static int pti_console_setup(struct console *c, char *opts)
 }
 
 /*
+#ifdef CONFIG_DEBUG_PRINTK
  * pti_console struct, used to capture OS printk()'s and shift
  * out to the PTI device for debugging.  This cannot be
  * enabled upon boot because of the possibility of eating
@@ -739,6 +740,9 @@ static struct console pti_console = {
 	.flags		= CON_PRINTBUFFER,
 	.index		= 0,
 };
+#else
+ * pti_console struct, used to capture OS ;
+#endif
 
 /**
  * pti_port_activate()- Used to start/initialize any items upon

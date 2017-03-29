@@ -66,41 +66,121 @@ static struct mtd_chip_driver cfi_staa_chipdrv = {
 static void cfi_tell_features(struct cfi_pri_intelext *extp)
 {
         int i;
+#ifdef CONFIG_DEBUG_PRINTK
         printk("  Feature/Command Support: %4.4X\n", extp->FeatureSupport);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Chip Erase:         %s\n", extp->FeatureSupport&1?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Suspend Erase:      %s\n", extp->FeatureSupport&2?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Suspend Program:    %s\n", extp->FeatureSupport&4?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Legacy Lock/Unlock: %s\n", extp->FeatureSupport&8?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Queued Erase:       %s\n", extp->FeatureSupport&16?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Instant block lock: %s\n", extp->FeatureSupport&32?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Protection Bits:    %s\n", extp->FeatureSupport&64?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Page-mode read:     %s\n", extp->FeatureSupport&128?"supported":"unsupported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Synchronous read:   %s\n", extp->FeatureSupport&256?"supported":"unsupported");
+#else
+	;
+#endif
 	for (i=9; i<32; i++) {
 		if (extp->FeatureSupport & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("     - Unknown Bit %X:      supported\n", i);
+#else
+			;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Supported functions after Suspend: %2.2X\n", extp->SuspendCmdSupport);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Program after Erase Suspend: %s\n", extp->SuspendCmdSupport&1?"supported":"unsupported");
+#else
+	;
+#endif
 	for (i=1; i<8; i++) {
 		if (extp->SuspendCmdSupport & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("     - Unknown Bit %X:               supported\n", i);
+#else
+			;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Block Status Register Mask: %4.4X\n", extp->BlkStatusRegMask);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Lock Bit Active:      %s\n", extp->BlkStatusRegMask&1?"yes":"no");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     - Valid Bit Active:     %s\n", extp->BlkStatusRegMask&2?"yes":"no");
+#else
+	;
+#endif
 	for (i=2; i<16; i++) {
 		if (extp->BlkStatusRegMask & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("     - Unknown Bit %X Active: yes\n",i);
+#else
+			;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Vcc Logic Supply Optimum Program/Erase Voltage: %d.%d V\n",
 	       extp->VccOptimal >> 8, extp->VccOptimal & 0xf);
+#else
+	;
+#endif
 	if (extp->VppOptimal)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Vpp Programming Supply Optimum Program/Erase Voltage: %d.%d V\n",
 		       extp->VppOptimal >> 8, extp->VppOptimal & 0xf);
+#else
+		;
+#endif
 }
 #endif
 
@@ -172,7 +252,11 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 	unsigned long devsize = (1<<cfi->cfiq->DevSize) * cfi->interleave;
 
 	mtd = kzalloc(sizeof(*mtd), GFP_KERNEL);
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk(KERN_DEBUG "number of CFI chips: %d\n", cfi->numchips);
+#else
+	//;
+#endif
 
 	if (!mtd) {
 		printk(KERN_ERR "Failed to allocate memory for MTD device\n");
@@ -212,7 +296,11 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 
 		if (offset != devsize) {
 			/* Argh */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sum of regions (%lx) != total size of set of interleaved chips (%lx)\n", offset, devsize);
+#else
+			;
+#endif
 			kfree(mtd->eraseregions);
 			kfree(cfi->cmdset_priv);
 			kfree(mtd);
@@ -220,10 +308,14 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 		}
 
 		for (i=0; i<mtd->numeraseregions;i++){
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%d: offset=0x%llx,size=0x%x,blocks=%d\n",
 			       i, (unsigned long long)mtd->eraseregions[i].offset,
 			       mtd->eraseregions[i].erasesize,
 			       mtd->eraseregions[i].numblocks);
+#else
+			;
+#endif
 		}
 
 	/* Also select the correct geometry setup too */
@@ -284,7 +376,11 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
 		map_write(map, CMD(0x70), cmd_addr);
 		chip->oldstate = FL_ERASING;
 		chip->state = FL_ERASE_SUSPENDING;
+#ifdef CONFIG_DEBUG_PRINTK
 		//		printk("Erase suspending at 0x%lx\n", cmd_addr);
+#else
+		//		;
+#endif
 		for (;;) {
 			status = map_read(map, cmd_addr);
 			if (map_word_andequal(map, status, status_OK, status_OK))
@@ -444,7 +540,11 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
  retry:
 
 #ifdef DEBUG_CFI_FEATURES
+#ifdef CONFIG_DEBUG_PRINTK
        printk("%s: chip->state[%d]\n", __func__, chip->state);
+#else
+       ;
+#endif
 #endif
 	mutex_lock(&chip->mutex);
 
@@ -462,7 +562,11 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
 		map_write(map, CMD(0x70), cmd_adr);
                 chip->state = FL_STATUS;
 #ifdef DEBUG_CFI_FEATURES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: 1 status[%x]\n", __func__, map_read(map, cmd_adr));
+#else
+	;
+#endif
 #endif
 
 	case FL_STATUS:
@@ -590,7 +694,11 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
         /* check for errors: 'lock bit', 'VPP', 'dead cell'/'unerased cell' or 'incorrect cmd' -- saw */
         if (map_word_bitsset(map, status, CMD(0x3a))) {
 #ifdef DEBUG_CFI_FEATURES
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: 2 status[%lx]\n", __func__, status.x[0]);
+#else
+		;
+#endif
 #endif
 		/* clear status */
 		map_write(map, CMD(0x50), cmd_adr);
@@ -624,9 +732,21 @@ static int cfi_staa_write_buffers (struct mtd_info *mtd, loff_t to,
 	ofs = to  - (chipnum << cfi->chipshift);
 
 #ifdef DEBUG_CFI_FEATURES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: map_bankwidth(map)[%x]\n", __func__, map_bankwidth(map));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: chipnum[%x] wbufsize[%x]\n", __func__, chipnum, wbufsize);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: ofs[%x] len[%x]\n", __func__, ofs, len);
+#else
+	;
+#endif
 #endif
 
         /* Write buffer is worth it only if more than one word to write... */
@@ -857,32 +977,52 @@ retry:
 					chipstatus |= status.x[w] >> (cfi->device_type * 8);
 				}
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Status is not identical for all chips: 0x%lx. Merging to give 0x%02x\n",
 			       status.x[0], chipstatus);
+#else
+			;
+#endif
 		}
 		/* Reset the error bits */
 		map_write(map, CMD(0x50), adr);
 		map_write(map, CMD(0x70), adr);
 
 		if ((chipstatus & 0x30) == 0x30) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Chip reports improper command sequence: status 0x%x\n", chipstatus);
+#else
+			;
+#endif
 			ret = -EIO;
 		} else if (chipstatus & 0x02) {
 			/* Protection bit set */
 			ret = -EROFS;
 		} else if (chipstatus & 0x8) {
 			/* Voltage */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Chip reports voltage low on erase: status 0x%x\n", chipstatus);
+#else
+			;
+#endif
 			ret = -EIO;
 		} else if (chipstatus & 0x20) {
 			if (retries--) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x. Retrying...\n", adr, chipstatus);
+#else
+				;
+#endif
 				timeo = jiffies + HZ;
 				chip->state = FL_STATUS;
 				mutex_unlock(&chip->mutex);
 				goto retry;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x\n", adr, chipstatus);
+#else
+			;
+#endif
 			ret = -EIO;
 		}
 	}
@@ -1162,7 +1302,11 @@ static int cfi_staa_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
 
 #ifdef DEBUG_LOCK_BITS
 		cfi_send_gen_cmd(0x90, 0x55, 0, map, cfi, cfi->device_type, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("before lock: block status register is %x\n",cfi_read_query(map, adr+(2*ofs_factor)));
+#else
+		;
+#endif
 		cfi_send_gen_cmd(0xff, 0x55, 0, map, cfi, cfi->device_type, NULL);
 #endif
 
@@ -1170,7 +1314,11 @@ static int cfi_staa_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
 
 #ifdef DEBUG_LOCK_BITS
 		cfi_send_gen_cmd(0x90, 0x55, 0, map, cfi, cfi->device_type, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("after lock: block status register is %x\n",cfi_read_query(map, adr+(2*ofs_factor)));
+#else
+		;
+#endif
 		cfi_send_gen_cmd(0xff, 0x55, 0, map, cfi, cfi->device_type, NULL);
 #endif
 
@@ -1305,7 +1453,11 @@ static int cfi_staa_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
 
 		cfi_send_gen_cmd(0x90, 0x55, 0, map, cfi, cfi->device_type, NULL);
                 while (temp_len) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("before unlock %x: block status register is %x\n",temp_adr,cfi_read_query(map, temp_adr+(2*ofs_factor)));
+#else
+			;
+#endif
 			temp_adr += mtd->erasesize;
 			temp_len -= mtd->erasesize;
 		}
@@ -1317,7 +1469,11 @@ static int cfi_staa_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
 
 #ifdef DEBUG_LOCK_BITS
 	cfi_send_gen_cmd(0x90, 0x55, 0, map, cfi, cfi->device_type, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("after unlock: block status register is %x\n",cfi_read_query(map, adr+(2*ofs_factor)));
+#else
+	;
+#endif
 	cfi_send_gen_cmd(0xff, 0x55, 0, map, cfi, cfi->device_type, NULL);
 #endif
 

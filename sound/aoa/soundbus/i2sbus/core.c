@@ -304,7 +304,11 @@ static int i2sbus_add_dev(struct macio_dev *macio,
 	}
 
 	if (soundbus_add_one(&dev->sound)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "i2sbus: device registration error!\n");
+#else
+		;
+#endif
 		goto err;
 	}
 

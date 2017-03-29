@@ -397,8 +397,8 @@ int verify_dir_item(struct btrfs_root *root,
 	u8 type = btrfs_dir_type(leaf, dir_item);
 
 	if (type >= BTRFS_FT_MAX) {
-		printk(KERN_CRIT "btrfs: invalid dir item type: %d\n",
-		       (int)type);
+//		printk(KERN_CRIT "btrfs: invalid dir item type: %d\n",
+;
 		return 1;
 	}
 
@@ -406,15 +406,15 @@ int verify_dir_item(struct btrfs_root *root,
 		namelen = XATTR_NAME_MAX;
 
 	if (btrfs_dir_name_len(leaf, dir_item) > namelen) {
-		printk(KERN_CRIT "btrfs: invalid dir item name len: %u\n",
-		       (unsigned)btrfs_dir_data_len(leaf, dir_item));
+//		printk(KERN_CRIT "btrfs: invalid dir item name len: %u\n",
+;
 		return 1;
 	}
 
 	/* BTRFS_MAX_XATTR_SIZE is the same for all dir items */
 	if (btrfs_dir_data_len(leaf, dir_item) > BTRFS_MAX_XATTR_SIZE(root)) {
-		printk(KERN_CRIT "btrfs: invalid dir item data len: %u\n",
-		       (unsigned)btrfs_dir_data_len(leaf, dir_item));
+//		printk(KERN_CRIT "btrfs: invalid dir item data len: %u\n",
+;
 		return 1;
 	}
 

@@ -1190,7 +1190,11 @@ static void mv_wait_for_edma_empty_idle(struct ata_port *ap)
 			break;
 		udelay(per_loop);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	/* ata_port_printk(ap, KERN_INFO, "%s: %u+ usecs\n", __func__, i); */
+#else
+	/* ata_port_;
+#endif
 }
 
 /**
@@ -1242,10 +1246,18 @@ static void mv_dump_mem(void __iomem *start, unsigned bytes)
 	for (b = 0; b < bytes; ) {
 		DPRINTK("%p: ", start + b);
 		for (w = 0; b < bytes && w < 4; w++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%08x ", readl(start + b));
+#else
+			;
+#endif
 			b += sizeof(u32);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 #endif
@@ -1259,10 +1271,18 @@ static void mv_dump_pci_cfg(struct pci_dev *pdev, unsigned bytes)
 		DPRINTK("%02x: ", b);
 		for (w = 0; b < bytes && w < 4; w++) {
 			(void) pci_read_config_dword(pdev, b, &dw);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%08x ", dw);
+#else
+			;
+#endif
 			b += sizeof(u32);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 }
@@ -1382,8 +1402,12 @@ static void mv6_dev_config(struct ata_device *adev)
 	if (adev->flags & ATA_DFLAG_NCQ) {
 		if (sata_pmp_attached(adev->link->ap)) {
 			adev->flags &= ~ATA_DFLAG_NCQ;
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(adev, KERN_INFO,
 				"NCQ disabled for command-based switching\n");
+#else
+			ata_dev_;
+#endif
 		}
 	}
 }
@@ -2225,9 +2249,13 @@ static unsigned int mv_send_fis(struct ata_port *ap, u32 *fis, int nwords)
 
 	/* See if it worked */
 	if ((ifstat & 0x3000) != 0x1000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING,
 				"%s transmission error, ifstat=%08x\n",
 				__func__, ifstat);
+#else
+		ata_port_;
+#endif
 		return AC_ERR_OTHER;
 	}
 	return 0;
@@ -2342,9 +2370,13 @@ static unsigned int mv_qc_issue(struct ata_queued_cmd *qc)
 		 */
 		if (limit_warnings > 0 && (qc->nbytes / qc->sect_size) > 1) {
 			--limit_warnings;
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(qc->dev->link, KERN_WARNING, DRV_NAME
 					": attempting PIO w/multiple DRQ: "
 					"this may fail due to h/w errata\n");
+#else
+			ata_link_;
+#endif
 		}
 		/* drop through */
 	case ATA_PROT_NODATA:
@@ -2499,20 +2531,32 @@ static int mv_handle_fbs_ncq_dev_err(struct ata_port *ap)
 	}
 	failed_links = hweight16(new_map);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_INFO, "%s: pmp_map=%04x qc_map=%04x "
 			"failed_links=%d nr_active_links=%d\n",
 			__func__, pp->delayed_eh_pmp_map,
 			ap->qc_active, failed_links,
 			ap->nr_active_links);
+#else
+	ata_port_;
+#endif
 
 	if (ap->nr_active_links <= failed_links && mv_req_q_empty(ap)) {
 		mv_process_crpb_entries(ap, pp);
 		mv_stop_edma(ap);
 		mv_eh_freeze(ap);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO, "%s: done\n", __func__);
+#else
+		ata_port_;
+#endif
 		return 1;	/* handled */
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_INFO, "%s: waiting\n", __func__);
+#else
+	ata_port_;
+#endif
 	return 1;	/* handled */
 }
 
@@ -2554,9 +2598,13 @@ static int mv_handle_dev_err(struct ata_port *ap, u32 edma_err_cause)
 		 * and we cannot handle it here.
 		 */
 		if (edma_err_cause & EDMA_ERR_SELF_DIS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_port_printk(ap, KERN_WARNING,
 				"%s: err_cause=0x%x pp_flags=0x%x\n",
 				__func__, edma_err_cause, pp->pp_flags);
+#else
+			ata_port_;
+#endif
 			return 0; /* not handled */
 		}
 		return mv_handle_fbs_ncq_dev_err(ap);
@@ -2567,9 +2615,13 @@ static int mv_handle_dev_err(struct ata_port *ap, u32 edma_err_cause)
 		 * and we cannot handle it here.
 		 */
 		if (!(edma_err_cause & EDMA_ERR_SELF_DIS)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_port_printk(ap, KERN_WARNING,
 				"%s: err_cause=0x%x pp_flags=0x%x\n",
 				__func__, edma_err_cause, pp->pp_flags);
+#else
+			ata_port_;
+#endif
 			return 0; /* not handled */
 		}
 		return mv_handle_fbs_non_ncq_dev_err(ap);
@@ -3760,8 +3812,12 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, &pdev->dev,
 			   "Applying 50XXB2 workarounds to unknown rev\n");
+#else
+			dev_;
+#endif
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		}
@@ -3780,8 +3836,12 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, &pdev->dev,
 			   "Applying B2 workarounds to unknown rev\n");
+#else
+			dev_;
+#endif
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		}
@@ -3801,8 +3861,12 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, &pdev->dev,
 				   "Applying B2 workarounds to unknown rev\n");
+#else
+			dev_;
+#endif
 			hp_flags |= MV_HP_ERRATA_60X1B2;
 			break;
 		}
@@ -3830,14 +3894,22 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			 *
 			 * Warn the user, lest they think we're just buggy.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING DRV_NAME ": Highpoint RocketRAID"
 				" BIOS CORRUPTS DATA on all attached drives,"
 				" regardless of if/how they are configured."
 				" BEWARE!\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING DRV_NAME ": For data safety, do not"
 				" use sectors 8-9 on \"Legacy\" drives,"
 				" and avoid the final two gigabytes on"
 				" all RocketRAID BIOS initialized drives.\n");
+#else
+			;
+#endif
 		}
 		/* drop through */
 	case chip_6042:
@@ -3851,8 +3923,12 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, &pdev->dev,
 			   "Applying 60X1C0 workarounds to unknown rev\n");
+#else
+			dev_;
+#endif
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		}
@@ -4033,7 +4109,11 @@ static int mv_platform_probe(struct platform_device *pdev)
 	int n_ports, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/*
 	 * Simple resource validation ..
@@ -4091,9 +4171,13 @@ static int mv_platform_probe(struct platform_device *pdev)
 	if (rc)
 		goto err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pdev->dev,
 		   "slots %u ports %d\n", (unsigned)MV_MAX_Q_DEPTH,
 		   host->n_ports);
+#else
+	dev_;
+#endif
 
 	return ata_host_activate(host, platform_get_irq(pdev, 0), mv_interrupt,
 				 IRQF_SHARED, &mv6_sht);
@@ -4276,10 +4360,14 @@ static void mv_print_info(struct ata_host *host)
 	else
 		gen = "?";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pdev->dev,
 	       "Gen-%s %u slots %u ports %s mode IRQ via %s\n",
 	       gen, (unsigned)MV_MAX_Q_DEPTH, host->n_ports,
 	       scc_s, (MV_HP_FLAG_MSI & hpriv->hp_flags) ? "MSI" : "INTx");
+#else
+	dev_;
+#endif
 }
 
 /**
@@ -4301,7 +4389,11 @@ static int mv_pci_init_one(struct pci_dev *pdev,
 	int n_ports, port, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* allocate host */
 	n_ports = mv_get_hc_count(ppi[0]->flags) * MV_PORTS_PER_HC;

@@ -47,11 +47,15 @@ static struct mtd_partition **msp_parts;
 static struct map_info *msp_maps;
 static int fcnt;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_MARKER printk(KERN_NOTICE "%s[%d]\n", __func__, __LINE__)
 
 static int __init init_msp_flash(void)
 {
 	int i, j, ret = -ENOMEM;
+#else
+#define DEBUG_MARKER ;
+#endif
 	int offset, coff;
 	char *env;
 	int pcnt;
@@ -62,7 +66,11 @@ static int __init init_msp_flash(void)
 	/* If ELB is disabled by "ful-mux" mode, we can't get at flash */
 	if ((*DEV_ID_REG & DEV_ID_SINGLE_PC) &&
 	    (*ELB_1PC_EN_REG & SINGLE_PCCARD)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Single PC Card mode: no flash access\n");
+#else
+		;
+#endif
 		return -ENXIO;
 	}
 
@@ -73,7 +81,11 @@ static int __init init_msp_flash(void)
 	if (fcnt < 1)
 		return -ENXIO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Found %d PMC flash devices\n", fcnt);
+#else
+	;
+#endif
 
 	msp_flash = kmalloc(fcnt * sizeof(struct map_info *), GFP_KERNEL);
 	if (!msp_flash)
@@ -96,8 +108,12 @@ static int __init init_msp_flash(void)
 			part_name[7] = '0' + pcnt + 1;
 
 		if (pcnt == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Skipping flash device %d "
 				"(no partitions defined)\n", i);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -117,9 +133,13 @@ static int __init init_msp_flash(void)
 		}
 		addr = CPHYSADDR(addr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 			"MSP flash device \"%s\": 0x%08x at 0x%08x\n",
 			flash_name, size, addr);
+#else
+		;
+#endif
 		/* This must matchs the actual size of the flash chip */
 		msp_maps[i].size = size;
 		msp_maps[i].phys = addr;

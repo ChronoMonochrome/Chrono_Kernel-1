@@ -88,120 +88,120 @@ Configuration options:
 
 #undef DPRINTK
 #ifdef PCI9118_EXTDEBUG
-#define DPRINTK(fmt, args...) printk(fmt, ## args)
-#else
-#define DPRINTK(fmt, args...)
-#endif
-
-#define IORANGE_9118 	64	/* I hope */
-#define PCI9118_CHANLEN	255	/*
-				 * len of chanlist, some source say 256,
-				 * but reality looks like 255 :-(
-				 */
-
-#define PCI9118_CNT0	0x00	/* R/W: 8254 counter 0 */
-#define PCI9118_CNT1	0x04	/* R/W: 8254 counter 0 */
-#define PCI9118_CNT2	0x08	/* R/W: 8254 counter 0 */
-#define PCI9118_CNTCTRL	0x0c	/* W:   8254 counter control */
-#define PCI9118_AD_DATA	0x10	/* R:   A/D data */
-#define PCI9118_DA1	0x10	/* W:   D/A registers */
-#define PCI9118_DA2	0x14
-#define PCI9118_ADSTAT	0x18	/* R:   A/D status register */
-#define PCI9118_ADCNTRL	0x18	/* W:   A/D control register */
-#define PCI9118_DI	0x1c	/* R:   digi input register */
-#define PCI9118_DO	0x1c	/* W:   digi output register */
-#define PCI9118_SOFTTRG	0x20	/* W:   soft trigger for A/D */
-#define PCI9118_GAIN	0x24	/* W:   A/D gain/channel register */
-#define PCI9118_BURST	0x28	/* W:   A/D burst number register */
-#define PCI9118_SCANMOD	0x2c	/* W:   A/D auto scan mode */
-#define PCI9118_ADFUNC	0x30	/* W:   A/D function register */
-#define PCI9118_DELFIFO	0x34	/* W:   A/D data FIFO reset */
-#define PCI9118_INTSRC	0x38	/* R:   interrupt reason register */
-#define PCI9118_INTCTRL	0x38	/* W:   interrupt control register */
-
-/* bits from A/D control register (PCI9118_ADCNTRL) */
-#define AdControl_UniP	0x80	/* 1=bipolar, 0=unipolar */
-#define AdControl_Diff	0x40	/* 1=differential, 0= single end inputs */
-#define AdControl_SoftG	0x20	/* 1=8254 counter works, 0=counter stops */
-#define	AdControl_ExtG	0x10	/*
-				 * 1=8254 countrol controlled by TGIN(pin 46),
-				 * 0=controlled by SoftG
-				 */
-#define AdControl_ExtM	0x08	/*
-				 * 1=external hardware trigger (pin 44),
-				 * 0=internal trigger
-				 */
-#define AdControl_TmrTr	0x04	/*
-				 * 1=8254 is iternal trigger source,
-				 * 0=software trigger is source
-				 * (register PCI9118_SOFTTRG)
-				 */
-#define AdControl_Int	0x02	/* 1=enable INT, 0=disable */
-#define AdControl_Dma	0x01	/* 1=enable DMA, 0=disable */
-
-/* bits from A/D function register (PCI9118_ADFUNC) */
-#define AdFunction_PDTrg	0x80	/*
-					 * 1=positive,
-					 * 0=negative digital trigger
-					 * (only positive is correct)
-					 */
-#define AdFunction_PETrg	0x40	/*
-					 * 1=positive,
-					 * 0=negative external trigger
-					 * (only positive is correct)
-					 */
-#define AdFunction_BSSH		0x20	/* 1=with sample&hold, 0=without */
-#define AdFunction_BM		0x10	/* 1=burst mode, 0=normal mode */
-#define AdFunction_BS		0x08	/*
-					 * 1=burst mode start,
-					 * 0=burst mode stop
-					 */
-#define AdFunction_PM		0x04	/*
-					 * 1=post trigger mode,
-					 * 0=not post trigger
-					 */
-#define AdFunction_AM		0x02	/*
-					 * 1=about trigger mode,
-					 * 0=not about trigger
-					 */
-#define AdFunction_Start	0x01	/* 1=trigger start, 0=trigger stop */
-
-/* bits from A/D status register (PCI9118_ADSTAT) */
-#define AdStatus_nFull	0x100	/* 0=FIFO full (fatal), 1=not full */
-#define AdStatus_nHfull	0x080	/* 0=FIFO half full, 1=FIFO not half full */
-#define AdStatus_nEpty	0x040	/* 0=FIFO empty, 1=FIFO not empty */
-#define AdStatus_Acmp	0x020	/*  */
-#define AdStatus_DTH	0x010	/* 1=external digital trigger */
-#define AdStatus_Bover	0x008	/* 1=burst mode overrun (fatal) */
-#define AdStatus_ADOS	0x004	/* 1=A/D over speed (warning) */
-#define AdStatus_ADOR	0x002	/* 1=A/D overrun (fatal) */
-#define AdStatus_ADrdy	0x001	/* 1=A/D already ready, 0=not ready */
-
-/* bits for interrupt reason and control (PCI9118_INTSRC, PCI9118_INTCTRL) */
-/* 1=interrupt occur, enable source,  0=interrupt not occur, disable source */
-#define Int_Timer	0x08	/* timer interrupt */
-#define Int_About	0x04	/* about trigger complete */
-#define Int_Hfull	0x02	/* A/D FIFO hlaf full */
-#define Int_DTrg	0x01	/* external digital trigger */
-
-#define START_AI_EXT	0x01	/* start measure on external trigger */
-#define STOP_AI_EXT	0x02	/* stop measure on external trigger */
-#define START_AI_INT	0x04	/* start measure on internal trigger */
-#define STOP_AI_INT	0x08	/* stop measure on internal trigger */
-
-#define EXTTRG_AI	0	/* ext trg is used by AI */
-
-static const struct comedi_lrange range_pci9118dg_hr = { 8, {
-							     BIP_RANGE(5),
-							     BIP_RANGE(2.5),
-							     BIP_RANGE(1.25),
-							     BIP_RANGE(0.625),
-							     UNI_RANGE(10),
-							     UNI_RANGE(5),
-							     UNI_RANGE(2.5),
-							     UNI_RANGE(1.25)
-							     }
-};
+//#define DPRINTK(fmt, args...) printk(fmt, ## args)
+//#else
+//#define DPRINTK(fmt, args...)
+//#endif
+//
+//#define IORANGE_9118 	64	/* I hope */
+//#define PCI9118_CHANLEN	255	/*
+//				 * len of chanlist, some source say 256,
+//				 * but reality looks like 255 :-(
+//				 */
+//
+//#define PCI9118_CNT0	0x00	/* R/W: 8254 counter 0 */
+//#define PCI9118_CNT1	0x04	/* R/W: 8254 counter 0 */
+//#define PCI9118_CNT2	0x08	/* R/W: 8254 counter 0 */
+//#define PCI9118_CNTCTRL	0x0c	/* W:   8254 counter control */
+//#define PCI9118_AD_DATA	0x10	/* R:   A/D data */
+//#define PCI9118_DA1	0x10	/* W:   D/A registers */
+//#define PCI9118_DA2	0x14
+//#define PCI9118_ADSTAT	0x18	/* R:   A/D status register */
+//#define PCI9118_ADCNTRL	0x18	/* W:   A/D control register */
+//#define PCI9118_DI	0x1c	/* R:   digi input register */
+//#define PCI9118_DO	0x1c	/* W:   digi output register */
+//#define PCI9118_SOFTTRG	0x20	/* W:   soft trigger for A/D */
+//#define PCI9118_GAIN	0x24	/* W:   A/D gain/channel register */
+//#define PCI9118_BURST	0x28	/* W:   A/D burst number register */
+//#define PCI9118_SCANMOD	0x2c	/* W:   A/D auto scan mode */
+//#define PCI9118_ADFUNC	0x30	/* W:   A/D function register */
+//#define PCI9118_DELFIFO	0x34	/* W:   A/D data FIFO reset */
+//#define PCI9118_INTSRC	0x38	/* R:   interrupt reason register */
+//#define PCI9118_INTCTRL	0x38	/* W:   interrupt control register */
+//
+///* bits from A/D control register (PCI9118_ADCNTRL) */
+//#define AdControl_UniP	0x80	/* 1=bipolar, 0=unipolar */
+//#define AdControl_Diff	0x40	/* 1=differential, 0= single end inputs */
+//#define AdControl_SoftG	0x20	/* 1=8254 counter works, 0=counter stops */
+//#define	AdControl_ExtG	0x10	/*
+//				 * 1=8254 countrol controlled by TGIN(pin 46),
+//				 * 0=controlled by SoftG
+//				 */
+//#define AdControl_ExtM	0x08	/*
+//				 * 1=external hardware trigger (pin 44),
+//				 * 0=internal trigger
+//				 */
+//#define AdControl_TmrTr	0x04	/*
+//				 * 1=8254 is iternal trigger source,
+//				 * 0=software trigger is source
+//				 * (register PCI9118_SOFTTRG)
+//				 */
+//#define AdControl_Int	0x02	/* 1=enable INT, 0=disable */
+//#define AdControl_Dma	0x01	/* 1=enable DMA, 0=disable */
+//
+///* bits from A/D function register (PCI9118_ADFUNC) */
+//#define AdFunction_PDTrg	0x80	/*
+//					 * 1=positive,
+//					 * 0=negative digital trigger
+//					 * (only positive is correct)
+//					 */
+//#define AdFunction_PETrg	0x40	/*
+//					 * 1=positive,
+//					 * 0=negative external trigger
+//					 * (only positive is correct)
+//					 */
+//#define AdFunction_BSSH		0x20	/* 1=with sample&hold, 0=without */
+//#define AdFunction_BM		0x10	/* 1=burst mode, 0=normal mode */
+//#define AdFunction_BS		0x08	/*
+//					 * 1=burst mode start,
+//					 * 0=burst mode stop
+//					 */
+//#define AdFunction_PM		0x04	/*
+//					 * 1=post trigger mode,
+//					 * 0=not post trigger
+//					 */
+//#define AdFunction_AM		0x02	/*
+//					 * 1=about trigger mode,
+//					 * 0=not about trigger
+//					 */
+//#define AdFunction_Start	0x01	/* 1=trigger start, 0=trigger stop */
+//
+///* bits from A/D status register (PCI9118_ADSTAT) */
+//#define AdStatus_nFull	0x100	/* 0=FIFO full (fatal), 1=not full */
+//#define AdStatus_nHfull	0x080	/* 0=FIFO half full, 1=FIFO not half full */
+//#define AdStatus_nEpty	0x040	/* 0=FIFO empty, 1=FIFO not empty */
+//#define AdStatus_Acmp	0x020	/*  */
+//#define AdStatus_DTH	0x010	/* 1=external digital trigger */
+//#define AdStatus_Bover	0x008	/* 1=burst mode overrun (fatal) */
+//#define AdStatus_ADOS	0x004	/* 1=A/D over speed (warning) */
+//#define AdStatus_ADOR	0x002	/* 1=A/D overrun (fatal) */
+//#define AdStatus_ADrdy	0x001	/* 1=A/D already ready, 0=not ready */
+//
+///* bits for interrupt reason and control (PCI9118_INTSRC, PCI9118_INTCTRL) */
+///* 1=interrupt occur, enable source,  0=interrupt not occur, disable source */
+//#define Int_Timer	0x08	/* timer interrupt */
+//#define Int_About	0x04	/* about trigger complete */
+//#define Int_Hfull	0x02	/* A/D FIFO hlaf full */
+//#define Int_DTrg	0x01	/* external digital trigger */
+//
+//#define START_AI_EXT	0x01	/* start measure on external trigger */
+//#define STOP_AI_EXT	0x02	/* stop measure on external trigger */
+//#define START_AI_INT	0x04	/* start measure on internal trigger */
+//#define STOP_AI_INT	0x08	/* stop measure on internal trigger */
+//
+//#define EXTTRG_AI	0	/* ext trg is used by AI */
+//
+//static const struct comedi_lrange range_pci9118dg_hr = { 8, {
+//							     BIP_RANGE(5),
+//							     BIP_RANGE(2.5),
+//							     BIP_RANGE(1.25),
+//							     BIP_RANGE(0.625),
+//							     UNI_RANGE(10),
+//							     UNI_RANGE(5),
+//							     UNI_RANGE(2.5),
+//							     UNI_RANGE(1.25)
+//							     }
+;
 
 static const struct comedi_lrange range_pci9118hg = { 8, {
 							  BIP_RANGE(5),
@@ -2206,7 +2206,7 @@ static int pci9118_attach(struct comedi_device *dev,
 	unsigned char pci_bus, pci_slot, pci_func;
 	u16 u16w;
 
-	printk("comedi%d: adl_pci9118: board=%s", dev->minor, this_board->name);
+;
 
 	opt_bus = it->options[0];
 	opt_slot = it->options[1];
@@ -2217,7 +2217,7 @@ static int pci9118_attach(struct comedi_device *dev,
 
 	ret = alloc_private(dev, sizeof(struct pci9118_private));
 	if (ret < 0) {
-		printk(" - Allocation failed!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -2248,10 +2248,10 @@ static int pci9118_attach(struct comedi_device *dev,
 
 	if (!pcidev) {
 		if (opt_bus || opt_slot) {
-			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
-			       opt_bus, opt_slot, errstr);
+//			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
+;
 		} else {
-			printk(KERN_ERR " - Card %s\n", errstr);
+;
 		}
 		return -EIO;
 	}
@@ -2267,8 +2267,8 @@ static int pci9118_attach(struct comedi_device *dev,
 	iobase_a = pci_resource_start(pcidev, 0);
 	iobase_9 = pci_resource_start(pcidev, 2);
 
-	printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx", pci_bus,
-				pci_slot, pci_func, iobase_9, iobase_a);
+//	printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx", pci_bus,
+;
 
 	dev->iobase = iobase_9;
 	dev->board_name = this_board->name;
@@ -2283,14 +2283,14 @@ static int pci9118_attach(struct comedi_device *dev,
 	if (irq > 0) {
 		if (request_irq(irq, interrupt_pci9118, IRQF_SHARED,
 				"ADLink PCI-9118", dev)) {
-			printk(", unable to allocate IRQ %d, DISABLING IT",
-			       irq);
+//			printk(", unable to allocate IRQ %d, DISABLING IT",
+;
 			irq = 0;	/* Can't use IRQ */
 		} else {
-			printk(", irq=%u", irq);
+;
 		}
 	} else {
-		printk(", IRQ disabled");
+;
 	}
 
 	dev->irq = irq;
@@ -2316,7 +2316,7 @@ static int pci9118_attach(struct comedi_device *dev,
 			}
 		}
 		if (!devpriv->dmabuf_virt[0]) {
-			printk(", Can't allocate DMA buffer, DMA disabled!");
+;
 			master = 0;
 		}
 
@@ -2327,9 +2327,9 @@ static int pci9118_attach(struct comedi_device *dev,
 
 	devpriv->master = master;
 	if (devpriv->master)
-		printk(", bus master");
+;
 	else
-		printk(", no bus master");
+;
 
 	devpriv->usemux = 0;
 	if (it->options[2] > 0) {
@@ -2341,7 +2341,7 @@ static int pci9118_attach(struct comedi_device *dev,
 				devpriv->usemux = 128;
 					/* max 128 channels with softare S&H! */
 			}
-		printk(", ext. mux %d channels", devpriv->usemux);
+;
 	}
 
 	devpriv->softsshdelay = it->options[4];
@@ -2355,7 +2355,7 @@ static int pci9118_attach(struct comedi_device *dev,
 		devpriv->softsshhold = 0x80;
 	}
 
-	printk(".\n");
+;
 
 	pci_read_config_word(devpriv->pcidev, PCI_COMMAND, &u16w);
 	pci_write_config_word(devpriv->pcidev, PCI_COMMAND, u16w | 64);

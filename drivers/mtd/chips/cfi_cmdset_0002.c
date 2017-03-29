@@ -94,41 +94,105 @@ static void cfi_tell_features(struct cfi_pri_amdstd *extp)
 		"Uniform, Bottom WP", "Uniform, Top WP"
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Silicon revision: %d\n", extp->SiliconRevision >> 1);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Address sensitive unlock: %s\n",
 	       (extp->SiliconRevision & 1) ? "Not required" : "Required");
+#else
+	;
+#endif
 
 	if (extp->EraseSuspend < ARRAY_SIZE(erase_suspend))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Erase Suspend: %s\n", erase_suspend[extp->EraseSuspend]);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Erase Suspend: Unknown value %d\n", extp->EraseSuspend);
+#else
+		;
+#endif
 
 	if (extp->BlkProt == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Block protection: Not supported\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Block protection: %d sectors per group\n", extp->BlkProt);
+#else
+		;
+#endif
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Temporary block unprotect: %s\n",
 	       extp->TmpBlkUnprotect ? "Supported" : "Not supported");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Block protect/unprotect scheme: %d\n", extp->BlkProtUnprot);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Number of simultaneous operations: %d\n", extp->SimultaneousOps);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Burst mode: %s\n",
 	       extp->BurstMode ? "Supported" : "Not supported");
+#else
+	;
+#endif
 	if (extp->PageMode == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Page mode: Not supported\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Page mode: %d word page\n", extp->PageMode << 2);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Vpp Supply Minimum Program/Erase Voltage: %d.%d V\n",
 	       extp->VppMin >> 4, extp->VppMin & 0xf);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Vpp Supply Maximum Program/Erase Voltage: %d.%d V\n",
 	       extp->VppMax >> 4, extp->VppMax & 0xf);
+#else
+	;
+#endif
 
 	if (extp->TopBottom < ARRAY_SIZE(top_bottom))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Top/Bottom Boot Block: %s\n", top_bottom[extp->TopBottom]);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  Top/Bottom Boot Block: Unknown value %d\n", extp->TopBottom);
+#else
+		;
+#endif
 }
 #endif
 
@@ -172,7 +236,11 @@ static void fixup_amd_bootblock(struct mtd_info *mtd)
 			extp->TopBottom = 2;	/* bottom boot */
 		} else
 		if (cfi->id & 0x80) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: JEDEC Device ID is 0x%02X. Assuming broken CFI table.\n", map->name, cfi->id);
+#else
+			;
+#endif
 			extp->TopBottom = 3;	/* top boot */
 		} else {
 			extp->TopBottom = 2;	/* bottom boot */
@@ -401,9 +469,13 @@ static void cfi_fixup_major_minor(struct cfi_private *cfi,
 			 * report major=0 / minor=0.
 			 * K8D3x16UxC chips report major=3 / minor=3.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "  Fixing Samsung's Amd/Fujitsu"
 			       " Extended Query version to 1.%c\n",
 			       extp->MinorVersion);
+#else
+			;
+#endif
 			extp->MajorVersion = '1';
 		}
 	}
@@ -425,7 +497,11 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 
 	mtd = kzalloc(sizeof(*mtd), GFP_KERNEL);
 	if (!mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to allocate memory for MTD device\n");
+#else
+		;
+#endif
 		return NULL;
 	}
 	mtd->priv = map;
@@ -479,8 +555,12 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 				return NULL;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "  Amd/Fujitsu Extended Query version %c.%c.\n",
 			       extp->MajorVersion, extp->MinorVersion);
+#else
+			;
+#endif
 
 			/* Install our own private info structure */
 			cfi->cmdset_priv = extp;
@@ -495,14 +575,22 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 
 			bootloc = extp->TopBottom;
 			if ((bootloc < 2) || (bootloc > 5)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: CFI contains unrecognised boot "
 				       "bank location (%d). Assuming bottom.\n",
 				       map->name, bootloc);
+#else
+				;
+#endif
 				bootloc = 2;
 			}
 
 			if (bootloc == 3 && cfi->cfiq->NumEraseRegions > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: Swapping erase regions for top-boot CFI table.\n", map->name);
+#else
+				;
+#endif
 
 				for (i=0; i<cfi->cfiq->NumEraseRegions / 2; i++) {
 					int j = (cfi->cfiq->NumEraseRegions-1)-i;
@@ -558,8 +646,12 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	unsigned long offset = 0;
 	int i,j;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "number of %s chips: %d\n",
 	       (cfi->cfi_mode == CFI_MODE_CFI)?"CFI":"JEDEC",cfi->numchips);
+#else
+	;
+#endif
 	/* Select the correct geometry setup */
 	mtd->size = devsize * cfi->numchips;
 
@@ -567,7 +659,11 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	mtd->eraseregions = kmalloc(sizeof(struct mtd_erase_region_info)
 				    * mtd->numeraseregions, GFP_KERNEL);
 	if (!mtd->eraseregions) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to allocate memory for MTD erase region info\n");
+#else
+		;
+#endif
 		goto setup_err;
 	}
 
@@ -588,7 +684,11 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	}
 	if (offset != devsize) {
 		/* Argh */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sum of regions (%lx) != total size of set of interleaved chips (%lx)\n", offset, devsize);
+#else
+		;
+#endif
 		goto setup_err;
 	}
 
@@ -1212,7 +1312,11 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 
 		if (time_after(jiffies, timeo) && !chip_ready(map, adr)){
 			xip_enable(map, chip, adr);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MTD %s(): software timeout\n", __func__);
+#else
+			;
+#endif
 			xip_disable(map, chip, adr);
 			break;
 		}
@@ -1473,8 +1577,12 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 	xip_enable(map, chip, adr);
 	/* FIXME - should have reset delay before continuing */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "MTD %s(): software timeout\n",
 	       __func__ );
+#else
+	;
+#endif
 
 	ret = -EIO;
  op_done:
@@ -1633,8 +1741,12 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
 			break;
 
 		if (time_after(jiffies, timeo)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MTD %s(): software timeout\n",
 				__func__ );
+#else
+			;
+#endif
 			break;
 		}
 
@@ -1724,8 +1836,12 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
 
 		if (time_after(jiffies, timeo)) {
 			xip_enable(map, chip, adr);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MTD %s(): software timeout\n",
 				__func__ );
+#else
+			;
+#endif
 			break;
 		}
 

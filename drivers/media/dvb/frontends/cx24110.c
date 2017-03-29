@@ -45,9 +45,13 @@ struct cx24110_state {
 };
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "cx24110: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 static struct {u8 reg; u8 data;} cx24110_regdata[]=
@@ -247,7 +251,11 @@ static int cx24110_set_symbolrate (struct cx24110_state* state, u32 srate)
 	static const u32 bands[]={5000000UL,15000000UL,90999000UL/2};
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("cx24110 debug: entering %s(%d)\n",__func__,srate);
+#else
+	d;
+#endif
 	if (srate>90999000UL/2)
 		srate=90999000UL/2;
 	if (srate<500000)
@@ -276,7 +284,11 @@ static int cx24110_set_symbolrate (struct cx24110_state* state, u32 srate)
 		cx24110_writereg(state,0x06,0x78);
 		fclk=90999000UL;
 	};
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("cx24110 debug: fclk %d Hz\n",fclk);
+#else
+	d;
+#endif
 	/* we need to divide two integers with approx. 27 bits in 32 bit
 	   arithmetic giving a 25 bit result */
 	/* the maximum dividend is 90999000/2, 0x02b6446c, this number is
@@ -298,9 +310,21 @@ static int cx24110_set_symbolrate (struct cx24110_state* state, u32 srate)
 	tmp=(tmp%BDRI)<<1;
 	ratio=(ratio<<1)+(tmp/BDRI);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("srate= %d (range %d, up to %d)\n", srate,i,bands[i]);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("fclk = %d\n", fclk);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("ratio= %08x\n", ratio);
+#else
+	d;
+#endif
 
 	cx24110_writereg(state, 0x1, (ratio>>16)&0xff);
 	cx24110_writereg(state, 0x2, (ratio>>8)&0xff);
@@ -358,7 +382,11 @@ static int cx24110_initfe(struct dvb_frontend* fe)
 /* fixme (low): error handling */
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: init chip\n", __func__);
+#else
+	d;
+#endif
 
 	for(i = 0; i < ARRAY_SIZE(cx24110_regdata); i++) {
 		cx24110_writereg(state, cx24110_regdata[i].reg, cx24110_regdata[i].data);

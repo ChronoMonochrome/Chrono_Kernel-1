@@ -291,7 +291,11 @@ elsa_interrupt(int intno, void *dev_id)
 	if ((cs->typ == ISDN_CTYPE_ELSA_PCMCIA) && (*cs->busy_flag == 1)) {
 	/* The card tends to generate interrupts while being removed
 	   causing us to just crash the kernel. bad. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: card not available!\n");
+#else
+		;
+#endif
 		return IRQ_NONE;
 	}
 	spin_lock_irqsave(&cs->lock, flags);
@@ -329,7 +333,11 @@ elsa_interrupt(int intno, void *dev_id)
 		goto Start_ISAC;
 	}
 	if (!icnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"ELSA IRQ LOOP\n");
+#else
+		;
+#endif
 	writereg(cs->hw.elsa.ale, cs->hw.elsa.hscx, HSCX_MASK, 0xFF);
 	writereg(cs->hw.elsa.ale, cs->hw.elsa.hscx, HSCX_MASK + 0x40, 0xFF);
 	writereg(cs->hw.elsa.ale, cs->hw.elsa.isac, ISAC_MASK, 0xFF);
@@ -415,7 +423,11 @@ Start_IPAC:
 		goto Start_IPAC;
 	}
 	if (!icnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ELSA IRQ LOOP\n");
+#else
+		;
+#endif
 	writereg(cs->hw.elsa.ale, cs->hw.elsa.isac, IPAC_MASK, 0xFF);
 	writereg(cs->hw.elsa.ale, cs->hw.elsa.isac, IPAC_MASK, 0xC0);
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -563,37 +575,57 @@ check_arcofi(struct IsdnCardState *cs)
 	if (arcofi_present) {
 		if (cs->subtyp==ELSA_QS1000) {
 			cs->subtyp = ELSA_QS3000;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Elsa: %s detected modem at 0x%lx\n",
 				Elsa_Types[cs->subtyp],
 				cs->hw.elsa.base+8);
+#else
+			;
+#endif
 			release_region(cs->hw.elsa.base, 8);
 			if (!request_region(cs->hw.elsa.base, 16, "elsa isdn modem")) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"HiSax: %s config port %lx-%lx already in use\n",
 					Elsa_Types[cs->subtyp],
 					cs->hw.elsa.base + 8,
 					cs->hw.elsa.base + 16);
+#else
+				;
+#endif
 			}
 		} else if (cs->subtyp==ELSA_PCC16) {
 			cs->subtyp = ELSA_PCF;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Elsa: %s detected modem at 0x%lx\n",
 				Elsa_Types[cs->subtyp],
 				cs->hw.elsa.base+8);
+#else
+			;
+#endif
 			release_region(cs->hw.elsa.base, 8);
 			if (!request_region(cs->hw.elsa.base, 16, "elsa isdn modem")) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"HiSax: %s config port %lx-%lx already in use\n",
 					Elsa_Types[cs->subtyp],
 					cs->hw.elsa.base + 8,
 					cs->hw.elsa.base + 16);
+#else
+				;
+#endif
 			}
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"Elsa: %s detected modem at 0x%lx\n",
 				Elsa_Types[cs->subtyp],
 				cs->hw.elsa.base+8);
+#else
+			;
+#endif
 		arcofi_fsm(cs, ARCOFI_START, &ARCOFI_XOP_0);
 		interruptible_sleep_on(&cs->dc.isac.arcofi_wait);
 		return(1);
@@ -694,16 +726,28 @@ Elsa_card_msg(struct IsdnCardState *cs, int mt, void *arg)
 				byteout(cs->hw.elsa.ctrl, cs->hw.elsa.ctrl_reg);
 				cs->hw.elsa.status &= ~ELIRQF_TIMER_AKTIV;
 				spin_unlock_irqrestore(&cs->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Elsa: %d timer tics in 110 msek\n",
 				       cs->hw.elsa.counter);
+#else
+				;
+#endif
 				if ((cs->hw.elsa.counter > 10) &&
 					(cs->hw.elsa.counter < 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Elsa: timer and irq OK\n");
+#else
+					;
+#endif
 					ret = 0;
 				} else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "Elsa: timer tic problem (%d/12) maybe an IRQ(%d) conflict\n",
 					       cs->hw.elsa.counter, cs->irq);
+#else
+					;
+#endif
 					ret = 1;
 				}
 			}
@@ -781,8 +825,12 @@ probe_elsa_adr(unsigned int adr, int typ)
 		if (request_region(adr, 8, "elsa card")) {
 			release_region(adr, 8);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Elsa: Probing Port 0x%x: already in use\n", adr);
+#else
+			;
+#endif
 			return (0);
 		}
 	}
@@ -798,21 +846,45 @@ probe_elsa_adr(unsigned int adr, int typ)
 		pfp_1 += 0x40 & in1;
 		pfp_2 += 0x40 & in2;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Elsa: Probing IO 0x%x", adr);
+#else
+	;
+#endif
 	if (65 == ++p16_1 * ++p16_2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" PCC-16/PCF found\n");
+#else
+		;
+#endif
 		return (ELSA_PCC16);
 	} else if (1025 == ++pfp_1 * ++pfp_2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" PCF-Pro found\n");
+#else
+		;
+#endif
 		return (ELSA_PCFPRO);
 	} else if (33 == ++p8_1 * ++p8_2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" PCC8 found\n");
+#else
+		;
+#endif
 		return (ELSA_PCC8);
 	} else if (17 == ++pc_1 * ++pc_2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" PC found\n");
+#else
+		;
+#endif
 		return (ELSA_PC);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" failed\n");
+#else
+		;
+#endif
 		return (0);
 	}
 }
@@ -838,21 +910,33 @@ setup_elsa_isa(struct IsdnCard *card)
 	u_char val;
 
 	cs->hw.elsa.base = card->para[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Elsa: Microlink IO probing\n");
+#else
+	;
+#endif
 	if (cs->hw.elsa.base) {
 		if (!(cs->subtyp = probe_elsa_adr(cs->hw.elsa.base,
 						  cs->typ))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Elsa: no Elsa Microlink at %#lx\n",
 			       cs->hw.elsa.base);
+#else
+			;
+#endif
 			return (0);
 		}
 	} else
 		cs->hw.elsa.base = probe_elsa(cs);
 
 	if (!cs->hw.elsa.base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "No Elsa Microlink found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 
@@ -886,15 +970,23 @@ setup_elsa_isa(struct IsdnCard *card)
 		val ^= 1;
 	if ((cs->subtyp == ELSA_PCFPRO) && (val == 'G'))
 		val = 'C';
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Elsa: %s found at %#lx Rev.:%c IRQ %d\n",
 	       Elsa_Types[cs->subtyp],
 	       cs->hw.elsa.base,
 	       val, cs->irq);
+#else
+	;
+#endif
 	val = bytein(cs->hw.elsa.ale) & ELSA_S0_POWER_BAD;
 	if (val) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		   "Elsa: Microlink S0 bus power bad\n");
+#else
+		;
+#endif
 		cs->hw.elsa.status |= ELSA_BAD_PWR;
 	}
 
@@ -932,13 +1024,21 @@ setup_elsa_isapnp(struct IsdnCard *card)
 					ipid->vendor, ipid->function, pnp_d))) {
 					int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "HiSax: %s detected\n",
 						(char *)ipid->driver_data);
+#else
+					;
+#endif
 					pnp_disable_dev(pnp_d);
 					err = pnp_activate_dev(pnp_d);
 					if (err<0) {
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
 							__func__, err);
+#else
+						;
+#endif
 						return(0);
 					}
 					card->para[1] = pnp_port_start(pnp_d, 0);
@@ -964,7 +1064,11 @@ setup_elsa_isapnp(struct IsdnCard *card)
 			pnp_c=NULL;
 		} 
 		if (!ipid->card_vendor) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Elsa PnP: no ISAPnP card found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 	}
@@ -985,11 +1089,15 @@ setup_elsa_isapnp(struct IsdnCard *card)
 	cs->hw.elsa.trig = cs->hw.elsa.base + ELSA_TRIG_IRQ;
 	cs->hw.elsa.timer = cs->hw.elsa.base + ELSA_START_TIMER;
 	cs->hw.elsa.ctrl = cs->hw.elsa.base + ELSA_CONTROL;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Elsa: %s defined at %#lx IRQ %d\n",
 	       Elsa_Types[cs->subtyp],
 	       cs->hw.elsa.base,
 	       cs->irq);
+#else
+	;
+#endif
 
 	return (1);
 }
@@ -1019,11 +1127,15 @@ setup_elsa_pcmcia(struct IsdnCard *card)
 	cs->hw.elsa.trig = 0;
 	cs->hw.elsa.ctrl = 0;
 	cs->irq_flags |= IRQF_SHARED;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Elsa: %s defined at %#lx IRQ %d\n",
 	       Elsa_Types[cs->subtyp],
 	       cs->hw.elsa.base,
 	       cs->irq);
+#else
+	;
+#endif
 }
 
 #ifdef CONFIG_PCI
@@ -1053,22 +1165,46 @@ setup_elsa_pci(struct IsdnCard *card)
 		cs->hw.elsa.cfg = pci_resource_start(dev_qs3000, 1);
 		cs->hw.elsa.base = pci_resource_start(dev_qs3000, 3);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: No PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 
 	if (!(cs->hw.elsa.base && cs->hw.elsa.cfg)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: No IO-Adr for PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 	if ((cs->hw.elsa.cfg & 0xff) || (cs->hw.elsa.base & 0xf)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: You may have a wrong PCI bios\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: If your system hangs now, read\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Elsa: Documentation/isdn/README.HiSax\n");
+#else
+		;
+#endif
 	}
 	cs->hw.elsa.ale  = cs->hw.elsa.base;
 	cs->hw.elsa.isac = cs->hw.elsa.base +1;
@@ -1077,12 +1213,16 @@ setup_elsa_pci(struct IsdnCard *card)
 	cs->hw.elsa.timer = 0;
 	cs->hw.elsa.trig  = 0;
 	cs->irq_flags |= IRQF_SHARED;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Elsa: %s defined at %#lx/0x%x IRQ %d\n",
 	       Elsa_Types[cs->subtyp],
 	       cs->hw.elsa.base,
 	       cs->hw.elsa.cfg,
 	       cs->irq);
+#else
+	;
+#endif
 
 	return (1);
 }
@@ -1122,26 +1262,38 @@ setup_elsa_common(struct IsdnCard *card)
 			bytecnt = 2;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Unknown ELSA subtype %d\n", cs->subtyp);
+#else
+			;
+#endif
 			return (0);
 	}
 	/* In case of the elsa pcmcia card, this region is in use,
 	   reserved for us by the card manager. So we do not check it
 	   here, it would fail. */
 	if (cs->typ != ISDN_CTYPE_ELSA_PCMCIA && !request_region(cs->hw.elsa.base, bytecnt, "elsa isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: ELSA config port %#lx-%#lx already in use\n",
 		       cs->hw.elsa.base,
 		       cs->hw.elsa.base + bytecnt);
+#else
+		;
+#endif
 		return (0);
 	}
 	if ((cs->subtyp == ELSA_QS1000PCI) || (cs->subtyp == ELSA_QS3000PCI)) {
 		if (!request_region(cs->hw.elsa.cfg, 0x80, "elsa isdn pci")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: ELSA pci port %x-%x already in use\n",
 				cs->hw.elsa.cfg,
 				cs->hw.elsa.cfg + 0x80);
+#else
+			;
+#endif
 			release_region(cs->hw.elsa.base, bytecnt);
 			return (0);
 		}
@@ -1160,19 +1312,31 @@ setup_elsa_common(struct IsdnCard *card)
 		if (!TimerRun(cs)) {
 			byteout(cs->hw.elsa.timer, 0);	/* 2. Versuch */
 			if (!TimerRun(cs)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "Elsa: timer do not start\n");
+#else
+				;
+#endif
 				release_io_elsa(cs);
 				return (0);
 			}
 		}
 		HZDELAY((HZ/100) + 1);	/* wait >=10 ms */
 		if (TimerRun(cs)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Elsa: timer do not run down\n");
+#else
+			;
+#endif
 			release_io_elsa(cs);
 			return (0);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Elsa: timer OK; resetting card\n");
+#else
+		;
+#endif
 	}
 	cs->BC_Read_Reg = &ReadHSCX;
 	cs->BC_Write_Reg = &WriteHSCX;
@@ -1185,7 +1349,11 @@ setup_elsa_common(struct IsdnCard *card)
 		cs->writeisacfifo = &WriteISACfifo_IPAC;
 		cs->irq_func = &elsa_interrupt_ipac;
 		val = readreg(cs->hw.elsa.ale, cs->hw.elsa.isac, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Elsa: IPAC version %x\n", val);
+#else
+		;
+#endif
 	} else {
 		cs->readisac = &ReadISAC;
 		cs->writeisac = &WriteISAC;
@@ -1194,15 +1362,23 @@ setup_elsa_common(struct IsdnCard *card)
 		cs->irq_func = &elsa_interrupt;
 		ISACVersion(cs, "Elsa:");
 		if (HscxVersion(cs, "Elsa:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"Elsa: wrong HSCX versions check IO address\n");
+#else
+			;
+#endif
 			release_io_elsa(cs);
 			return (0);
 		}
 	}
 	if (cs->subtyp == ELSA_PC) {
 		val = readitac(cs, ITAC_SYS);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Elsa: ITAC version %s\n", ITACVer[val & 7]);
+#else
+		;
+#endif
 		writeitac(cs, ITAC_ISEN, 0);
 		writeitac(cs, ITAC_RFIE, 0);
 		writeitac(cs, ITAC_XFIE, 0);
@@ -1220,7 +1396,11 @@ setup_elsa(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, Elsa_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Elsa driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	cs->hw.elsa.ctrl_reg = 0;
 	cs->hw.elsa.status = 0;
 	cs->hw.elsa.MFlag = 0;

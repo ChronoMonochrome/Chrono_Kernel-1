@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
 				   struct comedi_subdevice *s,
 				   struct comedi_insn *insn, unsigned int *data)
 {
-	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
+;
 	return insn->n;
 }
 
@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 
 	iobase = it->options[0];
-	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+;
 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
-		printk("comedi%d: I/O port conflict\n", dev->minor);
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
 
 	irq = it->options[1];
 	if (irq > 0)
-		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
+;
 	else if (irq == 0)
-		printk("comedi%d: no irq\n", dev->minor);
+;
 
 	s = dev->subdevices + 0;
 	/* pwm output subdevice */
@@ -503,7 +503,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
 {
 	/* board_halt(dev);  may not need this */
 
-	printk("comedi%d: c6xdigio: remove\n", dev->minor);
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, C6XDIGIO_SIZE);

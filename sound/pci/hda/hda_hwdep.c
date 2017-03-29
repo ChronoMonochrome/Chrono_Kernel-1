@@ -218,7 +218,11 @@ static int reconfig_codec(struct hda_codec *codec)
 	int err;
 
 	snd_hda_power_up(codec);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "hda-codec: reconfiguring\n");
+#else
+	;
+#endif
 	err = snd_hda_codec_reset(codec);
 	if (err < 0) {
 		snd_printk(KERN_ERR

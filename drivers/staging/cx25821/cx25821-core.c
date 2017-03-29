@@ -821,7 +821,7 @@ static void cx25821_initialize(struct cx25821_dev *dev)
 {
 	int i;
 
-	dprintk(1, "%s()\n", __func__);
+;
 
 	cx25821_shutdown(dev);
 	cx_write(PCI_INT_STAT, 0xffffffff);
@@ -1355,7 +1355,7 @@ void cx25821_print_irqbits(char *name, char *tag, char **strings,
 {
 	unsigned int i;
 
-	printk(KERN_DEBUG pr_fmt("%s: %s [0x%x]"), name, tag, bits);
+;
 
 	for (i = 0; i < len; i++) {
 		if (!(bits & (1 << i)))

@@ -69,8 +69,8 @@ static inline int ieee80211_networks_allocate(struct ieee80211_device *ieee)
 		MAX_NETWORK_COUNT, sizeof(struct ieee80211_network),
 		GFP_KERNEL);
 	if (!ieee->networks) {
-		printk(KERN_WARNING "%s: Out of memory allocating beacons\n",
-		       ieee->dev->name);
+//		printk(KERN_WARNING "%s: Out of memory allocating beacons\n",
+;
 		return -ENOMEM;
 	}
 
@@ -269,8 +269,8 @@ static int store_debug_level(struct file *file, const char *buffer,
 	} else
 		val = simple_strtoul(p, &p, 10);
 	if (p == buf)
-		printk(KERN_INFO DRV_NAME
-		       ": %s is not in hex or decimal form.\n", buf);
+//		printk(KERN_INFO DRV_NAME
+;
 	else
 		ieee80211_debug_level = val;
 

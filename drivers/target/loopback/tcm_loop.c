@@ -567,7 +567,11 @@ static int tcm_loop_alloc_core_bus(void)
 		goto bus_unreg;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Initialized TCM Loop Core Bus\n");
+#else
+	;
+#endif
 	return ret;
 
 bus_unreg:
@@ -583,7 +587,11 @@ static void tcm_loop_release_core_bus(void)
 	bus_unregister(&tcm_loop_lld_bus);
 	root_device_unregister(tcm_loop_primary);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Releasing TCM Loop Core BUS\n");
+#else
+	;
+#endif
 }
 
 static char *tcm_loop_get_fabric_name(void)
@@ -996,7 +1004,11 @@ static int tcm_loop_port_link(
 	 */
 	scsi_add_device(tl_hba->sh, 0, tl_tpg->tl_tpgt, lun->unpacked_lun);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Port Link Successful\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1027,7 +1039,11 @@ static void tcm_loop_port_unlink(
 	atomic_dec(&tl_tpg->tl_tpg_port_count);
 	smp_mb__after_atomic_dec();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Port Unlink Successful\n");
+#else
+	;
+#endif
 }
 
 /* End items for tcm_loop_port_cit */
@@ -1044,7 +1060,11 @@ static int tcm_loop_make_nexus(
 	int ret = -ENOMEM;
 
 	if (tl_tpg->tl_hba->tl_nexus) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "tl_tpg->tl_hba->tl_nexus already exists\n");
+#else
+		;
+#endif
 		return -EEXIST;
 	}
 	se_tpg = &tl_tpg->tl_se_tpg;
@@ -1080,9 +1100,13 @@ static int tcm_loop_make_nexus(
 	__transport_register_session(se_tpg, tl_nexus->se_sess->se_node_acl,
 			tl_nexus->se_sess, (void *)tl_nexus);
 	tl_tpg->tl_hba->tl_nexus = tl_nexus;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Established I_T Nexus to emulated"
 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
 		name);
+#else
+	;
+#endif
 	return 0;
 
 out:
@@ -1112,9 +1136,13 @@ static int tcm_loop_drop_nexus(
 		return -EPERM;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Removing I_T Nexus to emulated"
 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
 		tl_nexus->se_sess->se_node_acl->initiatorname);
+#else
+	;
+#endif
 	/*
 	 * Release the SCSI I_T Nexus to the emulated SAS Target Port
 	 */
@@ -1271,9 +1299,13 @@ struct se_portal_group *tcm_loop_make_naa_tpg(
 	if (ret < 0)
 		return ERR_PTR(-ENOMEM);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Allocated Emulated %s"
 		" Target Port %s,t,0x%04x\n", tcm_loop_dump_proto_id(tl_hba),
 		config_item_name(&wwn->wwn_group.cg_item), tpgt);
+#else
+	;
+#endif
 
 	return &tl_tpg->tl_se_tpg;
 }
@@ -1298,9 +1330,13 @@ void tcm_loop_drop_naa_tpg(
 	 */
 	core_tpg_deregister(se_tpg);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Deallocated Emulated %s"
 		" Target Port %s,t,0x%04x\n", tcm_loop_dump_proto_id(tl_hba),
 		config_item_name(&wwn->wwn_group.cg_item), tpgt);
+#else
+	;
+#endif
 }
 
 /* End items for tcm_loop_naa_cit */
@@ -1368,9 +1404,13 @@ check_len:
 
 	sh = tl_hba->sh;
 	tcm_loop_hba_no_cnt++;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Allocated emulated Target"
 		" %s Address: %s at Linux/SCSI Host ID: %d\n",
 		tcm_loop_dump_proto_id(tl_hba), name, sh->host_no);
+#else
+	;
+#endif
 
 	return &tl_hba->tl_hba_wwn;
 out:
@@ -1391,9 +1431,13 @@ void tcm_loop_drop_scsi_hba(
 	 */
 	device_unregister(&tl_hba->dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_Loop_ConfigFS: Deallocated emulated Target"
 		" SAS Address: %s at Linux/SCSI Host ID: %d\n",
 		config_item_name(&wwn->wwn_group.cg_item), host_no);
+#else
+	;
+#endif
 }
 
 /* Start items for tcm_loop_cit */
@@ -1536,8 +1580,12 @@ static int tcm_loop_register_configfs(void)
 	 * Setup our local pointer to *fabric.
 	 */
 	tcm_loop_fabric_configfs = fabric;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_LOOP[0] - Set fabric ->"
 			" tcm_loop_fabric_configfs\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1548,8 +1596,12 @@ static void tcm_loop_deregister_configfs(void)
 
 	target_fabric_configfs_deregister(tcm_loop_fabric_configfs);
 	tcm_loop_fabric_configfs = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TCM_LOOP[0] - Cleared"
 				" tcm_loop_fabric_configfs\n");
+#else
+	;
+#endif
 }
 
 static int __init tcm_loop_fabric_init(void)

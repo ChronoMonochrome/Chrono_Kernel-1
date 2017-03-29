@@ -316,10 +316,10 @@ static void am79c961_timer(unsigned long data)
 
 	if (lnkstat && !carrier) {
 		netif_carrier_on(dev);
-		printk("%s: link up\n", dev->name);
+;
 	} else if (!lnkstat && carrier) {
 		netif_carrier_off(dev);
-		printk("%s: link down\n", dev->name);
+;
 	}
 
 	mod_timer(&priv->timer, jiffies + msecs_to_jiffies(500));
@@ -427,8 +427,8 @@ static void am79c961_setmulticastlist (struct net_device *dev)
 
 static void am79c961_timeout(struct net_device *dev)
 {
-	printk(KERN_WARNING "%s: transmit timed out, network cable problem?\n",
-		dev->name);
+//	printk(KERN_WARNING "%s: transmit timed out, network cable problem?\n",
+;
 
 	/*
 	 * ought to do some setup of the tx side here
@@ -655,7 +655,7 @@ static void __init am79c961_banner(void)
 	static unsigned version_printed;
 
 	if (net_debug && version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 }
 static const struct net_device_ops am79c961_netdev_ops = {
 	.ndo_open		= am79c961_open,
@@ -741,8 +741,8 @@ static int __devinit am79c961_probe(struct platform_device *pdev)
 
 	ret = register_netdev(dev);
 	if (ret == 0) {
-		printk(KERN_INFO "%s: ether address %pM\n",
-		       dev->name, dev->dev_addr);
+//		printk(KERN_INFO "%s: ether address %pM\n",
+;
 		return 0;
 	}
 

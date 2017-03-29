@@ -96,15 +96,31 @@ static struct intel_scu_watchdog_dev watchdog_device;
 static void watchdog_fire(void)
 {
 	if (force_boot) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+#else
+		;
+#endif
 		emergency_restart();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Reboot didn't ?????\n");
+#else
+		;
+#endif
 	}
 
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Immediate Reboot Disabled\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"System will reset when watchdog timer times out!\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -331,8 +347,12 @@ static int intel_scu_release(struct inode *inode, struct file *file)
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT PFX
 	       "Unexpected close of /dev/watchdog!\n");
+#else
+	;
+#endif
 
 	/* Since the timer was started, prevent future reopens */
 	watchdog_device.driver_closed = 1;

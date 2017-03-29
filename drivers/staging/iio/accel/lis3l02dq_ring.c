@@ -299,8 +299,8 @@ static int lis3l02dq_trig_try_reen(struct iio_trigger *trig)
 		else
 			break;
 	if (i == 5)
-		printk(KERN_INFO
-		       "Failed to clear the interrupt for lis3l02dq\n");
+//		printk(KERN_INFO
+;
 
 	/* irq reenabled so success! */
 	return 0;
