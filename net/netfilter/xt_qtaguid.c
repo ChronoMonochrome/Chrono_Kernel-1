@@ -1702,6 +1702,10 @@ err:
 	return err;
 }
 
+MODSYMBOL_DECLARE(xt_socket_get6_sk);
+MODSYMBOL_DECLARE(xt_socket_get4_sk);
+MODSYMBOL_DECLARE(xt_socket_put_sk);
+
 static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 				    struct xt_action_param *par)
 {
@@ -1720,10 +1724,18 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 
 	switch (par->family) {
 	case NFPROTO_IPV6:
-		sk = xt_socket_get6_sk(skb, par);
+		if (unlikely(mod_xt_socket_get6_sk == NULL)) {
+			pr_err("%s: xt_socket_get6_sk is not imported!\n");
+			sk = NULL;
+		} else
+			sk = mod_xt_socket_get6_sk(skb, par);
 		break;
 	case NFPROTO_IPV4:
-		sk = xt_socket_get4_sk(skb, par);
+		if (unlikely(mod_xt_socket_get4_sk == NULL)) {
+			pr_err("%s: xt_socket_get4_sk is not imported!\n");
+			sk = NULL;
+		} else
+			sk = mod_xt_socket_get4_sk(skb, par);
 		break;
 	default:
 		return NULL;
@@ -1738,7 +1750,7 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 		MT_DEBUG("qtaguid[%d]: %p->sk_proto=%u->sk_state=%d\n",
 			 par->hooknum, sk, sk->sk_protocol, sk->sk_state);
 		if (sk->sk_state  == TCP_TIME_WAIT) {
-			xt_socket_put_sk(sk);
+			MODSYMBOL_CALL(xt_socket_put_sk, (sk));
 			sk = NULL;
 		}
 	}
@@ -1898,7 +1910,7 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 
 put_sock_ret_res:
 	if (got_sock)
-		xt_socket_put_sk(sk);
+		MODSYMBOL_CALL(xt_socket_put_sk, (sk));
 ret_res:
 	MT_DEBUG("qtaguid[%d]: left %d\n", par->hooknum, res);
 	return res;
@@ -2979,12 +2991,19 @@ static struct xt_match qtaguid_mt_reg __read_mostly = {
 	.me         = THIS_MODULE,
 };
 
+MODSYMBOL_DECLARE(xt_register_match);
+
 static int __init qtaguid_mt_init(void)
 {
-	
+	int ret = 0;
+
+	if (unlikely(mod_xt_register_match == NULL))
+		pr_err("%s: xt_register_match is not imported!\n");
+	else ret = mod_xt_register_match(&qtaguid_mt_reg);
+
 	if (qtaguid_proc_register(&xt_qtaguid_procdir)
 	    || iface_stat_init(xt_qtaguid_procdir)
-	    || xt_register_match(&qtaguid_mt_reg)
+	    || ret
 	    || misc_register(&qtu_device))
 		return -1;
 	return 0;
