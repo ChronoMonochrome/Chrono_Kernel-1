@@ -11,6 +11,7 @@
 
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/module.h>
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/semaphore.h>
@@ -32,10 +33,11 @@
 
 __iomem void *prcmu_base = NULL;
 __iomem void *prcmu_tcdm_base = NULL;
+extern struct outer_cache_fns outer_cache __read_mostly;
 
 /* DSP Load Monitoring */
 #define FULL_OPP 100
-#define HALF_OPP 50
+#define HALF_OPP PRCMU_QOS_DEFAULT_VALUE
 static unsigned long running_dsp = 0;
 static unsigned int dspLoadMonitorPeriod = 1000;
 module_param(dspLoadMonitorPeriod, uint, S_IWUSR|S_IRUGO);
@@ -681,10 +683,10 @@ void OSAL_Write64(t_nmf_trace_channel channel, t_uint8 isTimestamped, t_uint64 v
 void OSAL_Log(const char *format, int param1, int param2, int param3, int param4, int param5, int param6)
 {
 	if (cm_use_ftrace)
-		trace_printk(format,
-			     param1, param2, param3, param4, param5, param6);
+//		trace_printk(format,
+;
 	else
-		printk(format, param1, param2, param3, param4, param5, param6);
+;
 }
 
 /**
@@ -733,7 +735,7 @@ static void wakeup_process(unsigned long data)
 static int dspload_monitor(void *idx)
 {
 	int i = (int)idx;
-	unsigned char current_opp_request = FULL_OPP;
+	signed char current_opp_request = FULL_OPP;
 	struct mpcConfig *mpc = &osalEnv.mpc[i];
 	struct timer_list timer;
 
@@ -834,7 +836,7 @@ static int dspload_monitor(void *idx)
 }
 
 static int enable_auto_pm = 1;
-module_param(enable_auto_pm, bool, S_IWUSR|S_IRUGO);
+module_param(enable_auto_pm, int, S_IWUSR|S_IRUGO);
 
 /** \ingroup OSAL_IMPLEMENTATION
  *     Used by CM to disable a power resource
