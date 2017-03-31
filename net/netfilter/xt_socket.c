@@ -37,6 +37,10 @@
 
 MODSYMBOL_DECLARE(ipv6_find_hdr);
 
+MODSYMBOL_DECLARE(xt_socket_put_sk);
+MODSYMBOL_DECLARE(xt_socket_get4_sk);
+MODSYMBOL_DECLARE(xt_socket_get6_sk);
+
 void
 xt_socket_put_sk(struct sock *sk)
 {
@@ -279,7 +283,7 @@ xt_socket_get6_sk(const struct sk_buff *skb, struct xt_action_param *par)
 	__be16 dport, sport;
 	int thoff, tproto;
 
-	if (unlikely(mod_ipv6_find_hdr) == NULL) {
+	if (unlikely(mod_ipv6_find_hdr == NULL)) {
 		pr_err("%s: ipv6_find_hdr is not imported!\n", __func__);
 		tproto = -EINVAL;
 	} else
@@ -394,6 +398,9 @@ static int __init socket_mt_init(void)
 #ifdef XT_SOCKET_HAVE_IPV6
 	//nf_defrag_ipv6_enable();
 #endif
+	IMPORT_SYMBOL(xt_socket_put_sk);
+	IMPORT_SYMBOL(xt_socket_get4_sk);
+	IMPORT_SYMBOL(xt_socket_get6_sk);
 
 	return xt_register_matches(socket_mt_reg, ARRAY_SIZE(socket_mt_reg));
 }
@@ -401,6 +408,9 @@ static int __init socket_mt_init(void)
 static void __exit socket_mt_exit(void)
 {
 	xt_unregister_matches(socket_mt_reg, ARRAY_SIZE(socket_mt_reg));
+	UNIMPORT_SYMBOL(xt_socket_put_sk);
+	UNIMPORT_SYMBOL(xt_socket_get4_sk);
+	UNIMPORT_SYMBOL(xt_socket_get6_sk);
 }
 
 module_init(socket_mt_init);
