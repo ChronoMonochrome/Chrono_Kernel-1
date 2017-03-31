@@ -1202,8 +1202,12 @@ int ipmi_set_gets_events(ipmi_user_t user, int val)
 			list_move_tail(&msg->link, &msgs);
 		intf->waiting_events_count = 0;
 		if (intf->event_msg_printed) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "Event queue no longer"
 			       " full\n");
+#else
+			;
+#endif
 			intf->event_msg_printed = 0;
 		}
 
@@ -1803,8 +1807,16 @@ static int i_ipmi_request(ipmi_user_t          user,
 	{
 		int m;
 		for (m = 0; m < smi_msg->data_size; m++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %2.2x", smi_msg->data[m]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 
@@ -2483,12 +2495,16 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		kref_get(&bmc->refcount);
 		mutex_unlock(&ipmidriver_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "ipmi: interfacing existing BMC (man_id: 0x%6.6x,"
 		       " prod_id: 0x%4.4x, dev_id: 0x%2.2x)\n",
 		       bmc->id.manufacturer_id,
 		       bmc->id.product_id,
 		       bmc->id.device_id);
+#else
+		;
+#endif
 	} else {
 		char name[14];
 		unsigned char orig_dev_id = bmc->id.device_id;
@@ -2501,6 +2517,7 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 						 bmc->id.product_id,
 						 bmc->id.device_id)) {
 			if (!warn_printed) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING PFX
 				       "This machine has two different BMCs"
 				       " with the same product id and device"
@@ -2509,6 +2526,9 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 				       " device id to work around the problem."
 				       " Prod ID = 0x%x, Dev ID = 0x%x\n",
 				       bmc->id.product_id, bmc->id.device_id);
+#else
+				;
+#endif
 				warn_printed = 1;
 			}
 			bmc->id.device_id++; /* Wraps at 255 */
@@ -2666,11 +2686,15 @@ guid_handler(ipmi_smi_t intf, struct ipmi_recv_msg *msg)
 
 	if (msg->msg.data_len < 17) {
 		intf->bmc->guid_set = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 		       "guid_handler: The GUID response from the BMC was too"
 		       " short, it was %d but should have been 17.  Assuming"
 		       " GUID is not available.\n",
 		       msg->msg.data_len);
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -2777,9 +2801,13 @@ channel_handler(ipmi_smi_t intf, struct ipmi_recv_msg *msg)
 			intf->curr_channel = IPMI_MAX_CHANNELS;
 			wake_up(&intf->waitq);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX
 			       "Error sending channel information: %d\n",
 			       rv);
+#else
+			;
+#endif
 		}
 	}
  out:
@@ -3120,10 +3148,22 @@ static int handle_ipmb_get_msg_cmd(ipmi_smi_t          intf,
 #ifdef DEBUG_MSGING
 	{
 		int m;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Invalid command:");
+#else
+		;
+#endif
 		for (m = 0; m < msg->data_size; m++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %2.2x", msg->data[m]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 		rcu_read_lock();
@@ -3564,8 +3604,12 @@ static int handle_read_event_rsp(ipmi_smi_t          intf,
 		 * There's too many things in the queue, discard this
 		 * message.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Event queue full, discarding"
 		       " incoming events\n");
+#else
+		;
+#endif
 		intf->event_msg_printed = 1;
 	}
 
@@ -3583,11 +3627,15 @@ static int handle_bmc_rsp(ipmi_smi_t          intf,
 
 	recv_msg = (struct ipmi_recv_msg *) msg->user_data;
 	if (recv_msg == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "IPMI message received with no owner. This\n"
 		       "could be because of a malformed message, or\n"
 		       "because of a hardware error.  Contact your\n"
 		       "hardware vender for assistance\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -3634,16 +3682,32 @@ static int handle_new_recv_msg(ipmi_smi_t          intf,
 
 #ifdef DEBUG_MSGING
 	int m;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Recv:");
+#else
+	;
+#endif
 	for (m = 0; m < msg->rsp_size; m++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %2.2x", msg->rsp[m]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 	if (msg->rsp_size < 2) {
 		/* Message is too small to be correct. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "BMC returned to small a message"
 		       " for netfn %x cmd %x, got %d bytes\n",
 		       (msg->data[0] >> 2) | 1, msg->data[1], msg->rsp_size);
+#else
+		;
+#endif
 
 		/* Generate an error response for the message. */
 		msg->rsp[0] = msg->data[0] | (1 << 2);
@@ -3656,10 +3720,14 @@ static int handle_new_recv_msg(ipmi_smi_t          intf,
 		 * The NetFN and Command in the response is not even
 		 * marginally correct.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "BMC returned incorrect response,"
 		       " expected netfn %x cmd %x, got netfn %x cmd %x\n",
 		       (msg->data[0] >> 2) | 1, msg->data[1],
 		       msg->rsp[0] >> 2, msg->rsp[1]);
+#else
+		;
+#endif
 
 		/* Generate an error response for the message. */
 		msg->rsp[0] = msg->data[0] | (1 << 2);
@@ -3907,10 +3975,22 @@ smi_from_recv_msg(ipmi_smi_t intf, struct ipmi_recv_msg *recv_msg,
 #ifdef DEBUG_MSGING
 	{
 		int m;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Resend: ");
+#else
+		;
+#endif
 		for (m = 0; m < smi_msg->data_size; m++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %2.2x", smi_msg->data[m]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 	return smi_msg;
@@ -4471,8 +4551,12 @@ static int ipmi_init_msghandler(void)
 		return rv;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ipmi message handler version "
 	       IPMI_DRIVER_VERSION "\n");
+#else
+	;
+#endif
 
 #ifdef CONFIG_PROC_FS
 	proc_ipmi_root = proc_mkdir("ipmi", NULL);
@@ -4532,12 +4616,20 @@ static void __exit cleanup_ipmi(void)
 	/* Check for buffer leaks. */
 	count = atomic_read(&smi_msg_inuse_count);
 	if (count != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "SMI message count %d at exit\n",
 		       count);
+#else
+		;
+#endif
 	count = atomic_read(&recv_msg_inuse_count);
 	if (count != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "recv message count %d at exit\n",
 		       count);
+#else
+		;
+#endif
 }
 module_exit(cleanup_ipmi);
 

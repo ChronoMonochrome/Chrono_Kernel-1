@@ -384,7 +384,11 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
 						link);
 #ifdef DEBUG_TIMING
 		do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "**Start2: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+		;
+#endif
 #endif
 		err = atomic_notifier_call_chain(&xaction_notifier_list,
 				0, smi_info);
@@ -537,7 +541,11 @@ static void handle_transaction_done(struct smi_info *smi_info)
 	struct timeval t;
 
 	do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "**Done: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+	;
+#endif
 #endif
 	switch (smi_info->si_state) {
 	case SI_NORMAL:
@@ -886,7 +894,11 @@ static void sender(void                *send_info,
 
 #ifdef DEBUG_TIMING
 	do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+	;
+#endif
 #endif
 
 	/*
@@ -1074,7 +1086,11 @@ static void smi_timeout(unsigned long data)
 	spin_lock_irqsave(&(smi_info->si_lock), flags);
 #ifdef DEBUG_TIMING
 	do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "**Timer: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+	;
+#endif
 #endif
 	jiffies_now = jiffies;
 	time_diff = (((long)jiffies_now - (long)smi_info->last_timeout_jiffies)
@@ -1123,7 +1139,11 @@ static irqreturn_t si_irq_handler(int irq, void *data)
 
 #ifdef DEBUG_TIMING
 	do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "**Interrupt: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+	;
+#endif
 #endif
 	smi_event_handler(smi_info, 0);
 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
@@ -1227,7 +1247,7 @@ static int smi_num; /* Used to sequence the SMIs */
 #define DEFAULT_REGSPACING	1
 #define DEFAULT_REGSIZE		1
 
-static int           si_trydefaults = 1;
+static bool          si_trydefaults = 1;
 static char          *si_type[SI_MAX_PARMS];
 #define MAX_SI_TYPE_STR 30
 static char          si_type_str[MAX_SI_TYPE_STR];
@@ -1635,7 +1655,11 @@ static int parse_str(struct hotmod_vals *v, int *val, char *name, char **curr)
 
 	s = strchr(*curr, ',');
 	if (!s) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "No hotmod %s given.\n", name);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	*s = '\0';
@@ -1648,7 +1672,11 @@ static int parse_str(struct hotmod_vals *v, int *val, char *name, char **curr)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING PFX "Invalid hotmod %s '%s'\n", name, *curr);
+#else
+	;
+#endif
 	return -EINVAL;
 }
 
@@ -1659,16 +1687,24 @@ static int check_hotmod_int_op(const char *curr, const char *option,
 
 	if (strcmp(curr, name) == 0) {
 		if (!option) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX
 			       "No option given for '%s'\n",
 			       curr);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		*val = simple_strtoul(option, &n, 0);
 		if ((*n != '\0') || (*option == '\0')) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX
 			       "Bad option given for '%s'\n",
 			       curr);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		return 1;
@@ -1750,8 +1786,12 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
 		}
 		addr = simple_strtoul(curr, &n, 0);
 		if ((*n != '\0') || (*curr == '\0')) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "Invalid hotmod address"
 			       " '%s'\n", curr);
+#else
+			;
+#endif
 			break;
 		}
 
@@ -1794,9 +1834,13 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
 				continue;
 
 			rv = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX
 			       "Invalid hotmod option '%s'\n",
 			       curr);
+#else
+			;
+#endif
 			goto out;
 		}
 
@@ -1872,7 +1916,11 @@ static int __devinit hardcode_find_bmc(void)
 			return -ENOMEM;
 
 		info->addr_source = SI_HARDCODED;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "probing via hardcoded address\n");
+#else
+		;
+#endif
 
 		if (!si_type[i] || strcmp(si_type[i], "kcs") == 0) {
 			info->si_type = SI_KCS;
@@ -1881,9 +1929,13 @@ static int __devinit hardcode_find_bmc(void)
 		} else if (strcmp(si_type[i], "bt") == 0) {
 			info->si_type = SI_BT;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "Interface type specified "
 			       "for interface %d, was invalid: %s\n",
 			       i, si_type[i]);
+#else
+			;
+#endif
 			kfree(info);
 			continue;
 		}
@@ -1899,9 +1951,13 @@ static int __devinit hardcode_find_bmc(void)
 			info->io.addr_data = addrs[i];
 			info->io.addr_type = IPMI_MEM_ADDR_SPACE;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "Interface type specified "
 			       "for interface %d, but port and address were "
 			       "not set or set to zero.\n", i);
+#else
+			;
+#endif
 			kfree(info);
 			continue;
 		}
@@ -1957,7 +2013,11 @@ static u32 ipmi_acpi_gpe(acpi_handle gpe_device,
 
 #ifdef DEBUG_TIMING
 	do_gettimeofday(&t);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("**ACPI_GPE: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+#else
+	;
+#endif
 #endif
 	smi_event_handler(smi_info, 0);
 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
@@ -2049,7 +2109,11 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 	struct smi_info  *info;
 
 	if (spmi->IPMIlegacy != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -2060,7 +2124,11 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 	}
 
 	info->addr_source = SI_SPMI;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "probing via SPMI\n");
+#else
+	;
+#endif
 
 	/* Figure out the interface type. */
 	switch (spmi->InterfaceType) {
@@ -2074,8 +2142,12 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 		info->si_type = SI_BT;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Unknown ACPI/SPMI SI type %d\n",
 		       spmi->InterfaceType);
+#else
+		;
+#endif
 		kfree(info);
 		return -EIO;
 	}
@@ -2111,7 +2183,11 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 		info->io.addr_type = IPMI_IO_ADDR_SPACE;
 	} else {
 		kfree(info);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Unknown ACPI I/O Address type\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	info->io.addr_data = spmi->addr.address;
@@ -2168,7 +2244,11 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
 		return -ENOMEM;
 
 	info->addr_source = SI_ACPI;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "probing via ACPI\n");
+#else
+	;
+#endif
 
 	handle = acpi_dev->handle;
 	info->addr_info.acpi_info.acpi_handle = handle;
@@ -2352,7 +2432,11 @@ static void __devinit try_init_dmi(struct dmi_ipmi_data *ipmi_data)
 	}
 
 	info->addr_source = SI_SMBIOS;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "probing via SMBIOS\n");
+#else
+	;
+#endif
 
 	switch (ipmi_data->type) {
 	case 0x01: /* KCS */
@@ -2382,8 +2466,12 @@ static void __devinit try_init_dmi(struct dmi_ipmi_data *ipmi_data)
 
 	default:
 		kfree(info);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Unknown SMBIOS I/O Address type: %d\n",
 		       ipmi_data->addr_space);
+#else
+		;
+#endif
 		return;
 	}
 	info->io.addr_data = ipmi_data->base_addr;
@@ -2747,9 +2835,13 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 
 	rv = wait_for_msg_done(smi_info);
 	if (rv) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Error getting response from get"
 		       " global enables command, the event buffer is not"
 		       " enabled.\n");
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -2760,8 +2852,12 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 			resp[0] != (IPMI_NETFN_APP_REQUEST | 1) << 2 ||
 			resp[1] != IPMI_GET_BMC_GLOBAL_ENABLES_CMD   ||
 			resp[2] != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Invalid return from get global"
 		       " enables command, cannot enable the event buffer.\n");
+#else
+		;
+#endif
 		rv = -EINVAL;
 		goto out;
 	}
@@ -2777,9 +2873,13 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 
 	rv = wait_for_msg_done(smi_info);
 	if (rv) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Error getting response from set"
 		       " global, enables command, the event buffer is not"
 		       " enabled.\n");
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -2789,8 +2889,12 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 	if (resp_len < 3 ||
 			resp[0] != (IPMI_NETFN_APP_REQUEST | 1) << 2 ||
 			resp[1] != IPMI_SET_BMC_GLOBAL_ENABLES_CMD) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX "Invalid return from get global,"
 		       "enables command, not enable the event buffer.\n");
+#else
+		;
+#endif
 		rv = -EINVAL;
 		goto out;
 	}
@@ -3095,11 +3199,15 @@ static void __devinit default_find_bmc(void)
 		if (add_smi(info) == 0) {
 			if ((try_smi_init(info)) == 0) {
 				/* Found one... */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX "Found default %s"
 				" state machine at %s address 0x%lx\n",
 				si_to_str[info->si_type],
 				addr_space_to_str[info->io.addr_type],
 				info->io.addr_data);
+#else
+				;
+#endif
 			} else
 				cleanup_one_si(info);
 		} else {
@@ -3126,17 +3234,29 @@ static int add_smi(struct smi_info *new_smi)
 {
 	int rv = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Adding %s-specified %s state machine",
 			ipmi_addr_src_to_str[new_smi->addr_source],
 			si_to_str[new_smi->si_type]);
+#else
+	;
+#endif
 	mutex_lock(&smi_infos_lock);
 	if (!is_new_interface(new_smi)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " duplicate interface\n");
+#else
+		;
+#endif
 		rv = -EBUSY;
 		goto out_err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 
 	/* So we know not to free it unless we have allocated one. */
 	new_smi->intf = NULL;
@@ -3155,6 +3275,7 @@ static int try_smi_init(struct smi_info *new_smi)
 	int rv = 0;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Trying %s-specified %s state"
 	       " machine at %s address 0x%lx, slave address 0x%x,"
 	       " irq %d\n",
@@ -3163,6 +3284,9 @@ static int try_smi_init(struct smi_info *new_smi)
 	       addr_space_to_str[new_smi->io.addr_type],
 	       new_smi->io.addr_data,
 	       new_smi->slave_addr, new_smi->irq);
+#else
+	;
+#endif
 
 	switch (new_smi->si_type) {
 	case SI_KCS:
@@ -3204,7 +3328,11 @@ static int try_smi_init(struct smi_info *new_smi)
 	/* Do low-level detection first. */
 	if (new_smi->handlers->detect(new_smi->si_sm)) {
 		if (new_smi->addr_source)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "Interface detection failed\n");
+#else
+			;
+#endif
 		rv = -ENODEV;
 		goto out_err;
 	}
@@ -3216,8 +3344,12 @@ static int try_smi_init(struct smi_info *new_smi)
 	rv = try_get_dev_id(new_smi);
 	if (rv) {
 		if (new_smi->addr_source)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "There appears to be no BMC"
 			       " at this location\n");
+#else
+			;
+#endif
 		goto out_err;
 	}
 
@@ -3398,7 +3530,11 @@ static int __devinit init_ipmi_si(void)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IPMI System Interface driver.\n");
+#else
+	;
+#endif
 
 	/* If the user gave us a device, they presumably want us to use it */
 	if (!hardcode_find_bmc())
@@ -3476,8 +3612,12 @@ static int __devinit init_ipmi_si(void)
 	if (unload_when_empty && list_empty(&smi_infos)) {
 		mutex_unlock(&smi_infos_lock);
 		cleanup_ipmi_si();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 		       "Unable to find any System Interface(s)\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	} else {
 		mutex_unlock(&smi_infos_lock);

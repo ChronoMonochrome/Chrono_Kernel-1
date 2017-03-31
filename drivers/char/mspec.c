@@ -46,7 +46,7 @@
 #include <asm/page.h>
 #include <asm/system.h>
 #include <asm/pgtable.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <asm/tlbflush.h>
 #include <asm/uncached.h>
 #include <asm/sn/addrs.h>
@@ -182,8 +182,12 @@ mspec_close(struct vm_area_struct *vma)
 		if (!mspec_zero_block(my_page, PAGE_SIZE))
 			uncached_free_page(my_page, 1);
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "mspec_close(): "
 			       "failed to zero page %ld\n", my_page);
+#else
+			;
+#endif
 	}
 
 	if (vdata->flags & VMD_VMALLOCED)
@@ -284,7 +288,7 @@ mspec_mmap(struct file *file, struct vm_area_struct *vma,
 	vdata->flags = flags;
 	vdata->type = type;
 	spin_lock_init(&vdata->lock);
-	vdata->refcnt = ATOMIC_INIT(1);
+	atomic_set(&vdata->refcnt, 1);
 	vma->vm_private_data = vdata;
 
 	vma->vm_flags |= (VM_IO | VM_RESERVED | VM_PFNMAP | VM_DONTEXPAND);
@@ -412,9 +416,13 @@ mspec_init(void)
 		goto free_scratch_pages;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s initialized devices: %s %s %s\n",
 	       MSPEC_BASENAME, REVISION, is_sn2 ? FETCHOP_ID : "",
 	       CACHED_ID, UNCACHED_ID);
+#else
+	;
+#endif
 
 	return 0;
 
