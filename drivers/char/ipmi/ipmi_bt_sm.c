@@ -95,9 +95,9 @@ struct si_sm_data {
 	enum bt_states	state;
 	unsigned char	seq;		/* BT sequence number */
 	struct si_sm_io	*io;
-	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
+	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
 	int		write_count;
-	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
+	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
 	int		read_count;
 	int		truncated;
 	long		timeout;	/* microseconds countdown */
@@ -239,11 +239,27 @@ static int bt_start_transaction(struct si_sm_data *bt,
 		return IPMI_NOT_IN_MY_STATE_ERR;
 
 	if (bt_debug & BT_DEBUG_MSG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: +++++++++++++++++ New command\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: NetFn/LUN CMD [%d data]:", size - 2);
+#else
+		;
+#endif
 		for (i = 0; i < size; i ++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", data[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	bt->write_data[0] = size + 1;	/* all data plus seq byte */
 	bt->write_data[1] = *data;	/* NetFn/LUN */
@@ -284,10 +300,22 @@ static int bt_get_result(struct si_sm_data *bt,
 		memcpy(data + 2, bt->read_data + 4, msg_len - 2);
 
 	if (bt_debug & BT_DEBUG_MSG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: result %d bytes:", msg_len);
+#else
+		;
+#endif
 		for (i = 0; i < msg_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", data[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	return msg_len;
 }
@@ -298,8 +326,12 @@ static int bt_get_result(struct si_sm_data *bt,
 static void reset_flags(struct si_sm_data *bt)
 {
 	if (bt_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IPMI BT: flag reset %s\n",
 					status2txt(BT_STATUS));
+#else
+		;
+#endif
 	if (BT_STATUS & BT_H_BUSY)
 		BT_CONTROL(BT_H_BUSY);	/* force clear */
 	BT_CONTROL(BT_CLR_WR_PTR);	/* always reset */
@@ -325,14 +357,22 @@ static void drain_BMC2HOST(struct si_sm_data *bt)
 	BT_CONTROL(BT_B2H_ATN);		/* some BMCs are stubborn */
 	BT_CONTROL(BT_CLR_RD_PTR);	/* always reset */
 	if (bt_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IPMI BT: stale response %s; ",
+#else
+		;
+#endif
 			status2txt(BT_STATUS));
 	size = BMC2HOST;
 	for (i = 0; i < size ; i++)
 		BMC2HOST;
 	BT_CONTROL(BT_H_BUSY);		/* now clear */
 	if (bt_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("drained %d bytes\n", size + 1);
+#else
+		;
+#endif
 }
 
 static inline void write_all_bytes(struct si_sm_data *bt)
@@ -340,11 +380,23 @@ static inline void write_all_bytes(struct si_sm_data *bt)
 	int i;
 
 	if (bt_debug & BT_DEBUG_MSG) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: write %d bytes seq=0x%02X",
 			bt->write_count, bt->seq);
+#else
+		;
+#endif
 		for (i = 0; i < bt->write_count; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", bt->write_data[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	for (i = 0; i < bt->write_count; i++)
 		HOST2BMC(bt->write_data[i]);
@@ -364,8 +416,12 @@ static inline int read_all_bytes(struct si_sm_data *bt)
 
 	if (bt->read_count < 4 || bt->read_count >= IPMI_MAX_MSG_LENGTH) {
 		if (bt_debug & BT_DEBUG_MSG)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "BT: bad raw rsp len=%d\n",
 				bt->read_count);
+#else
+			;
+#endif
 		bt->truncated = 1;
 		return 1;	/* let next XACTION START clean it up */
 	}
@@ -376,13 +432,25 @@ static inline int read_all_bytes(struct si_sm_data *bt)
 	if (bt_debug & BT_DEBUG_MSG) {
 		int max = bt->read_count;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: got %d bytes seq=0x%02X",
 			max, bt->read_data[2]);
+#else
+		;
+#endif
 		if (max > 16)
 			max = 16;
 		for (i = 0; i < max; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " %02x", bt->read_data[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "%s\n", bt->read_count == max ? "" : " ...");
+#else
+		;
+#endif
 	}
 
 	/* per the spec, the (NetFn[1], Seq[2], Cmd[3]) tuples must match */
@@ -392,10 +460,14 @@ static inline int read_all_bytes(struct si_sm_data *bt)
 			return 1;
 
 	if (bt_debug & BT_DEBUG_MSG)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IPMI BT: bad packet: "
 		"want 0x(%02X, %02X, %02X) got (%02X, %02X, %02X)\n",
 		bt->write_data[1] | 0x04, bt->write_data[2], bt->write_data[3],
 		bt->read_data[1],  bt->read_data[2],  bt->read_data[3]);
+#else
+		;
+#endif
 	return 0;
 }
 
@@ -418,8 +490,12 @@ static enum si_sm_result error_recovery(struct si_sm_data *bt,
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "IPMI BT: %s in %s %s ", 	/* open-ended line */
 		reason, STATE2TXT, STATUS2TXT);
+#else
+	;
+#endif
 
 	/*
 	 * Per the IPMI spec, retries are based on the sequence number
@@ -427,20 +503,32 @@ static enum si_sm_result error_recovery(struct si_sm_data *bt,
 	 */
 	(bt->error_retries)++;
 	if (bt->error_retries < bt->BT_CAP_retries) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d retries left\n",
 			bt->BT_CAP_retries - bt->error_retries);
+#else
+		;
+#endif
 		bt->state = BT_STATE_RESTART;
 		return SI_SM_CALL_WITHOUT_DELAY;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "failed %d retries, sending error response\n",
 	       bt->BT_CAP_retries);
+#else
+	;
+#endif
 	if (!bt->nonzero_status)
 		printk(KERN_ERR "IPMI BT: stuck, try power cycle\n");
 
 	/* this is most likely during insmod */
 	else if (bt->seq <= (unsigned char)(bt->BT_CAP_retries & 0xFF)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IPMI: BT reset (takes 5 secs)\n");
+#else
+		;
+#endif
 		bt->state = BT_STATE_RESET1;
 		return SI_SM_CALL_WITHOUT_DELAY;
 	}
@@ -476,11 +564,15 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
 	status = BT_STATUS;
 	bt->nonzero_status |= status;
 	if ((bt_debug & BT_DEBUG_STATES) && (bt->state != last_printed)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BT: %s %s TO=%ld - %ld \n",
 			STATE2TXT,
 			STATUS2TXT,
 			bt->timeout,
 			time);
+#else
+		;
+#endif
 		last_printed = bt->state;
 	}
 
@@ -654,11 +746,19 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
 			bt->BT_CAP_req2rsp = BT_CAP[6] * 1000000;
 			bt->BT_CAP_retries = BT_CAP[7];
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IPMI BT: using default values\n");
+#else
+			;
+#endif
 		if (!bt->BT_CAP_outreqs)
 			bt->BT_CAP_outreqs = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IPMI BT: req2rsp=%ld secs retries=%d\n",
 			bt->BT_CAP_req2rsp / 1000000L, bt->BT_CAP_retries);
+#else
+		;
+#endif
 		bt->timeout = bt->BT_CAP_req2rsp;
 		return SI_SM_CALL_WITHOUT_DELAY;
 

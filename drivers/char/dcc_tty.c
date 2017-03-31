@@ -106,14 +106,22 @@ static int dcc_tty_open(struct tty_struct * tty, struct file * filp)
 		ret = -EBUSY;
 	spin_unlock_irqrestore(&g_dcc_tty_lock, irq_flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("dcc_tty_open, tty %p, f_flags %x, returned %d\n", tty, filp->f_flags, ret);
+#else
+	;
+#endif
 
 	return ret;
 }
 
 static void dcc_tty_close(struct tty_struct * tty, struct file * filp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("dcc_tty_close, tty %p, f_flags %x\n", tty, filp->f_flags);
+#else
+	;
+#endif
 	if (g_dcc_tty == tty) {
 		if (--g_dcc_tty_open_count == 0)
 			g_dcc_tty = NULL;
@@ -165,10 +173,18 @@ static int dcc_write(const unsigned char *buf_start, int count)
 static int dcc_tty_write(struct tty_struct * tty, const unsigned char *buf, int count)
 {
 	int ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("dcc_tty_write %p, %d\n", buf, count); */
+#else
+	/* ;
+#endif
 	ret = dcc_write(buf, count);
 	if (ret != count)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dcc_tty_write %p, %d, returned %d\n", buf, count, ret);
+#else
+		;
+#endif
 	return ret;
 }
 

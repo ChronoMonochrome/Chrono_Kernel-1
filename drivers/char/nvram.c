@@ -459,7 +459,11 @@ static int __init nvram_init(void)
 		goto outmisc;
 	}
 	ret = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Non-volatile memory driver v" NVRAM_VERSION "\n");
+#else
+	;
+#endif
 out:
 	return ret;
 outmisc:

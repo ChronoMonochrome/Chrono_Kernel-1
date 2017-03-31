@@ -40,9 +40,13 @@ static struct ttyprintk_port tpk_port;
 static const char *tpk_tag = "[U] "; /* U for User */
 static int tpk_curr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 static int tpk_printk(const unsigned char *buf, int count)
 {
 	static char tmp[TPK_STR_SIZE + 4];
+#else
+static int tpk_;
+#endif
 	int i = tpk_curr;
 
 	if (buf == NULL) {
@@ -51,7 +55,11 @@ static int tpk_printk(const unsigned char *buf, int count)
 			/* non nl or cr terminated message - add nl */
 			tmp[tpk_curr + 0] = '\n';
 			tmp[tpk_curr + 1] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s%s", tpk_tag, tmp);
+#else
+			;
+#endif
 			tpk_curr = 0;
 		}
 		return i;
@@ -65,14 +73,22 @@ static int tpk_printk(const unsigned char *buf, int count)
 				/* replace cr with nl */
 				tmp[tpk_curr + 0] = '\n';
 				tmp[tpk_curr + 1] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
+#else
+				;
+#endif
 				tpk_curr = 0;
-				if (buf[i + 1] == '\n')
+				if ((i + 1) < count && buf[i + 1] == '\n')
 					i++;
 				break;
 			case '\n':
 				tmp[tpk_curr + 1] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
+#else
+				;
+#endif
 				tpk_curr = 0;
 				break;
 			default:
@@ -83,7 +99,11 @@ static int tpk_printk(const unsigned char *buf, int count)
 			tmp[tpk_curr + 1] = '\\';
 			tmp[tpk_curr + 2] = '\n';
 			tmp[tpk_curr + 3] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s%s", tpk_tag, tmp);
+#else
+			;
+#endif
 			tpk_curr = 0;
 		}
 	}
@@ -110,7 +130,11 @@ static void tpk_close(struct tty_struct *tty, struct file *filp)
 
 	mutex_lock(&tpkp->port_write_mutex);
 	/* flush tpk_printk buffer */
+#ifdef CONFIG_DEBUG_PRINTK
 	tpk_printk(NULL, 0);
+#else
+	tpk_;
+#endif
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	tty_port_close(&tpkp->port, tty, filp);
@@ -128,7 +152,11 @@ static int tpk_write(struct tty_struct *tty,
 
 	/* exclusive use of tpk_printk within this tty */
 	mutex_lock(&tpkp->port_write_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 	ret = tpk_printk(buf, count);
+#else
+	ret = tpk_;
+#endif
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	return ret;

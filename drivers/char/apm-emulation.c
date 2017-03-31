@@ -644,7 +644,11 @@ static int __init apm_init(void)
 	int ret;
 
 	if (apm_disabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "apm: disabled on user request.\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

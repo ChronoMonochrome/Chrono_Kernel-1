@@ -277,7 +277,11 @@ static int __devinit agp_sgi_init(void)
 	struct pci_dev *pdev = NULL;
 
 	if (tioca_gart_found)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "SGI TIO CA GART driver initialized.\n");
+#else
+		;
+#endif
 	else
 		return 0;
 
@@ -302,8 +306,12 @@ static int __devinit agp_sgi_init(void)
 				continue;
 		}
 		sgi_tioca_agp_bridges[j] = agp_alloc_bridge();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "bridge %d = 0x%p\n", j,
 		       sgi_tioca_agp_bridges[j]);
+#else
+		;
+#endif
 		if (sgi_tioca_agp_bridges[j]) {
 			sgi_tioca_agp_bridges[j]->dev = pdev;
 			sgi_tioca_agp_bridges[j]->dev_private_data = info;

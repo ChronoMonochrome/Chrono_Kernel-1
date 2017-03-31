@@ -36,11 +36,15 @@
 
 #define MBCS_DEBUG 0
 #if MBCS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(fmt...)    printk(KERN_ALERT fmt)
 #else
 #define DBG(fmt...)
 #endif
 static DEFINE_MUTEX(mbcs_mutex);
+#else
+#define DBG(fmt...)    ;
+#endif
 static int mbcs_major;
 
 static LIST_HEAD(soft_list);
@@ -799,7 +803,7 @@ static int mbcs_remove(struct cx_dev *dev)
 	return 0;
 }
 
-static const struct cx_device_id __devinitdata mbcs_id_table[] = {
+static const struct cx_device_id __devinitconst mbcs_id_table[] = {
 	{
 	 .part_num = MBCS_PART_NUM,
 	 .mfg_num = MBCS_MFG_NUM,
