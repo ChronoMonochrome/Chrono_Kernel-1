@@ -3718,42 +3718,6 @@ struct prcmu_fops_register_data db8500_probe_data = {
 	.tab = db8500_probe_tab,
 };
 
-/*
- * default event tracing
- * ENABLE_FTRACE_BY_DEFAULT
- *  : it should be enabled only if needed,
- *	it will highly impact on system behavior
- */
-static int __init late(void)
-{
-	extern int tracing_update_buffers(void);
-#ifdef ENABLE_FTRACE_BY_DEFAULT
-	extern int tracing_set_tracer(const char *buf);
-	int err;
-#endif
-	tracing_update_buffers();
-
-	trace_set_clr_event("irq", "irq_handler_entry", 1);
-	trace_set_clr_event("irq", "irq_handler_exit", 1);
-	//trace_set_clr_event("irq", "softirq_entry", 1);
-	//trace_set_clr_event("irq", "softirq_exit", 1);
-	trace_set_clr_event("sched", "sched_switch", 1);
-	// trace_set_clr_event("sched", "sched_wakeup", 1);
-	trace_set_clr_event("workqueue", "workqueue_execute_start", 1);
-	trace_set_clr_event("workqueue", "workqueue_execute_end", 1);
-	trace_set_clr_event("power", "cpu_frequency", 1);
-	trace_set_clr_event("prcmu", NULL, 1);
-
-#ifdef ENABLE_FTRACE_BY_DEFAULT
-	err = tracing_set_tracer("function");
-	if (err)
-		pr_info("prcmu : unable to enable function trace\n");
-#endif
-
-	return 0;
-}
-late_initcall(late);
-
 struct prcmu_fops_register_data *__init db8500_prcmu_early_init(void)
 {
 	unsigned int i;
