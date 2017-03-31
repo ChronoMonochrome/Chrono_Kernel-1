@@ -1,0 +1,115 @@
+#!/stage1/busybox sh
+_PATH="$PATH"
+export PATH=/stage1
+
+busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
+busybox mv /ramdisk/last_boot.txt /ramdisk/last_boot.txt.old
+busybox date >>/ramdisk/last_boot.txt
+exec >>/ramdisk/last_boot.txt 2>&1
+
+
+busybox mkdir -p /sbin
+busybox cp /stage1/busybox /sbin/busybox
+busybox chmod 755 /sbin/busybox
+
+busybox cd /
+busybox rm init
+busybox mount -t proc proc /proc
+busybox mount -t sysfs sysfs /sys
+
+load_image=/ramdisk/boot.cpio
+lvm=/ramdisk/lvm.cpio
+
+busybox insmod /ramdisk/modules/startup_reason.ko
+busybox insmod /ramdisk/modules/exfat.ko
+busybox insmod /ramdisk/modules/fuse.ko
+busybox insmod /ramdisk/modules/sdcardfs.ko
+busybox insmod /ramdisk/modules/f2fs.ko
+busybox insmod /ramdisk/modules/snd-soc-ab8500_audio.ko
+
+if ! busybox grep -q bootmode=2 /proc/cmdline ; then
+
+	for i in /ramdisk/modules/autoload/*.ko
+	do
+		busybox insmod $i
+	done
+
+	busybox sh /ramdisk/00userinit
+fi
+
+if busybox grep -q lcdtype=4 /proc/cmdline ; then
+	busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
+fi
+
+if ! busybox grep -q lcdtype=4 /proc/cmdline ; then
+	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
+fi
+
+if busybox grep -q lcdtype=13 /proc/cmdline ; then
+	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
+fi
+
+if busybox grep -q bootmode=2 /proc/cmdline ; then
+	# recovery boot
+	busybox chmod 644 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+	busybox echo 200000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+	busybox echo "rebooting to recovery mode"
+
+	# check if recovery partition contains gzip compressed file
+	if [ "$(busybox dd if=/dev/block/mmcblk0p15 skip=8388608 bs=1 count=3 | busybox grep -c $'\x1f\x8b\x08' )" == "1" ] ; then
+		busybox echo "trying to load recovery from /dev/block/mmcblk0p15"
+
+		load_image=/tmp/recovery.cpio
+
+		busybox mount -o remount,rw /
+		busybox mkdir -p /tmp
+		busybox dd if=/dev/block/mmcblk0p15 bs=524288 skip=16 | busybox gzip -d > ${load_image} 2> /ramdisk/recovery.check
+		busybox stat ${load_image}
+		# if there are errors while unpacking recovery, fallback to /ramdisk/recovery.cpio
+		if [ "$(busybox cat /ramdisk/recovery.check | busybox grep -c 'gzip')" != 0 ] ; then
+			busybox echo "recovery on /dev/block/mmcblk0p15 appears to be corrupted, falling back to ramdisk"
+			load_image=/ramdisk/recovery.cpio
+		fi
+	else
+		busybox echo "recovery not found on /dev/block/mmcblk0p15, loading from ramdisk"
+		load_image=/ramdisk/recovery.cpio
+	fi
+
+	# since it's pain, load j4fs and param from separate partition
+	busybox insmod /ramdisk/modules/j4fs.ko
+	busybox insmod /ramdisk/modules/param.ko
+
+	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
+	busybox sh /ramdisk/00recovery
+fi
+
+if test -f ${load_image} ; then
+	busybox cpio -i < ${load_image}
+fi
+
+if test -f ${load_image}.gz ; then
+	busybox zcat ${load_image}.gz | busybox cpio -i -u
+fi
+
+if test -f ${lvm} ; then
+	busybox cpio -i < ${lwm}
+fi
+
+if test -f ${lvm}.gz ; then
+	busybox zcat ${lvm}.gz | cpio -i -u
+fi
+
+if test -f /ramdisk/init.kernel.rc ; then
+	busybox ln -s /ramdisk/init.kernel.rc /init.kernel.rc
+	busybox chmod 750 /ramdisk/init.kernel.rc
+fi
+
+# make some changes in *.rc files
+busybox sh /ramdisk/10monkey_patch
+
+busybox umount /sys
+busybox umount /proc
+busybox date >>/ramdisk/last_boot.txt
+busybox rm -fr /stage1
+export PATH="${_PATH}"
+exec /init

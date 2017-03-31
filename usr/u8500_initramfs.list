@@ -1,0 +1,243 @@
+dir /cache 755 0 0
+dir /dev 755 0 0
+dir /dev/block 755 0 0
+nod /dev/block/mmcblk0 600 0 0 b 179 0
+nod /dev/block/mmcblk0p1 600 0 0 b 179 1
+nod /dev/block/mmcblk0p2 600 0 0 b 179 2
+nod /dev/block/mmcblk0p3 600 0 0 b 179 3
+nod /dev/block/mmcblk0p4 600 0 0 b 179 4
+nod /dev/block/mmcblk0p5 600 0 0 b 179 5
+nod /dev/block/mmcblk0p6 600 0 0 b 179 6
+nod /dev/block/mmcblk0p7 600 0 0 b 179 7
+nod /dev/block/mmcblk0p8 600 0 0 b 179 8
+nod /dev/block/mmcblk0p9 600 0 0 b 179 9
+nod /dev/block/mmcblk0p10 600 0 0 b 179 10
+nod /dev/block/mmcblk0p11 600 0 0 b 179 11
+nod /dev/block/mmcblk0p12 600 0 0 b 179 12
+nod /dev/block/mmcblk0p13 600 0 0 b 179 13
+nod /dev/block/mmcblk0p14 600 0 0 b 179 14
+nod /dev/block/mmcblk0p15 600 0 0 b 179 15
+nod /dev/block/mmcblk0p16 600 0 0 b 179 16
+nod /dev/block/mmcblk0p17 600 0 0 b 179 17
+nod /dev/block/mmcblk1 600 0 0 b 179 18
+nod /dev/block/mmcblk1p1 600 0 0 b 179 19
+slink /init /stage1/init 777 0 0
+slink /stage1/[ /stage1/busybox 777 0 0
+slink /stage1/[[ /stage1/busybox 777 0 0
+slink /stage1/adjtimex /stage1/busybox 777 0 0
+slink /stage1/arp /stage1/busybox 777 0 0
+slink /stage1/ash /stage1/busybox 777 0 0
+slink /stage1/awk /stage1/busybox 777 0 0
+slink /stage1/base64 /stage1/busybox 777 0 0
+slink /stage1/basename /stage1/busybox 777 0 0
+slink /stage1/bbconfig /stage1/busybox 777 0 0
+slink /stage1/blkid /stage1/busybox 777 0 0
+slink /stage1/blockdev /stage1/busybox 777 0 0
+slink /stage1/brctl /stage1/busybox 777 0 0
+slink /stage1/bunzip2 /stage1/busybox 777 0 0
+slink /stage1/bzcat /stage1/busybox 777 0 0
+slink /stage1/bzip2 /stage1/busybox 777 0 0
+slink /stage1/cal /stage1/busybox 777 0 0
+slink /stage1/cat /stage1/busybox 777 0 0
+slink /stage1/catv /stage1/busybox 777 0 0
+slink /stage1/chattr /stage1/busybox 777 0 0
+slink /stage1/chgrp /stage1/busybox 777 0 0
+slink /stage1/chmod /stage1/busybox 777 0 0
+slink /stage1/chown /stage1/busybox 777 0 0
+slink /stage1/chroot /stage1/busybox 777 0 0
+slink /stage1/clear /stage1/busybox 777 0 0
+slink /stage1/cmp /stage1/busybox 777 0 0
+slink /stage1/comm /stage1/busybox 777 0 0
+slink /stage1/cp /stage1/busybox 777 0 0
+slink /stage1/cpio /stage1/busybox 777 0 0
+slink /stage1/crond /stage1/busybox 777 0 0
+slink /stage1/crontab /stage1/busybox 777 0 0
+slink /stage1/cut /stage1/busybox 777 0 0
+slink /stage1/date /stage1/busybox 777 0 0
+slink /stage1/dc /stage1/busybox 777 0 0
+slink /stage1/dd /stage1/busybox 777 0 0
+slink /stage1/depmod /stage1/busybox 777 0 0
+slink /stage1/devmem /stage1/busybox 777 0 0
+slink /stage1/df /stage1/busybox 777 0 0
+slink /stage1/diff /stage1/busybox 777 0 0
+slink /stage1/dirname /stage1/busybox 777 0 0
+slink /stage1/dmesg /stage1/busybox 777 0 0
+slink /stage1/dnsd /stage1/busybox 777 0 0
+slink /stage1/dos2unix /stage1/busybox 777 0 0
+slink /stage1/du /stage1/busybox 777 0 0
+slink /stage1/echo /stage1/busybox 777 0 0
+slink /stage1/ed /stage1/busybox 777 0 0
+slink /stage1/egrep /stage1/busybox 777 0 0
+slink /stage1/env /stage1/busybox 777 0 0
+slink /stage1/expand /stage1/busybox 777 0 0
+slink /stage1/expr /stage1/busybox 777 0 0
+slink /stage1/false /stage1/busybox 777 0 0
+slink /stage1/fbsplash /stage1/busybox 777 0 0
+slink /stage1/fdisk /stage1/busybox 777 0 0
+slink /stage1/fgrep /stage1/busybox 777 0 0
+slink /stage1/find /stage1/busybox 777 0 0
+slink /stage1/flashcp /stage1/busybox 777 0 0
+slink /stage1/flash_lock /stage1/busybox 777 0 0
+slink /stage1/flash_unlock /stage1/busybox 777 0 0
+slink /stage1/flock /stage1/busybox 777 0 0
+slink /stage1/fold /stage1/busybox 777 0 0
+slink /stage1/free /stage1/busybox 777 0 0
+slink /stage1/freeramdisk /stage1/busybox 777 0 0
+slink /stage1/fstrim /stage1/busybox 777 0 0
+slink /stage1/fsync /stage1/busybox 777 0 0
+slink /stage1/ftpget /stage1/busybox 777 0 0
+slink /stage1/ftpput /stage1/busybox 777 0 0
+slink /stage1/fuser /stage1/busybox 777 0 0
+slink /stage1/getopt /stage1/busybox 777 0 0
+slink /stage1/grep /stage1/busybox 777 0 0
+slink /stage1/groups /stage1/busybox 777 0 0
+slink /stage1/halt /stage1/busybox 777 0 0
+slink /stage1/head /stage1/busybox 777 0 0
+slink /stage1/hexdump /stage1/busybox 777 0 0
+slink /stage1/id /stage1/busybox 777 0 0
+slink /stage1/ifconfig /stage1/busybox 777 0 0
+slink /stage1/inetd /stage1/busybox 777 0 0
+slink /stage1/insmod /stage1/busybox 777 0 0
+slink /stage1/install /stage1/busybox 777 0 0
+slink /stage1/ionice /stage1/busybox 777 0 0
+slink /stage1/iostat /stage1/busybox 777 0 0
+slink /stage1/ip /stage1/busybox 777 0 0
+slink /stage1/kill /stage1/busybox 777 0 0
+slink /stage1/killall /stage1/busybox 777 0 0
+slink /stage1/killall5 /stage1/busybox 777 0 0
+slink /stage1/less /stage1/busybox 777 0 0
+slink /stage1/ln /stage1/busybox 777 0 0
+slink /stage1/losetup /stage1/busybox 777 0 0
+slink /stage1/lsattr /stage1/busybox 777 0 0
+slink /stage1/lsmod /stage1/busybox 777 0 0
+slink /stage1/lsusb /stage1/busybox 777 0 0
+slink /stage1/lzcat /stage1/busybox 777 0 0
+slink /stage1/lzma /stage1/busybox 777 0 0
+slink /stage1/lzop /stage1/busybox 777 0 0
+slink /stage1/lzopcat /stage1/busybox 777 0 0
+slink /stage1/man /stage1/busybox 777 0 0
+slink /stage1/md5sum /stage1/busybox 777 0 0
+slink /stage1/mesg /stage1/busybox 777 0 0
+slink /stage1/mkdir /stage1/busybox 777 0 0
+slink /stage1/mkfifo /stage1/busybox 777 0 0
+slink /stage1/mkfs.ext2 /stage1/busybox 777 0 0
+slink /stage1/mkfs.vfat /stage1/busybox 777 0 0
+slink /stage1/mknod /stage1/busybox 777 0 0
+slink /stage1/mkswap /stage1/busybox 777 0 0
+slink /stage1/mktemp /stage1/busybox 777 0 0
+slink /stage1/modinfo /stage1/busybox 777 0 0
+slink /stage1/modprobe /stage1/busybox 777 0 0
+slink /stage1/more /stage1/busybox 777 0 0
+slink /stage1/mount /stage1/busybox 777 0 0
+slink /stage1/mountpoint /stage1/busybox 777 0 0
+slink /stage1/mpstat /stage1/busybox 777 0 0
+slink /stage1/mv /stage1/busybox 777 0 0
+slink /stage1/nanddump /stage1/busybox 777 0 0
+slink /stage1/nandwrite /stage1/busybox 777 0 0
+slink /stage1/nbd-client /stage1/busybox 777 0 0
+slink /stage1/nc /stage1/busybox 777 0 0
+slink /stage1/netstat /stage1/busybox 777 0 0
+slink /stage1/nice /stage1/busybox 777 0 0
+slink /stage1/nohup /stage1/busybox 777 0 0
+slink /stage1/nslookup /stage1/busybox 777 0 0
+slink /stage1/ntpd /stage1/busybox 777 0 0
+slink /stage1/od /stage1/busybox 777 0 0
+slink /stage1/patch /stage1/busybox 777 0 0
+slink /stage1/pgrep /stage1/busybox 777 0 0
+slink /stage1/pidof /stage1/busybox 777 0 0
+slink /stage1/ping /stage1/busybox 777 0 0
+slink /stage1/pipe_progress /stage1/busybox 777 0 0
+slink /stage1/pkill /stage1/busybox 777 0 0
+slink /stage1/pmap /stage1/busybox 777 0 0
+slink /stage1/poweroff /stage1/busybox 777 0 0
+slink /stage1/printenv /stage1/busybox 777 0 0
+slink /stage1/printf /stage1/busybox 777 0 0
+slink /stage1/ps /stage1/busybox 777 0 0
+slink /stage1/pstree /stage1/busybox 777 0 0
+slink /stage1/pwd /stage1/busybox 777 0 0
+slink /stage1/pwdx /stage1/busybox 777 0 0
+slink /stage1/rdev /stage1/busybox 777 0 0
+slink /stage1/readlink /stage1/busybox 777 0 0
+slink /stage1/realpath /stage1/busybox 777 0 0
+slink /stage1/renice /stage1/busybox 777 0 0
+slink /stage1/reset /stage1/busybox 777 0 0
+slink /stage1/resize /stage1/busybox 777 0 0
+slink /stage1/rev /stage1/busybox 777 0 0
+slink /stage1/rm /stage1/busybox 777 0 0
+slink /stage1/rmdir /stage1/busybox 777 0 0
+slink /stage1/rmmod /stage1/busybox 777 0 0
+slink /stage1/route /stage1/busybox 777 0 0
+slink /stage1/run-parts /stage1/busybox 777 0 0
+slink /stage1/rx /stage1/busybox 777 0 0
+slink /stage1/sed /stage1/busybox 777 0 0
+slink /stage1/seq /stage1/busybox 777 0 0
+slink /stage1/setconsole /stage1/busybox 777 0 0
+slink /stage1/setserial /stage1/busybox 777 0 0
+slink /stage1/setsid /stage1/busybox 777 0 0
+slink /stage1/sh /stage1/busybox 777 0 0
+slink /stage1/sha1sum /stage1/busybox 777 0 0
+slink /stage1/sha256sum /stage1/busybox 777 0 0
+slink /stage1/sha3sum /stage1/busybox 777 0 0
+slink /stage1/sha512sum /stage1/busybox 777 0 0
+slink /stage1/sleep /stage1/busybox 777 0 0
+slink /stage1/sort /stage1/busybox 777 0 0
+slink /stage1/split /stage1/busybox 777 0 0
+slink /stage1/stat /stage1/busybox 777 0 0
+slink /stage1/strings /stage1/busybox 777 0 0
+slink /stage1/stty /stage1/busybox 777 0 0
+slink /stage1/sum /stage1/busybox 777 0 0
+slink /stage1/swapoff /stage1/busybox 777 0 0
+slink /stage1/swapon /stage1/busybox 777 0 0
+slink /stage1/sync /stage1/busybox 777 0 0
+slink /stage1/sysctl /stage1/busybox 777 0 0
+slink /stage1/tac /stage1/busybox 777 0 0
+slink /stage1/tail /stage1/busybox 777 0 0
+slink /stage1/tar /stage1/busybox 777 0 0
+slink /stage1/taskset /stage1/busybox 777 0 0
+slink /stage1/tee /stage1/busybox 777 0 0
+slink /stage1/telnet /stage1/busybox 777 0 0
+slink /stage1/telnetd /stage1/busybox 777 0 0
+slink /stage1/test /stage1/busybox 777 0 0
+slink /stage1/tftp /stage1/busybox 777 0 0
+slink /stage1/tftpd /stage1/busybox 777 0 0
+slink /stage1/time /stage1/busybox 777 0 0
+slink /stage1/timeout /stage1/busybox 777 0 0
+slink /stage1/top /stage1/busybox 777 0 0
+slink /stage1/touch /stage1/busybox 777 0 0
+slink /stage1/tr /stage1/busybox 777 0 0
+slink /stage1/traceroute /stage1/busybox 777 0 0
+slink /stage1/true /stage1/busybox 777 0 0
+slink /stage1/ttysize /stage1/busybox 777 0 0
+slink /stage1/umount /stage1/busybox 777 0 0
+slink /stage1/uname /stage1/busybox 777 0 0
+slink /stage1/uncompress /stage1/busybox 777 0 0
+slink /stage1/unexpand /stage1/busybox 777 0 0
+slink /stage1/uniq /stage1/busybox 777 0 0
+slink /stage1/unix2dos /stage1/busybox 777 0 0
+slink /stage1/unlzma /stage1/busybox 777 0 0
+slink /stage1/unlzop /stage1/busybox 777 0 0
+slink /stage1/unxz /stage1/busybox 777 0 0
+slink /stage1/unzip /stage1/busybox 777 0 0
+slink /stage1/uptime /stage1/busybox 777 0 0
+slink /stage1/usleep /stage1/busybox 777 0 0
+slink /stage1/uudecode /stage1/busybox 777 0 0
+slink /stage1/uuencode /stage1/busybox 777 0 0
+slink /stage1/vi /stage1/busybox 777 0 0
+slink /stage1/watch /stage1/busybox 777 0 0
+slink /stage1/wc /stage1/busybox 777 0 0
+slink /stage1/wget /stage1/busybox 777 0 0
+slink /stage1/which /stage1/busybox 777 0 0
+slink /stage1/whoami /stage1/busybox 777 0 0
+slink /stage1/xargs /stage1/busybox 777 0 0
+slink /stage1/xz /stage1/busybox 777 0 0
+slink /stage1/xzcat /stage1/busybox 777 0 0
+slink /stage1/yes /stage1/busybox 777 0 0
+slink /stage1/zcat /stage1/busybox 777 0 0
+dir /proc 755 0 0
+dir /stage1 755 0 0
+file /stage1/busybox source/usr/u8500_initramfs_files/busybox 755 0 0
+file /stage1/init source/usr/u8500_initramfs_files/init 755 0 0
+dir /sys 755 0 0
+dir /mnt 755 0 0
+dir /mnt/.lfs 755 0 0
+dir /ramdisk 755 0 0
