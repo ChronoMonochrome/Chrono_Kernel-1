@@ -9,6 +9,7 @@
 #include <linux/io.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/stat.h>
 #include <linux/sys_soc.h>
 #include <linux/clksrc-dbx500-prcmu.h>
 #include <linux/mfd/dbx500-prcmu.h>
