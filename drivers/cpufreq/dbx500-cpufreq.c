@@ -9,6 +9,7 @@
  */
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/delay.h>
@@ -102,9 +103,15 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 		return res;
 	}
 
+	#ifdef CONFIG_DB8500_LIVEOPP
+	policy->min = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN;
+	policy->max = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX;
+	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
+	#else
 	policy->min = policy->cpuinfo.min_freq;
 	policy->max = policy->cpuinfo.max_freq;
 	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
+	#endif
 
 	for (i = 0; freq_table[i].frequency != policy->cur; i++)
 		;
@@ -116,7 +123,11 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 	 *	   function with no/some/all drivers in the notification
 	 *	   list.
 	 */
+	#ifdef CONFIG_DB8500_LIVEOPP
+	policy->cpuinfo.transition_latency = 50 * 1000; /* in ns */
+	#else
 	policy->cpuinfo.transition_latency = 20 * 1000; /* in ns */
+	#endif
 
 	/* policy sharing between dual CPUs */
 	cpumask_copy(policy->cpus, &cpu_present_map);
