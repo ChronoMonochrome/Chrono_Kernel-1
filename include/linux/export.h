@@ -1,5 +1,6 @@
 #ifndef _LINUX_EXPORT_H
 #define _LINUX_EXPORT_H
+
 /*
  * Export symbols from the kernel to modules.  Forked from module.h
  * to reduce the amount of pointless cruft we feed to gcc when only
@@ -75,6 +76,31 @@ extern struct module __this_module;
 #endif
 
 #endif	/* __GENKSYMS__ */
+
+struct static_key;
+
+#define MODEXPORT_SYMBOL(sym) 					\
+	typeof(sym) *mod_##sym; 				\
+	struct static_key key_##sym = STATIC_KEY_INIT_FALSE;	\
+	EXPORT_SYMBOL(mod_##sym); 				\
+	EXPORT_SYMBOL(key_##sym)
+
+#define IMPORT_SYMBOL(sym) 					\
+	mod_##sym = sym;					\
+	static_key_slow_inc(&key_##sym)
+
+#define UNIMPORT_SYMBOL(sym) 					\
+	static_key_slow_dec(&key_##sym)
+
+#define MODSYMBOL_DECLARE(sym)					\
+	extern struct static_key key_##sym;			\
+	extern typeof(sym) *mod_##sym
+
+#define MODSYMBOL_CALL(sym, args) 				\
+        if (unlikely(mod_##sym == NULL))               	\
+                pr_err("%s: " #sym " is not imported!\n");      \
+        else                                            	\
+                mod_##sym args
 
 #else /* !CONFIG_MODULES... */
 
