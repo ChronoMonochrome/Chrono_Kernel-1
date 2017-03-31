@@ -6,6 +6,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/string.h>
 #include <linux/device.h>
 #include <linux/mutex.h>
