@@ -33,6 +33,9 @@
 #include <net/netfilter/nf_tproxy_core.h>
 #include <linux/netfilter/xt_TPROXY.h>
 
+MODEXPORT_SYMBOL(__udp6_lib_lookup);
+MODEXPORT_SYMBOL(udp6_lib_lookup);
+
 static bool tproxy_sk_is_transparent(struct sock *sk)
 {
 	if (sk->sk_state != TCP_TIME_WAIT) {
@@ -273,6 +276,8 @@ tproxy_handle_time_wait6(struct sk_buff *skb, int tproto, int thoff,
 	return sk;
 }
 
+MODSYMBOL_DECLARE(ipv6_find_hdr);
+
 static unsigned int
 tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
 {
@@ -285,7 +290,12 @@ tproxy_tg6_v1(struct sk_buff *skb, const struct xt_action_param *par)
 	int thoff;
 	int tproto;
 
-	tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
+	if (unlikely(mod_ipv6_find_hdr) == NULL) {
+		pr_err("%s: ipv6_find_hdr is not imported!\n", __func__);
+		tproto = -EINVAL;
+	} else
+		tproto = mod_ipv6_find_hdr(skb, &thoff, -1, NULL);
+
 	if (tproto < 0) {
 		pr_debug("unable to find transport header in IPv6 packet, dropping\n");
 		return NF_DROP;
@@ -412,7 +422,7 @@ static int __init tproxy_tg_init(void)
 {
 	nf_defrag_ipv4_enable();
 #ifdef XT_TPROXY_HAVE_IPV6
-	nf_defrag_ipv6_enable();
+	//nf_defrag_ipv6_enable();
 #endif
 
 	return xt_register_targets(tproxy_tg_reg, ARRAY_SIZE(tproxy_tg_reg));

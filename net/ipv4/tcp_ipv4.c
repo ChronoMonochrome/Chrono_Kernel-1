@@ -2656,19 +2656,24 @@ struct proto tcp_prot = {
 };
 EXPORT_SYMBOL(tcp_prot);
 
+MODSYMBOL_DECLARE(tcp_nuke_addr);
+
 static int __net_init tcp_sk_init(struct net *net)
 {
+	IMPORT_SYMBOL(tcp_nuke_addr);
 	return inet_ctl_sock_create(&net->ipv4.tcp_sock,
 				    PF_INET, SOCK_RAW, IPPROTO_TCP, net);
 }
 
 static void __net_exit tcp_sk_exit(struct net *net)
 {
+	UNIMPORT_SYMBOL(tcp_nuke_addr);
 	inet_ctl_sock_destroy(net->ipv4.tcp_sock);
 }
 
 static void __net_exit tcp_sk_exit_batch(struct list_head *net_exit_list)
 {
+	UNIMPORT_SYMBOL(tcp_nuke_addr);
 	inet_twsk_purge(&tcp_hashinfo, &tcp_death_row, AF_INET);
 }
 

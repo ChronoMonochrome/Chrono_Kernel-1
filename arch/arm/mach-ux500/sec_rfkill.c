@@ -51,6 +51,8 @@ static struct wake_lock bt_wake_lock;
 static struct rfkill *bt_sleep_rfk;
 #endif /* BT_SLEEP_ENABLE */
 
+MODSYMBOL_DECLARE(rfkill_unregister);
+
 /*
 static unsigned int bt_uart_on_table[][4] = {
 	{S5PV310_GPA0(0), 2, 2, S3C_GPIO_PULL_NONE},
@@ -329,7 +331,7 @@ err_sleep_alloc:
 	gpio_free(BT_WAKE_GTI9060_R0_1);
 	
 err_req_gpio_bt_wake:
-	rfkill_unregister(bt_rfk);
+	MODSYMBOL_CALL(rfkill_unregister, (bt_rfk));
 #endif
 
  err_register:
