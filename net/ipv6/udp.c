@@ -1518,6 +1518,8 @@ static struct inet_protosw udpv6_protosw = {
 	.flags =     INET_PROTOSW_PERMANENT,
 };
 
+MODSYMBOL_DECLARE(__udp6_lib_lookup);
+MODSYMBOL_DECLARE(udp6_lib_lookup);
 
 int __init udpv6_init(void)
 {
@@ -1530,6 +1532,9 @@ int __init udpv6_init(void)
 	ret = inet6_register_protosw(&udpv6_protosw);
 	if (ret)
 		goto out_udpv6_protocol;
+
+	IMPORT_SYMBOL(__udp6_lib_lookup);
+	IMPORT_SYMBOL(udp6_lib_lookup);
 out:
 	return ret;
 
@@ -1542,4 +1547,6 @@ void udpv6_exit(void)
 {
 	inet6_unregister_protosw(&udpv6_protosw);
 	inet6_del_protocol(&udpv6_protocol, IPPROTO_UDP);
+	UNIMPORT_SYMBOL(__udp6_lib_lookup);
+	UNIMPORT_SYMBOL(udp6_lib_lookup);
 }

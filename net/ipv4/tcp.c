@@ -3405,10 +3405,19 @@ static int tcp_is_local(struct net *net, __be32 addr) {
 	return is_local;
 }
 
+MODEXPORT_SYMBOL(rt6_lookup);
+
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 static int tcp_is_local6(struct net *net, struct in6_addr *addr) {
-	struct rt6_info *rt6 = rt6_lookup(net, addr, addr, 0, 0);
+	struct rt6_info *rt6;
 	int is_local;
+
+	if (unlikely(mod_rt6_lookup == NULL)) {
+		pr_err("%s: rt6_lookup is not imported!\n", __func__);
+		rt6 = NULL;
+	} else
+		rt6 = mod_rt6_lookup(net, addr, addr, 0, 0);
+
 	if (rt6 == NULL)
 		return 0;
 
@@ -3417,6 +3426,8 @@ static int tcp_is_local6(struct net *net, struct in6_addr *addr) {
 	return is_local;
 }
 #endif
+
+MODEXPORT_SYMBOL(in6addr_any);
 
 /*
  * tcp_nuke_addr - destroy all sockets on the given local address
@@ -3478,10 +3489,14 @@ restart:
 				if (ipv6_addr_type(s6) == IPV6_ADDR_MAPPED)
 					continue;
 
-				if (!ipv6_addr_equal(in6, s6) &&
-				    !(ipv6_addr_equal(in6, &in6addr_any) &&
-				      !tcp_is_local6(net, s6)))
-				continue;
+				if (unlikely(mod_in6addr_any == NULL))
+					pr_err("%s: in6addr_any is not imported!\n");
+				else {
+					if (!ipv6_addr_equal(in6, s6) &&
+					    !(ipv6_addr_equal(in6, &(*mod_in6addr_any)) &&
+					      !tcp_is_local6(net, s6)))
+					continue;
+				}
 			}
 #endif
 

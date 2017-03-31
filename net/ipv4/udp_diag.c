@@ -17,6 +17,9 @@
 #include <net/udplite.h>
 #include <linux/sock_diag.h>
 
+MODSYMBOL_DECLARE(__udp6_lib_lookup);
+MODSYMBOL_DECLARE(udp6_lib_lookup);
+
 static int sk_diag_dump(struct sock *sk, struct sk_buff *skb,
 		struct netlink_callback *cb, struct inet_diag_req_v2 *req,
 		struct nlattr *bc)
@@ -42,7 +45,11 @@ static int udp_dump_one(struct udp_table *tbl, struct sk_buff *in_skb,
 				req->id.idiag_if, tbl);
 #if IS_ENABLED(CONFIG_IPV6)
 	else if (req->sdiag_family == AF_INET6)
-		sk = __udp6_lib_lookup(&init_net,
+		if (unlikely(mod___udp6_lib_lookup == NULL)) {
+			pr_err("%s: __udp6_lib_lookup is not imported!\n", __func__);
+			sk = NULL;
+		} else
+			sk = mod___udp6_lib_lookup(&init_net,
 				(struct in6_addr *)req->id.idiag_src,
 				req->id.idiag_sport,
 				(struct in6_addr *)req->id.idiag_dst,

@@ -498,6 +498,8 @@ int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
 
 EXPORT_SYMBOL(inet6_getname);
 
+MODSYMBOL_DECLARE(tcp_nuke_addr);
+
 int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 	struct in6_ifreq ireq;
 	struct sockaddr_in6 sin6;
@@ -510,7 +512,11 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 
 	sin6.sin6_family = AF_INET6;
 	sin6.sin6_addr = ireq.ifr6_addr;
-	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
+	if (unlikely(mod_tcp_nuke_addr == NULL)) {
+		pr_err("%s: tcp_nuke_addr is not imported!\n", __func__);
+		return -EINVAL;
+	} else
+		return mod_tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
 int inet6_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
@@ -1103,6 +1109,9 @@ static struct pernet_operations inet6_net_ops = {
 	.exit = inet6_net_exit,
 };
 
+extern void addrconf6_find_symbols();
+extern void addrconf6_remove_symbols();
+
 static int __init inet6_init(void)
 {
 	struct sk_buff *dummy_skb;
@@ -1245,6 +1254,9 @@ static int __init inet6_init(void)
 	if (err)
 		goto sysctl_fail;
 #endif
+
+	addrconf6_find_symbols();
+
 out:
 	return err;
 
@@ -1358,6 +1370,8 @@ static void __exit inet6_exit(void)
 #ifdef CONFIG_SYSCTL
 	ipv6_static_sysctl_unregister();
 #endif
+	addrconf6_remove_symbols();
+
 	proto_unregister(&rawv6_prot);
 	proto_unregister(&udplitev6_prot);
 	proto_unregister(&udpv6_prot);

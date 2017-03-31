@@ -4907,6 +4907,9 @@ static struct rtnl_af_ops inet6_ops = {
  *	Init / cleanup code
  */
 
+MODSYMBOL_DECLARE(in6addr_any);
+MODSYMBOL_DECLARE(register_inet6addr_notifier);
+
 int __init addrconf_init(void)
 {
 	int i, err;
@@ -5020,3 +5023,21 @@ void addrconf_cleanup(void)
 	del_timer(&addr_chk_timer);
 	rtnl_unlock();
 }
+
+void __used addrconf6_find_symbols()
+{
+	//IMPORT_SYMBOL(in6addr_any);
+	mod_in6addr_any = &in6addr_any;
+	static_key_slow_inc(&key_in6addr_any);
+
+	IMPORT_SYMBOL(register_inet6addr_notifier);
+
+}
+EXPORT_SYMBOL(addrconf6_find_symbols);
+
+void __used addrconf6_remove_symbols()
+{
+	UNIMPORT_SYMBOL(in6addr_any);
+	UNIMPORT_SYMBOL(register_inet6addr_notifier);
+}
+EXPORT_SYMBOL(addrconf6_remove_symbols);

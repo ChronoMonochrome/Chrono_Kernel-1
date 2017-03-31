@@ -212,7 +212,7 @@ static int bcm4334_bt_rfkill_set_power(void *data, bool blocked)
 #ifdef BT_LPM_ENABLE
 err_lpm_init:
 	if (ret) {
-		rfkill_unregister(bt_rfkill);
+		MODSYMBOL_CALL(rfkill_unregister, (bt_rfkill));
 		rfkill_destroy(bt_rfkill);
 
 		gpio_free(BT_HOST_WAKE_GTI9060_R0_1);
@@ -285,7 +285,7 @@ static int bcm4334_bluetooth_probe(struct platform_device *pdev)
 #ifdef BT_LPM_ENABLE
 	ret = bcm_bt_lpm_init(pdev);
 	if (ret) {
-		rfkill_unregister(bt_rfkill);
+		MODSYMBOL_CALL(rfkill_unregister, (bt_rfkill));
 		rfkill_destroy(bt_rfkill);
 
 		gpio_free(BT_HOST_WAKE_GTI9060_R0_1);
@@ -298,7 +298,7 @@ static int bcm4334_bluetooth_probe(struct platform_device *pdev)
 
 static int bcm4334_bluetooth_remove(struct platform_device *pdev)
 {
-	rfkill_unregister(bt_rfkill);
+	MODSYMBOL_CALL(rfkill_unregister, (bt_rfkill));
 	rfkill_destroy(bt_rfkill);
 
 	gpio_free(BT_VREG_EN_GTI9060_R0_1);

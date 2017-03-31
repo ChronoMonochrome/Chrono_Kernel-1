@@ -48,6 +48,13 @@
 				 RFKILL_BLOCK_SW_PREV)
 #define RFKILL_BLOCK_SW_SETCALL	BIT(31)
 
+MODSYMBOL_DECLARE(rfkill_unregister);
+MODSYMBOL_DECLARE(rfkill_register);
+MODSYMBOL_DECLARE(rfkill_alloc);
+MODSYMBOL_DECLARE(rfkill_init_sw_state);
+MODSYMBOL_DECLARE(rfkill_set_sw_state);
+MODSYMBOL_DECLARE(rfkill_destroy);
+
 struct rfkill {
 	spinlock_t		lock;
 
@@ -1241,6 +1248,8 @@ static struct miscdevice rfkill_miscdev = {
 	.minor	= MISC_DYNAMIC_MINOR,
 };
 
+//extern static_key key_rfkill_unregister;
+
 static int __init rfkill_init(void)
 {
 	int error;
@@ -1268,6 +1277,16 @@ static int __init rfkill_init(void)
 	}
 #endif
 
+	pr_err("%s: init!!!!\n", __func__);
+	IMPORT_SYMBOL(rfkill_unregister);
+	if (mod_rfkill_unregister == NULL)
+		pr_err("%s: mod_rfkill_unregister == NULL\n");
+	IMPORT_SYMBOL(rfkill_register);
+	IMPORT_SYMBOL(rfkill_alloc);
+	IMPORT_SYMBOL(rfkill_init_sw_state);
+	IMPORT_SYMBOL(rfkill_set_sw_state);
+	IMPORT_SYMBOL(rfkill_destroy);
+
  out:
 	return error;
 }
@@ -1280,5 +1299,11 @@ static void __exit rfkill_exit(void)
 #endif
 	misc_deregister(&rfkill_miscdev);
 	class_unregister(&rfkill_class);
+	UNIMPORT_SYMBOL(rfkill_unregister);
+	UNIMPORT_SYMBOL(rfkill_register);
+	UNIMPORT_SYMBOL(rfkill_alloc);
+	UNIMPORT_SYMBOL(rfkill_init_sw_state);
+	UNIMPORT_SYMBOL(rfkill_set_sw_state);
+	UNIMPORT_SYMBOL(rfkill_destroy);
 }
 module_exit(rfkill_exit);
