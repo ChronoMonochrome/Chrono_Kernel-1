@@ -84,11 +84,23 @@ static void hwreg_printk_map(void)
 {
     int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "---------- HWREG TABLE -------------\n");
+#else
+    ;
+#endif
     for (i = 0; hwreg_io_map[i].base; ++i) {
+#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_INFO "%d: 0x%08X => 0x%08X\n", i, hwreg_io_map[i].base, hwreg_io_map[i].base + hwreg_io_map[i].size );
+#else
+        ;
+#endif
     }
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "------------------------------------\n");
+#else
+    ;
+#endif
 }
 
 static void hwreg_io_init(void)
@@ -103,9 +115,13 @@ static void hwreg_io_init(void)
 		hwreg_io_map[i].addr = ioremap(hwreg_io_map[i].base,
 						 hwreg_io_map[i].size);
 		if (!hwreg_io_map[i].addr)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING 
 				"%s: ioremap for %d (%08x) failed\n",
 				__func__, i, hwreg_io_map[i].base);
+#else
+			;
+#endif
 	}
 }
 
@@ -233,7 +249,11 @@ static int hwreg_ioctl(struct inode *inode, struct file *filp,
     /* -- PR_CAP_87_001 -- */
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HWREG bad ioctl cmd:%x\n", cmd);
+#else
+		;
+#endif
 		retval = -EINVAL;
 	}
 
@@ -260,8 +280,12 @@ static int __init hwreg_initialize(void)
 		retval = register_chrdev_region(dev, 1, MY_NAME);
 
 		if (retval < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "can't get major %d\n",
 			       hwreg_major);
+#else
+			;
+#endif
 			hwreg_major = 0;
 			goto bail_out;
 		}
@@ -269,7 +293,11 @@ static int __init hwreg_initialize(void)
 		retval = alloc_chrdev_region(&dev, hwreg_minor, 1, MY_NAME);
 
 		if (retval < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "can't get major\n");
+#else
+			;
+#endif
 			goto bail_out;
 		}
 		hwreg_major = MAJOR(dev);
@@ -284,7 +312,11 @@ static int __init hwreg_initialize(void)
 	cdev->ops = &hwreg_fops;
 	retval = cdev_add(cdev, dev, 1);
 	if (retval)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Error %d adding device.\n", retval);
+#else
+		;
+#endif
 
 	hwreg_io_init();
 

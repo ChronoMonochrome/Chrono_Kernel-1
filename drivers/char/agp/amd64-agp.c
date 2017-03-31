@@ -33,7 +33,7 @@
 #define ULI_X86_64_ENU_SCR_REG		0x54
 
 static struct resource *aperture_resource;
-static int __initdata agp_try_unsupported = 1;
+static bool __initdata agp_try_unsupported = 1;
 static int agp_bridges_found;
 
 static void amd64_tlbflush(struct agp_memory *temp)
@@ -767,11 +767,23 @@ int __init agp_amd64_init(void)
 
 	if (agp_bridges_found == 0) {
 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
+#else
+			;
+#endif
 #ifdef MODULE
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "You can try agp_try_unsupported=1\n");
 #else
+			;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "You can boot with agp=try_unsupported\n");
+#else
+			;
+#endif
 #endif
 			pci_unregister_driver(&agp_amd64_pci_driver);
 			return -ENODEV;
