@@ -145,11 +145,12 @@ static inline void mxs_auart_tx_chars(struct mxs_auart_port *s)
 			writel(xmit->buf[xmit->tail],
 				     s->port.membase + AUART_DATA);
 			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-			if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-				uart_write_wakeup(&s->port);
 		} else
 			break;
 	}
+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+		uart_write_wakeup(&s->port);
+
 	if (uart_circ_empty(&(s->port.state->xmit)))
 		writel(AUART_INTR_TXIEN,
 			     s->port.membase + AUART_INTR_CLR);
@@ -368,15 +369,24 @@ static void mxs_auart_settermios(struct uart_port *u,
 
 	writel(ctrl, u->membase + AUART_LINECTRL);
 	writel(ctrl2, u->membase + AUART_CTRL2);
+
+	uart_update_timeout(u, termios->c_cflag, baud);
 }
 
 static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
 {
-	u32 istatus, istat;
+	u32 istat;
 	struct mxs_auart_port *s = context;
 	u32 stat = readl(s->port.membase + AUART_STAT);
 
-	istatus = istat = readl(s->port.membase + AUART_INTR);
+	istat = readl(s->port.membase + AUART_INTR);
+
+	/* ack irq */
+	writel(istat & (AUART_INTR_RTIS
+		| AUART_INTR_TXIS
+		| AUART_INTR_RXIS
+		| AUART_INTR_CTSMIS),
+			s->port.membase + AUART_INTR_CLR);
 
 	if (istat & AUART_INTR_CTSMIS) {
 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
@@ -394,12 +404,6 @@ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
 		mxs_auart_tx_chars(s);
 		istat &= ~AUART_INTR_TXIS;
 	}
-
-	writel(istatus & (AUART_INTR_RTIS
-		| AUART_INTR_TXIS
-		| AUART_INTR_RXIS
-		| AUART_INTR_CTSMIS),
-			s->port.membase + AUART_INTR_CLR);
 
 	return IRQ_HANDLED;
 }
@@ -424,7 +428,7 @@ static int mxs_auart_startup(struct uart_port *u)
 {
 	struct mxs_auart_port *s = to_auart_port(u);
 
-	clk_enable(s->clk);
+	clk_prepare_enable(s->clk);
 
 	writel(AUART_CTRL0_CLKGATE, u->membase + AUART_CTRL0_CLR);
 
@@ -453,7 +457,7 @@ static void mxs_auart_shutdown(struct uart_port *u)
 	writel(AUART_INTR_RXIEN | AUART_INTR_RTIEN | AUART_INTR_CTSMIEN,
 			u->membase + AUART_INTR_CLR);
 
-	clk_disable(s->clk);
+	clk_disable_unprepare(s->clk);
 }
 
 static unsigned int mxs_auart_tx_empty(struct uart_port *u)
@@ -540,7 +544,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
 	struct mxs_auart_port *s;
 	struct uart_port *port;
 	unsigned int old_ctrl0, old_ctrl2;
-	unsigned int to = 1000;
+	unsigned int to = 20000;
 
 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
 		return;
@@ -561,18 +565,23 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
 
 	uart_console_write(port, str, count, mxs_auart_console_putchar);
 
-	/*
-	 * Finally, wait for transmitter to become empty
-	 * and restore the TCR
-	 */
+	/* Finally, wait for transmitter to become empty ... */
 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
+		udelay(1);
 		if (!to--)
 			break;
-		udelay(1);
 	}
 
-	writel(old_ctrl0, port->membase + AUART_CTRL0);
-	writel(old_ctrl2, port->membase + AUART_CTRL2);
+	/*
+	 * ... and restore the TCR if we waited long enough for the transmitter
+	 * to be idle. This might keep the transmitter enabled although it is
+	 * unused, but that is better than to disable it while it is still
+	 * transmitting.
+	 */
+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
+		writel(old_ctrl0, port->membase + AUART_CTRL0);
+		writel(old_ctrl2, port->membase + AUART_CTRL2);
+	}
 
 	clk_disable(s->clk);
 }
@@ -634,7 +643,7 @@ auart_console_setup(struct console *co, char *options)
 	if (!s)
 		return -ENODEV;
 
-	clk_enable(s->clk);
+	clk_prepare_enable(s->clk);
 
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
@@ -643,7 +652,7 @@ auart_console_setup(struct console *co, char *options)
 
 	ret = uart_set_options(&s->port, co, baud, parity, bits, flow);
 
-	clk_disable(s->clk);
+	clk_disable_unprepare(s->clk);
 
 	return ret;
 }

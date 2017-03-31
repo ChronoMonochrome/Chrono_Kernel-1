@@ -517,7 +517,7 @@ static int pl011_dma_tx_refill(struct uart_amba_port *uap)
 	}
 
 	desc = dma_dev->device_prep_slave_sg(chan, &dmatx->sg, 1, DMA_TO_DEVICE,
-					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK, NULL);
 	if (!desc) {
 		dma_unmap_sg(dma_dev->dev, &dmatx->sg, 1, DMA_TO_DEVICE);
 		uap->dmatx.queued = false;
@@ -713,7 +713,7 @@ static int pl011_dma_rx_trigger_dma(struct uart_amba_port *uap)
 	dma_dev = rxchan->device;
 	desc = rxchan->device->device_prep_slave_sg(rxchan, &sgbuf->sg, 1,
 					DMA_FROM_DEVICE,
-					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK, NULL);
 	/*
 	 * If the DMA engine is busy and cannot prepare a
 	 * channel, no big deal, the driver will fall back
@@ -1806,13 +1806,16 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 	unsigned int lcr_h, old_cr;
 	unsigned long flags;
 	unsigned int baud, quot, clkdiv;
-	int fbrd_offset = 0;
 
 	if ((port->line == 0) &&
 	    ((termios->c_ispeed == 4800000) ||
 		 (termios->c_ospeed == 4800000))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		"this baud need 2 Stop Bit WA at both the ends, not handled here\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -1840,15 +1843,6 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 		quot = DIV_ROUND_CLOSEST(port->uartclk * 8, baud);
 	else
 		quot = DIV_ROUND_CLOSEST(port->uartclk * 4, baud);
-
-	/* workaround to manipulate FBRD to avoid delayed sampling of start bit,
-	 * else causes data byte corruption
-	 */
-	if (baud == 3000000)
-		fbrd_offset = -1;
-	else if ((baud == 3250000) ||
-			 (baud == 4000000) || (baud == 4050000))
-			fbrd_offset = -2;
 
 	switch (termios->c_cflag & CSIZE) {
 	case CS5:
@@ -1934,14 +1928,26 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 			old_cr &= ~ST_UART011_CR_OVSFACT;
 	}
 
+	/*
+	 * Workaround for the ST Micro oversampling variants to
+	 * increase the bitrate slightly, by lowering the divisor,
+	 * to avoid delayed sampling of start bit at high speeds,
+	 * else we see data corruption.
+	 */
+	if (uap->vendor->oversampling) {
+		if ((baud >= 3000000) && (baud < 3250000) && (quot > 1))
+			quot -= 1;
+		else if ((baud > 3250000) && (quot > 2))
+			quot -= 2;
+	}
 	/* Set baud rate */
-	writew((quot + fbrd_offset) & 0x3f, port->membase + UART011_FBRD);
+	writew(quot & 0x3f, port->membase + UART011_FBRD);
 	writew(quot >> 6, port->membase + UART011_IBRD);
 
 	/*
 	 * ----------v----------v----------v----------v-----
 	 * NOTE: lcrh_tx and lcrh_rx MUST BE WRITTEN AFTER
-	 * UARTLCR_M(IBRD)  & UARTLCR_L(FBRD).
+	 * UART011_FBRD & UART011_IBRD.
 	 * ----------^----------^----------^----------^-----
 	 */
 	writew(lcr_h, port->membase + uap->lcrh_rx);
@@ -2372,7 +2378,11 @@ static struct amba_driver pl011_driver = {
 static int __init pl011_init(void)
 {
 	int ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: AMBA PL011 UART driver\n");
+#else
+	;
+#endif
 
 	ret = uart_register_driver(&amba_reg);
 	if (ret == 0) {

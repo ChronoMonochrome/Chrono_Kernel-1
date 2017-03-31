@@ -447,9 +447,13 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
 		return -ENODEV;
 
 #ifdef SERIAL_DEBUG_PNP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"Setup PNP port: port %x, mem 0x%lx, irq %d, type %d\n",
 		       port.iobase, port.mapbase, port.irq, port.iotype);
+#else
+	;
+#endif
 #endif
 
 	port.flags |= UPF_SKIP_TEST | UPF_BOOT_AUTOCONF;
