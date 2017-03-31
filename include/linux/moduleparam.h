@@ -178,7 +178,7 @@ struct kparam_array
 #define __module_param_call(prefix, name, ops, arg, perm, level)	\
 	/* Default value instead of permissions? */			\
 	static int __param_perm_check_##name __attribute__((unused)) =	\
-	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
+	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777)	\
 	+ BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);	\
 	static const char __param_str_##name[] = prefix #name;		\
 	static struct kernel_param __moduleparam_const __param_##name	\
@@ -196,7 +196,7 @@ struct kparam_array
 
 /* We don't get oldget: it's often a new-style param_get_uint, etc. */
 static inline int
-__check_old_set_param(int (*oldset)(const char *, const struct kernel_param *))
+__check_old_set_param(int (*oldset)(const char *, struct kernel_param *))
 {
 	return 0;
 }
