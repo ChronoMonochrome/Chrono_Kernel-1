@@ -86,7 +86,7 @@ int FlashDevRead(j4fs_device_info *dev_ptr, DWORD offset, DWORD length, BYTE *bu
 // J4FS for moviNAND merged from ROSSI
 #elif defined(J4FS_USE_MOVI)
 	if (!j4fs_filp) {
-			printk(KERN_ERR "j4fs: J4FS not available\n");
+;
 			return J4FS_FAIL;
 		}
 		j4fs_filp->f_flags |= O_NONBLOCK;
@@ -96,7 +96,7 @@ int FlashDevRead(j4fs_device_info *dev_ptr, DWORD offset, DWORD length, BYTE *bu
 		set_fs(oldfs);
 		j4fs_filp->f_flags &= ~O_NONBLOCK;
 		if (ret < 0) {
-			printk(KERN_ERR "j4fs: j4fs_filp->read() failed: %d\n", ret);
+;
 			return J4FS_FAIL;
 		}
 // J4FS for moviNAND merged from ROSSI
@@ -146,7 +146,7 @@ int FlashDevWrite(j4fs_device_info *dev_ptr, DWORD offset, DWORD length, BYTE *b
 // J4FS for moviNAND merged from ROSSI
 #elif defined(J4FS_USE_MOVI)
 	if (!j4fs_filp) {
-			printk(KERN_ERR "j4fs: J4FS not available\n");
+;
 			return J4FS_FAIL;
 	}
 	j4fs_filp->f_flags |= O_NONBLOCK;
@@ -156,7 +156,7 @@ int FlashDevWrite(j4fs_device_info *dev_ptr, DWORD offset, DWORD length, BYTE *b
 	set_fs(oldfs);
 	j4fs_filp->f_flags &= ~O_NONBLOCK;
 	if (ret < 0) {
-		printk(KERN_ERR "j4fs: j4fs_filp->write() failed: %d\n", ret);
+;
 		return J4FS_FAIL;
 	}
 // J4FS for moviNAND merged from ROSSI
@@ -213,10 +213,10 @@ int FlashDevMount()
 #ifdef J4FS_USE_MOVI
 	j4fs_filp = filp_open(J4FS_DEVNAME, O_RDWR|O_SYNC, 0);
 	if (IS_ERR(j4fs_filp)) {
-		printk("j4fs: FlashDevMount : filp_open() failed~!: %ld\n", PTR_ERR(j4fs_filp));
+;
 		return J4FS_FAIL;
 	}
-	printk("j4fs: FlashDevMount : filp_open() OK....!\n");
+;
 #endif
 // J4FS for moviNAND merged from ROSSI
 
@@ -232,7 +232,7 @@ int FlashDevUnmount()
 // ROSSI Projecct(hyunkwon.kim) 2010.09.06 Add J4FS for Parameter Infomation
 #ifdef J4FS_USE_MOVI
 	filp_close(j4fs_filp, NULL);
-	printk("j4fs: FlashDevUnmount : filp_close() OK....!\n");
+;
 #endif
 // ROSSI Projecct(hyunkwon.kim) 2010.09.06 End
 

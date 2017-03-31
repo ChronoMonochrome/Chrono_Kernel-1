@@ -858,7 +858,7 @@ struct dentry *j4fs_lookup(struct inode * dir, struct dentry *dentry, struct nam
 	return d_splice_alias(inode, dentry);
 }
 
-struct inode *j4fs_new_inode(struct inode *dir, struct dentry *dentry, int mode)
+struct inode *j4fs_new_inode(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct super_block *sb;
 	struct inode * inode;
@@ -1120,7 +1120,7 @@ int j4fs_add_nondir(struct dentry *dentry, struct inode *inode)
  * If the create succeeds, we fill in the inode information
  * with d_instantiate().
  */
-int j4fs_create (struct inode * dir, struct dentry * dentry, int mode, struct nameidata *nd)
+int j4fs_create (struct inode * dir, struct dentry * dentry, umode_t mode, struct nameidata *nd)
 {
 	struct inode * inode;
 	int err=-1;
@@ -1255,7 +1255,11 @@ int j4fs_fill_super(struct super_block *sb, void *data, int silent)
 	root = iget(sb, J4FS_ROOT_INO);
 #endif
 
-	sb->s_root = d_alloc_root(root);
+	sb->s_root = d_make_root(root);
+	if (!sb->s_root) {
+		pr_err("%s: could not get root dentry!",__func__);
+		return -ENOMEM;
+	}
 
 	// Set device_info.j4fs_end using STLInfo.nTotalLogScts
 #if defined(J4FS_USE_XSR)
@@ -1397,7 +1401,7 @@ extern unsigned int j4fs_PORCount;
 
 ssize_t lfs_read(struct file *file, const char __user * buffer, size_t count, loff_t *ppos)
 {
-	printk("%s %d: (j4fs_PORMask,j4fs_PORCount)=(%x,%d)\n",__FUNCTION__,__LINE__,j4fs_PORMask, j4fs_PORCount);
+;
 	return 0;
 }
 
@@ -1411,11 +1415,11 @@ ssize_t lfs_write(struct file *file, const char __user * buffer, size_t count, l
 	if (sscanf(kbuf, "%x %d", &j4fs_PORMask, &j4fs_PORCount) != 2)
 		return -EINVAL;
 
-	printk("%s %d: (j4fs_PORMask,j4fs_PORCount)=(%x,%d)\n",__FUNCTION__,__LINE__,j4fs_PORMask, j4fs_PORCount);
+;
 	return -EINVAL;
 }
 
-int j4fs_fsync(struct file *file, int datasync)
+int j4fs_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 {
 	return 0;
 }
