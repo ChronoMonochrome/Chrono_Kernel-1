@@ -5,6 +5,7 @@
  *		Initial version: Alan Stern <stern@rowland.harvard.edu>
  */
 
+#include <linux/export.h>
 #include <linux/pm_runtime.h>
 #include <linux/async.h>
 
