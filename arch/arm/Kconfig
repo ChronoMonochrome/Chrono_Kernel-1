@@ -14,16 +14,16 @@ config ARM
 	select HAVE_KPROBES if !XIP_KERNEL
 	select HAVE_KRETPROBES if (HAVE_KPROBES)
 	select HAVE_FUNCTION_TRACER if (!XIP_KERNEL)
-	select HAVE_ARCH_MMAP_RND_BITS if MMU
 	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
 	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
+	select HAVE_EFFICIENT_UNALIGNED_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && MMU && (!MACH_JANICE)
 	select HAVE_FUNCTION_GRAPH_TRACER if (!THUMB2_KERNEL)
 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
 	select HAVE_GENERIC_DMA_COHERENT
 	select HAVE_KERNEL_GZIP
+	select HAVE_KERNEL_LZ4
 	select HAVE_KERNEL_LZO
 	select HAVE_KERNEL_LZMA
-	select HAVE_KERNEL_XZ
 	select HAVE_IRQ_WORK
 	select HAVE_PERF_EVENTS
 	select PERF_USE_VMALLOC
@@ -267,12 +267,28 @@ config MMU
 	  support by paged memory management. If unsure, say 'Y'.
 
 config ARCH_MMAP_RND_BITS_MIN
+	int
 	default 8
 
 config ARCH_MMAP_RND_BITS_MAX
-	default 14 if PAGE_OFFSET=0x40000000
-	default 15 if PAGE_OFFSET=0x80000000
-	default 16
+	int
+	default 14 if MMU && PAGE_OFFSET=0x40000000
+	default 15 if MMU && PAGE_OFFSET=0x80000000
+	default 16 if MMU
+	default 8
+
+config ARCH_MMAP_RND_BITS
+	int "Number of bits to use for ASLR of mmap base address" if EXPERT
+	range ARCH_MMAP_RND_BITS_MIN ARCH_MMAP_RND_BITS_MAX
+	default ARCH_MMAP_RND_BITS_MIN
+	help
+	  This value can be used to select the number of bits to use to
+	  determine the random offset to the base address of vma regions
+	  resulting from mmap allocations. This value will be bounded
+	  by the architecture's minimum and maximum supported values.
+
+	  This value can be changed after boot using the
+	  /proc/sys/kernel/mmap_rnd_bits tunable
 
 #
 # The "ARM system type" choice list is ordered alphabetically by option
@@ -946,6 +962,7 @@ config ARCH_U8500
 	bool "ST-Ericsson U8500 Series"
 	depends on MMU
 	select CPU_V7
+	select HAVE_SMP
 	select ARM_AMBA
 	select GENERIC_CLOCKEVENTS
 	select CLKDEV_LOOKUP
@@ -953,8 +970,11 @@ config ARCH_U8500
 	select HAVE_CLK
 	select ARCH_HAS_CPUFREQ
 	select HAVE_SMP
-	select MIGHT_HAVE_CACHE_L2X0
 	select NOMADIK_GPIO
+	select ARCH_HAS_PASR
+	select NEED_MACH_MEMORY_H
+	select NEED_MACH_IO_H
+	select MIGHT_HAVE_CACHE_L2X0
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
