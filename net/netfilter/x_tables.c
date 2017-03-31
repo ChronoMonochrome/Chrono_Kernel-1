@@ -124,6 +124,8 @@ xt_unregister_targets(struct xt_target *target, unsigned int n)
 }
 EXPORT_SYMBOL(xt_unregister_targets);
 
+MODSYMBOL_DECLARE(xt_register_match);
+
 int
 xt_register_match(struct xt_match *match)
 {
@@ -1381,6 +1383,8 @@ static int __init xt_init(void)
 	rv = register_pernet_subsys(&xt_net_ops);
 	if (rv < 0)
 		kfree(xt);
+
+	IMPORT_SYMBOL(xt_register_match);
 	return rv;
 }
 
@@ -1388,6 +1392,7 @@ static void __exit xt_fini(void)
 {
 	unregister_pernet_subsys(&xt_net_ops);
 	kfree(xt);
+	UNIMPORT_SYMBOL(xt_register_match);
 }
 
 module_init(xt_init);
