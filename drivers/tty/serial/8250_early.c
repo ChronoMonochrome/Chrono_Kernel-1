@@ -202,16 +202,24 @@ static int __init parse_options(struct early_serial8250_device *device,
 	}
 
 	if (mmio || mmio32)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "Early serial console at MMIO%s 0x%llx (options '%s')\n",
 			mmio32 ? "32" : "",
 			(unsigned long long)port->mapbase,
 			device->options);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		      "Early serial console at I/O port 0x%lx (options '%s')\n",
 			port->iobase,
 			device->options);
+#else
+		;
+#endif
 
 	return 0;
 }
