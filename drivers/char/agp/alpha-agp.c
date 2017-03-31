@@ -192,7 +192,11 @@ alpha_core_agp_setup(void)
 	alpha_bridge->dev = pdev;
 	alpha_bridge->mode = agp->capability.lw;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Detected AGP on hose %d\n", agp->hose->index);
+#else
+	;
+#endif
 	return agp_add_bridge(alpha_bridge);
 
  fail:

@@ -258,7 +258,7 @@ int misc_deregister(struct miscdevice *misc)
 EXPORT_SYMBOL(misc_register);
 EXPORT_SYMBOL(misc_deregister);
 
-static char *misc_devnode(struct device *dev, mode_t *mode)
+static char *misc_devnode(struct device *dev, umode_t *mode)
 {
 	struct miscdevice *c = dev_get_drvdata(dev);
 
@@ -288,7 +288,11 @@ static int __init misc_init(void)
 	return 0;
 
 fail_printk:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("unable to get major %d for misc devices\n", MISC_MAJOR);
+#else
+	;
+#endif
 	class_destroy(misc_class);
 fail_remove:
 	remove_proc_entry("misc", NULL);

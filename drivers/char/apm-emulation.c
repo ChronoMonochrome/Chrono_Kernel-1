@@ -40,10 +40,7 @@
 #define APM_MINOR_DEV	134
 
 /*
- * See Documentation/Config.help for the configuration options.
- *
- * Various options can be changed at boot time as follows:
- * (We allow underscores for compatibility with the modules code)
+ * One option can be changed at boot time as follows:
  *	apm=on/off			enable/disable APM
  */
 
@@ -606,7 +603,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
 			return NOTIFY_OK;
 
 		/* interrupted by signal */
-		return NOTIFY_BAD;
+		return notifier_from_errno(err);
 
 	case PM_POST_SUSPEND:
 		/*
@@ -652,7 +649,11 @@ static int __init apm_init(void)
 	int ret;
 
 	if (apm_disabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "apm: disabled on user request.\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
