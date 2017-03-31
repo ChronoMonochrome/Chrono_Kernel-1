@@ -479,7 +479,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 #
 # Boot options
 #
-CONFIG_USE_OF=y
+CONFIG_USE_OF=n
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
 CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=70M@256M mem=57M@326M mem_issw=1M@383M mem=383M@384M mem_ram_console=1M@767M vmalloc=240M coherent_pool=8M cma=24M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1                         "
