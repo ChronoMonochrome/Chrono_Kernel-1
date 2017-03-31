@@ -4,8 +4,6 @@ config ARM
 	select HAVE_AOUT
 	select HAVE_DMA_API_DEBUG
 	select HAVE_IDE
-	select HAVE_DMA_ATTRS
-	select HAVE_DMA_CONTIGUOUS if MMU
 	select HAVE_MEMBLOCK
 	select RTC_LIB
 	select SYS_SUPPORTS_APM_EMULATION
@@ -50,35 +48,6 @@ config ARM
 
 config ARM_HAS_SG_CHAIN
 	bool
-
-config NEED_SG_DMA_LENGTH
-	bool
-
-config ARM_DMA_USE_IOMMU
-	select NEED_SG_DMA_LENGTH
-	select ARM_HAS_SG_CHAIN
-	bool
-
-if ARM_DMA_USE_IOMMU
-
-config ARM_DMA_IOMMU_ALIGNMENT
-	int "Maximum PAGE_SIZE order of alignment for DMA IOMMU buffers"
-	range 4 9
-	default 8
-	help
-	  DMA mapping framework by default aligns all buffers to the smallest
-	  PAGE_SIZE order which is greater than or equal to the requested buffer
-	  size. This works well for buffers up to a few hundreds kilobytes, but
-	  for larger buffers it just a waste of address space. Drivers which has
-	  relatively small addressing window (like 64Mib) might run out of
-	  virtual space with just a few allocations.
-
-	  With this parameter you can specify the maximum PAGE_SIZE order for
-	  DMA IOMMU buffers. Larger buffers will be aligned only to this
-	  specified order. The order is expressed as a power of two multiplied
-	  by the PAGE_SIZE.
-
-endif
 
 config HAVE_PWM
 	bool
@@ -216,9 +185,6 @@ config ZONE_DMA
 
 config NEED_DMA_MAP_STATE
        def_bool y
-
-config ARCH_HAS_DMA_SET_COHERENT_MASK
-	bool
 
 config GENERIC_ISA_DMA
 	bool
@@ -859,7 +825,7 @@ config PAGE_OFFSET
 	hex
 	default 0x40000000 if VMSPLIT_1G
 	default 0x80000000 if VMSPLIT_2G
-	default 0xb9000000
+	default 0xC0000000
 
 config NR_CPUS
 	int "Maximum number of CPUs (2-32)"
@@ -1148,17 +1114,6 @@ config DEPRECATED_PARAM_STRUCT
 	help
 	  This was deprecated in 2001 and announced to live on for 5 years.
 	  Some old boot loaders still use this way.
-
-config SWIOTLB
-	select NEED_SG_DMA_LENGTH
-	def_bool y
-
-config IOMMU_HELPER
-	def_bool SWIOTLB
-
-config XEN_DOM0
-	def_bool y
-	depends on XEN
 
 config ARM_FLUSH_CONSOLE_ON_RESTART
 	bool "Force flush the console on restart"
