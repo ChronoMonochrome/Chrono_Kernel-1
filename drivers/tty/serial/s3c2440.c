@@ -77,7 +77,11 @@ static int s3c2440_serial_getsource(struct uart_port *port,
 		ucon1 = __raw_readl(S3C24XX_VA_UART1 + S3C2410_UCON);
 		ucon2 = __raw_readl(S3C24XX_VA_UART2 + S3C2410_UCON);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ucons: %08lx, %08lx, %08lx\n", ucon0, ucon1, ucon2);
+#else
+		;
+#endif
 
 		ucon0 &= S3C2440_UCON0_DIVMASK;
 		ucon1 &= S3C2440_UCON1_DIVMASK;

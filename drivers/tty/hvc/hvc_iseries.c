@@ -277,22 +277,34 @@ static void hvc_open_event(struct HvLpEvent *event)
 
 		spin_unlock_irqrestore(&consolelock, flags);
 		if (event->xRc != HvLpEvent_Rc_Good)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "hvc: handle_open_event: event->xRc == (%d).\n",
 			       event->xRc);
+#else
+			;
+#endif
 
 		if (event->xCorrelationToken != 0) {
 			atomic_t *aptr= (atomic_t *)event->xCorrelationToken;
 			atomic_set(aptr, 1);
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "hvc: weird...got open ack without atomic\n");
+#else
+			;
+#endif
 		return;
 	}
 
 	/* This had better require an ack, otherwise complain */
 	if (!hvlpevent_need_ack(event)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: viocharopen without ack bit!\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -329,10 +341,18 @@ static void hvc_open_event(struct HvLpEvent *event)
 	spin_unlock_irqrestore(&consolelock, flags);
 
 	if (reject == 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: open rejected: bad virtual tty.\n");
+#else
+		;
+#endif
 	else if (reject == 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: open rejected: console in exclusive "
 				"use by another partition.\n");
+#else
+		;
+#endif
 
 	/* Return the acknowledgement */
 	HvCallEvent_ackLpEvent(event);
@@ -352,14 +372,22 @@ static void hvc_close_event(struct HvLpEvent *event)
 	u8 port = cevent->virtual_device;
 
 	if (!hvlpevent_is_int(event)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"hvc: got unexpected close acknowledgement\n");
+#else
+		;
+#endif
 		return;
 	}
 
 	if (port >= VTTY_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"hvc: close message from invalid virtual device.\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -381,8 +409,12 @@ static void hvc_data_event(struct HvLpEvent *event)
 	u8 port = cevent->virtual_device;
 
 	if (port >= VTTY_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: data on invalid virtual device %d\n",
 				port);
+#else
+		;
+#endif
 		return;
 	}
 	if (cevent->len == 0)
@@ -412,7 +444,11 @@ static void hvc_data_event(struct HvLpEvent *event)
 	}
 	spin_unlock_irqrestore(&consolelock, flags);
 	if (n == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: input buffer overflow\n");
+#else
+		;
+#endif
 }
 
 static void hvc_ack_event(struct HvLpEvent *event)
@@ -422,7 +458,11 @@ static void hvc_ack_event(struct HvLpEvent *event)
 	u8 port = cevent->virtual_device;
 
 	if (port >= VTTY_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: data on invalid virtual device\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -436,11 +476,19 @@ static void hvc_config_event(struct HvLpEvent *event)
 	struct viocharlpevent *cevent = (struct viocharlpevent *)event;
 
 	if (cevent->data[0] == 0x01)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hvc: window resized to %d: %d: %d: %d\n",
 		       cevent->data[1], cevent->data[2],
 		       cevent->data[3], cevent->data[4]);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: unknown config event\n");
+#else
+		;
+#endif
 }
 
 static void hvc_handle_event(struct HvLpEvent *event)
@@ -499,7 +547,11 @@ static int __init hvc_vio_init(void)
 	rc = viopath_open(HvLpConfig_getPrimaryLpIndex(),
 			viomajorsubtype_chario, VIOCHAR_WINDOW + 2);
 	if (rc)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hvc: error opening to primary %d\n", rc);
+#else
+		;
+#endif
 
 	if (viopath_hostLp == HvLpIndexInvalid)
 		vio_set_hostlp();
@@ -510,19 +562,31 @@ static int __init hvc_vio_init(void)
 	 */
 	if ((viopath_hostLp != HvLpIndexInvalid) &&
 	    (viopath_hostLp != HvLpConfig_getPrimaryLpIndex())) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hvc: open path to hosting (%d)\n",
 				viopath_hostLp);
+#else
+		;
+#endif
 		rc = viopath_open(viopath_hostLp, viomajorsubtype_chario,
 				VIOCHAR_WINDOW + 2);	/* +2 for fudge */
 		if (rc)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"error opening to partition %d: %d\n",
 				viopath_hostLp, rc);
+#else
+			;
+#endif
 	}
 
 	if (vio_setHandler(viomajorsubtype_chario, hvc_handle_event) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"hvc: error seting handler for console events!\n");
+#else
+		;
+#endif
 
 	/*
 	 * First, try to open the console to the hosting lp.
@@ -531,7 +595,11 @@ static int __init hvc_vio_init(void)
 	atomic_set(&wait_flag, 0);
 	if ((viopath_isactive(viopath_hostLp)) &&
 	    (send_open(viopath_hostLp, &wait_flag) == 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hvc: hosting partition %d\n", viopath_hostLp);
+#else
+		;
+#endif
 		while (atomic_read(&wait_flag) == 0)
 			mb();
 		atomic_set(&wait_flag, 0);
@@ -543,7 +611,11 @@ static int __init hvc_vio_init(void)
 	if ((!viopath_isactive(port_info[0].lp)) &&
 	    (viopath_isactive(HvLpConfig_getPrimaryLpIndex())) &&
 	    (send_open(HvLpConfig_getPrimaryLpIndex(), &wait_flag) == 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hvc: opening console to primary partition\n");
+#else
+		;
+#endif
 		while (atomic_read(&wait_flag) == 0)
 			mb();
 	}
