@@ -2025,6 +2025,7 @@ static int do_path_lookup(int dfd, const char *name,
 
 	return filename_lookup(dfd, &filename, flags, nd);
 }
+EXPORT_SYMBOL(do_path_lookup);
 
 /* does lookup, returns the object with parent locked */
 struct dentry *kern_path_locked(const char *name, struct path *path)
