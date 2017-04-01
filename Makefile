@@ -378,6 +378,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-common \
+		  -fno-strict-aliasing \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
