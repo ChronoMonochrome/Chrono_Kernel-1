@@ -1326,6 +1326,7 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
 
 	return dentry;
 }
+EXPORT_SYMBOL(__d_alloc);
 
 /**
  * d_alloc	-	allocate a dcache entry
@@ -2687,6 +2688,7 @@ char *d_absolute_path(const struct path *path,
 		return ERR_PTR(error);
 	return res;
 }
+EXPORT_SYMBOL(d_absolute_path);
 
 /*
  * same as __d_path but appends "(deleted)" for unlinked files.

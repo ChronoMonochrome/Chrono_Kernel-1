@@ -1967,7 +1967,7 @@ static int path_lookupat(int dfd, const char *name,
 	return err;
 }
 
-static int do_path_lookup(int dfd, const char *name,
+int do_path_lookup(int dfd, const char *name,
 				unsigned int flags, struct nameidata *nd)
 {
 	int retval = path_lookupat(dfd, name, flags | LOOKUP_RCU, nd);
@@ -1984,6 +1984,7 @@ static int do_path_lookup(int dfd, const char *name,
 	}
 	return retval;
 }
+EXPORT_SYMBOL(do_path_lookup);
 
 /* does lookup, returns the object with parent locked */
 struct dentry *kern_path_locked(const char *name, struct path *path)
