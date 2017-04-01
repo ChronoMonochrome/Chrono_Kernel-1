@@ -334,7 +334,8 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 					u8 prerecovery_state = 0;
 					printk(KERN_INFO "%s: clear prerecovery flag=%d\n", __func__,
 					       prerecovery_state);
-					sec_set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
+					if (likely(sec_set_param_value))
+						sec_set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
 				}
 				mode = reboot_tbl[i].mode;
 				break;
