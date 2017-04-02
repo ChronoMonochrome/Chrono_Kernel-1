@@ -1197,9 +1197,7 @@ struct liveopp_arm_table
 #define PLLARM_MAXOPP			0x0001011A
 #define PLLARM_FREQ100OPP		0x00050168
 
-struct mutex liveopp_lock;
-
-static unsigned int last_arm_idx = 0;
+static unsigned int prev1_arm_idx = 0, prev_arm_idx = 0, current_arm_idx = 0;
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static int liveopp_start = 0;
@@ -1681,62 +1679,66 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 {
 	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
 					"cpufreq",
-					(signed char)liveopp_arm[last_arm_idx].ddr_opp);
+					(signed char)liveopp_arm[current_arm_idx].ddr_opp);
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 					"cpufreq",
-					(signed char)liveopp_arm[last_arm_idx].ape_opp);
+					(signed char)liveopp_arm[current_arm_idx].ape_opp);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
 
-static void liveopp_update_cpuhw(struct liveopp_arm_table table, int last_idx, int next_idx)
+static void liveopp_update_cpuhw(int prev1_idx, int prev_idx, int current_idx, int next_idx)
 {
-	u8 vdd;
-	u8 vbb;
-	u8 update_vdd;
-	u8 update_vbb;
+	struct liveopp_arm_table table;
+	u32 next_pllarm_raw;
+	u8 last_vdd, next_vdd;
+	u8 last_vbb, next_vbb;
+	bool update_vdd, update_vbb;
 
-	mutex_lock(&liveopp_lock);
+	table = liveopp_arm[current_idx];
+	last_vdd = table.varm_raw;
+	last_vbb = table.vbbx_raw;
+	table = liveopp_arm[next_idx];
+	next_vdd = table.varm_raw;
+	next_vbb = table.vbbx_raw;
+	next_pllarm_raw = table.pllarm_raw;
 
-	if (last_idx == next_idx)
-		goto out;
+	update_vdd = last_vdd != next_vdd;
+	update_vbb = last_vbb != next_vbb;
 
-	prcmu_abb_read(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &vdd, 1);
-	prcmu_abb_read(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &vbb, 1);
-
-	update_vdd = (table.varm_raw != vdd) ? 1 : 0;
-	update_vbb = (table.vbbx_raw != vbb) ? 1 : 0;
-
-	if (last_idx < next_idx) {
+	if (current_idx < next_idx) {
+		if (prev1_idx <= prev_idx) // (prev_idx <= current_idx) case of the previous call
+			udelay(5);
 
 		if (update_vbb)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &next_vbb, 1);
 		if (update_vdd)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &next_vdd, 1);
 
 		mb();
 		udelay(liveopp_varm_us);
 
-		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+		db8500_prcmu_writel_relaxed(PRCMU_PLLARM_REG, next_pllarm_raw);
 
-		mb();
-		udelay(5);
+		if (prev1_idx >= prev_idx)
+			udelay(5);
 	} else {
-		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+
+		if (prev_idx <= current_idx) // (current_idx < next_idx) case of the previous call
+			udelay(liveopp_varm_us);
+
+		db8500_prcmu_writel_relaxed(PRCMU_PLLARM_REG, next_pllarm_raw);
 
 		mb();
 		udelay(5);
 
 		if (update_vdd)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &next_vdd, 1);
 		if (update_vbb)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &next_vbb, 1);
 
-		mb();
-		udelay(liveopp_varm_us);
+		if (prev_idx >= current_idx)
+			udelay(liveopp_varm_us);
 	}
-
-out:
-	mutex_unlock(&liveopp_lock);
 }
 
 #define ATTR_RO(_name)	\
@@ -2532,7 +2534,7 @@ static unsigned long arm_get_rate(void)
 	/*  catch early access */
 	BUG_ON(!freq_table);
 
-	rate = freq_table[last_arm_idx].frequency;
+	rate = freq_table[current_arm_idx].frequency;
 
 	return rate * 1000;
 }
@@ -2565,7 +2567,6 @@ static int arm_set_rate(unsigned long rate)
 {
 	unsigned long frequency = rate / 1000;
 	int i;
-	bool tmp = false;
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 	if (!liveopp_start)
@@ -2580,21 +2581,22 @@ static int arm_set_rate(unsigned long rate)
 	BUG_ON(!freq_table);
 
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-		// TODO: optimize this
-		if (!tmp) {
-			tmp = (frequency == freq_table[i].frequency);
-		}
-		if (tmp && liveopp_arm[i].enable) {
-			
-			liveopp_update_cpuhw(liveopp_arm[i],
-						last_arm_idx,
-						i);
-			last_arm_idx = i;
-			schedule_work(&requirements_update_work);
-			tmp = false;
+		if (frequency != freq_table[i].frequency)
+			continue;
 
+		if (current_arm_idx == i) {
 			break;
 		}
+
+		if (liveopp_arm[i].enable) {
+			liveopp_update_cpuhw(prev1_arm_idx, prev_arm_idx, current_arm_idx, i);
+			prev1_arm_idx = prev_arm_idx;
+			prev_arm_idx = current_arm_idx;
+			current_arm_idx = i;
+			schedule_work(&requirements_update_work);
+		}
+
+		break;
 	}
 
 	return 0;
@@ -5302,9 +5304,6 @@ struct prcmu_fops_register_data *__init db8500_prcmu_early_init(void)
 	if (reset_status_copy & DB8500_SEC_PRCM_RESET_STATUS_APE_SOFTWARE_RESET)
 		reset_code_copy = readw(tcdm_base + PRCM_SW_RST_REASON);
 
-	#ifdef CONFIG_DB8500_LIVEOPP
-	mutex_init(&liveopp_lock);
-	#endif
 	tcdm_base_bkp = __io_address(U8500_PRCMU_TCDM_BASE);
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
@@ -5691,7 +5690,7 @@ static void  db8500_prcmu_update_freq(void *pdata)
 						armopp_name[db8500_prcmu_get_arm_opp()],
 						i, 
 						pllclk);
-			last_arm_idx = i;
+			current_arm_idx = i;
 		}
 
 		switch (liveopp_arm[i].freq_show) {

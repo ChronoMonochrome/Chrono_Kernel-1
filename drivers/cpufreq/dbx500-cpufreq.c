@@ -123,11 +123,7 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 	 *	   function with no/some/all drivers in the notification
 	 *	   list.
 	 */
-	#ifdef CONFIG_DB8500_LIVEOPP
-	policy->cpuinfo.transition_latency = 50 * 1000; /* in ns */
-	#else
-	policy->cpuinfo.transition_latency = 20 * 1000; /* in ns */
-	#endif
+	policy->cpuinfo.transition_latency = 30 * 1000; /* in ns */
 
 	/* policy sharing between dual CPUs */
 	cpumask_copy(policy->cpus, &cpu_present_map);
