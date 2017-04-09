@@ -142,7 +142,7 @@ source "drivers/phone_svn/Kconfig"
 
 source "drivers/interceptor/Kconfig" 
 
-source "drivers/iommu/Kconfig"
+source "drivers/bcmdhd/Kconfig"
 
 endmenu
 
