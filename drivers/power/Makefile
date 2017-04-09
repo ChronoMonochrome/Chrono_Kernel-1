@@ -43,3 +43,11 @@ obj-$(CONFIG_ABB_BM)		+= abb_charger.o abb_fg.o abb_btemp.o  abb_chargalg.o
 obj-$(CONFIG_ABB_FAKE_DFMS_DEVICES) += abb_links.o
 obj-$(CONFIG_CHARGER_PM2301)	+= pm2301_charger.o
 obj-$(CONFIG_PM2XXX_DEEP_DEBUG)	+= pm2301_deepdebug.o
+AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
+AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
+CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
+AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
+
+KBUILD_AFLAGS += $(AFLAGS_THUMB2)
+KBUILD_CFLAGS += $(CFLAGS_THUMB2)
+
