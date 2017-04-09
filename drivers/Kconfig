@@ -148,13 +148,7 @@ source "drivers/phone_svn/Kconfig"
 
 source "drivers/interceptor/Kconfig" 
 
-source "drivers/gator/Kconfig"
-
-source "drivers/pwm/Kconfig"
-
-source "drivers/irqchip/Kconfig"
-
-source "drivers/ipack/Kconfig"
+source "drivers/bcmdhd/Kconfig"
 
 endmenu
 
