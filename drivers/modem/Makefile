@@ -6,7 +6,6 @@ obj-$(CONFIG_MODEM_M6718_SPI) += m6718_spi/
 obj-$(CONFIG_MODEM_U5500_MCDD)  += mcdd.o
 obj-$(CONFIG_U8500_KERNEL_CLIENT)	+= u8500_client.o
 
-obj-$(CONFIG_U8500_SHRM)        += u8500_shrm.o
 AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
 AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
 CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
