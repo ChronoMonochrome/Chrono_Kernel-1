@@ -9,6 +9,7 @@
  */
 #include <linux/export.h>
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/stddef.h>
 #include <linux/ioport.h>
 #include <linux/delay.h>
