@@ -431,59 +431,6 @@ static int ws2401_set_rotation(struct mcde_display_device *ddev,
 	return 0;
 }
 
-/* Reverse order of power on and channel update as compared with MCDE default display update */
-static int ws2401_display_update(struct mcde_display_device *ddev,
-							bool tripple_buffer)
-{
-	int ret = 0;
-
-	if (ddev->power_mode != MCDE_DISPLAY_PM_ON && ddev->set_power_mode) {
-		ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_ON);
-		if (ret < 0) {
-			dev_warn(&ddev->dev,
-				"%s:Failed to set power mode to on\n",
-				__func__);
-			return ret;
-		}
-	}
-
-	ret = mcde_chnl_update(ddev->chnl_state, tripple_buffer);
-	if (ret < 0) {
-		dev_warn(&ddev->dev, "%s:Failed to update channel\n", __func__);
-		return ret;
-	}
-	return 0;
-}
-
-static unsigned int debug = 0;
-module_param_named(debug, debug, uint, 0644);
-
-static int ws2401_apply_config(struct mcde_display_device *ddev)
-{
-	int ret;
-
-	if (debug)
-		pr_info("%s: Called\n", __func__);
-
-	if (!ddev->update_flags)
-		return 0;
-
-	if (ddev->update_flags & (UPDATE_FLAG_VIDEO_MODE |
-			UPDATE_FLAG_ROTATION))
-		mcde_chnl_stop_flow(ddev->chnl_state);
-
-	ret = mcde_chnl_apply(ddev->chnl_state);
-	if (ret < 0) {
-		dev_warn(&ddev->dev, "%s:Failed to apply to channel\n",
-							__func__);
-		return ret;
-	}
-
-	ddev->update_flags = 0;
-	ddev->first_update = true;
-
-	return 0;
-}
 
 static int ws2401_spi_write_byte(struct ws2401_dpi *lcd, int addr, int data)
 {
@@ -1044,8 +991,6 @@ static int __devinit ws2401_dpi_mcde_probe(
 	ddev->try_video_mode = try_video_mode;
 	ddev->set_video_mode = set_video_mode;
 	ddev->set_rotation = ws2401_set_rotation;
-	ddev->update = ws2401_display_update;
-	ddev->apply_config = ws2401_apply_config;
 
 	lcd = kzalloc(sizeof(struct ws2401_dpi), GFP_KERNEL);
 	if (!lcd)
@@ -1117,11 +1062,10 @@ static int __devinit ws2401_dpi_mcde_probe(
 	register_early_suspend(&lcd->earlysuspend);
 #endif
 	//when screen is on, APE_OPP 25 sometimes messes it up
-	//TODO change these to add/update/remove
 	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
+				"codina_lcd_dpi", 50)) {
+			pr_info("pcrm_qos_add APE failed\n");
+		}
 
 	dev_dbg(&ddev->dev, "DPI display probed\n");
 
@@ -1224,6 +1168,7 @@ static int ws2401_dpi_mcde_suspend(
 	return ret;
 }
 
+#ifdef CONFIG_DB8500_LIVEOPP
 static void requirements_add_thread(struct work_struct *requirements_add_work)
 {
 	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
@@ -1238,6 +1183,7 @@ static void requirements_remove_thread(struct work_struct *requirements_remove_w
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "codina_lcd_dpi");
 }
 static DECLARE_WORK(requirements_remove_work, requirements_remove_thread);
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void ws2401_dpi_mcde_early_suspend(
@@ -1265,7 +1211,9 @@ static void ws2401_dpi_mcde_early_suspend(
 	}
 	#endif
 	
+	#ifdef CONFIG_DB8500_LIVEOPP
 	schedule_work(&requirements_remove_work);
+	#endif
 
 	ws2401_dpi_mcde_suspend(lcd->mdd, dummy);
 
@@ -1283,7 +1231,9 @@ static void ws2401_dpi_mcde_late_resume(
 		enable_irq(GPIO_TO_IRQ(lcd->esd_port));
 	#endif
 		
+	#ifdef CONFIG_DB8500_LIVEOPP
 	schedule_work(&requirements_add_work);
+	#endif
 
 	ws2401_dpi_mcde_resume(lcd->mdd);
 
