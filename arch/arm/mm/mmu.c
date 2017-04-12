@@ -747,12 +747,8 @@ static void __init create_mapping(struct map_desc *md, bool force_pages)
 	}
 
 	if ((md->type == MT_DEVICE || md->type == MT_ROM) &&
-<<<<<<< HEAD
 	    md->virtual >= PAGE_OFFSET &&
 	    (md->virtual < VMALLOC_START || md->virtual >= VMALLOC_END)) {
-=======
-	    md->virtual >= PAGE_OFFSET && md->virtual < VMALLOC_END) {
->>>>>>> 5159feb... ARM: integrate CMA with DMA-mapping subsystem
 		printk(KERN_WARNING "BUG: mapping for 0x%08llx"
 		       " at 0x%08lx out of vmalloc space\n",
 		       (long long)__pfn_to_phys((u64)md->pfn), md->virtual);
