@@ -18,6 +18,7 @@
 
 #include <linux/regulator/consumer.h>
 #include <linux/err.h>
+#include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/workqueue.h>
