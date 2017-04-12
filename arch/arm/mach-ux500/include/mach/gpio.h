@@ -5,7 +5,6 @@
  * 288 (#267 is the highest one actually hooked up) onchip GPIOs, plus enough
  * room for a couple of GPIO expanders.
  */
-#define ARCH_NR_GPIOS	366
 #define NOMADIK_NR_GPIO	288
 
 #include <asm-generic/gpio.h>
