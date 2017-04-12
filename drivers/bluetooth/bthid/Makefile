@@ -1,1 +1,1 @@
-obj-m	+= bthid.o
+obj-y	+= bthid.o
