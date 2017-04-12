@@ -32,7 +32,7 @@ FONTC	= $(srctree)/drivers/video/console/font_acorn_8x8.c
 
 # string library code (-Os is enforced to keep it much smaller)
 OBJS		+= string.o
-CFLAGS_string.o	:= -Os
+#CFLAGS_string.o	:= -Os
 
 #
 # Architecture dependencies
@@ -203,3 +203,40 @@ $(obj)/font.c: $(FONTC)
 
 $(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile $(KCONFIG_CONFIG)
 	@sed "$(SEDFLAGS)" < $< > $@
+
+AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
+AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
+CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
+AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
+
+KBUILD_CFLAGS += $(AFLAGS_THUMB2) -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
+		  -O2	\
+                  -fno-common \
+                  -Werror-implicit-function-declaration \
+                  -Wno-format-security \
+                  -fno-delete-null-pointer-checks \
+                  -marm \
+                  -march=armv7-a \
+                  -mtune=cortex-a9 \
+                  -mcpu=cortex-a9 \
+                  -mfpu=vfpv3-fp16 \
+                  -mfloat-abi=hard \
+                  -mhard-float \
+                  -funsafe-loop-optimizations \
+                  -ftree-parallelize-loops=2 \
+                  -fcx-limited-range \
+                  -fno-signed-zeros \
+                  -fgraphite \
+                  -fgraphite-identity \
+                  -floop-block \
+                  -floop-interchange \
+                  -floop-nest-optimize \
+                  -floop-strip-mine \
+                  -floop-parallelize-all \
+                  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
+                  -pipe \
+                  --param l1-cache-size=32 \
+                  --param l1-cache-line-size=32 \
+                  --param l2-cache-size=512
+#KBUILD_AFLAGS += $(AFLAGS_THUMB2)
+
