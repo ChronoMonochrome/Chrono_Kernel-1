@@ -346,6 +346,7 @@ config ARCH_U8500
 	select ARCH_HAS_PASR
 	select NEED_MACH_MEMORY_H
 	select NEED_MACH_IO_H
+	select MIGHT_HAVE_CACHE_L2X0
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
