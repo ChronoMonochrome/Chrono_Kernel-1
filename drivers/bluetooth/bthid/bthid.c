@@ -19,7 +19,7 @@
 #include <linux/poll.h>
 #include <linux/miscdevice.h>
 #include <linux/hid.h>
-
+#include <linux/module.h>
 
 MODULE_AUTHOR("Daniel McDowell <mcdowell@broadcom.com>");
 MODULE_DESCRIPTION("User level driver support for Bluetooth HID input");
