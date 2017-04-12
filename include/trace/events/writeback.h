@@ -170,7 +170,6 @@ DEFINE_EVENT(wbc_class, name, \
 	TP_ARGS(wbc, bdi))
 DEFINE_WBC_EVENT(wbc_writepage);
 
-#if 0
 TRACE_EVENT(writeback_queue_io,
 	TP_PROTO(struct bdi_writeback *wb,
 		 struct wb_writeback_work *work,
@@ -200,7 +199,6 @@ TRACE_EVENT(writeback_queue_io,
 		__print_symbolic(__entry->reason, WB_WORK_REASON)
 	)
 );
-#endif
 
 TRACE_EVENT(global_dirty_state,
 
