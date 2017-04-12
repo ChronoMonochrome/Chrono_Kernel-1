@@ -8,6 +8,7 @@
  * the Free Software Foundation.
  */
 
+#include <linux/export.h>
 #include <linux/input/mt.h>
 #include <linux/slab.h>
 
