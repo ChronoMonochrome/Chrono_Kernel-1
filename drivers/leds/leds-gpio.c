@@ -20,6 +20,7 @@
 #include <linux/workqueue.h>
 
 #include <asm/gpio.h>
+#include <linux/module.h>
 
 struct gpio_led_data {
 	struct led_classdev cdev;
