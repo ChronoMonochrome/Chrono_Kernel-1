@@ -1109,7 +1109,7 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
 	/*
 	 * Allocate the vector page early.
 	 */
-	vectors = early_alloc(PAGE_SIZE * 2);
+	vectors = early_alloc(PAGE_SIZE);
 
 	early_trap_init(vectors);
 
@@ -1159,17 +1159,9 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
 
 	if (!vectors_high()) {
 		map.virtual = 0;
-		map.length = PAGE_SIZE * 2;
 		map.type = MT_LOW_VECTORS;
 		create_mapping(&map, false);
 	}
-
-	/* Now create a kernel read-only mapping */
-	map.pfn += 1;
-	map.virtual = 0xffff0000 + PAGE_SIZE;
-	map.length = PAGE_SIZE;
-	map.type = MT_LOW_VECTORS;
-	create_mapping(&map, false);
 
 	/*
 	 * Ask the machine support to map in the statically mapped devices.
