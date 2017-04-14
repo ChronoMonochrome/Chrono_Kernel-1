@@ -798,7 +798,6 @@ ENDPROC(__switch_to)
 	.endr
 	.endm
 
-#ifdef CONFIG_KUSER_HELPERS
 	.align	5
 	.globl	__kuser_helper_start
 __kuser_helper_start:
@@ -984,8 +983,6 @@ __kuser_helper_version:				@ 0xffff0ffc
 
 	.globl	__kuser_helper_end
 __kuser_helper_end:
-
-#endif
 
  THUMB(	.thumb	)
 
