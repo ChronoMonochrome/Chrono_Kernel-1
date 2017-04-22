@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/bitmap.c
  *
@@ -7,7 +10,9 @@
  * Universite Pierre et Marie Curie (Paris VI)
  */
 
-#include "ext3.h"
+#include <linux/buffer_head.h>
+#include <linux/jbd.h>
+#include <linux/ext3_fs.h>
 
 #ifdef EXT3FS_DEBUG
 

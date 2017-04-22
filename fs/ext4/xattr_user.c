@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext4/xattr_user.c
  * Handler for extended user attributes.
@@ -5,6 +8,7 @@
  * Copyright (C) 2001 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
  */
 
+#include <linux/module.h>
 #include <linux/string.h>
 #include <linux/fs.h>
 #include "ext4_jbd2.h"

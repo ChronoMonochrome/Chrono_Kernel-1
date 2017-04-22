@@ -1,10 +1,18 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext3/xattr_security.c
  * Handler for storing security labels as extended attributes.
  */
 
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/ext3_fs.h>
 #include <linux/security.h>
-#include "ext3.h"
 #include "xattr.h"
 
 static size_t

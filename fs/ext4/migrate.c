@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright IBM Corporation, 2007
  * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
@@ -12,6 +15,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/slab.h>
 #include "ext4_jbd2.h"
 
@@ -19,13 +23,13 @@
  * The contiguous blocks details which can be
  * represented by a single extent
  */
-struct migrate_struct {
-	ext4_lblk_t first_block, last_block, curr_block;
+struct list_blocks_struct {
+	ext4_lblk_t first_block, last_block;
 	ext4_fsblk_t first_pblock, last_pblock;
 };
 
 static int finish_range(handle_t *handle, struct inode *inode,
-				struct migrate_struct *lb)
+				struct list_blocks_struct *lb)
 
 {
 	int retval = 0, needed;
@@ -85,7 +89,8 @@ err_out:
 }
 
 static int update_extent_range(handle_t *handle, struct inode *inode,
-			       ext4_fsblk_t pblock, struct migrate_struct *lb)
+				ext4_fsblk_t pblock, ext4_lblk_t blk_num,
+				struct list_blocks_struct *lb)
 {
 	int retval;
 	/*
@@ -93,10 +98,9 @@ static int update_extent_range(handle_t *handle, struct inode *inode,
 	 */
 	if (lb->first_pblock &&
 		(lb->last_pblock+1 == pblock) &&
-		(lb->last_block+1 == lb->curr_block)) {
+		(lb->last_block+1 == blk_num)) {
 		lb->last_pblock = pblock;
-		lb->last_block = lb->curr_block;
-		lb->curr_block++;
+		lb->last_block = blk_num;
 		return 0;
 	}
 	/*
@@ -104,49 +108,64 @@ static int update_extent_range(handle_t *handle, struct inode *inode,
 	 */
 	retval = finish_range(handle, inode, lb);
 	lb->first_pblock = lb->last_pblock = pblock;
-	lb->first_block = lb->last_block = lb->curr_block;
-	lb->curr_block++;
+	lb->first_block = lb->last_block = blk_num;
+
 	return retval;
 }
 
 static int update_ind_extent_range(handle_t *handle, struct inode *inode,
-				   ext4_fsblk_t pblock,
-				   struct migrate_struct *lb)
+				   ext4_fsblk_t pblock, ext4_lblk_t *blk_nump,
+				   struct list_blocks_struct *lb)
 {
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
+	ext4_lblk_t blk_count = *blk_nump;
 	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
+
+	if (!pblock) {
+		/* Only update the file block number */
+		*blk_nump += max_entries;
+		return 0;
+	}
 
 	bh = sb_bread(inode->i_sb, pblock);
 	if (!bh)
 		return -EIO;
 
 	i_data = (__le32 *)bh->b_data;
-	for (i = 0; i < max_entries; i++) {
+	for (i = 0; i < max_entries; i++, blk_count++) {
 		if (i_data[i]) {
 			retval = update_extent_range(handle, inode,
-						le32_to_cpu(i_data[i]), lb);
+						le32_to_cpu(i_data[i]),
+						blk_count, lb);
 			if (retval)
 				break;
-		} else {
-			lb->curr_block++;
 		}
 	}
+
+	/* Update the file block number */
+	*blk_nump = blk_count;
 	put_bh(bh);
 	return retval;
 
 }
 
 static int update_dind_extent_range(handle_t *handle, struct inode *inode,
-				    ext4_fsblk_t pblock,
-				    struct migrate_struct *lb)
+				    ext4_fsblk_t pblock, ext4_lblk_t *blk_nump,
+				    struct list_blocks_struct *lb)
 {
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
+	ext4_lblk_t blk_count = *blk_nump;
 	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
 
+	if (!pblock) {
+		/* Only update the file block number */
+		*blk_nump += max_entries * max_entries;
+		return 0;
+	}
 	bh = sb_bread(inode->i_sb, pblock);
 	if (!bh)
 		return -EIO;
@@ -155,28 +174,38 @@ static int update_dind_extent_range(handle_t *handle, struct inode *inode,
 	for (i = 0; i < max_entries; i++) {
 		if (i_data[i]) {
 			retval = update_ind_extent_range(handle, inode,
-						le32_to_cpu(i_data[i]), lb);
+						le32_to_cpu(i_data[i]),
+						&blk_count, lb);
 			if (retval)
 				break;
 		} else {
 			/* Only update the file block number */
-			lb->curr_block += max_entries;
+			blk_count += max_entries;
 		}
 	}
+
+	/* Update the file block number */
+	*blk_nump = blk_count;
 	put_bh(bh);
 	return retval;
 
 }
 
 static int update_tind_extent_range(handle_t *handle, struct inode *inode,
-				    ext4_fsblk_t pblock,
-				    struct migrate_struct *lb)
+				     ext4_fsblk_t pblock, ext4_lblk_t *blk_nump,
+				     struct list_blocks_struct *lb)
 {
 	struct buffer_head *bh;
 	__le32 *i_data;
 	int i, retval = 0;
+	ext4_lblk_t blk_count = *blk_nump;
 	unsigned long max_entries = inode->i_sb->s_blocksize >> 2;
 
+	if (!pblock) {
+		/* Only update the file block number */
+		*blk_nump += max_entries * max_entries * max_entries;
+		return 0;
+	}
 	bh = sb_bread(inode->i_sb, pblock);
 	if (!bh)
 		return -EIO;
@@ -185,14 +214,16 @@ static int update_tind_extent_range(handle_t *handle, struct inode *inode,
 	for (i = 0; i < max_entries; i++) {
 		if (i_data[i]) {
 			retval = update_dind_extent_range(handle, inode,
-						le32_to_cpu(i_data[i]), lb);
+						le32_to_cpu(i_data[i]),
+						&blk_count, lb);
 			if (retval)
 				break;
-		} else {
+		} else
 			/* Only update the file block number */
-			lb->curr_block += max_entries * max_entries;
-		}
+			blk_count += max_entries * max_entries;
 	}
+	/* Update the file block number */
+	*blk_nump = blk_count;
 	put_bh(bh);
 	return retval;
 
@@ -433,12 +464,12 @@ int ext4_ext_migrate(struct inode *inode)
 	handle_t *handle;
 	int retval = 0, i;
 	__le32 *i_data;
+	ext4_lblk_t blk_count = 0;
 	struct ext4_inode_info *ei;
 	struct inode *tmp_inode = NULL;
-	struct migrate_struct lb;
+	struct list_blocks_struct lb;
 	unsigned long max_entries;
 	__u32 goal;
-	uid_t owner[2];
 
 	/*
 	 * If the filesystem does not support extents, or the inode
@@ -466,12 +497,10 @@ int ext4_ext_migrate(struct inode *inode)
 	}
 	goal = (((inode->i_ino - 1) / EXT4_INODES_PER_GROUP(inode->i_sb)) *
 		EXT4_INODES_PER_GROUP(inode->i_sb)) + 1;
-	owner[0] = inode->i_uid;
-	owner[1] = inode->i_gid;
 	tmp_inode = ext4_new_inode(handle, inode->i_sb->s_root->d_inode,
-				   S_IFREG, NULL, goal, owner);
+				   S_IFREG, NULL, goal);
 	if (IS_ERR(tmp_inode)) {
-		retval = PTR_ERR(tmp_inode);
+		retval = -ENOMEM;
 		ext4_journal_stop(handle);
 		return retval;
 	}
@@ -524,32 +553,35 @@ int ext4_ext_migrate(struct inode *inode)
 
 	/* 32 bit block address 4 bytes */
 	max_entries = inode->i_sb->s_blocksize >> 2;
-	for (i = 0; i < EXT4_NDIR_BLOCKS; i++) {
+	for (i = 0; i < EXT4_NDIR_BLOCKS; i++, blk_count++) {
 		if (i_data[i]) {
 			retval = update_extent_range(handle, tmp_inode,
-						le32_to_cpu(i_data[i]), &lb);
+						le32_to_cpu(i_data[i]),
+						blk_count, &lb);
 			if (retval)
 				goto err_out;
-		} else
-			lb.curr_block++;
+		}
 	}
 	if (i_data[EXT4_IND_BLOCK]) {
 		retval = update_ind_extent_range(handle, tmp_inode,
-				le32_to_cpu(i_data[EXT4_IND_BLOCK]), &lb);
+					le32_to_cpu(i_data[EXT4_IND_BLOCK]),
+					&blk_count, &lb);
 			if (retval)
 				goto err_out;
 	} else
-		lb.curr_block += max_entries;
+		blk_count +=  max_entries;
 	if (i_data[EXT4_DIND_BLOCK]) {
 		retval = update_dind_extent_range(handle, tmp_inode,
-				le32_to_cpu(i_data[EXT4_DIND_BLOCK]), &lb);
+					le32_to_cpu(i_data[EXT4_DIND_BLOCK]),
+					&blk_count, &lb);
 			if (retval)
 				goto err_out;
 	} else
-		lb.curr_block += max_entries * max_entries;
+		blk_count += max_entries * max_entries;
 	if (i_data[EXT4_TIND_BLOCK]) {
 		retval = update_tind_extent_range(handle, tmp_inode,
-				le32_to_cpu(i_data[EXT4_TIND_BLOCK]), &lb);
+					le32_to_cpu(i_data[EXT4_TIND_BLOCK]),
+					&blk_count, &lb);
 			if (retval)
 				goto err_out;
 	}

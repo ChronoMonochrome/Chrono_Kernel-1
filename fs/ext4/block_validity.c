@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext4/block_validity.c
  *
@@ -13,6 +16,7 @@
 #include <linux/namei.h>
 #include <linux/quotaops.h>
 #include <linux/buffer_head.h>
+#include <linux/module.h>
 #include <linux/swap.h>
 #include <linux/pagemap.h>
 #include <linux/blkdev.h>

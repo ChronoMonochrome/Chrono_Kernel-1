@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext3/xattr.c
  *
@@ -50,9 +53,14 @@
  * by the buffer lock.
  */
 
-#include "ext3.h"
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include <linux/ext3_jbd.h>
+#include <linux/ext3_fs.h>
 #include <linux/mbcache.h>
 #include <linux/quotaops.h>
+#include <linux/rwsem.h>
 #include "xattr.h"
 #include "acl.h"
 

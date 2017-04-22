@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/jbd/commit.c
  *
@@ -21,7 +24,6 @@
 #include <linux/pagemap.h>
 #include <linux/bio.h>
 #include <linux/blkdev.h>
-#include <trace/events/jbd.h>
 
 /*
  * Default IO end handler for temporary BJ_IO buffer_heads.
@@ -210,8 +212,6 @@ write_out_data:
 			if (!trylock_buffer(bh)) {
 				BUFFER_TRACE(bh, "needs blocking lock");
 				spin_unlock(&journal->j_list_lock);
-				trace_jbd_do_submit_data(journal,
-						     commit_transaction);
 				/* Write out all data to prevent deadlocks */
 				journal_do_submit_data(wbuf, bufs, write_op);
 				bufs = 0;
@@ -244,8 +244,6 @@ write_out_data:
 			jbd_unlock_bh_state(bh);
 			if (bufs == journal->j_wbufsize) {
 				spin_unlock(&journal->j_list_lock);
-				trace_jbd_do_submit_data(journal,
-						     commit_transaction);
 				journal_do_submit_data(wbuf, bufs, write_op);
 				bufs = 0;
 				goto write_out_data;
@@ -263,6 +261,10 @@ write_out_data:
 			jbd_unlock_bh_state(bh);
 			if (locked)
 				unlock_buffer(bh);
+			journal_remove_journal_head(bh);
+			/* One for our safety reference, other for
+			 * journal_remove_journal_head() */
+			put_bh(bh);
 			release_data_buffer(bh);
 		}
 
@@ -272,7 +274,6 @@ write_out_data:
 		}
 	}
 	spin_unlock(&journal->j_list_lock);
-	trace_jbd_do_submit_data(journal, commit_transaction);
 	journal_do_submit_data(wbuf, bufs, write_op);
 
 	return err;
@@ -323,14 +324,12 @@ void journal_commit_transaction(journal_t *journal)
 	commit_transaction = journal->j_running_transaction;
 	J_ASSERT(commit_transaction->t_state == T_RUNNING);
 
-	trace_jbd_start_commit(journal, commit_transaction);
 	jbd_debug(1, "JBD: starting commit of transaction %d\n",
 			commit_transaction->t_tid);
 
 	spin_lock(&journal->j_state_lock);
 	commit_transaction->t_state = T_LOCKED;
 
-	trace_jbd_commit_locking(journal, commit_transaction);
 	spin_lock(&commit_transaction->t_handle_lock);
 	while (commit_transaction->t_updates) {
 		DEFINE_WAIT(wait);
@@ -397,17 +396,10 @@ void journal_commit_transaction(journal_t *journal)
 	jbd_debug (3, "JBD: commit phase 1\n");
 
 	/*
-	 * Clear revoked flag to reflect there is no revoked buffers
-	 * in the next transaction which is going to be started.
-	 */
-	journal_clear_buffer_revoked_flags(journal);
-
-	/*
 	 * Switch to a new revoke table.
 	 */
 	journal_switch_revoke_table(journal);
 
-	trace_jbd_commit_flushing(journal, commit_transaction);
 	commit_transaction->t_state = T_FLUSH;
 	journal->j_committing_transaction = commit_transaction;
 	journal->j_running_transaction = NULL;
@@ -462,9 +454,14 @@ void journal_commit_transaction(journal_t *journal)
 		}
 		if (buffer_jbd(bh) && bh2jh(bh) == jh &&
 		    jh->b_transaction == commit_transaction &&
-		    jh->b_jlist == BJ_Locked)
+		    jh->b_jlist == BJ_Locked) {
 			__journal_unfile_buffer(jh);
-		jbd_unlock_bh_state(bh);
+			jbd_unlock_bh_state(bh);
+			journal_remove_journal_head(bh);
+			put_bh(bh);
+		} else {
+			jbd_unlock_bh_state(bh);
+		}
 		release_data_buffer(bh);
 		cond_resched_lock(&journal->j_list_lock);
 	}
@@ -504,7 +501,6 @@ void journal_commit_transaction(journal_t *journal)
 	commit_transaction->t_state = T_COMMIT;
 	spin_unlock(&journal->j_state_lock);
 
-	trace_jbd_commit_logging(journal, commit_transaction);
 	J_ASSERT(commit_transaction->t_nr_buffers <=
 		 commit_transaction->t_outstanding_credits);
 
@@ -809,16 +805,10 @@ restart_loop:
 	while (commit_transaction->t_forget) {
 		transaction_t *cp_transaction;
 		struct buffer_head *bh;
-		int try_to_free = 0;
 
 		jh = commit_transaction->t_forget;
 		spin_unlock(&journal->j_list_lock);
 		bh = jh2bh(jh);
-		/*
-		 * Get a reference so that bh cannot be freed before we are
-		 * done with it.
-		 */
-		get_bh(bh);
 		jbd_lock_bh_state(bh);
 		J_ASSERT_JH(jh,	jh->b_transaction == commit_transaction ||
 			jh->b_transaction == journal->j_running_transaction);
@@ -894,27 +884,28 @@ restart_loop:
 			__journal_insert_checkpoint(jh, commit_transaction);
 			if (is_journal_aborted(journal))
 				clear_buffer_jbddirty(bh);
+			JBUFFER_TRACE(jh, "refile for checkpoint writeback");
+			__journal_refile_buffer(jh);
+			jbd_unlock_bh_state(bh);
 		} else {
 			J_ASSERT_BH(bh, !buffer_dirty(bh));
-			/*
-			 * The buffer on BJ_Forget list and not jbddirty means
+			/* The buffer on BJ_Forget list and not jbddirty means
 			 * it has been freed by this transaction and hence it
 			 * could not have been reallocated until this
 			 * transaction has committed. *BUT* it could be
 			 * reallocated once we have written all the data to
 			 * disk and before we process the buffer on BJ_Forget
-			 * list.
-			 */
-			if (!jh->b_next_transaction)
-				try_to_free = 1;
+			 * list. */
+			JBUFFER_TRACE(jh, "refile or unfile freed buffer");
+			__journal_refile_buffer(jh);
+			if (!jh->b_transaction) {
+				jbd_unlock_bh_state(bh);
+				 /* needs a brelse */
+				journal_remove_journal_head(bh);
+				release_buffer_page(bh);
+			} else
+				jbd_unlock_bh_state(bh);
 		}
-		JBUFFER_TRACE(jh, "refile or unfile freed buffer");
-		__journal_refile_buffer(jh);
-		jbd_unlock_bh_state(bh);
-		if (try_to_free)
-			release_buffer_page(bh);
-		else
-			__brelse(bh);
 		cond_resched_lock(&journal->j_list_lock);
 	}
 	spin_unlock(&journal->j_list_lock);
@@ -981,7 +972,6 @@ restart_loop:
 	}
 	spin_unlock(&journal->j_list_lock);
 
-	trace_jbd_end_commit(journal, commit_transaction);
 	jbd_debug(1, "JBD: commit %d complete, head %d\n",
 		  journal->j_commit_sequence, journal->j_tail_sequence);
 

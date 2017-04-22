@@ -54,19 +54,20 @@ identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
 {
 	const int size = 512;
 	struct minix_super_block *minixsb;
+	struct ext2_super_block *ext2sb;
 	struct romfs_super_block *romfsb;
 	struct cramfs_super *cramfsb;
 	struct squashfs_super_block *squashfsb;
 	int nblocks = -1;
 	unsigned char *buf;
 	const char *compress_name;
-	unsigned long n;
 
 	buf = kmalloc(size, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 
 	minixsb = (struct minix_super_block *) buf;
+	ext2sb = (struct ext2_super_block *) buf;
 	romfsb = (struct romfs_super_block *) buf;
 	cramfsb = (struct cramfs_super *) buf;
 	squashfsb = (struct squashfs_super_block *) buf;
@@ -80,12 +81,20 @@ identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
 
 	*decompressor = decompress_method(buf, size, &compress_name);
 	if (compress_name) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "RAMDISK: %s image found at block %d\n",
 		       compress_name, start_block);
+#else
+		;
+#endif
 		if (!*decompressor)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_EMERG
 			       "RAMDISK: %s decompressor not configured!\n",
 			       compress_name);
+#else
+			;
+#endif
 		nblocks = 0;
 		goto done;
 	}
@@ -93,26 +102,38 @@ identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
 	/* romfs is at block zero too */
 	if (romfsb->word0 == ROMSB_WORD0 &&
 	    romfsb->word1 == ROMSB_WORD1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "RAMDISK: romfs filesystem found at block %d\n",
 		       start_block);
+#else
+		;
+#endif
 		nblocks = (ntohl(romfsb->size)+BLOCK_SIZE-1)>>BLOCK_SIZE_BITS;
 		goto done;
 	}
 
 	if (cramfsb->magic == CRAMFS_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "RAMDISK: cramfs filesystem found at block %d\n",
 		       start_block);
+#else
+		;
+#endif
 		nblocks = (cramfsb->size + BLOCK_SIZE - 1) >> BLOCK_SIZE_BITS;
 		goto done;
 	}
 
 	/* squashfs is at block zero too */
 	if (le32_to_cpu(squashfsb->s_magic) == SQUASHFS_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "RAMDISK: squashfs filesystem found at block %d\n",
 		       start_block);
+#else
+		;
+#endif
 		nblocks = (le64_to_cpu(squashfsb->bytes_used) + BLOCK_SIZE - 1)
 			 >> BLOCK_SIZE_BITS;
 		goto done;
@@ -141,26 +162,38 @@ identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
 	/* Try minix */
 	if (minixsb->s_magic == MINIX_SUPER_MAGIC ||
 	    minixsb->s_magic == MINIX_SUPER_MAGIC2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "RAMDISK: Minix filesystem found at block %d\n",
 		       start_block);
+#else
+		;
+#endif
 		nblocks = minixsb->s_nzones << minixsb->s_log_zone_size;
 		goto done;
 	}
 
 	/* Try ext2 */
-	n = ext2_image_size(buf);
-	if (n) {
+	if (ext2sb->s_magic == cpu_to_le16(EXT2_SUPER_MAGIC)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "RAMDISK: ext2 filesystem found at block %d\n",
 		       start_block);
-		nblocks = n;
+#else
+		;
+#endif
+		nblocks = le32_to_cpu(ext2sb->s_blocks_count) <<
+			le32_to_cpu(ext2sb->s_log_block_size);
 		goto done;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE
 	       "RAMDISK: Couldn't find valid RAM disk image starting at %d.\n",
 	       start_block);
+#else
+	;
+#endif
 
 done:
 	sys_lseek(fd, start_block * BLOCK_SIZE, 0);
@@ -216,8 +249,12 @@ int __init rd_load_image(char *from)
 		rd_blocks >>= 1;
 
 	if (nblocks > rd_blocks) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("RAMDISK: image too big! (%dKiB/%ldKiB)\n",
 		       nblocks, rd_blocks);
+#else
+		;
+#endif
 		goto done;
 	}
 
@@ -243,34 +280,62 @@ int __init rd_load_image(char *from)
 		goto done;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "RAMDISK: Loading %dKiB [%ld disk%s] into ram disk... ",
 		nblocks, ((nblocks-1)/devblocks)+1, nblocks>devblocks ? "s" : "");
+#else
+	;
+#endif
 	for (i = 0, disk = 1; i < nblocks; i++) {
 		if (i && (i % devblocks == 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("done disk #%d.\n", disk++);
+#else
+			;
+#endif
 			rotate = 0;
 			if (sys_close(in_fd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Error closing the disk.\n");
+#else
+				;
+#endif
 				goto noclose_input;
 			}
 			change_floppy("disk #%d", disk);
 			in_fd = sys_open(from, O_RDONLY, 0);
 			if (in_fd < 0)  {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Error opening disk.\n");
+#else
+				;
+#endif
 				goto noclose_input;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Loading disk #%d... ", disk);
+#else
+			;
+#endif
 		}
 		sys_read(in_fd, buf, BLOCK_SIZE);
 		sys_write(out_fd, buf, BLOCK_SIZE);
 #if !defined(CONFIG_S390)
 		if (!(i % 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c\b", rotator[rotate & 0x3]);
+#else
+			;
+#endif
 			rotate++;
 		}
 #endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
+#else
+	;
+#endif
 
 successful_load:
 	res = 1;

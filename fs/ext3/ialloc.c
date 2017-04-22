@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/ialloc.c
  *
@@ -12,10 +15,20 @@
  *        David S. Miller (davem@caip.rutgers.edu), 1995
  */
 
+#include <linux/time.h>
+#include <linux/fs.h>
+#include <linux/jbd.h>
+#include <linux/ext3_fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/stat.h>
+#include <linux/string.h>
 #include <linux/quotaops.h>
+#include <linux/buffer_head.h>
 #include <linux/random.h>
+#include <linux/bitops.h>
 
-#include "ext3.h"
+#include <asm/byteorder.h>
+
 #include "xattr.h"
 #include "acl.h"
 
@@ -108,7 +121,6 @@ void ext3_free_inode (handle_t *handle, struct inode * inode)
 
 	ino = inode->i_ino;
 	ext3_debug ("freeing inode %lu\n", ino);
-	trace_ext3_free_inode(inode);
 
 	is_directory = S_ISDIR(inode->i_mode);
 
@@ -360,7 +372,7 @@ static int find_group_other(struct super_block *sb, struct inode *parent)
  * group to find a free inode.
  */
 struct inode *ext3_new_inode(handle_t *handle, struct inode * dir,
-			     const struct qstr *qstr, umode_t mode)
+			     const struct qstr *qstr, int mode)
 {
 	struct super_block *sb;
 	struct buffer_head *bitmap_bh = NULL;
@@ -381,7 +393,6 @@ struct inode *ext3_new_inode(handle_t *handle, struct inode * dir,
 		return ERR_PTR(-EPERM);
 
 	sb = dir->i_sb;
-	trace_ext3_request_inode(dir, mode);
 	inode = new_inode(sb);
 	if (!inode)
 		return ERR_PTR(-ENOMEM);
@@ -558,7 +569,6 @@ got:
 	}
 
 	ext3_debug("allocating inode %lu\n", inode->i_ino);
-	trace_ext3_allocate_inode(inode, dir, mode);
 	goto really_out;
 fail:
 	ext3_std_error(sb, err);

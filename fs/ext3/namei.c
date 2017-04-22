@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/namei.c
  *
@@ -24,8 +27,19 @@
  *	Theodore Ts'o, 2002
  */
 
+#include <linux/fs.h>
+#include <linux/pagemap.h>
+#include <linux/jbd.h>
+#include <linux/time.h>
+#include <linux/ext3_fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/fcntl.h>
+#include <linux/stat.h>
+#include <linux/string.h>
 #include <linux/quotaops.h>
-#include "ext3.h"
+#include <linux/buffer_head.h>
+#include <linux/bio.h>
+
 #include "namei.h"
 #include "xattr.h"
 #include "acl.h"
@@ -242,12 +256,12 @@ static inline unsigned dx_node_limit (struct inode *dir)
 static void dx_show_index (char * label, struct dx_entry *entries)
 {
         int i, n = dx_get_count (entries);
-        printk("%s index ", label);
+;
         for (i = 0; i < n; i++)
         {
-                printk("%x->%u ", i? dx_get_hash(entries + i): 0, dx_get_block(entries + i));
+;
         }
-        printk("\n");
+;
 }
 
 struct stats
@@ -264,7 +278,7 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext3_dir_ent
 	char *base = (char *) de;
 	struct dx_hash_info h = *hinfo;
 
-	printk("names: ");
+;
 	while ((char *) de < base + size)
 	{
 		if (de->inode)
@@ -275,15 +289,15 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext3_dir_ent
 				char *name = de->name;
 				while (len--) printk("%c", *name++);
 				ext3fs_dirhash(de->name, de->name_len, &h);
-				printk(":%x.%u ", h.hash,
-				       (unsigned) ((char *) de - base));
+//				printk(":%x.%u ", h.hash,
+;
 			}
 			space += EXT3_DIR_REC_LEN(de->name_len);
 			names++;
 		}
 		de = ext3_next_entry(de);
 	}
-	printk("(%i)\n", names);
+;
 	return (struct stats) { names, space, 1 };
 }
 
@@ -295,13 +309,13 @@ struct stats dx_show_entries(struct dx_hash_info *hinfo, struct inode *dir,
 	unsigned bcount = 0;
 	struct buffer_head *bh;
 	int err;
-	printk("%i indexed blocks...\n", count);
+;
 	for (i = 0; i < count; i++, entries++)
 	{
 		u32 block = dx_get_block(entries), hash = i? dx_get_hash(entries): 0;
 		u32 range = i < count - 1? (dx_get_hash(entries + 1) - hash): ~hash;
 		struct stats stats;
-		printk("%s%3u:%03u hash %8x/%8x ",levels?"":"   ", i, block, hash, range);
+;
 		if (!(bh = ext3_bread (NULL,dir, block, 0,&err))) continue;
 		stats = levels?
 		   dx_show_entries(hinfo, dir, ((struct dx_node *) bh->b_data)->entries, levels - 1):
@@ -312,8 +326,8 @@ struct stats dx_show_entries(struct dx_hash_info *hinfo, struct inode *dir,
 		brelse (bh);
 	}
 	if (bcount)
-		printk("%snames %u, fullness %u (%u%%)\n", levels?"":"   ",
-			names, space/bcount,(space/bcount)*100/blocksize);
+//		printk("%snames %u, fullness %u (%u%%)\n", levels?"":"   ",
+;
 	return (struct stats) { names, space, bcount};
 }
 #endif /* DX_DEBUG */
@@ -390,7 +404,7 @@ dx_probe(struct qstr *entry, struct inode *dir,
 		goto fail;
 	}
 
-	dxtrace (printk("Look up %x", hash));
+;
 	while (1)
 	{
 		count = dx_get_count(entries);
@@ -407,7 +421,7 @@ dx_probe(struct qstr *entry, struct inode *dir,
 		while (p <= q)
 		{
 			m = p + (q - p)/2;
-			dxtrace(printk("."));
+;
 			if (dx_get_hash(m) > hash)
 				q = m - 1;
 			else
@@ -420,7 +434,7 @@ dx_probe(struct qstr *entry, struct inode *dir,
 			at = entries;
 			while (n--)
 			{
-				dxtrace(printk(","));
+;
 				if (dx_get_hash(++at) > hash)
 				{
 					at--;
@@ -431,7 +445,7 @@ dx_probe(struct qstr *entry, struct inode *dir,
 		}
 
 		at = p - 1;
-		dxtrace(printk(" %x->%u\n", at == entries? 0: dx_get_hash(at), dx_get_block(at)));
+;
 		frame->bh = bh;
 		frame->entries = entries;
 		frame->at = at;
@@ -561,7 +575,7 @@ static int htree_dirblock_to_tree(struct file *dir_file,
 	struct ext3_dir_entry_2 *de, *top;
 	int err, count = 0;
 
-	dxtrace(printk("In htree dirblock_to_tree: block %d\n", block));
+;
 	if (!(bh = ext3_bread (NULL, dir, block, 0, &err)))
 		return err;
 
@@ -615,8 +629,8 @@ int ext3_htree_fill_tree(struct file *dir_file, __u32 start_hash,
 	int ret;
 	__u32 hashval;
 
-	dxtrace(printk("In htree_fill_tree, start hash: %x:%x\n", start_hash,
-		       start_minor_hash));
+//	dxtrace(printk("In htree_fill_tree, start hash: %x:%x\n", start_hash,
+;
 	dir = dir_file->f_path.dentry->d_inode;
 	if (!(EXT3_I(dir)->i_flags & EXT3_INDEX_FL)) {
 		hinfo.hash_version = EXT3_SB(dir->i_sb)->s_def_hash_version;
@@ -677,8 +691,8 @@ int ext3_htree_fill_tree(struct file *dir_file, __u32 start_hash,
 			break;
 	}
 	dx_release(frames);
-	dxtrace(printk("Fill tree: returned %d entries, next hash: %x\n",
-		       count, *next_hash));
+//	dxtrace(printk("Fill tree: returned %d entries, next hash: %x\n",
+;
 	return count;
 errout:
 	dx_release(frames);
@@ -877,7 +891,7 @@ static struct buffer_head *ext3_find_entry(struct inode *dir,
 		 */
 		if (bh || (err != ERR_BAD_DX_DIR))
 			return bh;
-		dxtrace(printk("ext3_find_entry: dx failed, falling back\n"));
+;
 	}
 	nblocks = dir->i_size >> EXT3_BLOCK_SIZE_BITS(sb);
 	start = EXT3_I(dir)->i_dir_start_lookup;
@@ -906,12 +920,8 @@ restart:
 				num++;
 				bh = ext3_getblk(NULL, dir, b++, 0, &err);
 				bh_use[ra_max] = bh;
-				if (bh && !bh_uptodate_or_lock(bh)) {
-					get_bh(bh);
-					bh->b_end_io = end_buffer_read_sync;
-					submit_bh(READ | REQ_META | REQ_PRIO,
-						  bh);
-				}
+				if (bh)
+					ll_rw_block(READ_META, 1, &bh);
 			}
 		}
 		if ((bh = bh_use[ra_ptr++]) == NULL)
@@ -1003,7 +1013,7 @@ static struct buffer_head * ext3_dx_find_entry(struct inode *dir,
 
 	*err = -ENOENT;
 errout:
-	dxtrace(printk("%s not found\n", entry->name));
+;
 	dx_release (frames);
 	return NULL;
 }
@@ -1186,8 +1196,8 @@ static struct ext3_dir_entry_2 *do_split(handle_t *handle, struct inode *dir,
 	split = count - move;
 	hash2 = map[split].hash;
 	continued = hash2 == map[split - 1].hash;
-	dxtrace(printk("Split block %i at %x, %i/%i\n",
-		dx_get_block(frame->at), hash2, split, count-split));
+//	dxtrace(printk("Split block %i at %x, %i/%i\n",
+;
 
 	/* Fancy dance to stay within two buffers */
 	de2 = dx_move_dirents(data1, data2, map + split, count - split);
@@ -1344,7 +1354,7 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
 	struct fake_dirent *fde;
 
 	blocksize =  dir->i_sb->s_blocksize;
-	dxtrace(printk(KERN_DEBUG "Creating index: inode %lu\n", dir->i_ino));
+;
 	retval = ext3_journal_get_write_access(handle, bh);
 	if (retval) {
 		ext3_std_error(dir->i_sb, retval);
@@ -1512,8 +1522,8 @@ static int ext3_dx_add_entry(handle_t *handle, struct dentry *dentry,
 	}
 
 	/* Block full, should compress but for now just split */
-	dxtrace(printk("using %u of %u node entries\n",
-		       dx_get_count(entries), dx_get_limit(entries)));
+//	dxtrace(printk("using %u of %u node entries\n",
+;
 	/* Need to split index? */
 	if (dx_get_count(entries) == dx_get_limit(entries)) {
 		u32 newblock;
@@ -1544,7 +1554,7 @@ static int ext3_dx_add_entry(handle_t *handle, struct dentry *dentry,
 		if (levels) {
 			unsigned icount1 = icount/2, icount2 = icount - icount1;
 			unsigned hash2 = dx_get_hash(entries + icount1);
-			dxtrace(printk("Split index %i/%i\n", icount1, icount2));
+;
 
 			BUFFER_TRACE(frame->bh, "get_write_access"); /* index root */
 			err = ext3_journal_get_write_access(handle,
@@ -1573,7 +1583,7 @@ static int ext3_dx_add_entry(handle_t *handle, struct dentry *dentry,
 				goto journal_error;
 			brelse (bh2);
 		} else {
-			dxtrace(printk("Creating second level index...\n"));
+;
 			memcpy((char *) entries2, (char *) entries,
 			       icount * sizeof(struct dx_entry));
 			dx_set_limit(entries2, dx_node_limit(dir));
@@ -2130,7 +2140,6 @@ static int ext3_unlink(struct inode * dir, struct dentry *dentry)
 	struct ext3_dir_entry_2 * de;
 	handle_t *handle;
 
-	trace_ext3_unlink_enter(dir, dentry);
 	/* Initialize quotas before so that eventual writes go
 	 * in separate transaction */
 	dquot_initialize(dir);
@@ -2176,7 +2185,6 @@ static int ext3_unlink(struct inode * dir, struct dentry *dentry)
 end_unlink:
 	ext3_journal_stop(handle);
 	brelse (bh);
-	trace_ext3_unlink_exit(dentry, retval);
 	return retval;
 }
 
@@ -2260,7 +2268,7 @@ retry:
 			err = PTR_ERR(handle);
 			goto err_drop_inode;
 		}
-		set_nlink(inode, 1);
+		inc_nlink(inode);
 		err = ext3_orphan_del(handle, inode);
 		if (err) {
 			ext3_journal_stop(handle);

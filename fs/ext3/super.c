@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/super.c
  *
@@ -17,12 +20,22 @@
  */
 
 #include <linux/module.h>
+#include <linux/string.h>
+#include <linux/fs.h>
+#include <linux/time.h>
+#include <linux/jbd.h>
+#include <linux/ext3_fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/slab.h>
+#include <linux/init.h>
 #include <linux/blkdev.h>
 #include <linux/parser.h>
+#include <linux/buffer_head.h>
 #include <linux/exportfs.h>
-#include <linux/statfs.h>
+#include <linux/vfs.h>
 #include <linux/random.h>
 #include <linux/mount.h>
+#include <linux/namei.h>
 #include <linux/quotaops.h>
 #include <linux/seq_file.h>
 #include <linux/log2.h>
@@ -30,9 +43,6 @@
 
 #include <asm/uaccess.h>
 
-#define CREATE_TRACE_POINTS
-
-#include "ext3.h"
 #include "xattr.h"
 #include "acl.h"
 #include "namei.h"
@@ -490,14 +500,6 @@ static struct inode *ext3_alloc_inode(struct super_block *sb)
 	return &ei->vfs_inode;
 }
 
-static int ext3_drop_inode(struct inode *inode)
-{
-	int drop = generic_drop_inode(inode);
-
-	trace_ext3_drop_inode(inode, drop);
-	return drop;
-}
-
 static void ext3_i_callback(struct rcu_head *head)
 {
 	struct inode *inode = container_of(head, struct inode, i_rcu);
@@ -786,7 +788,6 @@ static const struct super_operations ext3_sops = {
 	.destroy_inode	= ext3_destroy_inode,
 	.write_inode	= ext3_write_inode,
 	.dirty_inode	= ext3_dirty_inode,
-	.drop_inode	= ext3_drop_inode,
 	.evict_inode	= ext3_evict_inode,
 	.put_super	= ext3_put_super,
 	.sync_fs	= ext3_sync_fs,
@@ -1719,8 +1720,6 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
 	sbi->s_resuid = le16_to_cpu(es->s_def_resuid);
 	sbi->s_resgid = le16_to_cpu(es->s_def_resgid);
 
-	/* enable barriers by default */
-	set_opt(sbi->s_mount_opt, BARRIER);
 	set_opt(sbi->s_mount_opt, RESERVATION);
 
 	if (!parse_options ((char *) data, sb, &journal_inum, &journal_devnum,
@@ -2048,10 +2047,9 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
 	EXT3_SB(sb)->s_mount_state |= EXT3_ORPHAN_FS;
 	ext3_orphan_cleanup(sb, es);
 	EXT3_SB(sb)->s_mount_state &= ~EXT3_ORPHAN_FS;
-	if (needs_recovery) {
-		ext3_mark_recovery_complete(sb, es);
+	if (needs_recovery)
 		ext3_msg(sb, KERN_INFO, "recovery complete");
-	}
+	ext3_mark_recovery_complete(sb, es);
 	ext3_msg(sb, KERN_INFO, "mounted filesystem with %s data mode",
 		test_opt(sb,DATA_FLAGS) == EXT3_MOUNT_JOURNAL_DATA ? "journal":
 		test_opt(sb,DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA ? "ordered":
@@ -2219,11 +2217,11 @@ static journal_t *ext3_get_dev_journal(struct super_block *sb,
 		goto out_bdev;
 	}
 	journal->j_private = sb;
-	if (!bh_uptodate_or_lock(journal->j_sb_buffer)) {
-		if (bh_submit_read(journal->j_sb_buffer)) {
-			ext3_msg(sb, KERN_ERR, "I/O error on journal device");
-			goto out_journal;
-		}
+	ll_rw_block(READ, 1, &journal->j_sb_buffer);
+	wait_on_buffer(journal->j_sb_buffer);
+	if (!buffer_uptodate(journal->j_sb_buffer)) {
+		ext3_msg(sb, KERN_ERR, "I/O error on journal device");
+		goto out_journal;
 	}
 	if (be32_to_cpu(journal->j_superblock->s_nr_users) != 1) {
 		ext3_msg(sb, KERN_ERR,
@@ -2510,7 +2508,6 @@ static int ext3_sync_fs(struct super_block *sb, int wait)
 {
 	tid_t target;
 
-	trace_ext3_sync_fs(sb, wait);
 	if (journal_start_commit(EXT3_SB(sb)->s_journal, &target)) {
 		if (wait)
 			log_wait_commit(EXT3_SB(sb)->s_journal, target);
@@ -2658,13 +2655,13 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
 			/*
 			 * If we have an unprocessed orphan list hanging
 			 * around from a previously readonly bdev mount,
-			 * require a full umount & mount for now.
+			 * require a full umount/remount for now.
 			 */
 			if (es->s_last_orphan) {
 				ext3_msg(sb, KERN_WARNING, "warning: couldn't "
 				       "remount RDWR because of unprocessed "
 				       "orphan inode list.  Please "
-				       "umount & mount instead.");
+				       "umount/remount instead.");
 				err = -EINVAL;
 				goto restore_opts;
 			}
@@ -2899,7 +2896,7 @@ static int ext3_quota_on(struct super_block *sb, int type, int format_id,
 		return -EINVAL;
 
 	/* Quotafile not on the same filesystem? */
-	if (path->dentry->d_sb != sb)
+	if (path->mnt->mnt_sb != sb)
 		return -EXDEV;
 	/* Journaling quota? */
 	if (EXT3_SB(sb)->s_qf_names[type]) {

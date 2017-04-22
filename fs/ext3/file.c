@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/file.c
  *
@@ -18,8 +21,12 @@
  *	(jj@sunsite.ms.mff.cuni.cz)
  */
 
+#include <linux/time.h>
+#include <linux/fs.h>
+#include <linux/jbd.h>
 #include <linux/quotaops.h>
-#include "ext3.h"
+#include <linux/ext3_fs.h>
+#include <linux/ext3_jbd.h>
 #include "xattr.h"
 #include "acl.h"
 
@@ -67,6 +74,7 @@ const struct file_operations ext3_file_operations = {
 };
 
 const struct inode_operations ext3_file_inode_operations = {
+	.truncate	= ext3_truncate,
 	.setattr	= ext3_setattr,
 #ifdef CONFIG_EXT3_FS_XATTR
 	.setxattr	= generic_setxattr,
