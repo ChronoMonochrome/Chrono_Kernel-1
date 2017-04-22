@@ -2398,7 +2398,7 @@ static int picolcd_raw_event(struct hid_device *hdev,
 #ifdef CONFIG_PM
 static int picolcd_suspend(struct hid_device *hdev, pm_message_t message)
 {
-	if (PMSG_IS_AUTO(message))
+	if (message.event & PM_EVENT_AUTO)
 		return 0;
 
 	picolcd_suspend_backlight(hid_get_drvdata(hdev));

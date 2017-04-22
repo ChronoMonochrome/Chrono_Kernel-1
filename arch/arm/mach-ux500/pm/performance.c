@@ -16,7 +16,7 @@
 #include <linux/kernel.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/cpu.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 
 #include <mach/irqs.h>
 
@@ -118,7 +118,7 @@ static struct delayed_work work_mmc;
 #endif
 
 static struct delayed_work work_wlan_workaround;
-static struct pm_qos_request wlan_pm_qos_latency;
+static struct pm_qos_request_list wlan_pm_qos_latency;
 static bool wlan_pm_qos_is_latency_0;
 
 static void wlan_load(struct work_struct *work)

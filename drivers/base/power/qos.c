@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * Devices PM QoS constraints management
  *
