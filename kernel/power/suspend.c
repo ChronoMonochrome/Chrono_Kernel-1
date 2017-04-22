@@ -8,6 +8,7 @@
  * This file is released under the GPLv2.
  */
 
+#include <linux/export.h>
 #include <linux/string.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
@@ -18,6 +19,7 @@
 #include <linux/gfp.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/kmod.h>
 #include <linux/list.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
