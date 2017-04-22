@@ -19,6 +19,8 @@ CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 # o  print "Entering directory ...";
 MAKEFLAGS += -rR --no-print-directory
 
+CROSS_COMPILE ?= /home/chrono/root/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+
 # Avoid funny character set dependencies
 unexport LC_ALL
 LC_COLLATE=C

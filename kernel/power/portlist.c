@@ -15,6 +15,7 @@
 #endif
 
 #define MAKE_HEADER(PTR, MAIN_CMD, SUB_CMD, CMD_TYPE, PKT_SIZE) \
+					(PTR)->hdr.len = (unsigned short)PKT_SIZE; \
 					(PTR)->hdr.main_cmd = (unsigned char)MAIN_CMD; \
 					(PTR)->hdr.sub_cmd = (unsigned char)SUB_CMD;\
 					(PTR)->hdr.cmd_type = (unsigned char)CMD_TYPE;
@@ -111,7 +112,7 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 
 	read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
 
-;
+	dprintk("read byte = %d\n",read_byte);
 
 #ifdef DEBUG_PORT_INFO
 	for ( index = 0; index < read_byte ; index++) {
@@ -123,16 +124,14 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 	while (readline_offset < read_byte) {
 		if (*(readline+readline_offset) == '\n') {
 			sscanf(eachline, "%d: %x:%x", &lineNum, &ip, &port);
-;
+			dprintk("Read IP, Port : %x:%x\n", ip, port);
 
 			if (ip != 0x0100007F && ip != 0x00000000) {
 				if (port != 0  && ip != 0x00000000) {
 					portList[port_index++] =
 						(unsigned short)port;
-#ifdef DEBUG_PORT_INFO
 					pr_info("WHITELIST : add port %4x\n"
 						, port);
-#endif
 				}
 			}
 
@@ -170,7 +169,7 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 
 	read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
 
-;
+	dprintk("read byte = %d\n",read_byte);
 
 #ifdef DEBUG_PORT_INFO
 	for ( index = 0; index < read_byte ; index++) {
@@ -185,14 +184,12 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			{
 			sscanf(eachline,"%d: %32x:%x",&lineNum, &ip, &port);
 			//sscanf(readLine,"%*d: %*64[0-9a-fA-F]:%X", &port);
-;
+			dprintk("Read Port : %x:%x\n", ip, port);
 
 			if ( port != 0  && ip != 0x00000000)
 			{
 				portList[port_index++] = (unsigned short)port;
-#ifdef DEBUG_PORT_INFO
 				pr_info("WHITELIST : add port %4x\n", port);
-#endif
 			}
 
 			//clear line buffer
@@ -238,7 +235,7 @@ int TxGPRS_SetPortList( void )
 	ipc_pda_gprs_port_list_set_type *pipc;
 	HDLCFrame_t frame_message;
 
-;
+	dprintk("[%s][line:%d]\n",__func__, __LINE__);
 
 	memset(&port_list_packet, 0, sizeof(port_list_packet));
 
@@ -290,19 +287,19 @@ int TxGPRS_SetPortList( void )
 #ifdef DEBUG_PORT_INFO
 	int i = 0;
 	for ( ; i< hdlc_size; i++) {
-;
+		if(i %16 == 0) printk("\n");
 
 		printk(KERN_INFO "%02x ",*(rawdata+i));
 		}
 #endif
 
-;
+	dprintk("\n[%s][line:%d]\n",__func__, __LINE__);
 	return hdlc_size;
 }
 
 void clear_portlist( void )
 {
-;
+	dprintk("[%s][line:%d]\n",__func__, __LINE__);
 
 	if(hdlc_frame !=  NULL) {
 		kfree(hdlc_frame);
@@ -399,7 +396,7 @@ int  TxApstateToCP(unsigned char apstate)
 
 void clear_ApState(void)
 {
-;
+	dprintk("[%s][line:%d]\n", __func__, __LINE__);
 
 	if (hdlcFrame !=  NULL) {
 		kfree(hdlcFrame);

@@ -3,22 +3,29 @@
  *
  * Copyright (c) 2003 Patrick Mochel
  * Copyright (c) 2003 Open Source Development Lab
- *
+ * 
  * This file is released under the GPLv2
  *
  */
 
-#include <linux/module.h>
 #include <linux/kobject.h>
 #include <linux/string.h>
 #include <linux/resume-trace.h>
 #include <linux/workqueue.h>
-#include <linux/debugfs.h>
-#include <linux/seq_file.h>
+
+#include <linux/moduleparam.h>
 
 #include "power.h"
 
+#ifdef CONFIG_DVFS_LIMIT
+#include <linux/cpufreq.h>
+#include <linux/mfd/dbx500-prcmu.h>
+#endif /* CONFIG_DVFS_LIMIT */
+
 DEFINE_MUTEX(pm_mutex);
+
+static bool debug_mask = false;
+module_param(debug_mask, bool, 0644);
 
 #ifdef CONFIG_PM_SLEEP
 
@@ -40,9 +47,8 @@ EXPORT_SYMBOL_GPL(unregister_pm_notifier);
 
 int pm_notifier_call_chain(unsigned long val)
 {
-	int ret = blocking_notifier_call_chain(&pm_chain_head, val, NULL);
-
-	return notifier_to_errno(ret);
+	return (blocking_notifier_call_chain(&pm_chain_head, val, NULL)
+			== NOTIFY_BAD) ? -EINVAL : 0;
 }
 
 /* If set, devices may be suspended and resumed asynchronously. */
@@ -116,7 +122,7 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
 	p = memchr(buf, '\n', n);
 	len = p ? p - buf : n;
 
-	lock_system_sleep();
+	mutex_lock(&pm_mutex);
 
 	level = TEST_FIRST;
 	for (s = &pm_tests[level]; level <= TEST_MAX; s++, level++)
@@ -126,112 +132,13 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
 			break;
 		}
 
-	unlock_system_sleep();
+	mutex_unlock(&pm_mutex);
 
 	return error ? error : n;
 }
 
 power_attr(pm_test);
 #endif /* CONFIG_PM_DEBUG */
-
-#ifdef CONFIG_DEBUG_FS
-static char *suspend_step_name(enum suspend_stat_step step)
-{
-	switch (step) {
-	case SUSPEND_FREEZE:
-		return "freeze";
-	case SUSPEND_PREPARE:
-		return "prepare";
-	case SUSPEND_SUSPEND:
-		return "suspend";
-	case SUSPEND_SUSPEND_NOIRQ:
-		return "suspend_noirq";
-	case SUSPEND_RESUME_NOIRQ:
-		return "resume_noirq";
-	case SUSPEND_RESUME:
-		return "resume";
-	default:
-		return "";
-	}
-}
-
-static int suspend_stats_show(struct seq_file *s, void *unused)
-{
-	int i, index, last_dev, last_errno, last_step;
-
-	last_dev = suspend_stats.last_failed_dev + REC_FAILED_NUM - 1;
-	last_dev %= REC_FAILED_NUM;
-	last_errno = suspend_stats.last_failed_errno + REC_FAILED_NUM - 1;
-	last_errno %= REC_FAILED_NUM;
-	last_step = suspend_stats.last_failed_step + REC_FAILED_NUM - 1;
-	last_step %= REC_FAILED_NUM;
-	seq_printf(s, "%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %d\n"
-			"%s: %d\n%s: %d\n%s: %d\n%s: %d\n%s: %d\n",
-			"success", suspend_stats.success,
-			"fail", suspend_stats.fail,
-			"failed_freeze", suspend_stats.failed_freeze,
-			"failed_prepare", suspend_stats.failed_prepare,
-			"failed_suspend", suspend_stats.failed_suspend,
-			"failed_suspend_late",
-				suspend_stats.failed_suspend_late,
-			"failed_suspend_noirq",
-				suspend_stats.failed_suspend_noirq,
-			"failed_resume", suspend_stats.failed_resume,
-			"failed_resume_early",
-				suspend_stats.failed_resume_early,
-			"failed_resume_noirq",
-				suspend_stats.failed_resume_noirq);
-	seq_printf(s,	"failures:\n  last_failed_dev:\t%-s\n",
-			suspend_stats.failed_devs[last_dev]);
-	for (i = 1; i < REC_FAILED_NUM; i++) {
-		index = last_dev + REC_FAILED_NUM - i;
-		index %= REC_FAILED_NUM;
-		seq_printf(s, "\t\t\t%-s\n",
-			suspend_stats.failed_devs[index]);
-	}
-	seq_printf(s,	"  last_failed_errno:\t%-d\n",
-			suspend_stats.errno[last_errno]);
-	for (i = 1; i < REC_FAILED_NUM; i++) {
-		index = last_errno + REC_FAILED_NUM - i;
-		index %= REC_FAILED_NUM;
-		seq_printf(s, "\t\t\t%-d\n",
-			suspend_stats.errno[index]);
-	}
-	seq_printf(s,	"  last_failed_step:\t%-s\n",
-			suspend_step_name(
-				suspend_stats.failed_steps[last_step]));
-	for (i = 1; i < REC_FAILED_NUM; i++) {
-		index = last_step + REC_FAILED_NUM - i;
-		index %= REC_FAILED_NUM;
-		seq_printf(s, "\t\t\t%-s\n",
-			suspend_step_name(
-				suspend_stats.failed_steps[index]));
-	}
-
-	return 0;
-}
-
-static int suspend_stats_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, suspend_stats_show, NULL);
-}
-
-static const struct file_operations suspend_stats_operations = {
-	.open           = suspend_stats_open,
-	.read           = seq_read,
-	.llseek         = seq_lseek,
-	.release        = single_release,
-};
-
-static int __init pm_debugfs_init(void)
-{
-	debugfs_create_file("suspend_stats", S_IFREG | S_IRUGO,
-			NULL, NULL, &suspend_stats_operations);
-	return 0;
-}
-
-late_initcall(pm_debugfs_init);
-#endif /* CONFIG_DEBUG_FS */
 
 #endif /* CONFIG_PM_SLEEP */
 
@@ -244,7 +151,7 @@ struct kobject *power_kobj;
  *	'standby' (Power-On Suspend), 'mem' (Suspend-to-RAM), and
  *	'disk' (Suspend-to-Disk).
  *
- *	store() accepts one of those strings, translates it into the
+ *	store() accepts one of those strings, translates it into the 
  *	proper enumerated value, and initiates a suspend transition.
  */
 static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
@@ -269,67 +176,47 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return (s - buf);
 }
 
-static suspend_state_t decode_state(const char *buf, size_t n)
+static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+			   const char *buf, size_t n)
 {
 #ifdef CONFIG_SUSPEND
 #ifdef CONFIG_EARLYSUSPEND
 	suspend_state_t state = PM_SUSPEND_ON;
 #else
 	suspend_state_t state = PM_SUSPEND_STANDBY;
-#endif	
+#endif
 	const char * const *s;
 #endif
 	char *p;
 	int len;
+	int error = -EINVAL;
 
 	p = memchr(buf, '\n', n);
 	len = p ? p - buf : n;
 
-	/* Check hibernation first. */
-	if (len == 4 && !strncmp(buf, "disk", len))
-		return PM_SUSPEND_MAX;
+	/* First, check if we are requested to hibernate */
+	if (len == 4 && !strncmp(buf, "disk", len)) {
+		error = hibernate();
+  goto Exit;
+	}
 
 #ifdef CONFIG_SUSPEND
-	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
+	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-			return state;
-#endif
-
-	return PM_SUSPEND_ON;
-}
-
-static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
-			   const char *buf, size_t n)
-{
-	suspend_state_t state;
-	int error;
-
-	error = pm_autosleep_lock();
-	if (error)
-		return error;
-
-	if (pm_autosleep_state() > PM_SUSPEND_ON) {
-		error = -EBUSY;
-		goto out;
+			break;
 	}
-
-	state = decode_state(buf, n);
-	if (state < PM_SUSPEND_MAX)
+	if (state < PM_SUSPEND_MAX && *s)
 #ifdef CONFIG_EARLYSUSPEND
-	{
+		if (state == PM_SUSPEND_ON || valid_state(state)) {
 			error = 0;
 			request_suspend_state(state);
-	}
+		}
 #else
-		error = pm_suspend(state);
+		error = enter_state(state);
 #endif
-	else if (state == PM_SUSPEND_MAX)
-		error = hibernate();
-	else
-		error = -EINVAL;
+#endif
 
- out:
-	pm_autosleep_unlock();
+ Exit:
 	return error ? error : n;
 }
 
@@ -370,8 +257,7 @@ static ssize_t wakeup_count_show(struct kobject *kobj,
 {
 	unsigned int val;
 
-	return pm_get_wakeup_count(&val, true) ?
-		sprintf(buf, "%u\n", val) : -EINTR;
+	return pm_get_wakeup_count(&val) ? sprintf(buf, "%u\n", val) : -EINTR;
 }
 
 static ssize_t wakeup_count_store(struct kobject *kobj,
@@ -379,70 +265,15 @@ static ssize_t wakeup_count_store(struct kobject *kobj,
 				const char *buf, size_t n)
 {
 	unsigned int val;
-	int error;
 
-	error = pm_autosleep_lock();
-	if (error)
-		return error;
-
-	if (pm_autosleep_state() > PM_SUSPEND_ON) {
-		error = -EBUSY;
-		goto out;
-	}
-
-	error = -EINVAL;
 	if (sscanf(buf, "%u", &val) == 1) {
 		if (pm_save_wakeup_count(val))
-			error = n;
+			return n;
 	}
-
- out:
-	pm_autosleep_unlock();
-	return error;
+	return -EINVAL;
 }
 
 power_attr(wakeup_count);
-
-#ifdef CONFIG_PM_AUTOSLEEP
-static ssize_t autosleep_show(struct kobject *kobj,
-			      struct kobj_attribute *attr,
-			      char *buf)
-{
-	suspend_state_t state = pm_autosleep_state();
-
-	if (state == PM_SUSPEND_ON)
-		return sprintf(buf, "off\n");
-
-#ifdef CONFIG_SUSPEND
-	if (state < PM_SUSPEND_MAX)
-		return sprintf(buf, "%s\n", valid_state(state) ?
-						pm_states[state] : "error");
-#endif
-#ifdef CONFIG_HIBERNATION
-	return sprintf(buf, "disk\n");
-#else
-	return sprintf(buf, "error");
-#endif
-}
-
-static ssize_t autosleep_store(struct kobject *kobj,
-			       struct kobj_attribute *attr,
-			       const char *buf, size_t n)
-{
-	suspend_state_t state = decode_state(buf, n);
-	int error;
-
-	if (state == PM_SUSPEND_ON
-	    && strcmp(buf, "off") && strcmp(buf, "off\n"))
-		return -EINVAL;
-
-	error = pm_autosleep_set_state(state);
-	return error ? error : n;
-}
-
-power_attr(autosleep);
-#endif /* CONFIG_PM_AUTOSLEEP */
-
 #endif /* CONFIG_PM_SLEEP */
 
 #ifdef CONFIG_PM_TRACE
@@ -484,12 +315,296 @@ pm_trace_dev_match_store(struct kobject *kobj, struct kobj_attribute *attr,
 }
 
 power_attr(pm_trace_dev_match);
+
 #endif /* CONFIG_PM_TRACE */
 
 #ifdef CONFIG_USER_WAKELOCK
 power_attr(wake_lock);
 power_attr(wake_unlock);
 #endif
+
+#ifdef CONFIG_DVFS_LIMIT
+static int cpufreq_max_limit_val = -1;
+static int cpufreq_min_limit_val = -1;
+static int min_replacement = 0;
+
+static ssize_t cpufreq_table_show(struct kobject *kobj,
+				struct kobj_attribute *attr,
+				char *buf)
+{
+	ssize_t count = 0;
+	struct cpufreq_frequency_table *table;
+	struct cpufreq_policy *policy;
+	unsigned int min_freq = ~0;
+	unsigned int max_freq = 0;
+	int i = 0;
+	unsigned int table_length = 0;
+
+	table = cpufreq_frequency_get_table(0);
+	if (!table) {
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
+		return sprintf(buf, "Failed to get the cpufreq table\n");
+	}
+
+	policy = cpufreq_cpu_get(0);
+	if (policy) {
+	#if 0 /* /sys/devices/system/cpu/cpu0/cpufreq/scaling_min&max_freq */
+		min_freq = policy->min_freq;
+		max_freq = policy->max_freq;
+	#else /* /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min&max_freq */
+		min_freq = policy->cpuinfo.min_freq;
+		max_freq = policy->cpuinfo.max_freq;
+	#endif
+	}
+
+	// Get frequency table length
+	for(table_length = 0; (table[table_length].frequency != CPUFREQ_TABLE_END); table_length++) ;
+
+	for (i = table_length-1; i >= 0; i--) {
+		if ((table[i].frequency == CPUFREQ_ENTRY_INVALID) ||
+		    (table[i].frequency > max_freq) ||
+		    (table[i].frequency < min_freq))
+			continue;
+		count += sprintf(&buf[count], "%d ", table[i].frequency);
+	}
+	count += sprintf(&buf[count], "\n");
+
+	return count;
+}
+
+static ssize_t cpufreq_table_store(struct kobject *kobj,
+				struct kobj_attribute *attr,
+				const char *buf, size_t n)
+{
+	printk(KERN_ERR "%s: cpufreq_table is read-only\n", __func__);
+	return -EINVAL;
+}
+
+#define VALID_LEVEL 1
+enum dvfs_lock_request_type {
+	DVFS_MIN_LOCK_REQ = 0,
+	DVFS_MAX_LOCK_REQ,
+};
+
+static int dvfs_cpufreq_notifier(struct notifier_block *nb,
+				 unsigned long event, void *data)
+{
+	struct cpufreq_policy *policy = data;
+	struct cpufreq_frequency_table *table;
+	unsigned int table_length = 0;
+
+	if (event != CPUFREQ_ADJUST)
+		return NOTIFY_DONE;
+
+	table = cpufreq_frequency_get_table(0);
+	if (!table) {
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
+		return -EINVAL;
+	}
+
+	/* Get frequency table length */
+	for(table_length = 0; (table[table_length].frequency != CPUFREQ_TABLE_END); table_length++) ;
+
+	/* Update cpufreq policy max value */
+	if (cpufreq_max_limit_val != -1 && policy->max > cpufreq_max_limit_val) {
+		policy->max = cpufreq_max_limit_val;
+	} else if (cpufreq_max_limit_val == -1) {
+		policy->max = table[table_length-1].frequency;
+	}
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block dvfs_cpufreq_notifier_block = {
+	.notifier_call = dvfs_cpufreq_notifier,
+};
+
+static int get_cpufreq_level(unsigned int freq, unsigned int *level, int req_type)
+{
+	struct cpufreq_frequency_table *table;
+	int i = 0;
+	unsigned int table_length = 0;
+
+	table = cpufreq_frequency_get_table(0);
+	if (!table) {
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
+		return -EINVAL;
+	}
+
+	// Get frequency table length
+	for(table_length = 0; (table[table_length].frequency != CPUFREQ_TABLE_END); table_length++) ;
+	
+	switch (req_type) {
+	case 	DVFS_MIN_LOCK_REQ:
+		for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++)
+			if (table[i].frequency >= freq) {
+				*level = table[i].frequency;
+				if (debug_mask) {
+					pr_info("%s: MIN_LOCK req_freq(%d), matched_freq(%d)\n", __func__, freq, table[i].frequency);
+				}
+				return VALID_LEVEL;
+			}
+		break;
+
+	case DVFS_MAX_LOCK_REQ:
+		for (i = table_length-1; i >= 0; i--)
+			if (table[i].frequency <= freq) {
+				*level = table[i].frequency;
+				if (debug_mask) {
+					pr_info("%s: MAX_LOCK req_freq(%d), matched_freq(%d)\n", __func__, freq, table[i].frequency);
+				}
+				return VALID_LEVEL;
+			}
+		break;
+	};
+
+	return -EINVAL;
+}
+
+static ssize_t cpufreq_max_limit_show(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					char *buf)
+{
+	return sprintf(buf, "%d\n", cpufreq_max_limit_val);
+}
+
+static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					const char *buf, size_t n)
+{
+	int val;
+	unsigned int cpufreq_level;
+	ssize_t ret = -EINVAL;
+	int cpu;
+
+	if (sscanf(buf, "%d", &val) != 1) {
+		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
+		goto out;
+	}
+
+	if (val == -1) { /* Unlock request */
+		if (cpufreq_max_limit_val != -1) {
+			/* Reset lock value to default */
+ 			cpufreq_max_limit_val = -1;
+
+			/* Update CPU frequency policy */
+			for_each_online_cpu(cpu)
+				cpufreq_update_policy(cpu);
+
+			/* Update PRCMU QOS value to min value */
+			if(min_replacement && cpufreq_min_limit_val != -1) {
+				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+						"power", cpufreq_min_limit_val);
+				/* Clear replacement flag */
+				min_replacement = 0;
+			}
+		} else /* Already unlocked */
+			printk(KERN_ERR "%s: Unlock request is ignored\n",
+				__func__);
+	} else { /* Lock request */
+		if (get_cpufreq_level((unsigned int)val, &cpufreq_level, DVFS_MAX_LOCK_REQ)
+		    == VALID_LEVEL) {
+ 			cpufreq_max_limit_val = val;
+
+			/* Max lock has higher priority than Min lock */
+			if (cpufreq_min_limit_val != -1 &&
+			    cpufreq_min_limit_val > cpufreq_max_limit_val) {
+				printk(KERN_ERR "%s: Min lock forced to %d"
+					" because of Max lock\n",
+					__func__, cpufreq_max_limit_val);
+				/* Update PRCMU QOS value to max value */
+				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+						"power", cpufreq_max_limit_val);
+				/* Set replacement flag */
+				min_replacement = 1;
+			}
+
+			/* Update CPU frequency policy */
+			for_each_online_cpu(cpu)
+				cpufreq_update_policy(cpu);
+		} else /* Invalid lock request --> No action */
+			printk(KERN_ERR "%s: Lock request is invalid\n",
+				__func__);
+	}
+
+	ret = n;
+out:
+	return ret;
+}
+
+static ssize_t cpufreq_min_limit_show(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					char *buf)
+{
+	return sprintf(buf, "%d\n", cpufreq_min_limit_val);
+}
+
+static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					const char *buf, size_t n)
+{
+	int val;
+	unsigned int cpufreq_level;
+	ssize_t ret = -EINVAL;
+	int cpu;
+
+	if (sscanf(buf, "%d", &val) != 1) {
+		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
+		goto out;
+	}
+
+	if (val == -1) { /* Unlock request */
+		if (cpufreq_min_limit_val != -1) {
+			/* Reset lock value to default */
+ 			cpufreq_min_limit_val = -1;
+
+			/* Update PRCMU QOS value to default */
+			prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+					"power", PRCMU_QOS_DEFAULT_VALUE);
+
+			/* Clear replacement flag */
+			min_replacement = 0;
+		} else /* Already unlocked */
+			printk(KERN_ERR "%s: Unlock request is ignored\n",
+				__func__);
+	} else { /* Lock request */
+		if (get_cpufreq_level((unsigned int)val, &cpufreq_level, DVFS_MIN_LOCK_REQ)
+			== VALID_LEVEL) {
+ 			cpufreq_min_limit_val = val;
+
+			/* Max lock has higher priority than Min lock */
+			if (cpufreq_max_limit_val != -1 &&
+			    cpufreq_min_limit_val > cpufreq_max_limit_val) {
+				printk(KERN_ERR "%s: Min lock forced to %d"
+					" because of Max lock\n",
+					__func__, cpufreq_max_limit_val);
+				/* Update PRCMU QOS value to max value */
+				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+						"power", cpufreq_max_limit_val);
+				/* Set replacement flag */
+				min_replacement = 1;
+			} else {
+				/* Update PRCMU QOS value to new value */
+				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+						"power", cpufreq_min_limit_val);
+			}
+		} else /* Invalid lock request --> No action */
+			printk(KERN_ERR "%s: Lock request is invalid\n",
+				__func__);
+	}
+
+	ret = n;
+out:
+	return ret;
+}
+
+power_attr(cpufreq_table);
+power_attr(cpufreq_max_limit);
+power_attr(cpufreq_min_limit);
+#endif /* CONFIG_DVFS_LIMIT */
 
 static struct attribute * g[] = {
 	&state_attr.attr,
@@ -500,26 +615,19 @@ static struct attribute * g[] = {
 #ifdef CONFIG_PM_SLEEP
 	&pm_async_attr.attr,
 	&wakeup_count_attr.attr,
-#ifdef CONFIG_PM_AUTOSLEEP
-	&autosleep_attr.attr,
+#ifdef CONFIG_PM_DEBUG
+	&pm_test_attr.attr,
 #endif
 #ifdef CONFIG_USER_WAKELOCK
 	&wake_lock_attr.attr,
 	&wake_unlock_attr.attr,
 #endif
-#ifdef CONFIG_USER_SCENELOCK
-	&scene_lock_attr.attr,
-	&scene_unlock_attr.attr,
-	&scene_state_attr.attr,
-	&wakeup_src_attr.attr,
-#if (defined CONFIG_AW_AXP)
-	&sys_pwr_dm_mask_attr.attr,
 #endif
-#endif
-#ifdef CONFIG_PM_DEBUG
-	&pm_test_attr.attr,
-#endif
-#endif
+#ifdef CONFIG_DVFS_LIMIT
+	&cpufreq_table_attr.attr,
+	&cpufreq_max_limit_attr.attr,
+	&cpufreq_min_limit_attr.attr,
+#endif /* CONFIG_DVFS_LIMIT */
 	NULL,
 };
 
@@ -551,10 +659,13 @@ static int __init pm_init(void)
 	power_kobj = kobject_create_and_add("power", NULL);
 	if (!power_kobj)
 		return -ENOMEM;
-	error = sysfs_create_group(power_kobj, &attr_group);
-	if (error)
-		return error;
-	return pm_autosleep_init();
+#ifdef CONFIG_DVFS_LIMIT
+	cpufreq_register_notifier(&dvfs_cpufreq_notifier_block,
+				  CPUFREQ_POLICY_NOTIFIER);
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "power",
+				  PRCMU_QOS_DEFAULT_VALUE);
+#endif
+	return sysfs_create_group(power_kobj, &attr_group);
 }
 
 core_initcall(pm_init);
