@@ -201,7 +201,7 @@ static int ux500_pd_resume_noirq(struct device *dev)
 	 */
 	return ux500_pd_runtime_resume(dev);
 }
-#ifdef CONFIG_UX500_SUSPEND
+
 static int ux500_pd_amba_suspend_noirq(struct device *dev)
 {
 	struct pm_runtime_data *prd = __to_prd(dev);
@@ -257,16 +257,7 @@ static int ux500_pd_amba_resume_noirq(struct device *dev)
 
 	return ret;
 }
-#else
-static int ux500_pd_amba_suspend_noirq(struct device *dev)
-{
-	return 0;
-}
-static int ux500_pd_amba_resume_noirq(struct device *dev)
-{
-	return 0;
-}
-#endif
+
 static int ux500_pd_amba_runtime_suspend(struct device *dev)
 {
 	struct pm_runtime_data *prd = __to_prd(dev);
