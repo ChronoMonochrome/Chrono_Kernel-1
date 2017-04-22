@@ -7,6 +7,7 @@
  * License terms: GNU General Public License (GPL) version 2
  *
  */
+#include <linux/export.h>
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/smp.h>
