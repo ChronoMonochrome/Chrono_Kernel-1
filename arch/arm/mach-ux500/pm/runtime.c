@@ -12,6 +12,7 @@
 
 #include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/gfp.h>
 #include <linux/io.h>
 #include <linux/err.h>
 #include <linux/pm_runtime.h>
@@ -449,7 +450,7 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 
 #endif /* CONFIG_PM_RUNTIME */
 
-struct dev_pm_domain ux500_amba_dev_power_domain = {
+struct dev_power_domain ux500_amba_dev_power_domain = {
 	.ops = {
 		/* USE_AMBA_PM_SLEEP_OPS minus the two we replace */
 		.prepare = amba_pm_prepare,
@@ -474,7 +475,7 @@ struct dev_pm_domain ux500_amba_dev_power_domain = {
 	},
 };
 
-struct dev_pm_domain ux500_dev_power_domain = {
+struct dev_power_domain ux500_dev_power_domain = {
 	.ops = {
 		/* USE_PLATFORM_PM_SLEEP_OPS minus the two we replace */
 		.prepare = platform_pm_prepare,
