@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/clock_ops.c - Generic clock manipulation PM callbacks
  *

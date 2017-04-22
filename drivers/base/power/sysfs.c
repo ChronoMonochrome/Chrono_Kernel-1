@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/sysfs.c - sysfs entries for device PM
  */

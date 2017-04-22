@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/runtime.c - Helper functions for device run-time PM
  *

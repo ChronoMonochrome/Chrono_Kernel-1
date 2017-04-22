@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/main.c - Where the driver meets power management.
  *

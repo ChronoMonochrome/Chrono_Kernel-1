@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/generic_ops.c - Generic PM callbacks for subsystems
  *

@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * Generic OPP Interface
  *

@@ -1,3 +1,4 @@
+#include <linux/export.h>
 #ifdef CONFIG_PM_RUNTIME
 
 extern void pm_runtime_init(struct device *dev);

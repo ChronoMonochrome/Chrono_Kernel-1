@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/wakeup.c - System wakeup events framework
  *
