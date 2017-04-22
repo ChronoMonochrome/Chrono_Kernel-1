@@ -1,3 +1,4 @@
+#include <linux/export.h>
 /*
  * drivers/base/power/domain.c - Common code related to device power domains.
  *

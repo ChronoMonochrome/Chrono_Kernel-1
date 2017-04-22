@@ -1341,7 +1341,7 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
 	struct acm *acm = usb_get_intfdata(intf);
 	int cnt;
 
-	if (PMSG_IS_AUTO(message)) {
+	if (message.event & PM_EVENT_AUTO) {
 		int b;
 
 		spin_lock_irq(&acm->write_lock);

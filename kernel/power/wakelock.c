@@ -27,6 +27,13 @@
 #endif /* CONFIG_PM_SYNC_CTRL */
 #include "power.h"
 
+
+#ifdef CONFIG_SVNET_WHITELIST
+#include <linux/delay.h>
+#include "portlist.h"
+extern int jig_smd; /* [Modem] 1 == local mode, 0 == normal mode */
+#endif /* CONFIG_SVNET_WHITELIST */
+
 enum {
 	DEBUG_EXIT_SUSPEND = 1U << 0,
 	DEBUG_WAKEUP = 1U << 1,
@@ -57,11 +64,6 @@ static struct wake_lock suspend_backoff_lock;
 #define SUSPEND_BACKOFF_INTERVAL	10000
 
 static unsigned suspend_short_count;
-
-#ifdef CONFIG_EARLYSUSPEND_DELAY
-/* create lock for delay early suspend, to avoid system hungup */
-struct wake_lock ealysuspend_delay_work;
-#endif
 
 #ifdef CONFIG_WAKELOCK_STAT
 static struct wake_lock deleted_wake_locks;
@@ -278,7 +280,7 @@ static void suspend_backoff(void)
 
 static void suspend(struct work_struct *work)
 {
-	int ret;
+	int ret, ret1;
 	int entry_event_num;
 	struct timespec ts_entry, ts_exit;
 
@@ -287,6 +289,32 @@ static void suspend(struct work_struct *work)
 			pr_info("suspend: abort suspend\n");
 		return;
 	}
+
+
+#ifdef CONFIG_SVNET_WHITELIST
+	pr_info("[%s] jig_smd: %d\n", __func__, jig_smd);
+	if (jig_smd == 0) { /* modem == normal mode */
+		ret = process_whilte_list();
+		pr_info("[%s]-process_whilte_list(): %d\n", __func__, ret);
+
+		if (unlikely(ret != 0)) {
+			pr_info("fail to send whitelist\n");
+			return;
+		} else {
+			if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
+				if (debug_mask & DEBUG_SUSPEND)
+					pr_info("suspend: abort suspend after processing white list\n");
+				return;
+			}
+			ret1 = tx_ap_state(AP_STATE_SLEEP);
+			pr_info("tx_ap_state(SLEEP): %d\n", ret1);
+			if (unlikely(ret1 != 0)) {
+				pr_info("fail to send SLEEP IPC\n");
+				return;
+			}
+		}
+	}
+#endif
 
 	entry_event_num = current_event_num;
 #ifdef CONFIG_PM_SYNC_CTRL
@@ -299,6 +327,18 @@ static void suspend(struct work_struct *work)
 		pr_info("suspend: enter suspend\n");
 	getnstimeofday(&ts_entry);
 	ret = pm_suspend(requested_suspend_state);
+
+#ifdef CONFIG_SVNET_WHITELIST
+	if (jig_smd == 0) { /* modem == normal mode */
+		ret1 = tx_ap_state(AP_STATE_WAKEUP);
+		pr_info("tx_ap_state(WAKEUP): %d\n", ret1);
+		if (unlikely(ret1 != 0)) {
+			pr_info("fail to send WAKEUP IPC\n");
+			return;
+		}
+	}
+#endif
+
 	getnstimeofday(&ts_exit);
 
 	if (debug_mask & DEBUG_EXIT_SUSPEND) {
@@ -320,16 +360,12 @@ static void suspend(struct work_struct *work)
 	} else {
 		suspend_short_count = 0;
 	}
-    /*
+
 	if (current_event_num == entry_event_num) {
 		if (debug_mask & DEBUG_SUSPEND)
 			pr_info("suspend: pm_suspend returned with no event\n");
 		wake_lock_timeout(&unknown_wakeup, HZ / 2);
 	}
-	*/
-
-	/* delay 5 seconds to enter standby again, by kevin, 2012-3-7 15:07 */
-	wake_lock_timeout(&unknown_wakeup, HZ * 5);
 }
 static DECLARE_WORK(suspend_work, suspend);
 
@@ -563,7 +599,6 @@ int wake_lock_active(struct wake_lock *lock)
 }
 EXPORT_SYMBOL(wake_lock_active);
 
-#ifdef CONFIG_WAKELOCK_STAT
 static int wakelock_stats_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, wakelock_stats_show, NULL);
@@ -576,7 +611,6 @@ static const struct file_operations wakelock_stats_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-#endif
 
 static int __init wakelocks_init(void)
 {
@@ -596,10 +630,6 @@ static int __init wakelocks_init(void)
 	wake_lock_init(&suspend_backoff_lock, WAKE_LOCK_SUSPEND,
 		       "suspend_backoff");
 
-#ifdef CONFIG_EARLYSUSPEND_DELAY
-	wake_lock_init(&ealysuspend_delay_work, WAKE_LOCK_SUSPEND, "suspend_delay");
-	wake_lock(&ealysuspend_delay_work);
-#endif
 	ret = platform_device_register(&power_device);
 	if (ret) {
 		pr_err("wakelocks_init: platform_device_register failed\n");
@@ -617,7 +647,6 @@ static int __init wakelocks_init(void)
 		goto err_suspend_work_queue;
 	}
 
-
 #ifdef CONFIG_WAKELOCK_STAT
 	proc_create("wakelocks", S_IRUGO, NULL, &wakelock_stats_fops);
 #endif
@@ -629,9 +658,6 @@ err_suspend_work_queue:
 err_platform_driver_register:
 	platform_device_unregister(&power_device);
 err_platform_device_register:
-#ifdef CONFIG_EARLYSUSPEND_DELAY
-	wake_lock_destroy(&ealysuspend_delay_work);
-#endif
 	wake_lock_destroy(&suspend_backoff_lock);
 	wake_lock_destroy(&unknown_wakeup);
 	wake_lock_destroy(&main_wake_lock);
@@ -645,10 +671,6 @@ static void  __exit wakelocks_exit(void)
 {
 #ifdef CONFIG_WAKELOCK_STAT
 	remove_proc_entry("wakelocks", NULL);
-#endif
-
-#ifdef CONFIG_EARLYSUSPEND_DELAY
-	wake_lock_destroy(&ealysuspend_delay_work);
 #endif
 	destroy_workqueue(suspend_work_queue);
 	platform_driver_unregister(&power_driver);
