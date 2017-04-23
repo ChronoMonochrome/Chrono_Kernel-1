@@ -5,7 +5,7 @@
  *****************************************************************************/
 
 /*
- * Copyright (C) 2000 - 2012, Intel Corp.
+ * Copyright (C) 2000 - 2011, Intel Corp.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -210,7 +210,7 @@ char *acpi_ps_get_next_namestring(struct acpi_parse_state *parser_state)
  * FUNCTION:    acpi_ps_get_next_namepath
  *
  * PARAMETERS:  parser_state        - Current parser state object
- *              Arg                 - Where the namepath will be stored
+ *              arg                 - Where the namepath will be stored
  *              arg_count           - If the namepath points to a control method
  *                                    the method's argument is returned here.
  *              possible_method_call - Whether the namepath can possibly be the
@@ -379,7 +379,7 @@ acpi_ps_get_next_namepath(struct acpi_walk_state *walk_state,
  *
  * PARAMETERS:  parser_state        - Current parser state object
  *              arg_type            - The argument type (AML_*_ARG)
- *              Arg                 - Where the argument is returned
+ *              arg                 - Where the argument is returned
  *
  * RETURN:      None
  *
@@ -484,53 +484,33 @@ acpi_ps_get_next_simple_arg(struct acpi_parse_state *parser_state,
 static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 						       *parser_state)
 {
-	u32 aml_offset;
+	u32 aml_offset = (u32)
+	    ACPI_PTR_DIFF(parser_state->aml,
+			  parser_state->aml_start);
 	union acpi_parse_object *field;
-	union acpi_parse_object *arg = NULL;
 	u16 opcode;
 	u32 name;
-	u8 access_type;
-	u8 access_attribute;
-	u8 access_length;
-	u32 pkg_length;
-	u8 *pkg_end;
-	u32 buffer_length;
 
 	ACPI_FUNCTION_TRACE(ps_get_next_field);
-
-	aml_offset =
-	    (u32)ACPI_PTR_DIFF(parser_state->aml, parser_state->aml_start);
 
 	/* Determine field type */
 
 	switch (ACPI_GET8(parser_state->aml)) {
-	case AML_FIELD_OFFSET_OP:
+	default:
+
+		opcode = AML_INT_NAMEDFIELD_OP;
+		break;
+
+	case 0x00:
 
 		opcode = AML_INT_RESERVEDFIELD_OP;
 		parser_state->aml++;
 		break;
 
-	case AML_FIELD_ACCESS_OP:
+	case 0x01:
 
 		opcode = AML_INT_ACCESSFIELD_OP;
 		parser_state->aml++;
-		break;
-
-	case AML_FIELD_CONNECTION_OP:
-
-		opcode = AML_INT_CONNECTION_OP;
-		parser_state->aml++;
-		break;
-
-	case AML_FIELD_EXT_ACCESS_OP:
-
-		opcode = AML_INT_EXTACCESSFIELD_OP;
-		parser_state->aml++;
-		break;
-
-	default:
-
-		opcode = AML_INT_NAMEDFIELD_OP;
 		break;
 	}
 
@@ -569,20 +549,18 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 		break;
 
 	case AML_INT_ACCESSFIELD_OP:
-	case AML_INT_EXTACCESSFIELD_OP:
 
 		/*
 		 * Get access_type and access_attrib and merge into the field Op
-		 * access_type is first operand, access_attribute is second. stuff
-		 * these bytes into the node integer value for convenience.
+		 * access_type is first operand, access_attribute is second
 		 */
-
-		/* Get the two bytes (Type/Attribute) */
-
-		access_type = ACPI_GET8(parser_state->aml);
+		field->common.value.integer =
+		    (((u32) ACPI_GET8(parser_state->aml) << 8));
 		parser_state->aml++;
-		access_attribute = ACPI_GET8(parser_state->aml);
+		field->common.value.integer |= ACPI_GET8(parser_state->aml);
 		parser_state->aml++;
+<<<<<<< HEAD
+=======
 
 		field->common.value.integer = (u8)access_type;
 		field->common.value.integer |= (u16)(access_attribute << 8);
@@ -618,6 +596,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 
 				arg = acpi_ps_alloc_op(AML_INT_BYTELIST_OP);
 				if (!arg) {
+					acpi_ps_free_op(field);
 					return_PTR(NULL);
 				}
 
@@ -662,6 +641,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 		} else {
 			arg = acpi_ps_alloc_op(AML_INT_NAMEPATH_OP);
 			if (!arg) {
+				acpi_ps_free_op(field);
 				return_PTR(NULL);
 			}
 
@@ -674,6 +654,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 		/* Link the buffer/namestring to parent (CONNECTION_OP) */
 
 		acpi_ps_append_arg(field, arg);
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		break;
 
 	default:

@@ -22,6 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/device.h>
 #include <linux/pm_runtime.h>
+#include <asm-generic/pci-bridge.h>
 #include <asm/setup.h>
 #include "pci.h"
 
@@ -77,8 +78,6 @@ unsigned long pci_cardbus_mem_size = DEFAULT_CARDBUS_MEM_SIZE;
 unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
 unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
 
-enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_TUNE_OFF;
-
 /*
  * The default CLS is used if arch didn't set CLS explicitly and not
  * all pci devices agree on the same value.  Arch can override either
@@ -87,15 +86,6 @@ enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_TUNE_OFF;
  */
 u8 pci_dfl_cache_line_size __devinitdata = L1_CACHE_BYTES >> 2;
 u8 pci_cache_line_size;
-
-/*
- * If we set up a device for bus mastering, we need to check the latency
- * timer as certain BIOSes forget to set it properly.
- */
-unsigned int pcibios_max_latency = 255;
-
-/* If set, the PCIe ARI capability will not be used. */
-static bool pcie_ari_disabled;
 
 /**
  * pci_bus_max_busnr - returns maximum PCI bus number of given bus' children
@@ -109,7 +99,7 @@ unsigned char pci_bus_max_busnr(struct pci_bus* bus)
 	struct list_head *tmp;
 	unsigned char max, n;
 
-	max = bus->subordinate;
+	max = bus->busn_res.end;
 	list_for_each(tmp, &bus->children) {
 		n = pci_bus_max_busnr(pci_bus_b(tmp));
 		if(n > max)
@@ -134,30 +124,6 @@ void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar)
 }
 EXPORT_SYMBOL_GPL(pci_ioremap_bar);
 #endif
-
-#if 0
-/**
- * pci_max_busnr - returns maximum PCI bus number
- *
- * Returns the highest PCI bus number present in the system global list of
- * PCI buses.
- */
-unsigned char __devinit
-pci_max_busnr(void)
-{
-	struct pci_bus *bus = NULL;
-	unsigned char max, n;
-
-	max = 0;
-	while ((bus = pci_find_next_bus(bus)) != NULL) {
-		n = pci_bus_max_busnr(bus);
-		if(n > max)
-			max = n;
-	}
-	return max;
-}
-
-#endif  /*  0  */
 
 #define PCI_FIND_CAP_TTL	48
 
@@ -277,6 +243,38 @@ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap)
 }
 
 /**
+ * pci_pcie_cap2 - query for devices' PCI_CAP_ID_EXP v2 capability structure
+ * @dev: PCI device to check
+ *
+ * Like pci_pcie_cap() but also checks that the PCIe capability version is
+ * >= 2.  Note that v1 capability structures could be sparse in that not
+ * all register fields were required.  v2 requires the entire structure to
+ * be present size wise, while still allowing for non-implemented registers
+ * to exist but they must be hardwired to 0.
+ *
+ * Due to the differences in the versions of capability structures, one
+ * must be careful not to try and access non-existant registers that may
+ * exist in early versions - v1 - of Express devices.
+ *
+ * Returns the offset of the PCIe capability structure as long as the
+ * capability version is >= 2; otherwise 0 is returned.
+ */
+static int pci_pcie_cap2(struct pci_dev *dev)
+{
+	u16 flags;
+	int pos;
+
+	pos = pci_pcie_cap(dev);
+	if (pos) {
+		pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &flags);
+		if ((flags & PCI_EXP_FLAGS_VERS) < 2)
+			pos = 0;
+	}
+
+	return pos;
+}
+
+/**
  * pci_find_ext_capability - Find an extended capability
  * @dev: PCI device to query
  * @cap: capability code
@@ -327,49 +325,6 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(pci_find_ext_capability);
-
-/**
- * pci_bus_find_ext_capability - find an extended capability
- * @bus:   the PCI bus to query
- * @devfn: PCI device to query
- * @cap:   capability code
- *
- * Like pci_find_ext_capability() but works for pci devices that do not have a
- * pci_dev structure set up yet.
- *
- * Returns the address of the requested capability structure within the
- * device's PCI configuration space or 0 in case the device does not
- * support it.
- */
-int pci_bus_find_ext_capability(struct pci_bus *bus, unsigned int devfn,
-				int cap)
-{
-	u32 header;
-	int ttl;
-	int pos = PCI_CFG_SPACE_SIZE;
-
-	/* minimum 8 bytes per capability */
-	ttl = (PCI_CFG_SPACE_EXP_SIZE - PCI_CFG_SPACE_SIZE) / 8;
-
-	if (!pci_bus_read_config_dword(bus, devfn, pos, &header))
-		return 0;
-	if (header == 0xffffffff || header == 0)
-		return 0;
-
-	while (ttl-- > 0) {
-		if (PCI_EXT_CAP_ID(header) == cap)
-			return pos;
-
-		pos = PCI_EXT_CAP_NEXT(header);
-		if (pos < PCI_CFG_SPACE_SIZE)
-			break;
-
-		if (!pci_bus_read_config_dword(bus, devfn, pos, &header))
-			break;
-	}
-
-	return 0;
-}
 
 static int __pci_find_next_ht_cap(struct pci_dev *dev, int pos, int ht_cap)
 {
@@ -621,7 +576,8 @@ static int pci_raw_set_power_state(struct pci_dev *dev, pci_power_t state)
 		dev_info(&dev->dev, "Refused to change power state, "
 			"currently in D%d\n", dev->current_state);
 
-	/* According to section 5.4.1 of the "PCI BUS POWER MANAGEMENT
+	/*
+	 * According to section 5.4.1 of the "PCI BUS POWER MANAGEMENT
 	 * INTERFACE SPECIFICATION, REV. 1.2", a device transitioning
 	 * from D3hot to D0 _may_ perform an internal reset, thereby
 	 * going to "D0 Uninitialized" rather than "D0 Initialized".
@@ -653,11 +609,34 @@ void pci_update_current_state(struct pci_dev *dev, pci_power_t state)
 	if (dev->pm_cap) {
 		u16 pmcsr;
 
+		/*
+		 * Configuration space is not accessible for device in
+		 * D3cold, so just keep or set D3cold for safety
+		 */
+		if (dev->current_state == PCI_D3cold)
+			return;
+		if (state == PCI_D3cold) {
+			dev->current_state = PCI_D3cold;
+			return;
+		}
 		pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pmcsr);
 		dev->current_state = (pmcsr & PCI_PM_CTRL_STATE_MASK);
 	} else {
 		dev->current_state = state;
 	}
+}
+
+/**
+ * pci_power_up - Put the given device into D0 forcibly
+ * @dev: PCI device to power up
+ */
+void pci_power_up(struct pci_dev *dev)
+{
+	if (platform_pci_power_manageable(dev))
+		platform_pci_set_power_state(dev, PCI_D0);
+
+	pci_raw_set_power_state(dev, PCI_D0);
+	pci_update_current_state(dev, PCI_D0);
 }
 
 /**
@@ -673,9 +652,6 @@ static int pci_platform_power_transition(struct pci_dev *dev, pci_power_t state)
 		error = platform_pci_set_power_state(dev, state);
 		if (!error)
 			pci_update_current_state(dev, state);
-		/* Fall back to PCI_D0 if native PM is not supported */
-		if (!dev->pm_cap)
-			dev->current_state = PCI_D0;
 	} else {
 		error = -ENODEV;
 		/* Fall back to PCI_D0 if native PM is not supported */
@@ -693,8 +669,50 @@ static int pci_platform_power_transition(struct pci_dev *dev, pci_power_t state)
  */
 static void __pci_start_power_transition(struct pci_dev *dev, pci_power_t state)
 {
-	if (state == PCI_D0)
+	if (state == PCI_D0) {
 		pci_platform_power_transition(dev, PCI_D0);
+		/*
+		 * Mandatory power management transition delays, see
+		 * PCI Express Base Specification Revision 2.0 Section
+		 * 6.6.1: Conventional Reset.  Do not delay for
+		 * devices powered on/off by corresponding bridge,
+		 * because have already delayed for the bridge.
+		 */
+		if (dev->runtime_d3cold) {
+			msleep(dev->d3cold_delay);
+			/*
+			 * When powering on a bridge from D3cold, the
+			 * whole hierarchy may be powered on into
+			 * D0uninitialized state, resume them to give
+			 * them a chance to suspend again
+			 */
+			pci_wakeup_bus(dev->subordinate);
+		}
+	}
+}
+
+/**
+ * __pci_dev_set_current_state - Set current state of a PCI device
+ * @dev: Device to handle
+ * @data: pointer to state to be set
+ */
+static int __pci_dev_set_current_state(struct pci_dev *dev, void *data)
+{
+	pci_power_t state = *(pci_power_t *)data;
+
+	dev->current_state = state;
+	return 0;
+}
+
+/**
+ * __pci_bus_set_current_state - Walk given bus and set current state of devices
+ * @bus: Top bus of the subtree to walk.
+ * @state: state to be set
+ */
+static void __pci_bus_set_current_state(struct pci_bus *bus, pci_power_t state)
+{
+	if (bus)
+		pci_walk_bus(bus, __pci_dev_set_current_state, &state);
 }
 
 /**
@@ -706,8 +724,15 @@ static void __pci_start_power_transition(struct pci_dev *dev, pci_power_t state)
  */
 int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
 {
-	return state >= PCI_D0 ?
-			pci_platform_power_transition(dev, state) : -EINVAL;
+	int ret;
+
+	if (state <= PCI_D0)
+		return -EINVAL;
+	ret = pci_platform_power_transition(dev, state);
+	/* Power off the bridge may power off the whole hierarchy */
+	if (!ret && state == PCI_D3cold)
+		__pci_bus_set_current_state(dev->subordinate, PCI_D3cold);
+	return ret;
 }
 EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
 
@@ -731,8 +756,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
 	int error;
 
 	/* bound the state we're entering */
-	if (state > PCI_D3hot)
-		state = PCI_D3hot;
+	if (state > PCI_D3cold)
+		state = PCI_D3cold;
 	else if (state < PCI_D0)
 		state = PCI_D0;
 	else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
@@ -743,14 +768,23 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
 		 */
 		return 0;
 
+	/* Check if we're already there */
+	if (dev->current_state == state)
+		return 0;
+
 	__pci_start_power_transition(dev, state);
 
 	/* This device is quirked not to be put into D3, so
 	   don't put it in D3 */
-	if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
+	if (state >= PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
 		return 0;
 
-	error = pci_raw_set_power_state(dev, state);
+	/*
+	 * To put device in D3cold, we put device into D3hot in native
+	 * way, then put device into D3cold with platform ops
+	 */
+	error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
+					PCI_D3hot : state);
 
 	if (!__pci_complete_power_transition(dev, state))
 		error = 0;
@@ -821,25 +855,6 @@ EXPORT_SYMBOL(pci_choose_state);
 		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
 		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
 		  type == PCI_EXP_TYPE_RC_EC))
-#define pcie_cap_has_devctl2(type, flags)		\
-		((flags & PCI_EXP_FLAGS_VERS) > 1)
-#define pcie_cap_has_lnkctl2(type, flags)		\
-		((flags & PCI_EXP_FLAGS_VERS) > 1)
-#define pcie_cap_has_sltctl2(type, flags)		\
-		((flags & PCI_EXP_FLAGS_VERS) > 1)
-
-static struct pci_cap_saved_state *pci_find_saved_cap(
-	struct pci_dev *pci_dev, char cap)
-{
-	struct pci_cap_saved_state *tmp;
-	struct hlist_node *pos;
-
-	hlist_for_each_entry(tmp, pos, &pci_dev->saved_cap_space, next) {
-		if (tmp->cap.cap_nr == cap)
-			return tmp;
-	}
-	return NULL;
-}
 
 static int pci_save_pcie_state(struct pci_dev *dev)
 {
@@ -869,13 +884,14 @@ static int pci_save_pcie_state(struct pci_dev *dev)
 		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL, &cap[i++]);
 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
 		pci_read_config_word(dev, pos + PCI_EXP_RTCTL, &cap[i++]);
-	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
-		pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2, &cap[i++]);
-	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
-		pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
-	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
-		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
 
+	pos = pci_pcie_cap2(dev);
+	if (!pos)
+		return 0;
+
+	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2, &cap[i++]);
+	pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
+	pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
 	return 0;
 }
 
@@ -902,12 +918,14 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
 		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL, cap[i++]);
 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
 		pci_write_config_word(dev, pos + PCI_EXP_RTCTL, cap[i++]);
-	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
-		pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, cap[i++]);
-	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
-		pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
-	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
-		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
+
+	pos = pci_pcie_cap2(dev);
+	if (!pos)
+		return;
+
+	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, cap[i++]);
+	pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
+	pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
 }
 
 
@@ -967,68 +985,35 @@ pci_save_state(struct pci_dev *dev)
 	return 0;
 }
 
-static void pci_restore_config_dword(struct pci_dev *pdev, int offset,
-				     u32 saved_val, int retry)
-{
-	u32 val;
-
-	pci_read_config_dword(pdev, offset, &val);
-	if (val == saved_val)
-		return;
-
-	for (;;) {
-		dev_dbg(&pdev->dev, "restoring config space at offset "
-			"%#x (was %#x, writing %#x)\n", offset, val, saved_val);
-		pci_write_config_dword(pdev, offset, saved_val);
-		if (retry-- <= 0)
-			return;
-
-		pci_read_config_dword(pdev, offset, &val);
-		if (val == saved_val)
-			return;
-
-		mdelay(1);
-	}
-}
-
-static void pci_restore_config_space_range(struct pci_dev *pdev,
-					   int start, int end, int retry)
-{
-	int index;
-
-	for (index = end; index >= start; index--)
-		pci_restore_config_dword(pdev, 4 * index,
-					 pdev->saved_config_space[index],
-					 retry);
-}
-
-static void pci_restore_config_space(struct pci_dev *pdev)
-{
-	if (pdev->hdr_type == PCI_HEADER_TYPE_NORMAL) {
-		pci_restore_config_space_range(pdev, 10, 15, 0);
-		/* Restore BARs before the command register. */
-		pci_restore_config_space_range(pdev, 4, 9, 10);
-		pci_restore_config_space_range(pdev, 0, 3, 0);
-	} else {
-		pci_restore_config_space_range(pdev, 0, 15, 0);
-	}
-}
-
 /** 
  * pci_restore_state - Restore the saved state of a PCI device
  * @dev: - PCI device that we're dealing with
  */
 void pci_restore_state(struct pci_dev *dev)
 {
+	int i;
+	u32 val;
+
 	if (!dev->state_saved)
 		return;
 
 	/* PCI Express register must be restored first */
 	pci_restore_pcie_state(dev);
-	pci_restore_ats_state(dev);
 
-	pci_restore_config_space(dev);
-
+	/*
+	 * The Base Address register should be programmed before the command
+	 * register(s)
+	 */
+	for (i = 15; i >= 0; i--) {
+		pci_read_config_dword(dev, i * 4, &val);
+		if (val != dev->saved_config_space[i]) {
+			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
+				"space at offset %#x (was %#x, writing %#x)\n",
+				i, val, (int)dev->saved_config_space[i]);
+			pci_write_config_dword(dev,i * 4,
+				dev->saved_config_space[i]);
+		}
+	}
 	pci_restore_pcix_state(dev);
 	pci_restore_msi_state(dev);
 	pci_restore_iov_state(dev);
@@ -1184,11 +1169,7 @@ static int __pci_enable_device_flags(struct pci_dev *dev,
 	if (atomic_add_return(1, &dev->enable_cnt) > 1)
 		return 0;		/* already enabled */
 
-	/* only skip sriov related */
-	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
-		if (dev->resource[i].flags & flags)
-			bars |= (1 << i);
-	for (i = PCI_BRIDGE_RESOURCES; i < DEVICE_COUNT_RESOURCE; i++)
+	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++)
 		if (dev->resource[i].flags & flags)
 			bars |= (1 << i);
 
@@ -1348,7 +1329,7 @@ void pcim_pin_device(struct pci_dev *pdev)
  * is the default implementation. Architecture implementations can
  * override this.
  */
-void __attribute__ ((weak)) pcibios_disable_device (struct pci_dev *dev) {}
+void __weak pcibios_disable_device (struct pci_dev *dev) {}
 
 static void do_pci_disable_device(struct pci_dev *dev)
 {
@@ -1412,8 +1393,8 @@ pci_disable_device(struct pci_dev *dev)
  * Sets the PCIe reset state for the device. This is the default
  * implementation. Architecture implementations can override this.
  */
-int __attribute__ ((weak)) pcibios_set_pcie_reset_state(struct pci_dev *dev,
-							enum pcie_reset_state state)
+int __weak pcibios_set_pcie_reset_state(struct pci_dev *dev,
+					enum pcie_reset_state state)
 {
 	return -EINVAL;
 }
@@ -1469,16 +1450,13 @@ bool pci_check_pme_status(struct pci_dev *dev)
 /**
  * pci_pme_wakeup - Wake up a PCI device if its PME Status bit is set.
  * @dev: Device to handle.
- * @pme_poll_reset: Whether or not to reset the device's pme_poll flag.
+ * @ign: Ignored.
  *
  * Check if @dev has generated PME and queue a resume request for it in that
  * case.
  */
-static int pci_pme_wakeup(struct pci_dev *dev, void *pme_poll_reset)
+static int pci_pme_wakeup(struct pci_dev *dev, void *ign)
 {
-	if (pme_poll_reset && dev->pme_poll)
-		dev->pme_poll = false;
-
 	if (pci_check_pme_status(dev)) {
 		pci_wakeup_event(dev);
 		pm_request_resume(&dev->dev);
@@ -1493,7 +1471,29 @@ static int pci_pme_wakeup(struct pci_dev *dev, void *pme_poll_reset)
 void pci_pme_wakeup_bus(struct pci_bus *bus)
 {
 	if (bus)
-		pci_walk_bus(bus, pci_pme_wakeup, (void *)true);
+		pci_walk_bus(bus, pci_pme_wakeup, NULL);
+}
+
+/**
+ * pci_wakeup - Wake up a PCI device
+ * @dev: Device to handle.
+ * @ign: ignored parameter
+ */
+static int pci_wakeup(struct pci_dev *pci_dev, void *ign)
+{
+	pci_wakeup_event(pci_dev);
+	pm_request_resume(&pci_dev->dev);
+	return 0;
+}
+
+/**
+ * pci_wakeup_bus - Walk given bus and wake up devices on it
+ * @bus: Top bus of the subtree to walk.
+ */
+void pci_wakeup_bus(struct pci_bus *bus)
+{
+	if (bus)
+		pci_walk_bus(bus, pci_wakeup, NULL);
 }
 
 /**
@@ -1511,12 +1511,27 @@ bool pci_pme_capable(struct pci_dev *dev, pci_power_t state)
 
 static void pci_pme_list_scan(struct work_struct *work)
 {
-	struct pci_pme_device *pme_dev, *n;
+	struct pci_pme_device *pme_dev;
 
 	mutex_lock(&pci_pme_list_mutex);
 	if (!list_empty(&pci_pme_list)) {
+<<<<<<< HEAD
+		list_for_each_entry(pme_dev, &pci_pme_list, list)
+			pci_pme_wakeup(pme_dev->dev, NULL);
+		schedule_delayed_work(&pci_pme_work, msecs_to_jiffies(PME_TIMEOUT));
+=======
 		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
 			if (pme_dev->dev->pme_poll) {
+				struct pci_dev *bridge;
+
+				bridge = pme_dev->dev->bus->self;
+				/*
+				 * If bridge is in low power state, the
+				 * configuration space of subordinate devices
+				 * may be not accessible
+				 */
+				if (bridge && bridge->current_state != PCI_D0)
+					continue;
 				pci_pme_wakeup(pme_dev->dev, NULL);
 			} else {
 				list_del(&pme_dev->list);
@@ -1526,8 +1541,22 @@ static void pci_pme_list_scan(struct work_struct *work)
 		if (!list_empty(&pci_pme_list))
 			schedule_delayed_work(&pci_pme_work,
 					      msecs_to_jiffies(PME_TIMEOUT));
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	}
 	mutex_unlock(&pci_pme_list_mutex);
+}
+
+/**
+ * pci_external_pme - is a device an external PCI PME source?
+ * @dev: PCI device to check
+ *
+ */
+
+static bool pci_external_pme(struct pci_dev *dev)
+{
+	if (pci_is_pcie(dev) || dev->bus->number == 0)
+		return false;
+	return true;
 }
 
 /**
@@ -1563,7 +1592,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
 	   hit, and the power savings from the devices will still be a
 	   win. */
 
-	if (dev->pme_poll) {
+	if (pci_external_pme(dev)) {
 		struct pci_pme_device *pme_dev;
 		if (enable) {
 			pme_dev = kmalloc(sizeof(struct pci_pme_device),
@@ -1591,7 +1620,8 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
 	}
 
 out:
-	dev_dbg(&dev->dev, "PME# %s\n", enable ? "enabled" : "disabled");
+	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
+			enable ? "enabled" : "disabled");
 }
 
 /**
@@ -1743,6 +1773,10 @@ int pci_prepare_to_sleep(struct pci_dev *dev)
 	if (target_state == PCI_POWER_ERROR)
 		return -EIO;
 
+	/* D3cold during system suspend/hibernate is not supported */
+	if (target_state > PCI_D3hot)
+		target_state = PCI_D3hot;
+
 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
 
 	error = pci_set_power_state(dev, target_state);
@@ -1780,12 +1814,16 @@ int pci_finish_runtime_suspend(struct pci_dev *dev)
 	if (target_state == PCI_POWER_ERROR)
 		return -EIO;
 
+	dev->runtime_d3cold = target_state == PCI_D3cold;
+
 	__pci_enable_wake(dev, target_state, true, pci_dev_run_wake(dev));
 
 	error = pci_set_power_state(dev, target_state);
 
-	if (error)
+	if (error) {
 		__pci_enable_wake(dev, target_state, true, false);
+		dev->runtime_d3cold = false;
+	}
 
 	return error;
 }
@@ -1855,6 +1893,8 @@ void pci_pm_init(struct pci_dev *dev)
 
 	dev->pm_cap = pm;
 	dev->d3_delay = PCI_PM_D3_WAIT;
+	dev->d3cold_delay = PCI_PM_D3COLD_WAIT;
+	dev->d3cold_allowed = true;
 
 	dev->d1_support = false;
 	dev->d2_support = false;
@@ -1880,7 +1920,6 @@ void pci_pm_init(struct pci_dev *dev)
 			 (pmc & PCI_PM_CAP_PME_D3) ? " D3hot" : "",
 			 (pmc & PCI_PM_CAP_PME_D3cold) ? " D3cold" : "");
 		dev->pme_support = pmc >> PCI_PM_CAP_PME_SHIFT;
-		dev->pme_poll = true;
 		/*
 		 * Make device's PM flags reflect the wake-up capability, but
 		 * let the user space enable it to wake up the system as needed.
@@ -1910,12 +1949,6 @@ void platform_pci_wakeup_init(struct pci_dev *dev)
 
 	device_set_wakeup_capable(&dev->dev, true);
 	platform_pci_sleep_wake(dev, false);
-}
-
-static void pci_add_saved_cap(struct pci_dev *pci_dev,
-	struct pci_cap_saved_state *new_cap)
-{
-	hlist_add_head(&new_cap->next, &pci_dev->saved_cap_space);
 }
 
 /**
@@ -1965,15 +1998,6 @@ void pci_allocate_cap_save_buffers(struct pci_dev *dev)
 			"unable to preallocate PCI-X save buffer\n");
 }
 
-void pci_free_cap_save_buffers(struct pci_dev *dev)
-{
-	struct pci_cap_saved_state *tmp;
-	struct hlist_node *pos, *n;
-
-	hlist_for_each_entry_safe(tmp, pos, n, &dev->saved_cap_space, next)
-		kfree(tmp);
-}
-
 /**
  * pci_enable_ari - enable ARI forwarding if hardware support it
  * @dev: the PCI device
@@ -1982,10 +2006,10 @@ void pci_enable_ari(struct pci_dev *dev)
 {
 	int pos;
 	u32 cap;
-	u16 flags, ctrl;
+	u16 ctrl;
 	struct pci_dev *bridge;
 
-	if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
+	if (!pci_is_pcie(dev) || dev->devfn)
 		return;
 
 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
@@ -1993,16 +2017,12 @@ void pci_enable_ari(struct pci_dev *dev)
 		return;
 
 	bridge = dev->bus->self;
-	if (!bridge || !pci_is_pcie(bridge))
+	if (!bridge)
 		return;
 
-	pos = pci_pcie_cap(bridge);
+	/* ARI is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(bridge);
 	if (!pos)
-		return;
-
-	/* ARI is a PCIe v2 feature */
-	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS, &flags);
-	if ((flags & PCI_EXP_FLAGS_VERS) < 2)
 		return;
 
 	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2, &cap);
@@ -2017,7 +2037,7 @@ void pci_enable_ari(struct pci_dev *dev)
 }
 
 /**
- * pci_enable_ido - enable ID-based ordering on a device
+ * pci_enable_ido - enable ID-based Ordering on a device
  * @dev: the PCI device
  * @type: which types of IDO to enable
  *
@@ -2030,7 +2050,8 @@ void pci_enable_ido(struct pci_dev *dev, unsigned long type)
 	int pos;
 	u16 ctrl;
 
-	pos = pci_pcie_cap(dev);
+	/* ID-based Ordering is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return;
 
@@ -2053,10 +2074,8 @@ void pci_disable_ido(struct pci_dev *dev, unsigned long type)
 	int pos;
 	u16 ctrl;
 
-	if (!pci_is_pcie(dev))
-		return;
-
-	pos = pci_pcie_cap(dev);
+	/* ID-based Ordering is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return;
 
@@ -2095,10 +2114,8 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
 	u16 ctrl;
 	int ret;
 
-	if (!pci_is_pcie(dev))
-		return -ENOTSUPP;
-
-	pos = pci_pcie_cap(dev);
+	/* OBFF is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return -ENOTSUPP;
 
@@ -2107,7 +2124,7 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
 		return -ENOTSUPP; /* no OBFF support at all */
 
 	/* Make sure the topology supports OBFF as well */
-	if (dev->bus) {
+	if (dev->bus->self) {
 		ret = pci_enable_obff(dev->bus->self, type);
 		if (ret)
 			return ret;
@@ -2148,10 +2165,8 @@ void pci_disable_obff(struct pci_dev *dev)
 	int pos;
 	u16 ctrl;
 
-	if (!pci_is_pcie(dev))
-		return;
-
-	pos = pci_pcie_cap(dev);
+	/* OBFF is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return;
 
@@ -2168,15 +2183,13 @@ EXPORT_SYMBOL(pci_disable_obff);
  * RETURNS:
  * True if @dev supports latency tolerance reporting, false otherwise.
  */
-bool pci_ltr_supported(struct pci_dev *dev)
+static bool pci_ltr_supported(struct pci_dev *dev)
 {
 	int pos;
 	u32 cap;
 
-	if (!pci_is_pcie(dev))
-		return false;
-
-	pos = pci_pcie_cap(dev);
+	/* LTR is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return false;
 
@@ -2184,7 +2197,6 @@ bool pci_ltr_supported(struct pci_dev *dev)
 
 	return cap & PCI_EXP_DEVCAP2_LTR;
 }
-EXPORT_SYMBOL(pci_ltr_supported);
 
 /**
  * pci_enable_ltr - enable latency tolerance reporting
@@ -2205,7 +2217,8 @@ int pci_enable_ltr(struct pci_dev *dev)
 	if (!pci_ltr_supported(dev))
 		return -ENOTSUPP;
 
-	pos = pci_pcie_cap(dev);
+	/* LTR is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return -ENOTSUPP;
 
@@ -2214,7 +2227,7 @@ int pci_enable_ltr(struct pci_dev *dev)
 		return -EINVAL;
 
 	/* Enable upstream ports first */
-	if (dev->bus) {
+	if (dev->bus->self) {
 		ret = pci_enable_ltr(dev->bus->self);
 		if (ret)
 			return ret;
@@ -2240,7 +2253,8 @@ void pci_disable_ltr(struct pci_dev *dev)
 	if (!pci_ltr_supported(dev))
 		return;
 
-	pos = pci_pcie_cap(dev);
+	/* LTR is a PCIe cap v2 feature */
+	pos = pci_pcie_cap2(dev);
 	if (!pos)
 		return;
 
@@ -2359,6 +2373,75 @@ void pci_enable_acs(struct pci_dev *dev)
 }
 
 /**
+ * pci_acs_enabled - test ACS against required flags for a given device
+ * @pdev: device to test
+ * @acs_flags: required PCI ACS flags
+ *
+ * Return true if the device supports the provided flags.  Automatically
+ * filters out flags that are not implemented on multifunction devices.
+ */
+bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+{
+	int pos, ret;
+	u16 ctrl;
+
+	ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
+	if (ret >= 0)
+		return ret > 0;
+
+	if (!pci_is_pcie(pdev))
+		return false;
+
+	/* Filter out flags not applicable to multifunction */
+	if (pdev->multifunction)
+		acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
+			      PCI_ACS_EC | PCI_ACS_DT);
+
+	if (pdev->pcie_type == PCI_EXP_TYPE_DOWNSTREAM ||
+	    pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT ||
+	    pdev->multifunction) {
+		pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+		if (!pos)
+			return false;
+
+		pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
+		if ((ctrl & acs_flags) != acs_flags)
+			return false;
+	}
+
+	return true;
+}
+
+/**
+ * pci_acs_path_enable - test ACS flags from start to end in a hierarchy
+ * @start: starting downstream device
+ * @end: ending upstream device or NULL to search to the root bus
+ * @acs_flags: required flags
+ *
+ * Walk up a device tree from start to end testing PCI ACS support.  If
+ * any step along the way does not support the required flags, return false.
+ */
+bool pci_acs_path_enabled(struct pci_dev *start,
+			  struct pci_dev *end, u16 acs_flags)
+{
+	struct pci_dev *pdev, *parent = start;
+
+	do {
+		pdev = parent;
+
+		if (!pci_acs_enabled(pdev, acs_flags))
+			return false;
+
+		if (pci_is_root_bus(pdev->bus))
+			return (end == NULL);
+
+		parent = pdev->bus->self;
+	} while (pdev != end);
+
+	return true;
+}
+
+/**
  * pci_swizzle_interrupt_pin - swizzle INTx for device behind bridge
  * @dev: the PCI device
  * @pin: the INTx pin (1=INTA, 2=INTB, 3=INTD, 4=INTD)
@@ -2369,7 +2452,7 @@ void pci_enable_acs(struct pci_dev *dev)
  * number is always 0 (see the Implementation Note in section 2.2.8.1 of
  * the PCI Express Base Specification, Revision 2.1)
  */
-u8 pci_swizzle_interrupt_pin(struct pci_dev *dev, u8 pin)
+u8 pci_swizzle_interrupt_pin(const struct pci_dev *dev, u8 pin)
 {
 	int slot;
 
@@ -2665,6 +2748,20 @@ static void __pci_set_master(struct pci_dev *dev, bool enable)
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * pcibios_setup - process "pci=" kernel boot arguments
+ * @str: string used to pass in "pci=" kernel boot arguments
+ *
+ * Process kernel boot arguments.  This is the default implementation.
+ * Architecture specific implementations can override this as necessary.
+ */
+char * __weak __init pcibios_setup(char *str)
+{
+	return str;
+}
+
+/**
  * pcibios_set_master - enable PCI bus-mastering for device dev
  * @dev: the PCI device to enable
  *
@@ -2692,6 +2789,7 @@ void __weak pcibios_set_master(struct pci_dev *dev)
 }
 
 /**
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  * pci_set_master - enables bus-mastering for device dev
  * @dev: the PCI device to enable
  *
@@ -2864,6 +2962,8 @@ pci_intx(struct pci_dev *pdev, int enable)
 }
 
 /**
+<<<<<<< HEAD
+=======
  * pci_intx_mask_supported - probe for INTx masking support
  * @dev: the PCI device to operate on
  *
@@ -2874,6 +2974,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
 {
 	bool mask_supported = false;
 	u16 orig, new;
+
+	if (dev->broken_intx_masking)
+		return false;
 
 	pci_cfg_access_lock(dev);
 
@@ -2974,6 +3077,7 @@ bool pci_check_and_unmask_intx(struct pci_dev *dev)
 EXPORT_SYMBOL_GPL(pci_check_and_unmask_intx);
 
 /**
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  * pci_msi_off - disables any msi or msix capabilities
  * @dev: the PCI device to operate on
  *
@@ -3164,18 +3268,21 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
 	return 0;
 }
 
-static int pci_dev_reset(struct pci_dev *dev, int probe)
+static int __pci_dev_reset(struct pci_dev *dev, int probe)
 {
 	int rc;
 
 	might_sleep();
 
+<<<<<<< HEAD
 	if (!probe) {
-		pci_cfg_access_lock(dev);
+		pci_block_user_cfg_access(dev);
 		/* block PM suspend, driver probe, etc. */
 		device_lock(&dev->dev);
 	}
 
+=======
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	rc = pci_dev_specific_reset(dev, probe);
 	if (rc != -ENOTTY)
 		goto done;
@@ -3194,14 +3301,27 @@ static int pci_dev_reset(struct pci_dev *dev, int probe)
 
 	rc = pci_parent_bus_reset(dev, probe);
 done:
-	if (!probe) {
-		device_unlock(&dev->dev);
-		pci_cfg_access_unlock(dev);
-	}
-
 	return rc;
 }
 
+static int pci_dev_reset(struct pci_dev *dev, int probe)
+{
+	int rc;
+
+	if (!probe) {
+		pci_cfg_access_lock(dev);
+		/* block PM suspend, driver probe, etc. */
+		device_lock(&dev->dev);
+	}
+
+	rc = __pci_dev_reset(dev, probe);
+
+	if (!probe) {
+		device_unlock(&dev->dev);
+		pci_unblock_user_cfg_access(dev);
+	}
+	return rc;
+}
 /**
  * __pci_reset_function - reset a PCI device function
  * @dev: PCI device to reset
@@ -3226,6 +3346,8 @@ int __pci_reset_function(struct pci_dev *dev)
 EXPORT_SYMBOL_GPL(__pci_reset_function);
 
 /**
+<<<<<<< HEAD
+=======
  * __pci_reset_function_locked - reset a PCI device function while holding
  * the @dev mutex lock.
  * @dev: PCI device to reset
@@ -3246,11 +3368,12 @@ EXPORT_SYMBOL_GPL(__pci_reset_function);
  */
 int __pci_reset_function_locked(struct pci_dev *dev)
 {
-	return pci_dev_reset(dev, 1);
+	return __pci_dev_reset(dev, 0);
 }
 EXPORT_SYMBOL_GPL(__pci_reset_function_locked);
 
 /**
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  * pci_probe_reset_function - check whether the device can be safely reset
  * @dev: PCI device to reset
  *
@@ -3387,8 +3510,7 @@ int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc)
 
 	o = (cmd & PCI_X_CMD_MAX_READ) >> 2;
 	if (o != v) {
-		if (v > o && dev->bus &&
-		   (dev->bus->bus_flags & PCI_BUS_FLAGS_NO_MMRBC))
+		if (v > o && (dev->bus->bus_flags & PCI_BUS_FLAGS_NO_MMRBC))
 			return -EIO;
 
 		cmd &= ~PCI_X_CMD_MAX_READ;
@@ -3430,7 +3552,7 @@ EXPORT_SYMBOL(pcie_get_readrq);
  * @rq: maximum memory read count in bytes
  *    valid values are 128, 256, 512, 1024, 2048, 4096
  *
- * If possible sets maximum memory read request in bytes
+ * If possible sets maximum read byte count
  */
 int pcie_set_readrq(struct pci_dev *dev, int rq)
 {
@@ -3440,6 +3562,8 @@ int pcie_set_readrq(struct pci_dev *dev, int rq)
 	if (rq < 128 || rq > 4096 || !is_power_of_2(rq))
 		goto out;
 
+	v = (ffs(rq) - 8) << 12;
+
 	cap = pci_pcie_cap(dev);
 	if (!cap)
 		goto out;
@@ -3447,94 +3571,17 @@ int pcie_set_readrq(struct pci_dev *dev, int rq)
 	err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
 	if (err)
 		goto out;
-	/*
-	 * If using the "performance" PCIe config, we clamp the
-	 * read rq size to the max packet size to prevent the
-	 * host bridge generating requests larger than we can
-	 * cope with
-	 */
-	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
-		int mps = pcie_get_mps(dev);
-
-		if (mps < 0)
-			return mps;
-		if (mps < rq)
-			rq = mps;
-	}
-
-	v = (ffs(rq) - 8) << 12;
 
 	if ((ctl & PCI_EXP_DEVCTL_READRQ) != v) {
 		ctl &= ~PCI_EXP_DEVCTL_READRQ;
 		ctl |= v;
-		err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
+		err = pci_write_config_dword(dev, cap + PCI_EXP_DEVCTL, ctl);
 	}
 
 out:
 	return err;
 }
 EXPORT_SYMBOL(pcie_set_readrq);
-
-/**
- * pcie_get_mps - get PCI Express maximum payload size
- * @dev: PCI device to query
- *
- * Returns maximum payload size in bytes
- *    or appropriate error value.
- */
-int pcie_get_mps(struct pci_dev *dev)
-{
-	int ret, cap;
-	u16 ctl;
-
-	cap = pci_pcie_cap(dev);
-	if (!cap)
-		return -EINVAL;
-
-	ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
-	if (!ret)
-		ret = 128 << ((ctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5);
-
-	return ret;
-}
-
-/**
- * pcie_set_mps - set PCI Express maximum payload size
- * @dev: PCI device to query
- * @mps: maximum payload size in bytes
- *    valid values are 128, 256, 512, 1024, 2048, 4096
- *
- * If possible sets maximum payload size
- */
-int pcie_set_mps(struct pci_dev *dev, int mps)
-{
-	int cap, err = -EINVAL;
-	u16 ctl, v;
-
-	if (mps < 128 || mps > 4096 || !is_power_of_2(mps))
-		goto out;
-
-	v = ffs(mps) - 8;
-	if (v > dev->pcie_mpss) 
-		goto out;
-	v <<= 5;
-
-	cap = pci_pcie_cap(dev);
-	if (!cap)
-		goto out;
-
-	err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
-	if (err)
-		goto out;
-
-	if ((ctl & PCI_EXP_DEVCTL_PAYLOAD) != v) {
-		ctl &= ~PCI_EXP_DEVCTL_PAYLOAD;
-		ctl |= v;
-		err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
-	}
-out:
-	return err;
-}
 
 /**
  * pci_select_bars - Make BAR mask from the type of resource
@@ -3724,68 +3771,6 @@ int pci_is_reassigndev(struct pci_dev *dev)
 	return (pci_specified_resource_alignment(dev) != 0);
 }
 
-/*
- * This function disables memory decoding and releases memory resources
- * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
- * It also rounds up size to specified alignment.
- * Later on, the kernel will assign page-aligned memory resource back
- * to the device.
- */
-void pci_reassigndev_resource_alignment(struct pci_dev *dev)
-{
-	int i;
-	struct resource *r;
-	resource_size_t align, size;
-	u16 command;
-
-	if (!pci_is_reassigndev(dev))
-		return;
-
-	if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
-	    (dev->class >> 8) == PCI_CLASS_BRIDGE_HOST) {
-		dev_warn(&dev->dev,
-			"Can't reassign resources to host bridge.\n");
-		return;
-	}
-
-	dev_info(&dev->dev,
-		"Disabling memory decoding and releasing memory resources.\n");
-	pci_read_config_word(dev, PCI_COMMAND, &command);
-	command &= ~PCI_COMMAND_MEMORY;
-	pci_write_config_word(dev, PCI_COMMAND, command);
-
-	align = pci_specified_resource_alignment(dev);
-	for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
-		r = &dev->resource[i];
-		if (!(r->flags & IORESOURCE_MEM))
-			continue;
-		size = resource_size(r);
-		if (size < align) {
-			size = align;
-			dev_info(&dev->dev,
-				"Rounding up size of resource #%d to %#llx.\n",
-				i, (unsigned long long)size);
-		}
-		r->end = size - 1;
-		r->start = 0;
-	}
-	/* Need to disable bridge's resource window,
-	 * to enable the kernel to reassign new resource
-	 * window later on.
-	 */
-	if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
-	    (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI) {
-		for (i = PCI_BRIDGE_RESOURCES; i < PCI_NUM_RESOURCES; i++) {
-			r = &dev->resource[i];
-			if (!(r->flags & IORESOURCE_MEM))
-				continue;
-			r->end = resource_size(r) - 1;
-			r->start = 0;
-		}
-		pci_disable_bridge_window(dev);
-	}
-}
-
 ssize_t pci_set_resource_alignment_param(const char *buf, size_t count)
 {
 	if (count > RESOURCE_ALIGNMENT_PARAM_SIZE - 1)
@@ -3843,7 +3828,7 @@ static void __devinit pci_no_domains(void)
  * greater than 0xff). This is the default implementation. Architecture
  * implementations can override this.
  */
-int __attribute__ ((weak)) pci_ext_cfg_avail(struct pci_dev *dev)
+int __weak pci_ext_cfg_avail(struct pci_dev *dev)
 {
 	return 1;
 }
@@ -3864,14 +3849,10 @@ static int __init pci_setup(char *str)
 				pci_no_msi();
 			} else if (!strcmp(str, "noaer")) {
 				pci_no_aer();
-			} else if (!strncmp(str, "realloc=", 8)) {
-				pci_realloc_get_opt(str + 8);
 			} else if (!strncmp(str, "realloc", 7)) {
-				pci_realloc_get_opt("on");
+				pci_realloc();
 			} else if (!strcmp(str, "nodomains")) {
 				pci_no_domains();
-			} else if (!strncmp(str, "noari", 5)) {
-				pcie_ari_disabled = true;
 			} else if (!strncmp(str, "cbiosize=", 9)) {
 				pci_cardbus_io_size = memparse(str + 9, &str);
 			} else if (!strncmp(str, "cbmemsize=", 10)) {
@@ -3885,6 +3866,8 @@ static int __init pci_setup(char *str)
 				pci_hotplug_io_size = memparse(str + 9, &str);
 			} else if (!strncmp(str, "hpmemsize=", 10)) {
 				pci_hotplug_mem_size = memparse(str + 10, &str);
+<<<<<<< HEAD
+=======
 			} else if (!strncmp(str, "pcie_bus_tune_off", 17)) {
 				pcie_bus_config = PCIE_BUS_TUNE_OFF;
 			} else if (!strncmp(str, "pcie_bus_safe", 13)) {
@@ -3893,6 +3876,9 @@ static int __init pci_setup(char *str)
 				pcie_bus_config = PCIE_BUS_PERFORMANCE;
 			} else if (!strncmp(str, "pcie_bus_peer2peer", 18)) {
 				pcie_bus_config = PCIE_BUS_PEER2PEER;
+			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			} else {
 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
 						str);

@@ -681,7 +681,7 @@ int iscsi_update_param_value(struct iscsi_param *param, char *value)
 	param->value = kzalloc(strlen(value) + 1, GFP_KERNEL);
 	if (!param->value) {
 		pr_err("Unable to allocate memory for value.\n");
-		return -1;
+		return -ENOMEM;
 	}
 
 	memcpy(param->value, value, strlen(value));
@@ -713,9 +713,9 @@ static int iscsi_add_notunderstood_response(
 	}
 	INIT_LIST_HEAD(&extra_response->er_list);
 
-	strncpy(extra_response->key, key, strlen(key) + 1);
-	strncpy(extra_response->value, NOTUNDERSTOOD,
-			strlen(NOTUNDERSTOOD) + 1);
+	strlcpy(extra_response->key, key, sizeof(extra_response->key));
+	strlcpy(extra_response->value, NOTUNDERSTOOD,
+		sizeof(extra_response->value));
 
 	list_add_tail(&extra_response->er_list,
 			&param_list->extra_response_list);
@@ -803,14 +803,6 @@ static int iscsi_check_numerical_value(struct iscsi_param *param, char *value_pt
 
 	value = simple_strtoul(value_ptr, &tmpptr, 0);
 
-/* #warning FIXME: Fix this */
-#if 0
-	if (strspn(endptr, WHITE_SPACE) != strlen(endptr)) {
-		pr_err("Illegal value \"%s\" for \"%s\".\n",
-			value, param->name);
-		return -1;
-	}
-#endif
 	if (IS_TYPERANGE_0_TO_2(param)) {
 		if ((value < 0) || (value > 2)) {
 			pr_err("Illegal value for \"%s\", must be"
@@ -1045,13 +1037,6 @@ static char *iscsi_check_valuelist_for_support(
 			tmp2 = strchr(acceptor_values, ',');
 			if (tmp2)
 				*tmp2 = '\0';
-			if (!acceptor_values || !proposer_values) {
-				if (tmp1)
-					*tmp1 = ',';
-				if (tmp2)
-					*tmp2 = ',';
-				return NULL;
-			}
 			if (!strcmp(acceptor_values, proposer_values)) {
 				if (tmp2)
 					*tmp2 = ',';
@@ -1061,8 +1046,6 @@ static char *iscsi_check_valuelist_for_support(
 				*tmp2++ = ',';
 
 			acceptor_values = tmp2;
-			if (!acceptor_values)
-				break;
 		} while (acceptor_values);
 		if (tmp1)
 			*tmp1++ = ',';
@@ -1571,8 +1554,6 @@ int iscsi_decode_text_input(
 
 		if (phase & PHASE_SECURITY) {
 			if (iscsi_check_for_auth_key(key) > 0) {
-				char *tmpptr = key + strlen(key);
-				*tmpptr = '=';
 				kfree(tmpbuf);
 				return 1;
 			}

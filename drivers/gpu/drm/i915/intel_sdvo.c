@@ -2536,14 +2536,6 @@ bool intel_sdvo_init(struct drm_device *dev, int sdvo_reg)
 	if (!intel_sdvo_get_capabilities(intel_sdvo, &intel_sdvo->caps))
 		goto err;
 
-	/* Set up hotplug command - note paranoia about contents of reply.
-	 * We assume that the hardware is in a sane state, and only touch
-	 * the bits we think we understand.
-	 */
-	intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ACTIVE_HOT_PLUG,
-			     &intel_sdvo->hotplug_active, 2);
-	intel_sdvo->hotplug_active[0] &= ~0x3;
-
 	if (intel_sdvo_output_setup(intel_sdvo,
 				    intel_sdvo->caps.output_flags) != true) {
 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",

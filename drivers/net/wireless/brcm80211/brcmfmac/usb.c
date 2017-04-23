@@ -28,6 +28,7 @@
 #include <linux/uaccess.h>
 #include <linux/firmware.h>
 #include <linux/usb.h>
+#include <linux/vmalloc.h>
 #include <net/cfg80211.h>
 
 #include <defs.h>
@@ -518,7 +519,7 @@ static void brcmf_usb_tx_complete(struct urb *urb)
 	else
 		devinfo->bus_pub.bus->dstats.tx_errors++;
 
-	dev_kfree_skb(req->skb);
+	brcmu_pkt_buf_free_skb(req->skb);
 	req->skb = NULL;
 	brcmf_usb_enq(devinfo, &devinfo->tx_freeq, req);
 
@@ -539,7 +540,7 @@ static void brcmf_usb_rx_complete(struct urb *urb)
 		devinfo->bus_pub.bus->dstats.rx_packets++;
 	} else {
 		devinfo->bus_pub.bus->dstats.rx_errors++;
-		dev_kfree_skb(skb);
+		brcmu_pkt_buf_free_skb(skb);
 		brcmf_usb_enq(devinfo, &devinfo->rx_freeq, req);
 		return;
 	}
@@ -549,13 +550,15 @@ static void brcmf_usb_rx_complete(struct urb *urb)
 		if (brcmf_proto_hdrpull(devinfo->dev, &ifidx, skb) != 0) {
 			brcmf_dbg(ERROR, "rx protocol error\n");
 			brcmu_pkt_buf_free_skb(skb);
+			brcmf_usb_enq(devinfo, &devinfo->rx_freeq, req);
 			devinfo->bus_pub.bus->dstats.rx_errors++;
 		} else {
 			brcmf_rx_packet(devinfo->dev, ifidx, skb);
 			brcmf_usb_rx_refill(devinfo, req);
 		}
 	} else {
-		dev_kfree_skb(skb);
+		brcmu_pkt_buf_free_skb(skb);
+		brcmf_usb_enq(devinfo, &devinfo->rx_freeq, req);
 	}
 	return;
 
@@ -580,14 +583,13 @@ static void brcmf_usb_rx_refill(struct brcmf_usbdev_info *devinfo,
 	usb_fill_bulk_urb(req->urb, devinfo->usbdev, devinfo->rx_pipe,
 			  skb->data, skb_tailroom(skb), brcmf_usb_rx_complete,
 			  req);
-	req->urb->transfer_flags |= URB_ZERO_PACKET;
 	req->devinfo = devinfo;
+	brcmf_usb_enq(devinfo, &devinfo->rx_postq, req);
 
 	ret = usb_submit_urb(req->urb, GFP_ATOMIC);
-	if (ret == 0) {
-		brcmf_usb_enq(devinfo, &devinfo->rx_postq, req);
-	} else {
-		dev_kfree_skb(req->skb);
+	if (ret) {
+		brcmf_usb_del_fromq(devinfo, req);
+		brcmu_pkt_buf_free_skb(req->skb);
 		req->skb = NULL;
 		brcmf_usb_enq(devinfo, &devinfo->rx_freeq, req);
 	}
@@ -682,12 +684,9 @@ static int brcmf_usb_tx(struct device *dev, struct sk_buff *skb)
 
 	req = brcmf_usb_deq(devinfo, &devinfo->tx_freeq);
 	if (!req) {
+		brcmu_pkt_buf_free_skb(skb);
 		brcmf_dbg(ERROR, "no req to send\n");
 		return -ENOMEM;
-	}
-	if (!req->urb) {
-		brcmf_dbg(ERROR, "no urb for req %p\n", req);
-		return -ENOBUFS;
 	}
 
 	req->skb = skb;
@@ -695,10 +694,12 @@ static int brcmf_usb_tx(struct device *dev, struct sk_buff *skb)
 	usb_fill_bulk_urb(req->urb, devinfo->usbdev, devinfo->tx_pipe,
 			  skb->data, skb->len, brcmf_usb_tx_complete, req);
 	req->urb->transfer_flags |= URB_ZERO_PACKET;
+	brcmf_usb_enq(devinfo, &devinfo->tx_postq, req);
 	ret = usb_submit_urb(req->urb, GFP_ATOMIC);
-	if (!ret) {
-		brcmf_usb_enq(devinfo, &devinfo->tx_postq, req);
-	} else {
+	if (ret) {
+		brcmf_dbg(ERROR, "brcmf_usb_tx usb_submit_urb FAILED\n");
+		brcmf_usb_del_fromq(devinfo, req);
+		brcmu_pkt_buf_free_skb(req->skb);
 		req->skb = NULL;
 		brcmf_usb_enq(devinfo, &devinfo->tx_freeq, req);
 	}
@@ -1239,7 +1240,7 @@ static int brcmf_usb_get_fw(struct brcmf_usbdev_info *devinfo)
 		return -EINVAL;
 	}
 
-	devinfo->image = kmalloc(fw->size, GFP_ATOMIC); /* plus nvram */
+	devinfo->image = vmalloc(fw->size); /* plus nvram */
 	if (!devinfo->image)
 		return -ENOMEM;
 
@@ -1379,14 +1380,6 @@ static int brcmf_usb_probe_cb(struct device *dev, const char *desc,
 	ret = brcmf_bus_start(dev);
 	if (ret == -ENOLINK) {
 		brcmf_dbg(ERROR, "dongle is not responding\n");
-		brcmf_detach(dev);
-		goto fail;
-	}
-
-	/* add interface and open for business */
-	ret = brcmf_add_if(dev, 0, "wlan%d", NULL);
-	if (ret) {
-		brcmf_dbg(ERROR, "Add primary net device interface failed!!\n");
 		brcmf_detach(dev);
 		goto fail;
 	}
@@ -1604,13 +1597,14 @@ static struct usb_driver brcmf_usbdrvr = {
 	.id_table = brcmf_usb_devid_table,
 	.suspend = brcmf_usb_suspend,
 	.resume = brcmf_usb_resume,
-	.supports_autosuspend = 1
+	.supports_autosuspend = 1,
+	.disable_hub_initiated_lpm = 1,
 };
 
 void brcmf_usb_exit(void)
 {
 	usb_deregister(&brcmf_usbdrvr);
-	kfree(g_image.data);
+	vfree(g_image.data);
 	g_image.data = NULL;
 	g_image.len = 0;
 }

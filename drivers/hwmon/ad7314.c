@@ -18,21 +18,14 @@
 #include <linux/hwmon-sysfs.h>
 
 /*
- * AD7314 power mode
- */
-#define AD7314_PD		0x2000
-
-/*
  * AD7314 temperature masks
  */
-#define AD7314_TEMP_SIGN		0x200
 #define AD7314_TEMP_MASK		0x7FE0
-#define AD7314_TEMP_OFFSET		5
+#define AD7314_TEMP_SHIFT		5
 
 /*
  * ADT7301 and ADT7302 temperature masks
  */
-#define ADT7301_TEMP_SIGN		0x2000
 #define ADT7301_TEMP_MASK		0x3FFF
 
 enum ad7314_variant {
@@ -73,7 +66,7 @@ static ssize_t ad7314_show_temperature(struct device *dev,
 		return ret;
 	switch (spi_get_device_id(chip->spi_dev)->driver_data) {
 	case ad7314:
-		data = (ret & AD7314_TEMP_MASK) >> AD7314_TEMP_OFFSET;
+		data = (ret & AD7314_TEMP_MASK) >> AD7314_TEMP_SHIFT;
 		data = (data << 6) >> 6;
 
 		return sprintf(buf, "%d\n", 250 * data);
@@ -94,10 +87,18 @@ static ssize_t ad7314_show_temperature(struct device *dev,
 	}
 }
 
+static ssize_t ad7314_show_name(struct device *dev,
+				struct device_attribute *devattr, char *buf)
+{
+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
+}
+
+static DEVICE_ATTR(name, S_IRUGO, ad7314_show_name, NULL);
 static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
 			  ad7314_show_temperature, NULL, 0);
 
 static struct attribute *ad7314_attributes[] = {
+	&dev_attr_name.attr,
 	&sensor_dev_attr_temp1_input.dev_attr.attr,
 	NULL,
 };

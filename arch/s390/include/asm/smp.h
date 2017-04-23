@@ -1,5 +1,5 @@
 /*
- *    Copyright IBM Corp. 1999,2012
+ *    Copyright IBM Corp. 1999, 2012
  *    Author(s): Denis Joseph Barrow,
  *		 Martin Schwidefsky <schwidefsky@de.ibm.com>,
  *		 Heiko Carstens <heiko.carstens@de.ibm.com>,
@@ -16,7 +16,7 @@
 extern struct mutex smp_cpu_state_mutex;
 extern struct save_area *zfcpdump_save_areas[NR_CPUS + 1];
 
-extern int __cpu_up(unsigned int cpu);
+extern int __cpu_up(unsigned int cpu, struct task_struct *tidle);
 
 extern void arch_send_call_function_single_ipi(int cpu);
 extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
@@ -44,6 +44,7 @@ static inline void smp_call_online_cpu(void (*func)(void *), void *data)
 }
 
 static inline int smp_find_processor_id(int address) { return 0; }
+static inline int smp_store_status(int cpu) { return 0; }
 static inline int smp_vcpu_scheduled(int cpu) { return 1; }
 static inline void smp_yield_cpu(int cpu) { }
 static inline void smp_yield(void) { }

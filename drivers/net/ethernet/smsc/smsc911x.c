@@ -1470,6 +1470,14 @@ smsc911x_set_hw_mac_address(struct smsc911x_data *pdata, u8 dev_addr[6])
 	smsc911x_mac_write(pdata, ADDRL, mac_low32);
 }
 
+static void smsc911x_disable_irq_chip(struct net_device *dev)
+{
+	struct smsc911x_data *pdata = netdev_priv(dev);
+
+	smsc911x_reg_write(pdata, INT_EN, 0);
+	smsc911x_reg_write(pdata, INT_STS, 0xFFFFFFFF);
+}
+
 static int smsc911x_open(struct net_device *dev)
 {
 	struct smsc911x_data *pdata = netdev_priv(dev);
@@ -1522,8 +1530,7 @@ static int smsc911x_open(struct net_device *dev)
 	spin_unlock_irq(&pdata->mac_lock);
 
 	/* Initialise irqs, but leave all sources disabled */
-	smsc911x_reg_write(pdata, INT_EN, 0);
-	smsc911x_reg_write(pdata, INT_STS, 0xFFFFFFFF);
+	smsc911x_disable_irq_chip(dev);
 
 	/* Set interrupt deassertion to 100uS */
 	intcfg = ((10 << 24) | INT_CFG_IRQ_EN_);
@@ -2094,6 +2101,7 @@ static const struct ethtool_ops smsc911x_ethtool_ops = {
 	.get_eeprom_len = smsc911x_ethtool_get_eeprom_len,
 	.get_eeprom = smsc911x_ethtool_get_eeprom,
 	.set_eeprom = smsc911x_ethtool_set_eeprom,
+	.get_ts_info = ethtool_op_get_ts_info,
 };
 
 static const struct net_device_ops smsc911x_netdev_ops = {
@@ -2241,9 +2249,6 @@ static int __devinit smsc911x_init(struct net_device *dev)
 	/* Reset the LAN911x */
 	if (smsc911x_soft_reset(pdata))
 		return -ENODEV;
-
-	/* Disable all interrupt sources until we bring the device up */
-	smsc911x_reg_write(pdata, INT_EN, 0);
 
 	ether_setup(dev);
 	dev->flags |= IFF_MULTICAST;
@@ -2418,11 +2423,11 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 
 	retval = smsc911x_request_resources(pdev);
 	if (retval)
-		goto out_return_resources;
+		goto out_request_resources_fail;
 
 	retval = smsc911x_enable_resources(pdev);
 	if (retval)
-		goto out_disable_resources;
+		goto out_enable_resources_fail;
 
 	if (pdata->ioaddr == NULL) {
 		SMSC_WARN(pdata, probe, "Error smsc911x base address invalid");
@@ -2474,8 +2479,7 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 	smsc911x_reg_write(pdata, INT_CFG, intcfg);
 
 	/* Ensure interrupts are globally disabled before connecting ISR */
-	smsc911x_reg_write(pdata, INT_EN, 0);
-	smsc911x_reg_write(pdata, INT_STS, 0xFFFFFFFF);
+	smsc911x_disable_irq_chip(dev);
 
 	retval = request_irq(dev->irq, smsc911x_irqhandler,
 			     irq_flags | IRQF_SHARED, dev->name, dev);
@@ -2525,7 +2529,7 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 			eth_hw_addr_random(dev);
 			smsc911x_set_hw_mac_address(pdata, dev->dev_addr);
 			SMSC_TRACE(pdata, probe,
-				   "MAC Address is set to random_ether_addr");
+				   "MAC Address is set to eth_random_addr");
 		}
 	}
 
@@ -2541,8 +2545,9 @@ out_free_irq:
 	free_irq(dev->irq, dev);
 out_disable_resources:
 	(void)smsc911x_disable_resources(pdev);
-out_return_resources:
+out_enable_resources_fail:
 	smsc911x_free_resources(pdev);
+out_request_resources_fail:
 	platform_set_drvdata(pdev, NULL);
 	iounmap(pdata->ioaddr);
 	free_netdev(dev);

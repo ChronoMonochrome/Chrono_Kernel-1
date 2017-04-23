@@ -44,6 +44,24 @@
 #include <linux/mlx4/device.h>
 #include <linux/mlx4/doorbell.h>
 
+#define MLX4_IB_DRV_NAME	"mlx4_ib"
+
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
+#define pr_fmt(fmt)	"<" MLX4_IB_DRV_NAME "> %s: " fmt, __func__
+
+#define mlx4_ib_warn(ibdev, format, arg...) \
+	dev_warn((ibdev)->dma_device, MLX4_IB_DRV_NAME ": " format, ## arg)
+
+enum {
+	MLX4_IB_SQ_MIN_WQE_SHIFT = 6,
+	MLX4_IB_MAX_HEADROOM	 = 2048
+};
+
+#define MLX4_IB_SQ_HEADROOM(shift)	((MLX4_IB_MAX_HEADROOM >> (shift)) + 1)
+#define MLX4_IB_SQ_MAX_SPARE		(MLX4_IB_SQ_HEADROOM(MLX4_IB_SQ_MIN_WQE_SHIFT))
+
 struct mlx4_ib_ucontext {
 	struct ib_ucontext	ibucontext;
 	struct mlx4_uar		uar;
@@ -54,13 +72,6 @@ struct mlx4_ib_ucontext {
 struct mlx4_ib_pd {
 	struct ib_pd		ibpd;
 	u32			pdn;
-};
-
-struct mlx4_ib_xrcd {
-	struct ib_xrcd		ibxrcd;
-	u32			xrcdn;
-	struct ib_pd	       *pd;
-	struct ib_cq	       *cq;
 };
 
 struct mlx4_ib_cq_buf {
@@ -145,7 +156,6 @@ struct mlx4_ib_qp {
 	struct mlx4_mtt		mtt;
 	int			buf_size;
 	struct mutex		mutex;
-	u16			xrcdn;
 	u32			flags;
 	u8			port;
 	u8			alt_port;
@@ -155,6 +165,7 @@ struct mlx4_ib_qp {
 	u8			state;
 	int			mlx_type;
 	struct list_head	gid_list;
+	struct list_head	steering_rules;
 };
 
 struct mlx4_ib_srq {
@@ -201,7 +212,18 @@ struct mlx4_ib_dev {
 	struct mutex		cap_mask_mutex;
 	bool			ib_active;
 	struct mlx4_ib_iboe	iboe;
+<<<<<<< HEAD
+=======
 	int			counters[MLX4_MAX_PORTS];
+	int		       *eq_table;
+	int			eq_added;
+};
+
+struct ib_event_work {
+	struct work_struct	work;
+	struct mlx4_ib_dev	*ib_dev;
+	struct mlx4_eqe		ib_eqe;
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 };
 
 static inline struct mlx4_ib_dev *to_mdev(struct ib_device *ibdev)
@@ -217,11 +239,6 @@ static inline struct mlx4_ib_ucontext *to_mucontext(struct ib_ucontext *ibuconte
 static inline struct mlx4_ib_pd *to_mpd(struct ib_pd *ibpd)
 {
 	return container_of(ibpd, struct mlx4_ib_pd, ibpd);
-}
-
-static inline struct mlx4_ib_xrcd *to_mxrcd(struct ib_xrcd *ibxrcd)
-{
-	return container_of(ibxrcd, struct mlx4_ib_xrcd, ibxrcd);
 }
 
 static inline struct mlx4_ib_cq *to_mcq(struct ib_cq *ibcq)
@@ -360,5 +377,8 @@ static inline int mlx4_ib_ah_grh_present(struct mlx4_ib_ah *ah)
 
 int mlx4_ib_add_mc(struct mlx4_ib_dev *mdev, struct mlx4_ib_qp *mqp,
 		   union ib_gid *gid);
+
+void mlx4_ib_dispatch_event(struct mlx4_ib_dev *dev, u8 port_num,
+			    enum ib_event_type type);
 
 #endif /* MLX4_IB_H */

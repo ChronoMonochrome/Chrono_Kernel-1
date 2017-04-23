@@ -17,8 +17,6 @@
 #include <linux/suspend.h>
 #include <linux/reboot.h>
 #include <linux/acpi.h>
-#include <linux/module.h>
-#include <linux/pm_runtime.h>
 
 #include <asm/io.h>
 
@@ -27,34 +25,6 @@
 
 #include "internal.h"
 #include "sleep.h"
-
-u8 wake_sleep_flags = ACPI_NO_OPTIONAL_METHODS;
-static unsigned int gts, bfs;
-static int set_param_wake_flag(const char *val, struct kernel_param *kp)
-{
-	int ret = param_set_int(val, kp);
-
-	if (ret)
-		return ret;
-
-	if (kp->arg == (const char *)&gts) {
-		if (gts)
-			wake_sleep_flags |= ACPI_EXECUTE_GTS;
-		else
-			wake_sleep_flags &= ~ACPI_EXECUTE_GTS;
-	}
-	if (kp->arg == (const char *)&bfs) {
-		if (bfs)
-			wake_sleep_flags |= ACPI_EXECUTE_BFS;
-		else
-			wake_sleep_flags &= ~ACPI_EXECUTE_BFS;
-	}
-	return ret;
-}
-module_param_call(gts, set_param_wake_flag, param_get_int, &gts, 0644);
-module_param_call(bfs, set_param_wake_flag, param_get_int, &bfs, 0644);
-MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
-MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
 
 static u8 sleep_states[ACPI_S_STATE_COUNT];
 
@@ -93,11 +63,9 @@ static int acpi_sleep_prepare(u32 acpi_state)
 #ifdef CONFIG_ACPI_SLEEP
 	/* do we have a wakeup address for S2 and S3? */
 	if (acpi_state == ACPI_STATE_S3) {
-		if (!acpi_wakeup_address) {
+		if (!acpi_wakeup_address)
 			return -EFAULT;
-		}
-		acpi_set_firmware_waking_vector(
-				(acpi_physical_address)acpi_wakeup_address);
+		acpi_set_firmware_waking_vector(acpi_wakeup_address);
 
 	}
 	ACPI_FLUSH_CPU_CACHE();
@@ -111,6 +79,7 @@ static int acpi_sleep_prepare(u32 acpi_state)
 
 #ifdef CONFIG_ACPI_SLEEP
 static u32 acpi_target_sleep_state = ACPI_STATE_S0;
+static bool pwr_btn_event_pending;
 
 /*
  * The ACPI specification wants us to save NVS memory regions during hibernation
@@ -144,7 +113,7 @@ void __init acpi_old_suspend_ordering(void)
 static int acpi_pm_freeze(void)
 {
 	acpi_disable_all_gpes();
-	acpi_os_wait_events_complete(NULL);
+	acpi_os_wait_events_complete();
 	acpi_ec_block_transactions();
 	return 0;
 }
@@ -186,6 +155,14 @@ static int acpi_pm_prepare(void)
 	return error;
 }
 
+static int find_powerf_dev(struct device *dev, void *data)
+{
+	struct acpi_device *device = to_acpi_device(dev);
+	const char *hid = acpi_device_hid(device);
+
+	return !strcmp(hid, ACPI_BUTTON_HID_POWERF);
+}
+
 /**
  *	acpi_pm_finish - Instruct the platform to leave a sleep state.
  *
@@ -194,6 +171,7 @@ static int acpi_pm_prepare(void)
  */
 static void acpi_pm_finish(void)
 {
+	struct device *pwr_btn_dev;
 	u32 acpi_state = acpi_target_sleep_state;
 
 	acpi_ec_unblock_transactions();
@@ -211,6 +189,23 @@ static void acpi_pm_finish(void)
 	acpi_set_firmware_waking_vector((acpi_physical_address) 0);
 
 	acpi_target_sleep_state = ACPI_STATE_S0;
+
+	/* If we were woken with the fixed power button, provide a small
+	 * hint to userspace in the form of a wakeup event on the fixed power
+	 * button device (if it can be found).
+	 *
+	 * We delay the event generation til now, as the PM layer requires
+	 * timekeeping to be running before we generate events. */
+	if (!pwr_btn_event_pending)
+		return;
+
+	pwr_btn_event_pending = false;
+	pwr_btn_dev = bus_find_device(&acpi_bus_type, NULL, NULL,
+				      find_powerf_dev);
+	if (pwr_btn_dev) {
+		pm_wakeup_event(pwr_btn_dev, 0);
+		put_device(pwr_btn_dev);
+	}
 }
 
 /**
@@ -280,7 +275,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
 	switch (acpi_state) {
 	case ACPI_STATE_S1:
 		barrier();
-		status = acpi_enter_sleep_state(acpi_state, wake_sleep_flags);
+		status = acpi_enter_sleep_state(acpi_state);
 		break;
 
 	case ACPI_STATE_S3:
@@ -294,15 +289,33 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
 	/* This violates the spec but is required for bug compatibility. */
 	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
 
+<<<<<<< HEAD
 	/* Reprogram control registers and execute _BFS */
-	acpi_leave_sleep_state_prep(acpi_state, wake_sleep_flags);
+=======
+	/* Reprogram control registers */
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
+	acpi_leave_sleep_state_prep(acpi_state);
 
 	/* ACPI 3.0 specs (P62) says that it's the responsibility
 	 * of the OSPM to clear the status bit [ implying that the
 	 * POWER_BUTTON event should not reach userspace ]
+	 *
+	 * However, we do generate a small hint for userspace in the form of
+	 * a wakeup event. We flag this condition for now and generate the
+	 * event later, as we're currently too early in resume to be able to
+	 * generate wakeup events.
 	 */
-	if (ACPI_SUCCESS(status) && (acpi_state == ACPI_STATE_S3))
-		acpi_clear_event(ACPI_EVENT_POWER_BUTTON);
+	if (ACPI_SUCCESS(status) && (acpi_state == ACPI_STATE_S3)) {
+		acpi_event_status pwr_btn_status;
+
+		acpi_get_event_status(ACPI_EVENT_POWER_BUTTON, &pwr_btn_status);
+
+		if (pwr_btn_status & ACPI_EVENT_FLAG_SET) {
+			acpi_clear_event(ACPI_EVENT_POWER_BUTTON);
+			/* Flag for later */
+			pwr_btn_event_pending = true;
+		}
+	}
 
 	/*
 	 * Disable and clear GPE status before interrupt is enabled. Some GPEs
@@ -420,22 +433,6 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
 	},
 	{
 	.callback = init_nvs_nosave,
-	.ident = "Sony Vaio VGN-FW21E",
-	.matches = {
-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW21E"),
-		},
-	},
-	{
-	.callback = init_nvs_nosave,
-	.ident = "Sony Vaio VPCEB17FX",
-	.matches = {
-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB17FX"),
-		},
-	},
-	{
-	.callback = init_nvs_nosave,
 	.ident = "Sony Vaio VGN-SR11M",
 	.matches = {
 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
@@ -468,50 +465,10 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
 	},
 	{
 	.callback = init_nvs_nosave,
-	.ident = "Sony Vaio VPCCW29FX",
-	.matches = {
-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCCW29FX"),
-		},
-	},
-	{
-	.callback = init_nvs_nosave,
 	.ident = "Averatec AV1020-ED2",
 	.matches = {
 		DMI_MATCH(DMI_SYS_VENDOR, "AVERATEC"),
 		DMI_MATCH(DMI_PRODUCT_NAME, "1000 Series"),
-		},
-	},
-	{
-	.callback = init_old_suspend_ordering,
-	.ident = "Asus A8N-SLI DELUXE",
-	.matches = {
-		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
-		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI DELUXE"),
-		},
-	},
-	{
-	.callback = init_old_suspend_ordering,
-	.ident = "Asus A8N-SLI Premium",
-	.matches = {
-		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
-		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI Premium"),
-		},
-	},
-	{
-	.callback = init_nvs_nosave,
-	.ident = "Sony Vaio VGN-SR26GN_P",
-	.matches = {
-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR26GN_P"),
-		},
-	},
-	{
-	.callback = init_nvs_nosave,
-	.ident = "Sony Vaio VGN-FW520F",
-	.matches = {
-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW520F"),
 		},
 	},
 	{
@@ -564,9 +521,13 @@ static int acpi_hibernation_enter(void)
 	ACPI_FLUSH_CPU_CACHE();
 
 	/* This shouldn't return.  If it returns, we have a problem */
-	status = acpi_enter_sleep_state(ACPI_STATE_S4, wake_sleep_flags);
+	status = acpi_enter_sleep_state(ACPI_STATE_S4);
+<<<<<<< HEAD
 	/* Reprogram control registers and execute _BFS */
-	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+=======
+	/* Reprogram control registers */
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
+	acpi_leave_sleep_state_prep(ACPI_STATE_S4);
 
 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
 }
@@ -578,8 +539,12 @@ static void acpi_hibernation_leave(void)
 	 * enable it here.
 	 */
 	acpi_enable();
+<<<<<<< HEAD
 	/* Reprogram control registers and execute _BFS */
-	acpi_leave_sleep_state_prep(ACPI_STATE_S4, wake_sleep_flags);
+=======
+	/* Reprogram control registers */
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
+	acpi_leave_sleep_state_prep(ACPI_STATE_S4);
 	/* Check the hardware signature */
 	if (facs && s4_hardware_signature != facs->hardware_signature) {
 		printk(KERN_EMERG "ACPI: Hardware changed while hibernated, "
@@ -677,8 +642,9 @@ int acpi_suspend(u32 acpi_state)
  *	@dev: device to examine; its driver model wakeup flags control
  *		whether it should be able to wake up the system
  *	@d_min_p: used to store the upper limit of allowed states range
- *	Return value: preferred power state of the device on success, -ENODEV on
- *		failure (ie. if there's no 'struct acpi_device' for @dev)
+ *	@d_max_in: specify the lowest allowed states
+ *	Return value: preferred power state of the device on success, -ENODEV
+ *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
  *
  *	Find the lowest power (highest number) ACPI device power state that
  *	device @dev can be in while the system is in the sleep state represented
@@ -693,13 +659,15 @@ int acpi_suspend(u32 acpi_state)
  *	via @wake.
  */
 
-int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
+int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
 {
 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
 	struct acpi_device *adev;
 	char acpi_method[] = "_SxD";
 	unsigned long long d_min, d_max;
 
+	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
+		return -EINVAL;
 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
 		printk(KERN_DEBUG "ACPI handle has no context!\n");
 		return -ENODEV;
@@ -707,8 +675,10 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
 
 	acpi_method[2] = '0' + acpi_target_sleep_state;
 	/*
-	 * If the sleep state is S0, we will return D3, but if the device has
-	 * _S0W, we will use the value from _S0W
+	 * If the sleep state is S0, the lowest limit from ACPI is D3,
+	 * but if the device has _S0W, we will use the value from _S0W
+	 * as the lowest limit from ACPI.  Finally, we will constrain
+	 * the lowest limit with the specified one.
 	 */
 	d_min = ACPI_STATE_D0;
 	d_max = ACPI_STATE_D3;
@@ -732,8 +702,8 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
 	 * can wake the system.  _S0W may be valid, too.
 	 */
 	if (acpi_target_sleep_state == ACPI_STATE_S0 ||
-	    (device_may_wakeup(dev) &&
-	     adev->wakeup.sleep_state <= acpi_target_sleep_state)) {
+	    (device_may_wakeup(dev) && adev->wakeup.flags.valid &&
+	     adev->wakeup.sleep_state >= acpi_target_sleep_state)) {
 		acpi_status status;
 
 		acpi_method[3] = 'W';
@@ -752,14 +722,26 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
 		}
 	}
 
+	if (d_max_in < d_min)
+		return -EINVAL;
 	if (d_min_p)
 		*d_min_p = d_min;
+	/* constrain d_max with specified lowest limit (max number) */
+	if (d_max > d_max_in) {
+		for (d_max = d_max_in; d_max > d_min; d_max--) {
+			if (adev->power.states[d_max].flags.valid)
+				break;
+		}
+	}
 	return d_max;
 }
+EXPORT_SYMBOL(acpi_pm_device_sleep_state);
 #endif /* CONFIG_PM */
 
 #ifdef CONFIG_PM_SLEEP
 /**
+<<<<<<< HEAD
+=======
  * acpi_pm_device_run_wake - Enable/disable wake-up for given device.
  * @phys_dev: Device to enable/disable the platform to wake-up the system for.
  * @enable: Whether enable or disable the wake-up functionality.
@@ -792,8 +774,10 @@ int acpi_pm_device_run_wake(struct device *phys_dev, bool enable)
 
 	return 0;
 }
+EXPORT_SYMBOL(acpi_pm_device_run_wake);
 
 /**
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  *	acpi_pm_device_sleep_wake - enable or disable the system wake-up
  *                                  capability of given device
  *	@dev: device to handle
@@ -837,7 +821,8 @@ static void acpi_power_off(void)
 	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
 	printk(KERN_DEBUG "%s called\n", __func__);
 	local_irq_disable();
-	acpi_enter_sleep_state(ACPI_STATE_S5, wake_sleep_flags);
+	acpi_enter_sleep_state(ACPI_STATE_S5);
+<<<<<<< HEAD
 }
 
 /*
@@ -852,18 +837,20 @@ static void __init acpi_gts_bfs_check(void)
 {
 	acpi_handle dummy;
 
-	if (ACPI_SUCCESS(acpi_get_handle(ACPI_ROOT_OBJECT, METHOD_PATHNAME__GTS, &dummy)))
+	if (ACPI_SUCCESS(acpi_get_handle(ACPI_ROOT_OBJECT, METHOD_NAME__GTS, &dummy)))
 	{
 		printk(KERN_NOTICE PREFIX "BIOS offers _GTS\n");
 		printk(KERN_NOTICE PREFIX "If \"acpi.gts=1\" improves suspend, "
 			"please notify linux-acpi@vger.kernel.org\n");
 	}
-	if (ACPI_SUCCESS(acpi_get_handle(ACPI_ROOT_OBJECT, METHOD_PATHNAME__BFS, &dummy)))
+	if (ACPI_SUCCESS(acpi_get_handle(ACPI_ROOT_OBJECT, METHOD_NAME__BFS, &dummy)))
 	{
 		printk(KERN_NOTICE PREFIX "BIOS offers _BFS\n");
 		printk(KERN_NOTICE PREFIX "If \"acpi.bfs=1\" improves resume, "
 			"please notify linux-acpi@vger.kernel.org\n");
 	}
+=======
+>>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 int __init acpi_sleep_init(void)
@@ -887,7 +874,7 @@ int __init acpi_sleep_init(void)
 		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
 		if (ACPI_SUCCESS(status)) {
 			sleep_states[i] = 1;
-			printk(" S%d", i);
+			printk(KERN_CONT " S%d", i);
 		}
 	}
 
@@ -901,7 +888,7 @@ int __init acpi_sleep_init(void)
 		hibernation_set_ops(old_suspend_ordering ?
 			&acpi_hibernation_ops_old : &acpi_hibernation_ops);
 		sleep_states[ACPI_STATE_S4] = 1;
-		printk(" S4");
+		printk(KERN_CONT " S4");
 		if (!nosigcheck) {
 			acpi_get_table(ACPI_SIG_FACS, 1,
 				(struct acpi_table_header **)&facs);
@@ -914,16 +901,15 @@ int __init acpi_sleep_init(void)
 	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
 	if (ACPI_SUCCESS(status)) {
 		sleep_states[ACPI_STATE_S5] = 1;
-		printk(" S5");
+		printk(KERN_CONT " S5");
 		pm_power_off_prepare = acpi_power_off_prepare;
 		pm_power_off = acpi_power_off;
 	}
-	printk(")\n");
+	printk(KERN_CONT ")\n");
 	/*
 	 * Register the tts_notifier to reboot notifier list so that the _TTS
 	 * object can also be evaluated when the system enters S5.
 	 */
 	register_reboot_notifier(&tts_notifier);
-	acpi_gts_bfs_check();
 	return 0;
 }
