@@ -166,8 +166,6 @@ struct bnep_session {
 
 	struct socket    *sock;
 	struct net_device *dev;
-
-	unsigned int setup_done;
 };
 
 void bnep_net_setup(struct net_device *dev);

@@ -13,7 +13,6 @@
 #include <linux/list.h>
 #include <linux/netdevice.h>
 #include <linux/if_arp.h>
-#include <linux/io.h>
 
 #include <net/caif/caif_device.h>
 #include <net/caif/caif_shm.h>
@@ -135,7 +134,7 @@ int caif_shmdrv_rx_cb(u32 mbx_msg, void *priv)
 	u32 avail_emptybuff = 0;
 	unsigned long flags = 0;
 
-	pshm_drv = (struct shmdrv_layer *)priv;
+	pshm_drv = priv;
 
 	/* Check for received buffers. */
 	if (mbx_msg & SHM_FULL_MASK) {
@@ -338,7 +337,11 @@ static void shm_rx_work_func(struct work_struct *rx_work)
 			/* Get a suitable CAIF packet and copy in data. */
 			skb = netdev_alloc_skb(pshm_drv->pshm_dev->pshm_netdev,
 							frm_pck_len + 1);
-			BUG_ON(skb == NULL);
+
+			if (skb == NULL) {
+				pr_info("OOM: Try next frame in descriptor\n");
+				break;
+			}
 
 			p = skb_put(skb, frm_pck_len);
 			memcpy(p, pbuf->desc_vptr + frm_pck_ofs, frm_pck_len);
@@ -483,7 +486,7 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 			pshm_drv->pshm_dev->pshm_netdev->stats.tx_packets++;
 			pshm_drv->pshm_dev->pshm_netdev->stats.tx_bytes +=
 									frmlen;
-			dev_kfree_skb_any(skb);
+			dev_kfree_skb_irq(skb);
 
 			/* Fill in the shared memory packet descriptor area. */
 			pck_desc = (struct shm_pck_desc *) (pbuf->desc_vptr);
@@ -642,11 +645,8 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 		tx_buf->frm_ofs = SHM_CAIF_FRM_OFS;
 
 		if (pshm_dev->shm_loopback)
-			tx_buf->desc_vptr = (char *)tx_buf->phy_addr;
+			tx_buf->desc_vptr = (unsigned char *)tx_buf->phy_addr;
 		else
-			/*
-			 * FIXME: the result of ioremap is not a pointer - arnd
-			 */
 			tx_buf->desc_vptr =
 					ioremap(tx_buf->phy_addr, TX_BUF_SZ);
 
@@ -669,7 +669,7 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 		rx_buf->len = RX_BUF_SZ;
 
 		if (pshm_dev->shm_loopback)
-			rx_buf->desc_vptr = (char *)rx_buf->phy_addr;
+			rx_buf->desc_vptr = (unsigned char *)rx_buf->phy_addr;
 		else
 			rx_buf->desc_vptr =
 					ioremap(rx_buf->phy_addr, RX_BUF_SZ);
