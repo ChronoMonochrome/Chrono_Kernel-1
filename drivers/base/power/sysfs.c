@@ -292,7 +292,7 @@ static ssize_t wakeup_hit_count_show(struct device *dev,
 
 	spin_lock_irq(&dev->power.lock);
 	if (dev->power.wakeup) {
-		count = dev->power.wakeup->hit_count;
+		count = dev->power.wakeup->expire_count;
 		enabled = true;
 	}
 	spin_unlock_irq(&dev->power.lock);
