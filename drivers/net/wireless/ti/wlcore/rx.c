@@ -22,29 +22,16 @@
  */
 
 #include <linux/gfp.h>
+#include <linux/sched.h>
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-#include "wl12xx.h"
-=======
 #include "wlcore.h"
 #include "debug.h"
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 #include "acx.h"
 #include "rx.h"
+#include "tx.h"
 #include "io.h"
 #include "hw_ops.h"
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-static u8 wl1271_rx_get_mem_block(struct wl1271_fw_common_status *status,
-				  u32 drv_rx_counter)
-{
-	return le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]) &
-		RX_MEM_BLOCK_MASK;
-}
-
-static u32 wl1271_rx_get_buf_size(struct wl1271_fw_common_status *status,
-				 u32 drv_rx_counter)
-=======
 /*
  * TODO: this is here just for now, it must be removed when the data
  * operations are in place.
@@ -53,7 +40,6 @@ static u32 wl1271_rx_get_buf_size(struct wl1271_fw_common_status *status,
 
 static u32 wlcore_rx_get_buf_size(struct wl1271 *wl,
 				  u32 rx_pkt_desc)
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 {
 	if (wl->quirks & WLCORE_QUIRK_RX_BLOCKSIZE_ALIGN)
 		return (rx_pkt_desc & ALIGNED_RX_BUF_SIZE_MASK) >>
@@ -62,8 +48,6 @@ static u32 wlcore_rx_get_buf_size(struct wl1271 *wl,
 	return (rx_pkt_desc & RX_BUF_SIZE_MASK) >> RX_BUF_SIZE_SHIFT_DIV;
 }
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-=======
 static u32 wlcore_rx_get_align_buf_size(struct wl1271 *wl, u32 pkt_len)
 {
 	if (wl->quirks & WLCORE_QUIRK_RX_BLOCKSIZE_ALIGN)
@@ -72,7 +56,6 @@ static u32 wlcore_rx_get_align_buf_size(struct wl1271 *wl, u32 pkt_len)
 	return pkt_len;
 }
 
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 static void wl1271_rx_status(struct wl1271 *wl,
 			     struct wl1271_rx_descriptor *desc,
 			     struct ieee80211_rx_status *status,
@@ -87,11 +70,9 @@ static void wl1271_rx_status(struct wl1271 *wl,
 
 	status->rate_idx = wlcore_rate_to_idx(wl, desc->rate, status->band);
 
-#ifdef CONFIG_WL12XX_HT
 	/* 11n support */
 	if (desc->rate <= wl->hw_min_ht_rate)
 		status->flag |= RX_FLAG_HT;
-#endif
 
 	status->signal = desc->rssi;
 
@@ -118,31 +99,24 @@ static void wl1271_rx_status(struct wl1271 *wl,
 	}
 }
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length)
-=======
 static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 				 enum wl_rx_buf_align rx_align, u8 *hlid)
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 {
 	struct wl1271_rx_descriptor *desc;
 	struct sk_buff *skb;
 	struct ieee80211_hdr *hdr;
 	u8 *buf;
 	u8 beacon = 0;
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-=======
 	u8 is_data = 0;
 	u8 reserved = 0;
 	u16 seq_num;
 	u32 pkt_data_len;
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 
 	/*
 	 * In PLT mode we seem to get frames and mac80211 warns about them,
 	 * workaround this by not retrieving them at all.
 	 */
-	if (unlikely(wl->state == WL1271_STATE_PLT))
+	if (unlikely(wl->plt))
 		return -EINVAL;
 
 	pkt_data_len = wlcore_hw_get_rx_packet_len(wl, data, length);
@@ -157,6 +131,13 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 
 	/* the data read starts with the descriptor */
 	desc = (struct wl1271_rx_descriptor *) data;
+
+	if (desc->packet_class == WL12XX_RX_CLASS_LOGGER) {
+		size_t len = length - sizeof(*desc);
+		wl12xx_copy_fwlog(wl, data + sizeof(*desc), len);
+		wake_up_interruptible(&wl->fwlog_waitq);
+		return 0;
+	}
 
 	switch (desc->status & WL1271_RX_DESC_STATUS_MASK) {
 	/* discard corrupted packets */
@@ -174,24 +155,13 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 		return -EINVAL;
 	}
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-	skb = __dev_alloc_skb(length, GFP_KERNEL);
-=======
 	/* skb length not including rx descriptor */
 	skb = __dev_alloc_skb(pkt_data_len + reserved, GFP_KERNEL);
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 	if (!skb) {
 		wl1271_error("Couldn't allocate RX frame");
 		return -ENOMEM;
 	}
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-	buf = skb_put(skb, length);
-	memcpy(buf, data, length);
-
-	/* now we pull the descriptor out of the buffer */
-	skb_pull(skb, sizeof(*desc));
-=======
 	/* reserve the unaligned payload(if any) */
 	skb_reserve(skb, reserved);
 
@@ -208,62 +178,48 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 		skb_pull(skb, NET_IP_ALIGN);
 
 	*hlid = desc->hlid;
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 
 	hdr = (struct ieee80211_hdr *)skb->data;
 	if (ieee80211_is_beacon(hdr->frame_control))
 		beacon = 1;
+	if (ieee80211_is_data_present(hdr->frame_control))
+		is_data = 1;
 
 	wl1271_rx_status(wl, desc, IEEE80211_SKB_RXCB(skb), beacon);
 
-	wl1271_debug(DEBUG_RX, "rx skb 0x%p: %d B %s", skb,
+	seq_num = (le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_SEQ) >> 4;
+	wl1271_debug(DEBUG_RX, "rx skb 0x%p: %d B %s seq %d hlid %d", skb,
 		     skb->len - desc->pad_len,
-		     beacon ? "beacon" : "");
+		     beacon ? "beacon" : "",
+		     seq_num, *hlid);
 
 	skb_queue_tail(&wl->deferred_rx_queue, skb);
-	ieee80211_queue_work(wl->hw, &wl->netstack_work);
+	queue_work(wl->freezable_wq, &wl->netstack_work);
 
-	return 0;
+	return is_data;
 }
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-void wl1271_rx(struct wl1271 *wl, struct wl1271_fw_common_status *status)
-{
-	struct wl1271_acx_mem_map *wl_mem_map = wl->target_mem_map;
-=======
 void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
 {
 	unsigned long active_hlids[BITS_TO_LONGS(WL12XX_MAX_LINKS)] = {0};
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 	u32 buf_size;
 	u32 fw_rx_counter  = status->fw_rx_counter & NUM_RX_PKT_DESC_MOD_MASK;
 	u32 drv_rx_counter = wl->rx_counter & NUM_RX_PKT_DESC_MOD_MASK;
 	u32 rx_counter;
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-	u32 mem_block;
-	u32 pkt_length;
-	u32 pkt_offset;
-=======
 	u32 pkt_len, align_pkt_len;
 	u32 pkt_offset, des;
 	u8 hlid;
 	enum wl_rx_buf_align rx_align;
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 
 	while (drv_rx_counter != fw_rx_counter) {
 		buf_size = 0;
 		rx_counter = drv_rx_counter;
 		while (rx_counter != fw_rx_counter) {
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-			pkt_length = wl1271_rx_get_buf_size(status, rx_counter);
-			if (buf_size + pkt_length > WL1271_AGGR_BUFFER_SIZE)
-=======
 			des = le32_to_cpu(status->rx_pkt_descs[rx_counter]);
 			pkt_len = wlcore_rx_get_buf_size(wl, des);
 			align_pkt_len = wlcore_rx_get_align_buf_size(wl,
 								     pkt_len);
 			if (buf_size + align_pkt_len > WL1271_AGGR_BUFFER_SIZE)
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 				break;
 			buf_size += align_pkt_len;
 			rx_counter++;
@@ -275,29 +231,6 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
 			break;
 		}
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-		if (wl->chip.id != CHIP_ID_1283_PG20) {
-			/*
-			 * Choose the block we want to read
-			 * For aggregated packets, only the first memory block
-			 * should be retrieved. The FW takes care of the rest.
-			 */
-			mem_block = wl1271_rx_get_mem_block(status,
-							    drv_rx_counter);
-
-			wl->rx_mem_pool_addr.addr = (mem_block << 8) +
-			   le32_to_cpu(wl_mem_map->packet_memory_pool_start);
-
-			wl->rx_mem_pool_addr.addr_extra =
-				wl->rx_mem_pool_addr.addr + 4;
-
-			wl1271_write(wl, WL1271_SLV_REG_DATA,
-				     &wl->rx_mem_pool_addr,
-				     sizeof(wl->rx_mem_pool_addr), false);
-		}
-
-=======
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 		/* Read all available packets at once */
 		des = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
 		wlcore_hw_prepare_read(wl, des, buf_size);
@@ -307,25 +240,15 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
 		/* Split data into separate packets */
 		pkt_offset = 0;
 		while (pkt_offset < buf_size) {
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-			pkt_length = wl1271_rx_get_buf_size(status,
-					drv_rx_counter);
-=======
 			des = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
 			pkt_len = wlcore_rx_get_buf_size(wl, des);
 			rx_align = wlcore_hw_get_rx_buf_align(wl, des);
 
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 			/*
 			 * the handle data call can only fail in memory-outage
 			 * conditions, in that case the received frame will just
 			 * be dropped.
 			 */
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-			wl1271_rx_handle_data(wl,
-					      wl->aggr_buf + pkt_offset,
-					      pkt_length);
-=======
 			if (wl1271_rx_handle_data(wl,
 						  wl->aggr_buf + pkt_offset,
 						  pkt_len, rx_align,
@@ -338,7 +261,6 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
 					     "(%d)\n", hlid);
 			}
 
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 			wl->rx_counter++;
 			drv_rx_counter++;
 			drv_rx_counter &= NUM_RX_PKT_DESC_MOD_MASK;
@@ -350,25 +272,11 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
 	 * Write the driver's packet counter to the FW. This is only required
 	 * for older hardware revisions
 	 */
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.c
-	if (wl->quirks & WL12XX_QUIRK_END_OF_TRANSACTION)
-		wl1271_write32(wl, RX_DRIVER_COUNTER_ADDRESS, wl->rx_counter);
-}
-=======
 	if (wl->quirks & WLCORE_QUIRK_END_OF_TRANSACTION)
 		wl1271_write32(wl, WL12XX_REG_RX_DRIVER_COUNTER,
 			       wl->rx_counter);
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.c
 
-void wl1271_set_default_filters(struct wl1271 *wl)
-{
-	if (wl->bss_type == BSS_TYPE_AP_BSS) {
-		wl->rx_config = WL1271_DEFAULT_AP_RX_CONFIG;
-		wl->rx_filter = WL1271_DEFAULT_AP_RX_FILTER;
-	} else {
-		wl->rx_config = WL1271_DEFAULT_STA_RX_CONFIG;
-		wl->rx_filter = WL1271_DEFAULT_STA_RX_FILTER;
-	}
+	wl12xx_rearm_rx_streaming(wl, active_hlids);
 }
 
 #ifdef CONFIG_PM

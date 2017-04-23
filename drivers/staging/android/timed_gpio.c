@@ -29,9 +29,9 @@ struct timed_gpio_data {
 	struct timed_output_dev dev;
 	struct hrtimer timer;
 	spinlock_t lock;
-	unsigned 	gpio;
-	int 		max_timeout;
-	u8 		active_low;
+	unsigned gpio;
+	int max_timeout;
+	u8 active_low;
 };
 
 static enum hrtimer_restart gpio_timer_func(struct hrtimer *timer)
@@ -80,36 +80,12 @@ static void gpio_enable(struct timed_output_dev *dev, int value)
 	spin_unlock_irqrestore(&data->lock, flags);
 }
 
-struct timed_gpio_data *gpio_dat_;
-int max_timeout = 10000;
-
-static int set_max_timeout(const char *buf, struct kernel_param *kp)
-{
-	int val;
-
-	if (sscanf(buf, "%d", &val)) {
-		if (val < 0) {
-			pr_err("[timed_gpio] %s: invalid input\n", __func__);
-			return -EINVAL;
-		}
-
-		max_timeout = val;
-		if (gpio_dat_)
-			gpio_dat_->max_timeout = max_timeout;
-
-		return 0;
-	}
-
-	return -EINVAL;
-}
-module_param_call(max_timeout, set_max_timeout, param_get_int, &max_timeout, 0664);
-
 static int timed_gpio_probe(struct platform_device *pdev)
 {
 	struct timed_gpio_platform_data *pdata = pdev->dev.platform_data;
 	struct timed_gpio *cur_gpio;
 	struct timed_gpio_data *gpio_data, *gpio_dat;
-	int i, j, ret = 0;
+	int i, ret;
 
 	if (!pdata)
 		return -EBUSY;
@@ -132,30 +108,32 @@ static int timed_gpio_probe(struct platform_device *pdev)
 		gpio_dat->dev.get_time = gpio_get_time;
 		gpio_dat->dev.enable = gpio_enable;
 		ret = gpio_request(cur_gpio->gpio, cur_gpio->name);
-		if (ret >= 0) {
-			ret = timed_output_dev_register(&gpio_dat->dev);
-			if (ret < 0)
-				gpio_free(cur_gpio->gpio);
-		}
+		if (ret < 0)
+			goto err_out;
+		ret = timed_output_dev_register(&gpio_dat->dev);
 		if (ret < 0) {
-			for (j = 0; j < i; j++) {
-				timed_output_dev_unregister(&gpio_data[i].dev);
-				gpio_free(gpio_data[i].gpio);
-			}
-			kfree(gpio_data);
-			return ret;
+			gpio_free(cur_gpio->gpio);
+			goto err_out;
 		}
 
 		gpio_dat->gpio = cur_gpio->gpio;
-		gpio_dat->max_timeout = max_timeout;
+		gpio_dat->max_timeout = cur_gpio->max_timeout;
 		gpio_dat->active_low = cur_gpio->active_low;
 		gpio_direction_output(gpio_dat->gpio, gpio_dat->active_low);
 	}
 
-	gpio_dat_ = gpio_dat;
 	platform_set_drvdata(pdev, gpio_data);
 
 	return 0;
+
+err_out:
+	while (--i >= 0) {
+		timed_output_dev_unregister(&gpio_data[i].dev);
+		gpio_free(gpio_data[i].gpio);
+	}
+	kfree(gpio_data);
+
+	return ret;
 }
 
 static int timed_gpio_remove(struct platform_device *pdev)

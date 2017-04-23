@@ -21,156 +21,73 @@
  *
  */
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/event.c
-#include "wl12xx.h"
-#include "reg.h"
-=======
 #include "wlcore.h"
 #include "debug.h"
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/event.c
 #include "io.h"
 #include "event.h"
 #include "ps.h"
 #include "scan.h"
 #include "wl12xx_80211.h"
 
-void wl1271_pspoll_work(struct work_struct *work)
-{
-	struct delayed_work *dwork;
-	struct wl1271 *wl;
-	int ret;
-
-	dwork = container_of(work, struct delayed_work, work);
-	wl = container_of(dwork, struct wl1271, pspoll_work);
-
-	wl1271_debug(DEBUG_EVENT, "pspoll work");
-
-	mutex_lock(&wl->mutex);
-
-	if (unlikely(wl->state == WL1271_STATE_OFF))
-		goto out;
-
-	if (!test_and_clear_bit(WL1271_FLAG_PSPOLL_FAILURE, &wl->flags))
-		goto out;
-
-	if (!test_bit(WL1271_FLAG_STA_ASSOCIATED, &wl->flags))
-		goto out;
-
-	/*
-	 * if we end up here, then we were in powersave when the pspoll
-	 * delivery failure occurred, and no-one changed state since, so
-	 * we should go back to powersave.
-	 */
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto out;
-
-	wl1271_ps_set_mode(wl, STATION_POWER_SAVE_MODE, wl->basic_rate, true);
-
-	wl1271_ps_elp_sleep(wl);
-out:
-	mutex_unlock(&wl->mutex);
-};
-
-static void wl1271_event_pspoll_delivery_fail(struct wl1271 *wl)
-{
-	int delay = wl->conf.conn.ps_poll_recovery_period;
-	int ret;
-
-	wl->ps_poll_failures++;
-	if (wl->ps_poll_failures == 1)
-		wl1271_info("AP with dysfunctional ps-poll, "
-			    "trying to work around it.");
-
-	/* force active mode receive data from the AP */
-	if (test_bit(WL1271_FLAG_PSM, &wl->flags)) {
-		ret = wl1271_ps_set_mode(wl, STATION_ACTIVE_MODE,
-					 wl->basic_rate, true);
-		if (ret < 0)
-			return;
-		set_bit(WL1271_FLAG_PSPOLL_FAILURE, &wl->flags);
-		ieee80211_queue_delayed_work(wl->hw, &wl->pspoll_work,
-					     msecs_to_jiffies(delay));
-	}
-
-	/*
-	 * If already in active mode, lets we should be getting data from
-	 * the AP right away. If we enter PSM too fast after this, and data
-	 * remains on the AP, we will get another event like this, and we'll
-	 * go into active once more.
-	 */
-}
-
-static int wl1271_event_ps_report(struct wl1271 *wl,
-				  struct event_mailbox *mbox,
-				  bool *beacon_loss)
-{
-	int ret = 0;
-	u32 total_retries = wl->conf.conn.psm_entry_retries;
-
-	wl1271_debug(DEBUG_EVENT, "ps_status: 0x%x", mbox->ps_status);
-
-	switch (mbox->ps_status) {
-	case EVENT_ENTER_POWER_SAVE_FAIL:
-		wl1271_debug(DEBUG_PSM, "PSM entry failed");
-
-		if (!test_bit(WL1271_FLAG_PSM, &wl->flags)) {
-			/* remain in active mode */
-			wl->psm_entry_retry = 0;
-			break;
-		}
-
-		if (wl->psm_entry_retry < total_retries) {
-			wl->psm_entry_retry++;
-			ret = wl1271_ps_set_mode(wl, STATION_POWER_SAVE_MODE,
-						 wl->basic_rate, true);
-		} else {
-			wl1271_info("No ack to nullfunc from AP.");
-			wl->psm_entry_retry = 0;
-			*beacon_loss = true;
-		}
-		break;
-	case EVENT_ENTER_POWER_SAVE_SUCCESS:
-		wl->psm_entry_retry = 0;
-
-		/* enable beacon filtering */
-		ret = wl1271_acx_beacon_filter_opt(wl, true);
-		if (ret < 0)
-			break;
-
-		/* enable beacon early termination */
-		ret = wl1271_acx_bet_enable(wl, true);
-		if (ret < 0)
-			break;
-
-		if (wl->ps_compl) {
-			complete(wl->ps_compl);
-			wl->ps_compl = NULL;
-		}
-		break;
-	default:
-		break;
-	}
-
-	return ret;
-}
-
 static void wl1271_event_rssi_trigger(struct wl1271 *wl,
+				      struct wl12xx_vif *wlvif,
 				      struct event_mailbox *mbox)
 {
+	struct ieee80211_vif *vif = wl12xx_wlvif_to_vif(wlvif);
 	enum nl80211_cqm_rssi_threshold_event event;
 	s8 metric = mbox->rssi_snr_trigger_metric[0];
 
 	wl1271_debug(DEBUG_EVENT, "RSSI trigger metric: %d", metric);
 
-	if (metric <= wl->rssi_thold)
+	if (metric <= wlvif->rssi_thold)
 		event = NL80211_CQM_RSSI_THRESHOLD_EVENT_LOW;
 	else
 		event = NL80211_CQM_RSSI_THRESHOLD_EVENT_HIGH;
 
-	if (event != wl->last_rssi_event)
-		ieee80211_cqm_rssi_notify(wl->vif, event, GFP_KERNEL);
-	wl->last_rssi_event = event;
+	if (event != wlvif->last_rssi_event)
+		ieee80211_cqm_rssi_notify(vif, event, GFP_KERNEL);
+	wlvif->last_rssi_event = event;
+}
+
+static void wl1271_stop_ba_event(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+{
+	struct ieee80211_vif *vif = wl12xx_wlvif_to_vif(wlvif);
+
+	if (wlvif->bss_type != BSS_TYPE_AP_BSS) {
+		if (!wlvif->sta.ba_rx_bitmap)
+			return;
+		ieee80211_stop_rx_ba_session(vif, wlvif->sta.ba_rx_bitmap,
+					     vif->bss_conf.bssid);
+	} else {
+		u8 hlid;
+		struct wl1271_link *lnk;
+		for_each_set_bit(hlid, wlvif->ap.sta_hlid_map,
+				 WL12XX_MAX_LINKS) {
+			lnk = &wl->links[hlid];
+			if (!lnk->ba_bitmap)
+				continue;
+
+			ieee80211_stop_rx_ba_session(vif,
+						     lnk->ba_bitmap,
+						     lnk->addr);
+		}
+	}
+}
+
+static void wl12xx_event_soft_gemini_sense(struct wl1271 *wl,
+					       u8 enable)
+{
+	struct wl12xx_vif *wlvif;
+
+	if (enable) {
+		set_bit(WL1271_FLAG_SOFT_GEMINI, &wl->flags);
+	} else {
+		clear_bit(WL1271_FLAG_SOFT_GEMINI, &wl->flags);
+		wl12xx_for_each_wlvif_sta(wl, wlvif) {
+			wl1271_recalc_rx_streaming(wl, wlvif);
+		}
+	}
+
 }
 
 static void wl1271_event_mbox_dump(struct event_mailbox *mbox)
@@ -182,19 +99,12 @@ static void wl1271_event_mbox_dump(struct event_mailbox *mbox)
 
 static int wl1271_event_process(struct wl1271 *wl)
 {
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/event.c
-	int ret;
-	u32 vector;
-	bool beacon_loss = false;
-	bool is_ap = (wl->bss_type == BSS_TYPE_AP_BSS);
-=======
 	struct event_mailbox *mbox = wl->mbox;
 	struct ieee80211_vif *vif;
 	struct wl12xx_vif *wlvif;
 	u32 vector;
 	bool disconnect_sta = false;
 	unsigned long sta_bitmap = 0;
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/event.c
 
 	wl1271_event_mbox_dump(mbox);
 
@@ -206,7 +116,7 @@ static int wl1271_event_process(struct wl1271 *wl)
 		wl1271_debug(DEBUG_EVENT, "status: 0x%x",
 			     mbox->scheduled_scan_status);
 
-		wl1271_scan_stm(wl);
+		wl1271_scan_stm(wl, wl->scan_vif);
 	}
 
 	if (vector & PERIODIC_SCAN_REPORT_EVENT_ID) {
@@ -220,32 +130,23 @@ static int wl1271_event_process(struct wl1271 *wl)
 		wl1271_debug(DEBUG_EVENT, "PERIODIC_SCAN_COMPLETE_EVENT "
 			     "(status 0x%0x)", mbox->scheduled_scan_status);
 		if (wl->sched_scanning) {
-			wl1271_scan_sched_scan_stop(wl);
 			ieee80211_sched_scan_stopped(wl->hw);
+			wl->sched_scanning = false;
 		}
 	}
 
-	/* disable dynamic PS when requested by the firmware */
-	if (vector & SOFT_GEMINI_SENSE_EVENT_ID &&
-	    wl->bss_type == BSS_TYPE_STA_BSS) {
-		if (mbox->soft_gemini_sense_info)
-			ieee80211_disable_dyn_ps(wl->vif);
-		else
-			ieee80211_enable_dyn_ps(wl->vif);
-	}
+	if (vector & SOFT_GEMINI_SENSE_EVENT_ID)
+		wl12xx_event_soft_gemini_sense(wl,
+					       mbox->soft_gemini_sense_info);
 
 	/*
 	 * We are HW_MONITOR device. On beacon loss - queue
 	 * connection loss work. Cancel it on REGAINED event.
 	 */
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/event.c
-	if ((vector & BSS_LOSE_EVENT_ID) && !is_ap) {
-=======
 	if (vector & BSS_LOSE_EVENT_ID) {
 		/* TODO: check for multi-role */
 		int delay = wl->conf.conn.synch_fail_thold *
 					wl->conf.conn.bss_lose_timeout;
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/event.c
 		wl1271_info("Beacon loss detected.");
 		cancel_delayed_work_sync(&wl->connection_loss_work);
 		ieee80211_queue_delayed_work(wl->hw, &wl->connection_loss_work,
@@ -258,22 +159,30 @@ static int wl1271_event_process(struct wl1271 *wl)
 		cancel_delayed_work_sync(&wl->connection_loss_work);
 	}
 
-	if ((vector & PS_REPORT_EVENT_ID) && !is_ap) {
-		wl1271_debug(DEBUG_EVENT, "PS_REPORT_EVENT");
-		ret = wl1271_event_ps_report(wl, mbox, &beacon_loss);
-		if (ret < 0)
-			return ret;
+	if (vector & RSSI_SNR_TRIGGER_0_EVENT_ID) {
+		/* TODO: check actual multi-role support */
+		wl1271_debug(DEBUG_EVENT, "RSSI_SNR_TRIGGER_0_EVENT");
+		wl12xx_for_each_wlvif_sta(wl, wlvif) {
+			wl1271_event_rssi_trigger(wl, wlvif, mbox);
+		}
 	}
 
-	if ((vector & PSPOLL_DELIVERY_FAILURE_EVENT_ID) && !is_ap)
-		wl1271_event_pspoll_delivery_fail(wl);
+	if (vector & BA_SESSION_RX_CONSTRAINT_EVENT_ID) {
+		u8 role_id = mbox->role_id;
+		wl1271_debug(DEBUG_EVENT, "BA_SESSION_RX_CONSTRAINT_EVENT_ID. "
+			     "ba_allowed = 0x%x, role_id=%d",
+			     mbox->rx_ba_allowed, role_id);
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/event.c
-	if (vector & RSSI_SNR_TRIGGER_0_EVENT_ID) {
-		wl1271_debug(DEBUG_EVENT, "RSSI_SNR_TRIGGER_0_EVENT");
-		if (wl->vif)
-			wl1271_event_rssi_trigger(wl, mbox);
-=======
+		wl12xx_for_each_wlvif(wl, wlvif) {
+			if (role_id != 0xff && role_id != wlvif->role_id)
+				continue;
+
+			wlvif->ba_allowed = !!mbox->rx_ba_allowed;
+			if (!wlvif->ba_allowed)
+				wl1271_stop_ba_event(wl, wlvif);
+		}
+	}
+
 	if (vector & CHANNEL_SWITCH_COMPLETE_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "CHANNEL_SWITCH_COMPLETE_EVENT_ID. "
 					  "status = 0x%x",
@@ -297,20 +206,13 @@ static int wl1271_event_process(struct wl1271 *wl)
 
 			ieee80211_chswitch_done(vif, success);
 		}
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/event.c
 	}
 
-	if ((vector & DUMMY_PACKET_EVENT_ID) && !is_ap) {
+	if ((vector & DUMMY_PACKET_EVENT_ID)) {
 		wl1271_debug(DEBUG_EVENT, "DUMMY_PACKET_ID_EVENT_ID");
-		if (wl->vif)
-			wl1271_tx_dummy_packet(wl);
+		wl1271_tx_dummy_packet(wl);
 	}
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/event.c
-	if (wl->vif && beacon_loss)
-		ieee80211_connection_loss(wl->vif);
-
-=======
 	/*
 	 * "TX retries exceeded" has a different meaning according to mode.
 	 * In AP mode the offending station is disconnected.
@@ -357,7 +259,6 @@ static int wl1271_event_process(struct wl1271 *wl)
 			rcu_read_unlock();
 		}
 	}
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/event.c
 	return 0;
 }
 

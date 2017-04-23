@@ -33,7 +33,6 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/crc32.h>
-#include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
 #include <linux/etherdevice.h>
@@ -145,9 +144,6 @@ struct smsc911x_data {
 
 	/* regulators */
 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
-
-	/* clock */
-	struct clk *fsmc_clk;
 };
 
 /* Easy access to information */
@@ -373,7 +369,7 @@ out:
 }
 
 /*
- * enable resources, regulators & clocks.
+ * enable resources, currently just regulators.
  */
 static int smsc911x_enable_resources(struct platform_device *pdev)
 {
@@ -383,17 +379,9 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
 
 	ret = regulator_bulk_enable(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-	if (ret) {
+	if (ret)
 		netdev_err(ndev, "failed to enable regulators %d\n",
 				ret);
-		return ret;
-	}
-
-	if (pdata->fsmc_clk) {
-		ret = clk_enable(pdata->fsmc_clk);
-		if (ret < 0)
-			netdev_err(ndev, "failed to enable clock %d\n", ret);
-	}
 	return ret;
 }
 
@@ -408,8 +396,6 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
 
 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-	if (pdata->fsmc_clk)
-		clk_disable(pdata->fsmc_clk);
 	return ret;
 }
 
@@ -432,17 +418,9 @@ static int smsc911x_request_resources(struct platform_device *pdev)
 	ret = regulator_bulk_get(&pdev->dev,
 			ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-	if (ret) {
-		netdev_err(ndev, "couldn't get regulators %d\n", ret);
-		return ret;
-	}
-
-	/* Request clock, ignore if not here */
-	pdata->fsmc_clk = clk_get(NULL, "fsmc");
-	if (IS_ERR(pdata->fsmc_clk)) {
-		netdev_warn(ndev, "couldn't get clock %d\n", ret);
-		pdata->fsmc_clk = NULL;
-	}
+	if (ret)
+		netdev_err(ndev, "couldn't get regulators %d\n",
+				ret);
 	return ret;
 }
 
@@ -458,12 +436,6 @@ static void smsc911x_free_resources(struct platform_device *pdev)
 	/* Free regulators */
 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-
-	/* Free clock */
-	if (pdata->fsmc_clk) {
-		clk_put(pdata->fsmc_clk);
-		pdata->fsmc_clk = NULL;
-	}
 }
 
 /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
@@ -2094,6 +2066,7 @@ static const struct ethtool_ops smsc911x_ethtool_ops = {
 	.get_eeprom_len = smsc911x_ethtool_get_eeprom_len,
 	.get_eeprom = smsc911x_ethtool_get_eeprom,
 	.set_eeprom = smsc911x_ethtool_set_eeprom,
+	.get_ts_info = ethtool_op_get_ts_info,
 };
 
 static const struct net_device_ops smsc911x_netdev_ops = {
@@ -2371,7 +2344,6 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 	unsigned int intcfg = 0;
 	int res_size, irq_flags;
 	int retval;
-	int to = 100;
 
 	pr_info("Driver version %s\n", SMSC_DRV_VERSION);
 
@@ -2418,11 +2390,11 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 
 	retval = smsc911x_request_resources(pdev);
 	if (retval)
-		goto out_return_resources;
+		goto out_request_resources_fail;
 
 	retval = smsc911x_enable_resources(pdev);
 	if (retval)
-		goto out_disable_resources;
+		goto out_enable_resources_fail;
 
 	if (pdata->ioaddr == NULL) {
 		SMSC_WARN(pdata, probe, "Error smsc911x base address invalid");
@@ -2447,18 +2419,6 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 	/* apply the right access if shifting is needed */
 	if (pdata->config.shift)
 		pdata->ops = &shifted_smsc911x_ops;
-
-	/* poll the READY bit in PMT_CTRL. Any other access to the device is
-	 * forbidden while this bit isn't set. Try for 100ms
-	 */
-	while (!(smsc911x_reg_read(pdata, PMT_CTRL) & PMT_CTRL_READY_) && --to)
-		udelay(1000);
-
-	if (to == 0) {
-		pr_err("Device not READY in 100ms aborting\n");
-		goto out_0;
-	}
-
 
 	retval = smsc911x_init(dev);
 	if (retval < 0)
@@ -2541,8 +2501,9 @@ out_free_irq:
 	free_irq(dev->irq, dev);
 out_disable_resources:
 	(void)smsc911x_disable_resources(pdev);
-out_return_resources:
+out_enable_resources_fail:
 	smsc911x_free_resources(pdev);
+out_request_resources_fail:
 	platform_set_drvdata(pdev, NULL);
 	iounmap(pdata->ioaddr);
 	free_netdev(dev);

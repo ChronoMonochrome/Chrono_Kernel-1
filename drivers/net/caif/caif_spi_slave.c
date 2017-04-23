@@ -4,7 +4,6 @@
  * Author:  Daniel Martensson / Daniel.Martensson@stericsson.com
  * License terms: GNU General Public License (GPL) version 2.
  */
-#include <linux/version.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -86,13 +85,13 @@ void cfspi_xfer(struct work_struct *work)
 
 #if CFSPI_DBG_PREFILL
 		/* Prefill buffers for easier debugging. */
-		memset(cfspi->xfer.va_tx[0], 0xFF, SPI_DMA_BUF_LEN);
+		memset(cfspi->xfer.va_tx, 0xFF, SPI_DMA_BUF_LEN);
 		memset(cfspi->xfer.va_rx, 0xFF, SPI_DMA_BUF_LEN);
 #endif	/* CFSPI_DBG_PREFILL */
 
 		cfspi_dbg_state(cfspi, CFSPI_STATE_AWAKE);
 
-		/* Check whether we have a committed frame. */
+	/* Check whether we have a committed frame. */
 		if (cfspi->tx_cpck_len) {
 			int len;
 
@@ -103,7 +102,7 @@ void cfspi_xfer(struct work_struct *work)
 			ptr += SPI_IND_SZ;
 			len = cfspi_xmitfrm(cfspi, ptr, cfspi->tx_cpck_len);
 			WARN_ON(len != cfspi->tx_cpck_len);
-		}
+	}
 
 		cfspi_dbg_state(cfspi, CFSPI_STATE_GET_NEXT);
 
@@ -116,7 +115,7 @@ void cfspi_xfer(struct work_struct *work)
 		 * Add indication and length at the beginning of the frame,
 		 * using little endian.
 		 */
-		ptr = (u8 *) cfspi->xfer.va_tx[0];
+		ptr = (u8 *) cfspi->xfer.va_tx;
 		*ptr++ = SPI_CMD_IND;
 		*ptr++ = (SPI_CMD_IND  & 0xFF00) >> 8;
 		*ptr++ = cfspi->tx_npck_len & 0x00FF;

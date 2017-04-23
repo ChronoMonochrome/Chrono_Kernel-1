@@ -23,39 +23,19 @@
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/crc7.h>
 #include <linux/spi/spi.h>
+#include <linux/interrupt.h>
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/io.c
-#include "wl12xx.h"
-=======
 #include "wlcore.h"
 #include "debug.h"
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/io.c
 #include "wl12xx_80211.h"
 #include "io.h"
 #include "tx.h"
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/io.c
-#define OCP_CMD_LOOP  32
-
-#define OCP_CMD_WRITE 0x1
-#define OCP_CMD_READ  0x2
-
-#define OCP_READY_MASK  BIT(18)
-#define OCP_STATUS_MASK (BIT(16) | BIT(17))
-
-#define OCP_STATUS_NO_RESP    0x00000
-#define OCP_STATUS_OK         0x10000
-#define OCP_STATUS_REQ_FAILED 0x20000
-#define OCP_STATUS_RESP_ERROR 0x30000
-
-=======
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/io.c
 bool wl1271_set_block_size(struct wl1271 *wl)
 {
 	if (wl->if_ops->set_block_size) {
-		wl->if_ops->set_block_size(wl, WL12XX_BUS_BLOCK_SIZE);
+		wl->if_ops->set_block_size(wl->dev, WL12XX_BUS_BLOCK_SIZE);
 		return true;
 	}
 
@@ -64,13 +44,13 @@ bool wl1271_set_block_size(struct wl1271 *wl)
 
 void wlcore_disable_interrupts(struct wl1271 *wl)
 {
-	wl->if_ops->disable_irq(wl);
+	disable_irq(wl->irq);
 }
 EXPORT_SYMBOL_GPL(wlcore_disable_interrupts);
 
 void wlcore_enable_interrupts(struct wl1271 *wl)
 {
-	wl->if_ops->enable_irq(wl);
+	enable_irq(wl->irq);
 }
 EXPORT_SYMBOL_GPL(wlcore_enable_interrupts);
 
@@ -182,10 +162,12 @@ EXPORT_SYMBOL_GPL(wlcore_select_partition);
 
 void wl1271_io_reset(struct wl1271 *wl)
 {
-	wl->if_ops->reset(wl);
+	if (wl->if_ops->reset)
+		wl->if_ops->reset(wl->dev);
 }
 
 void wl1271_io_init(struct wl1271 *wl)
 {
-	wl->if_ops->init(wl);
+	if (wl->if_ops->init)
+		wl->if_ops->init(wl->dev);
 }

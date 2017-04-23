@@ -86,18 +86,13 @@
  * Bits 3-5 - process_id tag (AP mode FW)
  * Bits 6-7 - reserved
  */
-#define WL1271_RX_DESC_STATUS_MASK      0x07
+#define WL1271_RX_DESC_STATUS_MASK      0x03
 
 #define WL1271_RX_DESC_SUCCESS          0x00
 #define WL1271_RX_DESC_DECRYPT_FAIL     0x01
 #define WL1271_RX_DESC_MIC_FAIL         0x02
 #define WL1271_RX_DESC_DRIVER_RX_Q_FAIL 0x03
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.h
-#define RX_MEM_BLOCK_MASK     0xFF
-#define RX_BUF_SIZE_MASK      0xFFF00
-#define RX_BUF_SIZE_SHIFT_DIV 6
-=======
 #define RX_MEM_BLOCK_MASK            0xFF
 #define RX_BUF_SIZE_MASK             0xFFF00
 #define RX_BUF_SIZE_SHIFT_DIV        6
@@ -125,7 +120,6 @@ enum {
 	WL12XX_RX_CLASS_AMSDU,
 	WL12XX_RX_CLASS_LOGGER,
 };
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.h
 
 struct wl1271_rx_descriptor {
 	__le16 length;
@@ -137,25 +131,16 @@ struct wl1271_rx_descriptor {
 	u8  snr;
 	__le32 timestamp;
 	u8  packet_class;
-	union {
-		u8  process_id; /* STA FW */
-		u8  hlid; /* AP FW */
-	} __packed;
+	u8  hlid;
 	u8  pad_len;
 	u8  reserved;
 } __packed;
 
-<<<<<<< HEAD:drivers/net/wireless/wl12xx/rx.h
-void wl1271_rx(struct wl1271 *wl, struct wl1271_fw_common_status *status);
-u8 wl1271_rate_to_idx(int rate, enum ieee80211_band band);
-void wl1271_set_default_filters(struct wl1271 *wl);
-=======
 void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status);
 u8 wl1271_rate_to_idx(int rate, enum ieee80211_band band);
 int wl1271_rx_filter_enable(struct wl1271 *wl,
 			    int index, bool enable,
 			    struct wl12xx_rx_filter *filter);
 void wl1271_rx_filter_clear_all(struct wl1271 *wl);
->>>>>>> lk-3.5:drivers/net/wireless/ti/wlcore/rx.h
 
 #endif
