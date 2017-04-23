@@ -135,7 +135,6 @@
 
 #include <asm/irq.h>
 #include <asm/uaccess.h>
-#include <asm/system.h>
 
 /* if you have more than 8 printers, remember to increase LP_NO */
 #define LP_NO 8
@@ -243,31 +242,19 @@ static int lp_check_status(int minor)
 	else if ((status & LP_POUTPA)) {
 		if (last != LP_POUTPA) {
 			last = LP_POUTPA;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp%d out of paper\n", minor);
-#else
-			;
-#endif
 		}
 		error = -ENOSPC;
 	} else if (!(status & LP_PSELECD)) {
 		if (last != LP_PSELECD) {
 			last = LP_PSELECD;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp%d off-line\n", minor);
-#else
-			;
-#endif
 		}
 		error = -EIO;
 	} else if (!(status & LP_PERRORP)) {
 		if (last != LP_PERRORP) {
 			last = LP_PERRORP;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp%d on fire\n", minor);
-#else
-			;
-#endif
 		}
 		error = -EIO;
 	} else {
@@ -407,11 +394,7 @@ static ssize_t lp_write(struct file * file, const char __user * buf,
 
 	if (test_and_clear_bit(LP_PREEMPT_REQUEST, 
 			       &lp_table[minor].bits)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "lp%d releasing parport\n", minor);
-#else
-		;
-#endif
 		parport_negotiate (lp_table[minor].dev->port, 
 				   IEEE1284_MODE_COMPAT);
 		lp_table[minor].current_mode = IEEE1284_MODE_COMPAT;
@@ -534,20 +517,12 @@ static int lp_open(struct inode * inode, struct file * file)
 		status = r_str(minor);
 		lp_release_parport (&lp_table[minor]);
 		if (status & LP_POUTPA) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp%d out of paper\n", minor);
-#else
-			;
-#endif
 			LP_F(minor) &= ~LP_BUSY;
 			ret = -ENOSPC;
 			goto out;
 		} else if (!(status & LP_PSELECD)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp%d off-line\n", minor);
-#else
-			;
-#endif
 			LP_F(minor) &= ~LP_BUSY;
 			ret = -EIO;
 			goto out;
@@ -604,11 +579,7 @@ static int lp_do_ioctl(unsigned int minor, unsigned int cmd,
 	int retval = 0;
 
 #ifdef LP_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "lp%d ioctl, cmd: 0x%x, arg: 0x%lx\n", minor, cmd, arg);
-#else
-	;
-#endif
 #endif
 	if (minor >= LP_NO)
 		return -ENODEV;
@@ -734,16 +705,13 @@ static long lp_compat_ioctl(struct file *file, unsigned int cmd,
 {
 	unsigned int minor;
 	struct timeval par_timeout;
-	struct compat_timeval __user *tc;
 	int ret;
 
 	minor = iminor(file->f_path.dentry->d_inode);
 	mutex_lock(&lp_mutex);
 	switch (cmd) {
 	case LPSETTIMEOUT:
-		tc = compat_ptr(arg);
-		if (get_user(par_timeout.tv_sec, &tc->tv_sec) ||
-		    get_user(par_timeout.tv_usec, &tc->tv_usec)) {
+		if (compat_get_timeval(&par_timeout, compat_ptr(arg))) {
 			ret = -EFAULT;
 			break;
 		}
@@ -873,11 +841,7 @@ static int __init lp_setup (char *str)
 			/* disable driver on "lp=" or "lp=0" */
 			parport_nr[0] = LP_PARPORT_OFF;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "warning: 'lp=0x%x' is deprecated, ignored\n", x);
-#else
-			;
-#endif
 			return 0;
 		}
 	} else if (!strncmp(str, "parport", 7)) {
@@ -885,12 +849,8 @@ static int __init lp_setup (char *str)
 		if (parport_ptr < LP_NO)
 			parport_nr[parport_ptr++] = n;
 		else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp: too many ports, %s ignored.\n",
 			       str);
-#else
-			;
-#endif
 	} else if (!strcmp(str, "auto")) {
 		parport_nr[0] = LP_PARPORT_AUTO;
 	} else if (!strcmp(str, "none")) {
@@ -917,12 +877,8 @@ static int lp_register(int nr, struct parport *port)
 	device_create(lp_class, port->dev, MKDEV(LP_MAJOR, nr), NULL,
 		      "lp%d", nr);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lp%d: using %s (%s).\n", nr, port->name, 
 	       (port->irq == PARPORT_IRQ_NONE)?"polling":"interrupt-driven");
-#else
-	;
-#endif
 
 #ifdef CONFIG_LP_CONSOLE
 	if (!nr) {
@@ -950,11 +906,7 @@ static void lp_attach (struct parport *port)
 		    port->probe_info[0].class != PARPORT_CLASS_PRINTER)
 			return;
 		if (lp_count == LP_NO) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "lp: ignoring parallel port (max. %d)\n",LP_NO);
-#else
-			;
-#endif
 			return;
 		}
 		if (!lp_register(lp_count, port))

@@ -23,6 +23,7 @@
 #include <linux/spinlock.h>
 #include <linux/virtio.h>
 #include <linux/virtio_rng.h>
+#include <linux/module.h>
 
 static struct virtqueue *vq;
 static unsigned int data_avail;
@@ -46,7 +47,7 @@ static void register_buffer(u8 *buf, size_t size)
 	sg_init_one(&sg, buf, size);
 
 	/* There should always be room for one buffer. */
-	if (virtqueue_add_buf(vq, &sg, 0, 1, buf) < 0)
+	if (virtqueue_add_buf(vq, &sg, 0, 1, buf, GFP_KERNEL) < 0)
 		BUG();
 
 	virtqueue_kick(vq);
@@ -88,22 +89,14 @@ static int virtrng_probe(struct virtio_device *vdev)
 {
 	int err;
 
-	if (vq) {
-		/* We only support one device for now */
-		return -EBUSY;
-	}
 	/* We expect a single virtqueue. */
 	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
-	if (IS_ERR(vq)) {
-		err = PTR_ERR(vq);
-		vq = NULL;
-		return err;
-	}
+	if (IS_ERR(vq))
+		return PTR_ERR(vq);
 
 	err = hwrng_register(&virtio_hwrng);
 	if (err) {
 		vdev->config->del_vqs(vdev);
-		vq = NULL;
 		return err;
 	}
 
@@ -115,7 +108,6 @@ static void __devexit virtrng_remove(struct virtio_device *vdev)
 	vdev->config->reset(vdev);
 	hwrng_unregister(&virtio_hwrng);
 	vdev->config->del_vqs(vdev);
-	vq = NULL;
 }
 
 static struct virtio_device_id id_table[] = {

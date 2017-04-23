@@ -150,22 +150,10 @@ static int start_smic_transaction(struct si_sm_data *smic,
 		return IPMI_NOT_IN_MY_STATE_ERR;
 
 	if (smic_debug & SMIC_DEBUG_MSG) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "start_smic_transaction -");
-#else
-		;
-#endif
 		for (i = 0; i < size; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", (unsigned char) data[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 	smic->error_retries = 0;
 	memcpy(smic->write_data, data, size);
@@ -184,22 +172,10 @@ static int smic_get_result(struct si_sm_data *smic,
 	int i;
 
 	if (smic_debug & SMIC_DEBUG_MSG) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "smic_get result -");
-#else
-		;
-#endif
 		for (i = 0; i < smic->read_pos; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", smic->read_data[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 	if (length < smic->read_pos) {
 		smic->read_pos = length;
@@ -256,12 +232,8 @@ static inline void start_error_recovery(struct si_sm_data *smic, char *reason)
 	(smic->error_retries)++;
 	if (smic->error_retries > SMIC_MAX_ERROR_RETRIES) {
 		if (smic_debug & SMIC_DEBUG_ENABLE)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "ipmi_smic_drv: smic hosed: %s\n", reason);
-#else
-			;
-#endif
 		smic->state = SMIC_HOSED;
 	} else {
 		smic->write_count = smic->orig_write_count;
@@ -373,14 +345,10 @@ static enum si_sm_result smic_event(struct si_sm_data *smic, long time)
 	}
 	if (smic->state != SMIC_IDLE) {
 		if (smic_debug & SMIC_DEBUG_STATES)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 			       "smic_event - smic->smic_timeout = %ld,"
 			       " time = %ld\n",
 			       smic->smic_timeout, time);
-#else
-			;
-#endif
 		/*
 		 * FIXME: smic_event is sometimes called with time >
 		 * SMIC_RETRY_TIMEOUT
@@ -399,14 +367,10 @@ static enum si_sm_result smic_event(struct si_sm_data *smic, long time)
 
 	status = read_smic_status(smic);
 	if (smic_debug & SMIC_DEBUG_STATES)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "smic_event - state = %d, flags = 0x%02x,"
 		       " status = 0x%02x\n",
 		       smic->state, flags, status);
-#else
-		;
-#endif
 
 	switch (smic->state) {
 	case SMIC_IDLE:
@@ -496,12 +460,8 @@ static enum si_sm_result smic_event(struct si_sm_data *smic, long time)
 		data = read_smic_data(smic);
 		if (data != 0) {
 			if (smic_debug & SMIC_DEBUG_ENABLE)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "SMIC_WRITE_END: data = %02x\n", data);
-#else
-				;
-#endif
 			start_error_recovery(smic,
 					     "state = SMIC_WRITE_END, "
 					     "data != SUCCESS");
@@ -580,12 +540,8 @@ static enum si_sm_result smic_event(struct si_sm_data *smic, long time)
 		/* data register holds an error code */
 		if (data != 0) {
 			if (smic_debug & SMIC_DEBUG_ENABLE)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "SMIC_READ_END: data = %02x\n", data);
-#else
-				;
-#endif
 			start_error_recovery(smic,
 					     "state = SMIC_READ_END, "
 					     "data != SUCCESS");
@@ -601,11 +557,7 @@ static enum si_sm_result smic_event(struct si_sm_data *smic, long time)
 
 	default:
 		if (smic_debug & SMIC_DEBUG_ENABLE) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "smic->state = %d\n", smic->state);
-#else
-			;
-#endif
 			start_error_recovery(smic, "state = UNKNOWN");
 			return SI_SM_CALL_WITH_DELAY;
 		}

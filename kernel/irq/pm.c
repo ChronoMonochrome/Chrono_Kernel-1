@@ -109,17 +109,8 @@ int check_wakeup_irqs(void)
 		 * can abort suspend.
 		 */
 		if (irqd_is_wakeup_set(&desc->irq_data)) {
-<<<<<<< HEAD
-			if (desc->istate & IRQS_PENDING) {
-				pr_info("Wakeup IRQ %d %s pending, suspend aborted\n",
-					irq,
-					desc->action && desc->action->name ?
-					desc->action->name : "");
-=======
 			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
->>>>>>> lk-3.5
 				return -EBUSY;
-			}
 			continue;
 		}
 		/*

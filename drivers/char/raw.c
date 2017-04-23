@@ -319,22 +319,17 @@ static int __init raw_init(void)
 	int ret;
 
 	if (max_raw_minors < 1 || max_raw_minors > 65536) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
 			" between 1 and 65536), using %d\n", MAX_RAW_MINORS);
-#else
-		;
-#endif
 		max_raw_minors = MAX_RAW_MINORS;
 	}
 
-	raw_devices = vmalloc(sizeof(struct raw_device_data) * max_raw_minors);
+	raw_devices = vzalloc(sizeof(struct raw_device_data) * max_raw_minors);
 	if (!raw_devices) {
 		printk(KERN_ERR "Not enough memory for raw device structures\n");
 		ret = -ENOMEM;
 		goto error;
 	}
-	memset(raw_devices, 0, sizeof(struct raw_device_data) * max_raw_minors);
 
 	ret = register_chrdev_region(dev, max_raw_minors, "raw");
 	if (ret)

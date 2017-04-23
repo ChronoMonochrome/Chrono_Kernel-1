@@ -24,7 +24,6 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 
-#include <asm/system.h>
 #include <asm/rtc.h>
 #if defined(CONFIG_M32R)
 #include <asm/m32r.h>
@@ -303,11 +302,7 @@ ds1302_probe(void)
 
 	baur=(boot_cpu_data.bus_clock/(2*1000*1000));
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: Set PLD_RTCBAUR = %d\n", ds1302_name,baur);
-#else
-	;
-#endif
 
 	outw(0x0000,(unsigned long)PLD_RTCCR);
 	outw(0x0000,(unsigned long)PLD_RTCRSTODT);
@@ -324,24 +319,12 @@ ds1302_probe(void)
 	if((res = in_byte_rtc(0xc1)) == MAGIC_PATTERN) {
 		char buf[100];
 		ds1302_wdisable();
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: RTC found.\n", ds1302_name);
-#else
-		;
-#endif
 		get_rtc_status(buf);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(buf);
-#else
-		;
-#endif
 		retval = 1;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: RTC not found.\n", ds1302_name);
-#else
-		;
-#endif
 		retval = 0;
 	}
 
@@ -364,12 +347,8 @@ static int __init ds1302_register(void)
 {
 	ds1302_init();
 	if (register_chrdev(RTC_MAJOR_NR, ds1302_name, &rtc_fops)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: unable to get major %d for rtc\n",
 		       ds1302_name, RTC_MAJOR_NR);
-#else
-		;
-#endif
 		return -1;
 	}
 	return 0;

@@ -337,11 +337,7 @@ restart:
 			exp = t->it.mmtimer.expires;
 		}
 		if (i > 20) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT "mmtimer: cannot reschedule timer\n");
-#else
-			;
-#endif
 			t->it.mmtimer.clock = TIMER_OFF;
 			n->next = rb_next(&x->list);
 			rb_erase(&x->list, &n->timer_head);
@@ -811,12 +807,8 @@ static int __init mmtimer_init(void)
 			       2) / sn_rtc_cycles_per_second;
 
 	if (request_irq(SGI_MMTIMER_VECTOR, mmtimer_interrupt, IRQF_PERCPU, MMTIMER_NAME, NULL)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: unable to allocate interrupt.",
 			MMTIMER_NAME);
-#else
-		;
-#endif
 		goto out1;
 	}
 
@@ -850,12 +842,8 @@ static int __init mmtimer_init(void)
 	sgi_clock_period = NSEC_PER_SEC / sn_rtc_cycles_per_second;
 	posix_timers_register_clock(CLOCK_SGI_CYCLE, &sgi_clock);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: v%s, %ld MHz\n", MMTIMER_DESC, MMTIMER_VERSION,
 	       sn_rtc_cycles_per_second/(unsigned long)1E6);
-#else
-	;
-#endif
 
 	return 0;
 

@@ -66,12 +66,7 @@
 #include <linux/dtlk.h>		/* local header file for DoubleTalk values */
 
 #ifdef TRACING
-#ifdef CONFIG_DEBUG_PRINTK
 #define TRACE_TEXT(str) printk(str);
-#else
-#define TRACE_TEXT(str) ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 #define TRACE_RET printk(")")
 #else				/* !TRACING */
 #define TRACE_TEXT(str) ((void) 0)
@@ -79,9 +74,6 @@
 #endif				/* TRACING */
 
 static DEFINE_MUTEX(dtlk_mutex);
-#else
-#define TRACE_RET ;
-#endif
 static void dtlk_timer_tick(unsigned long data);
 
 static int dtlk_major;
@@ -138,11 +130,7 @@ static ssize_t dtlk_read(struct file *file, char __user *buf,
 	int i = 0, retries;
 
 	TRACE_TEXT("(dtlk_read");
-#ifdef CONFIG_DEBUG_PRINTK
 	/*  printk("DoubleTalk PC - dtlk_read()\n"); */
-#else
-	/*  ;
-#endif
 
 	if (minor != DTLK_MINOR || !dtlk_has_indexing)
 		return -EINVAL;
@@ -150,11 +138,7 @@ static ssize_t dtlk_read(struct file *file, char __user *buf,
 	for (retries = 0; retries < loops_per_jiffy; retries++) {
 		while (i < count && dtlk_readable()) {
 			ch = dtlk_read_lpc();
-#ifdef CONFIG_DEBUG_PRINTK
 			/*        printk("dtlk_read() reads 0x%02x\n", ch); */
-#else
-			/*        ;
-#endif
 			if (put_user(ch, buf++))
 				return -EFAULT;
 			i++;
@@ -178,34 +162,18 @@ static ssize_t dtlk_write(struct file *file, const char __user *buf,
 
 	TRACE_TEXT("(dtlk_write");
 #ifdef TRACING
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" \"");
-#else
-	;
-#endif
 	{
 		int i, ch;
 		for (i = 0; i < count; i++) {
 			if (get_user(ch, buf + i))
 				return -EFAULT;
 			if (' ' <= ch && ch <= '~')
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("%c", ch);
-#else
-				;
-#endif
 			else
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\\%03o", ch);
-#else
-				;
-#endif
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\"");
-#else
-		;
-#endif
 	}
 #endif
 
@@ -249,13 +217,9 @@ static ssize_t dtlk_write(struct file *file, const char __user *buf,
 
 		if (++retries > 10 * HZ) { /* wait no more than 10 sec
 					      from last write */
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("dtlk: write timeout.  "
 			       "inb_p(dtlk_port_tts) = 0x%02x\n",
 			       inb_p(dtlk_port_tts));
-#else
-			;
-#endif
 			TRACE_RET;
 			return -EBUSY;
 		}
@@ -272,16 +236,8 @@ static unsigned int dtlk_poll(struct file *file, poll_table * wait)
 	TRACE_TEXT(" dtlk_poll");
 	/*
 	   static long int j;
-#ifdef CONFIG_DEBUG_PRINTK
 	   printk(".");
-#else
-	   ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	   printk("<%ld>", jiffies-j);
-#else
-	   ;
-#endif
 	   j=jiffies;
 	 */
 	poll_wait(file, &dtlk_process_list, wait);
@@ -389,11 +345,7 @@ static int __init dtlk_init(void)
 		unregister_chrdev(dtlk_major, "dtlk");
 		return err;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(", MAJOR %d\n", dtlk_major);
-#else
-	;
-#endif
 
 	init_waitqueue_head(&dtlk_process_list);
 
@@ -421,11 +373,7 @@ module_exit(dtlk_cleanup);
 static int dtlk_readable(void)
 {
 #ifdef TRACING
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" dtlk_readable=%u@%u", inb_p(dtlk_port_lpc) != 0x7f, jiffies);
-#else
-	;
-#endif
 #endif
 	return inb_p(dtlk_port_lpc) != 0x7f;
 }
@@ -434,11 +382,7 @@ static int dtlk_writeable(void)
 {
 	/* TRACE_TEXT(" dtlk_writeable"); */
 #ifdef TRACINGMORE
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" dtlk_writeable=%u", (inb_p(dtlk_port_tts) & TTS_WRITABLE)!=0);
-#else
-	;
-#endif
 #endif
 	return inb_p(dtlk_port_tts) & TTS_WRITABLE;
 }
@@ -454,12 +398,8 @@ static int __init dtlk_dev_probe(void)
 
 	for (i = 0; dtlk_portlist[i]; i++) {
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("DoubleTalk PC - Port %03x = %04x\n",
 		       dtlk_portlist[i], (testval = inw_p(dtlk_portlist[i])));
-#else
-		;
-#endif
 #endif
 
 		if (!request_region(dtlk_portlist[i], DTLK_IO_EXTENT, 
@@ -471,15 +411,11 @@ static int __init dtlk_dev_probe(void)
 			dtlk_port_tts = dtlk_port_lpc + 1;
 
 			sp = dtlk_interrogate();
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("DoubleTalk PC at %03x-%03x, "
 			       "ROM version %s, serial number %u",
 			       dtlk_portlist[i], dtlk_portlist[i] +
 			       DTLK_IO_EXTENT - 1,
 			       sp->rom_version, sp->serial_number);
-#else
-			;
-#endif
 
                         /* put LPC port into known state, so
 			   dtlk_readable() gives valid result */
@@ -493,11 +429,7 @@ static int __init dtlk_dev_probe(void)
 			msleep_interruptible(100);
 			dtlk_has_indexing = dtlk_readable();
 #ifdef TRACING
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(", indexing %d\n", dtlk_has_indexing);
-#else
-			;
-#endif
 #endif
 #ifdef INSCOPE
 			{
@@ -522,22 +454,10 @@ for (i = 0; i < 10; i++)			\
 				buffer[b++] = 0;
 				LOOK
 
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
-#else
-				;
-#endif
 				for (j = 0; j < b; j++)
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(" %02x", buffer[j]);
-#else
-					;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
-#else
-				;
-#endif
 			}
 #endif				/* INSCOPE */
 
@@ -560,22 +480,10 @@ for (i = 0; i < 10; i++)			\
 				LOOK
 				LOOK
 
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
-#else
-				;
-#endif
 				for (j = 0; j < b; j++)
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(" %02x", buffer[j]);
-#else
-					;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n");
-#else
-				;
-#endif
 			}
 #endif				/* OUTSCOPE */
 
@@ -586,23 +494,15 @@ for (i = 0; i < 10; i++)			\
 		release_region(dtlk_portlist[i], DTLK_IO_EXTENT);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DoubleTalk PC - not found\n");
-#else
-	;
-#endif
 	return -ENODEV;
 }
 
 /*
    static void dtlk_handle_error(char op, char rc, unsigned int minor)
    {
-#ifdef CONFIG_DEBUG_PRINTK
    printk(KERN_INFO"\nDoubleTalk PC - MINOR: %d, OPCODE: %d, ERROR: %d\n", 
    minor, op, rc);
-#else
-   ;
-#endif
    return;
    }
  */
@@ -624,22 +524,10 @@ static struct dtlk_settings *dtlk_interrogate(void)
 			total++;
 	}
 	/*
-#ifdef CONFIG_DEBUG_PRINTK
 	   if (i==50) printk("interrogate() read overrun\n");
-#else
-	   if (i==50) ;
-#endif
 	   for (i=0; i<sizeof(buf); i++)
-#ifdef CONFIG_DEBUG_PRINTK
 	   printk(" %02x", buf[i]);
-#else
-	   ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	   printk("\n");
-#else
-	   ;
-#endif
 	 */
 	t = buf;
 	status.serial_number = t[0] + t[1] * 256; /* serial number is
@@ -733,11 +621,7 @@ static char dtlk_read_lpc(void)
 static char dtlk_write_bytes(const char *buf, int n)
 {
 	char val = 0;
-#ifdef CONFIG_DEBUG_PRINTK
 	/*  printk("dtlk_write_bytes(\"%-*s\", %d)\n", n, buf, n); */
-#else
-	/*  ;
-#endif
 	TRACE_TEXT("(dtlk_write_bytes");
 	while (n-- > 0)
 		val = dtlk_write_tts(*buf++);
@@ -749,23 +633,11 @@ static char dtlk_write_tts(char ch)
 {
 	int retries = 0;
 #ifdef TRACINGMORE
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("  dtlk_write_tts(");
-#else
-	;
-#endif
 	if (' ' <= ch && ch <= '~')
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("'%c'", ch);
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("0x%02x", ch);
-#else
-		;
-#endif
 #endif
 	if (ch != DTLK_CLEAR)	/* no flow control for CLEAR command */
 		while ((inb_p(dtlk_port_tts) & TTS_WRITABLE) == 0 &&
@@ -783,11 +655,7 @@ static char dtlk_write_tts(char ch)
 			break;
 
 #ifdef TRACINGMORE
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(")\n");
-#else
-	;
-#endif
 #endif
 	return 0;
 }

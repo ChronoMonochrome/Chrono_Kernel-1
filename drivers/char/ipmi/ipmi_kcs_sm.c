@@ -118,8 +118,8 @@ enum kcs_states {
 #define MAX_KCS_WRITE_SIZE IPMI_MAX_MSG_LENGTH
 
 /* Timeouts in microseconds. */
-#define IBF_RETRY_TIMEOUT 1000000
-#define OBF_RETRY_TIMEOUT 1000000
+#define IBF_RETRY_TIMEOUT 5000000
+#define OBF_RETRY_TIMEOUT 5000000
 #define MAX_ERROR_RETRIES 10
 #define ERROR0_OBF_WAIT_JIFFIES (2*HZ)
 
@@ -207,12 +207,8 @@ static inline void start_error_recovery(struct si_sm_data *kcs, char *reason)
 	(kcs->error_retries)++;
 	if (kcs->error_retries > MAX_ERROR_RETRIES) {
 		if (kcs_debug & KCS_DEBUG_ENABLE)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "ipmi_kcs_sm: kcs hosed: %s\n",
 			       reason);
-#else
-			;
-#endif
 		kcs->state = KCS_HOSED;
 	} else {
 		kcs->error0_timeout = jiffies + ERROR0_OBF_WAIT_JIFFIES;
@@ -295,22 +291,10 @@ static int start_kcs_transaction(struct si_sm_data *kcs, unsigned char *data,
 		return IPMI_NOT_IN_MY_STATE_ERR;
 
 	if (kcs_debug & KCS_DEBUG_MSG) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "start_kcs_transaction -");
-#else
-		;
-#endif
 		for (i = 0; i < size; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", (unsigned char) (data [i]));
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 	kcs->error_retries = 0;
 	memcpy(kcs->write_data, data, size);
@@ -366,11 +350,7 @@ static enum si_sm_result kcs_event(struct si_sm_data *kcs, long time)
 	status = read_status(kcs);
 
 	if (kcs_debug & KCS_DEBUG_STATES)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "KCS: State = %d, %x\n", kcs->state, status);
-#else
-		;
-#endif
 
 	/* All states wait for ibf, so just do it here. */
 	if (!check_ibf(kcs, status, time))

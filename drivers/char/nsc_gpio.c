@@ -122,21 +122,13 @@ EXPORT_SYMBOL(nsc_gpio_dump);
 
 static int __init nsc_gpio_init(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME " initializing\n");
-#else
-	;
-#endif
 	return 0;
 }
 
 static void __exit nsc_gpio_cleanup(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME " cleanup\n");
-#else
-	;
-#endif
 }
 
 module_init(nsc_gpio_init);

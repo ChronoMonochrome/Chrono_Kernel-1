@@ -29,7 +29,6 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
-#ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h>	/* printk() */
 #include <linux/fs.h>		/* everything... */
 #include <linux/errno.h>	/* error codes */
@@ -48,9 +47,6 @@
 #include <asm/uaccess.h>
 
 MODULE_AUTHOR("Sebastien Bouchard <sebastien.bouchard@ca.kontron.com>");
-#else
-#include <linux/kernel.h>	/* ;
-#endif
 MODULE_LICENSE("GPL");
 
 /*Hardware Reset of the PLL */
@@ -801,7 +797,7 @@ static int __init tlclk_init(void)
 	telclk_interrupt = (inb(TLCLK_REG7) & 0x0f);
 
 	if (0x0F == telclk_interrupt ) { /* not MCPBL0010 ? */
-		printk(KERN_ERR "telclk_interrup = 0x%x non-mcpbl0010 hw.\n",
+		printk(KERN_ERR "telclk_interrupt = 0x%x non-mcpbl0010 hw.\n",
 			telclk_interrupt);
 		ret = -ENXIO;
 		goto out3;

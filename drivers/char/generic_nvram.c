@@ -34,12 +34,16 @@ static ssize_t nvram_len;
 static loff_t nvram_llseek(struct file *file, loff_t offset, int origin)
 {
 	switch (origin) {
+	case 0:
+		break;
 	case 1:
 		offset += file->f_pos;
 		break;
 	case 2:
 		offset += nvram_len;
 		break;
+	default:
+		offset = -1;
 	}
 	if (offset < 0)
 		return -EINVAL;
@@ -91,11 +95,7 @@ static int nvram_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch(cmd) {
 #ifdef CONFIG_PPC_PMAC
 	case OBSOLETE_PMAC_NVRAM_GET_OFFSET:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "nvram: Using obsolete PMAC_NVRAM_GET_OFFSET ioctl\n");
-#else
-		;
-#endif
 	case IOC_NVRAM_GET_OFFSET: {
 		int part, offset;
 
@@ -150,12 +150,8 @@ int __init nvram_init(void)
 {
 	int ret = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Generic non-volatile memory driver v%s\n",
 		NVRAM_VERSION);
-#else
-	;
-#endif
 	ret = misc_register(&nvram_dev);
 	if (ret != 0)
 		goto out;

@@ -17,6 +17,7 @@
 #include <linux/device.h>
 #include <linux/serial.h>
 #include <linux/tty.h>
+#include <linux/export.h>
 
 struct ttyprintk_port {
 	struct tty_port port;
@@ -39,13 +40,9 @@ static struct ttyprintk_port tpk_port;
 static const char *tpk_tag = "[U] "; /* U for User */
 static int tpk_curr;
 
-#ifdef CONFIG_DEBUG_PRINTK
 static int tpk_printk(const unsigned char *buf, int count)
 {
 	static char tmp[TPK_STR_SIZE + 4];
-#else
-static int tpk_;
-#endif
 	int i = tpk_curr;
 
 	if (buf == NULL) {
@@ -54,11 +51,7 @@ static int tpk_;
 			/* non nl or cr terminated message - add nl */
 			tmp[tpk_curr + 0] = '\n';
 			tmp[tpk_curr + 1] = '\0';
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s%s", tpk_tag, tmp);
-#else
-			;
-#endif
 			tpk_curr = 0;
 		}
 		return i;
@@ -72,22 +65,14 @@ static int tpk_;
 				/* replace cr with nl */
 				tmp[tpk_curr + 0] = '\n';
 				tmp[tpk_curr + 1] = '\0';
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
-#else
-				;
-#endif
 				tpk_curr = 0;
-				if ((i + 1) < count && buf[i + 1] == '\n')
+				if (buf[i + 1] == '\n')
 					i++;
 				break;
 			case '\n':
 				tmp[tpk_curr + 1] = '\0';
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
-#else
-				;
-#endif
 				tpk_curr = 0;
 				break;
 			default:
@@ -98,11 +83,7 @@ static int tpk_;
 			tmp[tpk_curr + 1] = '\\';
 			tmp[tpk_curr + 2] = '\n';
 			tmp[tpk_curr + 3] = '\0';
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s%s", tpk_tag, tmp);
-#else
-			;
-#endif
 			tpk_curr = 0;
 		}
 	}
@@ -129,11 +110,7 @@ static void tpk_close(struct tty_struct *tty, struct file *filp)
 
 	mutex_lock(&tpkp->port_write_mutex);
 	/* flush tpk_printk buffer */
-#ifdef CONFIG_DEBUG_PRINTK
 	tpk_printk(NULL, 0);
-#else
-	tpk_;
-#endif
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	tty_port_close(&tpkp->port, tty, filp);
@@ -151,11 +128,7 @@ static int tpk_write(struct tty_struct *tty,
 
 	/* exclusive use of tpk_printk within this tty */
 	mutex_lock(&tpkp->port_write_mutex);
-#ifdef CONFIG_DEBUG_PRINTK
 	ret = tpk_printk(buf, count);
-#else
-	ret = tpk_;
-#endif
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	return ret;
@@ -198,7 +171,7 @@ static const struct tty_operations ttyprintk_ops = {
 	.ioctl = tpk_ioctl,
 };
 
-struct tty_port_operations null_ops = { };
+static struct tty_port_operations null_ops = { };
 
 static struct tty_driver *ttyprintk_driver;
 
@@ -211,12 +184,10 @@ static int __init ttyprintk_init(void)
 	if (!ttyprintk_driver)
 		return ret;
 
-	ttyprintk_driver->owner = THIS_MODULE;
 	ttyprintk_driver->driver_name = "ttyprintk";
 	ttyprintk_driver->name = "ttyprintk";
 	ttyprintk_driver->major = TTYAUX_MAJOR;
 	ttyprintk_driver->minor_start = 3;
-	ttyprintk_driver->num = 1;
 	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
 	ttyprintk_driver->init_termios = tty_std_termios;
 	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;

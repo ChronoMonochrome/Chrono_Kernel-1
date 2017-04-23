@@ -682,19 +682,11 @@ static int __init i8k_probe(void)
 		if (!ignore_dmi && !force)
 			return -ENODEV;
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i8k: not running on a supported Dell system.\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i8k: vendor=%s, model=%s, version=%s\n",
 			i8k_get_dmi_data(DMI_SYS_VENDOR),
 			i8k_get_dmi_data(DMI_PRODUCT_NAME),
 			i8k_get_dmi_data(DMI_BIOS_VERSION));
-#else
-		;
-#endif
 	}
 
 	strlcpy(bios_version, i8k_get_dmi_data(DMI_BIOS_VERSION), sizeof(bios_version));
@@ -714,11 +706,7 @@ static int __init i8k_probe(void)
 	 */
 	version = i8k_get_bios_version();
 	if (version <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i8k: unable to get SMM BIOS version\n");
-#else
-		;
-#endif
 	} else {
 		buff[0] = (version >> 16) & 0xff;
 		buff[1] = (version >> 8) & 0xff;
@@ -734,12 +722,8 @@ static int __init i8k_probe(void)
 		 * Check if the two versions match.
 		 */
 		if (strncmp(buff, bios_version, sizeof(bios_version)) != 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "i8k: BIOS version mismatch: %s != %s\n",
 				buff, bios_version);
-#else
-			;
-#endif
 	}
 
 	return 0;
@@ -763,13 +747,9 @@ static int __init i8k_init(void)
 	if (err)
 		goto exit_remove_proc;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Dell laptop SMM driver v%s Massimo Dal Zotto (dz@debian.org)\n",
 	       I8K_VERSION);
-#else
-	;
-#endif
 
 	return 0;
 
