@@ -866,46 +866,6 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
 }
 EXPORT_SYMBOL_GPL(ddebug_add_module);
 
-/* helper for ddebug_dyndbg_(boot|module)_param_cb */
-static int ddebug_dyndbg_param_cb(char *param, char *val,
-				const char *modname, int on_err)
-{
-	char *sep;
-
-	sep = strchr(param, '.');
-	if (sep) {
-		/* needed only for ddebug_dyndbg_boot_param_cb */
-		*sep = '\0';
-		modname = param;
-		param = sep + 1;
-	}
-	if (strcmp(param, "dyndbg"))
-		return on_err; /* determined by caller */
-
-	ddebug_exec_queries((val ? val : "+p"), modname);
-
-	return 0; /* query failure shouldnt stop module load */
-}
-
-/* handle both dyndbg and $module.dyndbg params at boot */
-static int ddebug_dyndbg_boot_param_cb(char *param, char *val,
-				const char *unused)
-{
-	vpr_info("%s=\"%s\"\n", param, val);
-	return ddebug_dyndbg_param_cb(param, val, NULL, 0);
-}
-
-/*
- * modprobe foo finds foo.params in boot-args, strips "foo.", and
- * passes them to load_module().  This callback gets unknown params,
- * processes dyndbg params, rejects others.
- */
-int ddebug_dyndbg_module_param_cb(char *param, char *val, const char *module)
-{
-	vpr_info("module: %s %s=\"%s\"\n", module, param, val);
-	return ddebug_dyndbg_param_cb(param, val, module, -ENOENT);
-}
-
 static void ddebug_table_free(struct ddebug_table *dt)
 {
 	list_del_init(&dt->link);
@@ -973,7 +933,6 @@ static int __init dynamic_debug_init(void)
 {
 	struct _ddebug *iter, *iter_start;
 	const char *modname = NULL;
-	char *cmdline;
 	int ret = 0;
 	int n = 0, entries = 0, modct = 0;
 	int verbose_bytes = 0;
@@ -1023,6 +982,7 @@ static int __init dynamic_debug_init(void)
 		else
 			pr_info("%d changes by ddebug_query\n", ret);
 	}
+<<<<<<< HEAD
 	/* now that ddebug tables are loaded, process all boot args
 	 * again to find and activate queries given in dyndbg params.
 	 * While this has already been done for known boot params, it
@@ -1036,13 +996,19 @@ static int __init dynamic_debug_init(void)
 		   0, 0, 0, &ddebug_dyndbg_boot_param_cb);
 	kfree(cmdline);
 	return 0;
+=======
+>>>>>>> parent of b48420c... dynamic_debug: make dynamic-debug work for module initialization
 
 out_err:
 	ddebug_remove_all_tables();
 	return 0;
 }
 /* Allow early initialization for boot messages via boot param */
+<<<<<<< HEAD
 early_initcall(dynamic_debug_init);
 
+=======
+arch_initcall(dynamic_debug_init);
+>>>>>>> parent of b48420c... dynamic_debug: make dynamic-debug work for module initialization
 /* Debugfs setup must be done later */
 fs_initcall(dynamic_debug_init_debugfs);
