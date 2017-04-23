@@ -42,6 +42,7 @@ ENTRY(__loop_const_udelay)			@ 0 <= r0 <= 0x7fffff06
  */
 
 @ Delay routine
+WEAK
 ENTRY(__loop_delay)
 		subs	r0, r0, #1
 #if 0
