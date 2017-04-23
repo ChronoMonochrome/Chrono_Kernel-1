@@ -138,8 +138,6 @@ int bt_to_errno(__u16 code)
 		return EPROTONOSUPPORT;
 
 	case 0x1b:
-	case 0x1c:
-	case 0x1d:
 		return ECONNREFUSED;
 
 	case 0x19:

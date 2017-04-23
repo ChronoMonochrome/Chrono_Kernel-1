@@ -117,8 +117,7 @@ static inline void bnep_set_default_proto_filter(struct bnep_session *s)
 }
 #endif
 
-static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data,
-							int len, int *pkt_size)
+static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data, int len)
 {
 	int n;
 
@@ -133,8 +132,6 @@ static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data,
 		return -EILSEQ;
 
 	BT_DBG("filter len %d", n);
-
-	*pkt_size = 2 + n;
 
 #ifdef CONFIG_BT_BNEP_PROTO_FILTER
 	n /= 4;
@@ -166,8 +163,7 @@ static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data,
 	return 0;
 }
 
-static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len,
-								int *pkt_size)
+static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len)
 {
 	int n;
 
@@ -182,8 +178,6 @@ static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len,
 		return -EILSEQ;
 
 	BT_DBG("filter len %d", n);
-
-	*pkt_size = 2 + n;
 
 #ifdef CONFIG_BT_BNEP_MC_FILTER
 	n /= (ETH_ALEN * 2);
@@ -230,16 +224,13 @@ static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len,
 	return 0;
 }
 
-static int bnep_rx_control(struct bnep_session *s, void *data, int len,
-								int *pkt_size)
+static int bnep_rx_control(struct bnep_session *s, void *data, int len)
 {
 	u8  cmd = *(u8 *)data;
 	int err = 0;
 
 	data++;
 	len--;
-
-	*pkt_size = 0;
 
 	switch (cmd) {
 	case BNEP_CMD_NOT_UNDERSTOOD:
@@ -250,27 +241,15 @@ static int bnep_rx_control(struct bnep_session *s, void *data, int len,
 		break;
 
 	case BNEP_FILTER_NET_TYPE_SET:
-		err = bnep_ctrl_set_netfilter(s, data, len, pkt_size);
+		err = bnep_ctrl_set_netfilter(s, data, len);
 		break;
 
 	case BNEP_FILTER_MULTI_ADDR_SET:
-		err = bnep_ctrl_set_mcfilter(s, data, len, pkt_size);
+		err = bnep_ctrl_set_mcfilter(s, data, len);
 		break;
 
-	case BNEP_SETUP_CONN_REQ: {
-			u8 uuid_size = *(u8 *)data;
-
-			/* First setup connection should be silently discarded,
-			 * it was already handled when accepting connection.
-			 */
-			if (s->setup_done)
-				err = bnep_send_rsp(s, BNEP_SETUP_CONN_RSP,
-							BNEP_CONN_NOT_ALLOWED);
-			else
-				s->setup_done = 1;
-
-			*pkt_size = 1 + 2 * uuid_size;
-		}
+	case BNEP_SETUP_CONN_REQ:
+		err = bnep_send_rsp(s, BNEP_SETUP_CONN_RSP, BNEP_CONN_NOT_ALLOWED);
 		break;
 
 	default: {
@@ -283,10 +262,6 @@ static int bnep_rx_control(struct bnep_session *s, void *data, int len,
 		break;
 	}
 
-	if (*pkt_size > 0)
-		/* Add 1 byte for type field */
-		(*pkt_size)++;
-
 	return err;
 }
 
@@ -294,7 +269,6 @@ static int bnep_rx_extension(struct bnep_session *s, struct sk_buff *skb)
 {
 	struct bnep_ext_hdr *h;
 	int err = 0;
-	int pkt_size;
 
 	do {
 		h = (void *) skb->data;
@@ -307,7 +281,7 @@ static int bnep_rx_extension(struct bnep_session *s, struct sk_buff *skb)
 
 		switch (h->type & BNEP_TYPE_MASK) {
 		case BNEP_EXT_CONTROL:
-			bnep_rx_control(s, skb->data, skb->len, &pkt_size);
+			bnep_rx_control(s, skb->data, skb->len);
 			break;
 
 		default:
@@ -347,16 +321,7 @@ static inline int bnep_rx_frame(struct bnep_session *s, struct sk_buff *skb)
 		goto badframe;
 
 	if ((type & BNEP_TYPE_MASK) == BNEP_CONTROL) {
-		int pkt_size = 0;
-
-		bnep_rx_control(s, skb->data, skb->len, &pkt_size);
-
-		if (pkt_size > 0 && (type & BNEP_EXT_HEADER)) {
-			skb_pull(skb, pkt_size);
-			if (bnep_rx_extension(s, skb) < 0)
-				goto badframe;
-		}
-
+		bnep_rx_control(s, skb->data, skb->len);
 		kfree_skb(skb);
 		return 0;
 	}
