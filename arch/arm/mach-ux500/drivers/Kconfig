@@ -1,0 +1,62 @@
+menu "Device Drivers"
+
+source "drivers/base/Kconfig"
+
+source "drivers/battery/Kconfig"
+
+# misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
+
+source "drivers/misc/Kconfig"
+
+source "drivers/scsi/Kconfig"
+
+source "drivers/net/Kconfig"
+
+source "drivers/input/Kconfig"
+
+source "drivers/char/Kconfig"
+
+source "drivers/i2c/Kconfig"
+
+source "drivers/spi/Kconfig"
+
+source "drivers/gpio/Kconfig"
+
+source "drivers/power/Kconfig"
+
+source "drivers/hwmon/Kconfig"
+
+source "drivers/watchdog/Kconfig"
+
+source "drivers/mfd/Kconfig"
+
+source "drivers/regulator/Kconfig"
+
+source "drivers/video/Kconfig"
+
+source "drivers/usb/Kconfig"
+
+source "drivers/mmc/Kconfig"
+
+source "drivers/rtc/Kconfig"
+
+source "drivers/dma/Kconfig"
+
+source "drivers/staging/Kconfig"
+
+source "drivers/clk/Kconfig"
+
+source "drivers/tee/Kconfig"
+
+source "drivers/clocksource/Kconfig"
+
+source "drivers/modem/Kconfig"
+
+source "drivers/samsung/Kconfig"
+
+source "drivers/sensor/Kconfig"
+
+source "drivers/phone_svn/Kconfig"
+
+endmenu
+

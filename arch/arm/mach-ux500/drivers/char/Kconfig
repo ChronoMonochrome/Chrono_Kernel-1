@@ -1,0 +1,8 @@
+#
+# Character device configuration
+#
+
+menu "Character devices"
+source "drivers/char/hwreg/Kconfig"
+source "drivers/char/hw_random/Kconfig"
+endmenu

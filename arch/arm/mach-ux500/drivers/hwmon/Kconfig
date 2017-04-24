@@ -1,0 +1,79 @@
+#
+# Hardware monitoring chip drivers configuration
+#
+
+menuconfig HWMON
+	tristate "Hardware Monitoring support"
+	depends on HAS_IOMEM
+	default y
+	help
+	  Hardware monitoring devices let you monitor the hardware health
+	  of a system. Most modern motherboards include such a device. It
+	  can include temperature sensors, voltage sensors, fan speed
+	  sensors and various additional features such as the ability to
+	  control the speed of the fans.  If you want this support you
+	  should say Y here and also to the specific driver(s) for your
+	  sensors chip(s) below.
+
+	  To find out which specific driver(s) you need, use the
+	  sensors-detect script from the lm_sensors package.  Read
+	  <file:Documentation/hwmon/userspace-tools> for details.
+
+	  This support can also be built as a module.  If so, the module
+	  will be called hwmon.
+
+if HWMON
+
+config HWMON_VID
+	tristate
+	default n
+
+config HWMON_DEBUG_CHIP
+	bool "Hardware Monitoring Chip debugging messages"
+	default n
+	help
+	  Say Y here if you want the I2C chip drivers to produce a bunch of
+	  debug messages to the system log.  Select this if you are having
+	  a problem with I2C support and want to see more of what is going
+	  on.
+
+comment "Native drivers"
+
+config SENSORS_AB8500
+	tristate "AB8500 thermal monitoring"
+	depends on AB8500_GPADC
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the AB8500 chip. The driver includes thermal management for
+	  AB8500 die and two GPADC channels. The GPADC channel are preferably
+	  used to access sensors outside the AB8500 chip.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called abx500-temp.
+
+config SENSORS_AB5500
+	tristate "AB5500 thermal monitoring"
+	depends on AB5500_GPADC
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the AB5500 chip. The driver includes thermal management for
+	  AB5500 die, pcb and RF XTAL temperature.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called abx500-temp.
+
+config SENSORS_DBX500
+	tristate "DBX500 thermal monitoring"
+	depends on MFD_DB8500_PRCMU || MFD_DB5500_PRCMU || MFD_DBX540_PRCMU
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the DBX500 chip. The driver includes thermal management for
+	  DBX500 die.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called dbx500_temp.
+
+endif # HWMON
