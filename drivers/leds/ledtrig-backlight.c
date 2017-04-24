@@ -46,9 +46,9 @@ static int fb_notifier_callback(struct notifier_block *p,
 
 		if ((n->old_status == UNBLANK) ^ n->invert) {
 			n->brightness = led->brightness;
-			__led_set_brightness(led, LED_OFF);
+			led_set_brightness(led, LED_OFF);
 		} else {
-			__led_set_brightness(led, n->brightness);
+			led_set_brightness(led, n->brightness);
 		}
 
 		n->old_status = new_status;
@@ -87,9 +87,9 @@ static ssize_t bl_trig_invert_store(struct device *dev,
 
 	/* After inverting, we need to update the LED. */
 	if ((n->old_status == BLANK) ^ n->invert)
-		__led_set_brightness(led, LED_OFF);
+		led_set_brightness(led, LED_OFF);
 	else
-		__led_set_brightness(led, n->brightness);
+		led_set_brightness(led, n->brightness);
 
 	return num;
 }
@@ -120,7 +120,6 @@ static void bl_trig_activate(struct led_classdev *led)
 	ret = fb_register_client(&n->notifier);
 	if (ret)
 		dev_err(led->dev, "unable to register backlight trigger\n");
-	led->activated = true;
 
 	return;
 
@@ -134,11 +133,10 @@ static void bl_trig_deactivate(struct led_classdev *led)
 	struct bl_trig_notifier *n =
 		(struct bl_trig_notifier *) led->trigger_data;
 
-	if (led->activated) {
+	if (n) {
 		device_remove_file(led->dev, &dev_attr_inverted);
 		fb_unregister_client(&n->notifier);
 		kfree(n);
-		led->activated = false;
 	}
 }
 

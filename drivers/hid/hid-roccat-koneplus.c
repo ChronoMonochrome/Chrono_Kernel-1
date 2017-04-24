@@ -39,26 +39,88 @@ static void koneplus_profile_activated(struct koneplus_device *koneplus,
 static int koneplus_send_control(struct usb_device *usb_dev, uint value,
 		enum koneplus_control_requests request)
 {
-	struct roccat_common2_control control;
+	struct koneplus_control control;
 
 	if ((request == KONEPLUS_CONTROL_REQUEST_PROFILE_SETTINGS ||
 			request == KONEPLUS_CONTROL_REQUEST_PROFILE_BUTTONS) &&
 			value > 4)
 		return -EINVAL;
 
-	control.command = ROCCAT_COMMON_COMMAND_CONTROL;
+	control.command = KONEPLUS_COMMAND_CONTROL;
 	control.value = value;
 	control.request = request;
 
-	return roccat_common2_send_with_status(usb_dev,
-			ROCCAT_COMMON_COMMAND_CONTROL,
-			&control, sizeof(struct roccat_common2_control));
+	return roccat_common_send(usb_dev, KONEPLUS_COMMAND_CONTROL,
+			&control, sizeof(struct koneplus_control));
+}
+
+static int koneplus_receive_control_status(struct usb_device *usb_dev)
+{
+	int retval;
+	struct koneplus_control control;
+
+	do {
+		retval = roccat_common_receive(usb_dev, KONEPLUS_COMMAND_CONTROL,
+				&control, sizeof(struct koneplus_control));
+
+		/* check if we get a completely wrong answer */
+		if (retval)
+			return retval;
+
+		if (control.value == KONEPLUS_CONTROL_REQUEST_STATUS_OK)
+			return 0;
+
+		/* indicates that hardware needs some more time to complete action */
+		if (control.value == KONEPLUS_CONTROL_REQUEST_STATUS_WAIT) {
+			msleep(500); /* windows driver uses 1000 */
+			continue;
+		}
+
+		/* seems to be critical - replug necessary */
+		if (control.value == KONEPLUS_CONTROL_REQUEST_STATUS_OVERLOAD)
+			return -EINVAL;
+
+		hid_err(usb_dev, "koneplus_receive_control_status: "
+				"unknown response value 0x%x\n", control.value);
+		return -EINVAL;
+	} while (1);
+}
+
+static int koneplus_send(struct usb_device *usb_dev, uint command,
+		void const *buf, uint size)
+{
+	int retval;
+
+	retval = roccat_common_send(usb_dev, command, buf, size);
+	if (retval)
+		return retval;
+
+	return koneplus_receive_control_status(usb_dev);
+}
+
+static int koneplus_select_profile(struct usb_device *usb_dev, uint number,
+		enum koneplus_control_requests request)
+{
+	int retval;
+
+	retval = koneplus_send_control(usb_dev, number, request);
+	if (retval)
+		return retval;
+
+	/* allow time to settle things - windows driver uses 500 */
+	msleep(100);
+
+	retval = koneplus_receive_control_status(usb_dev);
+	if (retval)
+		return retval;
+
+	return 0;
 }
 
 static int koneplus_get_info(struct usb_device *usb_dev,
 		struct koneplus_info *buf)
 {
-	return roccat_common2_receive(usb_dev, KONEPLUS_COMMAND_INFO,
+	return roccat_common_receive(usb_dev, KONEPLUS_COMMAND_INFO,
 			buf, sizeof(struct koneplus_info));
 }
 
@@ -67,20 +129,19 @@ static int koneplus_get_profile_settings(struct usb_device *usb_dev,
 {
 	int retval;
 
-	retval = koneplus_send_control(usb_dev, number,
+	retval = koneplus_select_profile(usb_dev, number,
 			KONEPLUS_CONTROL_REQUEST_PROFILE_SETTINGS);
 	if (retval)
 		return retval;
 
-	return roccat_common2_receive(usb_dev, KONEPLUS_COMMAND_PROFILE_SETTINGS,
+	return roccat_common_receive(usb_dev, KONEPLUS_COMMAND_PROFILE_SETTINGS,
 			buf, sizeof(struct koneplus_profile_settings));
 }
 
 static int koneplus_set_profile_settings(struct usb_device *usb_dev,
 		struct koneplus_profile_settings const *settings)
 {
-	return roccat_common2_send_with_status(usb_dev,
-			KONEPLUS_COMMAND_PROFILE_SETTINGS,
+	return koneplus_send(usb_dev, KONEPLUS_COMMAND_PROFILE_SETTINGS,
 			settings, sizeof(struct koneplus_profile_settings));
 }
 
@@ -89,20 +150,19 @@ static int koneplus_get_profile_buttons(struct usb_device *usb_dev,
 {
 	int retval;
 
-	retval = koneplus_send_control(usb_dev, number,
+	retval = koneplus_select_profile(usb_dev, number,
 			KONEPLUS_CONTROL_REQUEST_PROFILE_BUTTONS);
 	if (retval)
 		return retval;
 
-	return roccat_common2_receive(usb_dev, KONEPLUS_COMMAND_PROFILE_BUTTONS,
+	return roccat_common_receive(usb_dev, KONEPLUS_COMMAND_PROFILE_BUTTONS,
 			buf, sizeof(struct koneplus_profile_buttons));
 }
 
 static int koneplus_set_profile_buttons(struct usb_device *usb_dev,
 		struct koneplus_profile_buttons const *buttons)
 {
-	return roccat_common2_send_with_status(usb_dev,
-			KONEPLUS_COMMAND_PROFILE_BUTTONS,
+	return koneplus_send(usb_dev, KONEPLUS_COMMAND_PROFILE_BUTTONS,
 			buttons, sizeof(struct koneplus_profile_buttons));
 }
 
@@ -112,7 +172,7 @@ static int koneplus_get_actual_profile(struct usb_device *usb_dev)
 	struct koneplus_actual_profile buf;
 	int retval;
 
-	retval = roccat_common2_receive(usb_dev, KONEPLUS_COMMAND_ACTUAL_PROFILE,
+	retval = roccat_common_receive(usb_dev, KONEPLUS_COMMAND_ACTUAL_PROFILE,
 			&buf, sizeof(struct koneplus_actual_profile));
 
 	return retval ? retval : buf.actual_profile;
@@ -127,8 +187,7 @@ static int koneplus_set_actual_profile(struct usb_device *usb_dev,
 	buf.size = sizeof(struct koneplus_actual_profile);
 	buf.actual_profile = new_profile;
 
-	return roccat_common2_send_with_status(usb_dev,
-			KONEPLUS_COMMAND_ACTUAL_PROFILE,
+	return koneplus_send(usb_dev, KONEPLUS_COMMAND_ACTUAL_PROFILE,
 			&buf, sizeof(struct koneplus_actual_profile));
 }
 
@@ -149,7 +208,7 @@ static ssize_t koneplus_sysfs_read(struct file *fp, struct kobject *kobj,
 		return -EINVAL;
 
 	mutex_lock(&koneplus->koneplus_lock);
-	retval = roccat_common2_receive(usb_dev, command, buf, real_size);
+	retval = roccat_common_receive(usb_dev, command, buf, real_size);
 	mutex_unlock(&koneplus->koneplus_lock);
 
 	if (retval)
@@ -172,8 +231,7 @@ static ssize_t koneplus_sysfs_write(struct file *fp, struct kobject *kobj,
 		return -EINVAL;
 
 	mutex_lock(&koneplus->koneplus_lock);
-	retval = roccat_common2_send_with_status(usb_dev, command,
-			buf, real_size);
+	retval = koneplus_send(usb_dev, command, buf, real_size);
 	mutex_unlock(&koneplus->koneplus_lock);
 
 	if (retval)

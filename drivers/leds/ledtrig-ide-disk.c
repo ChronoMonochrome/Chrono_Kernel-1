@@ -12,21 +12,38 @@
  */
 
 #include <linux/module.h>
+#include <linux/jiffies.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include <linux/timer.h>
 #include <linux/leds.h>
 
-#define BLINK_DELAY 30
+static void ledtrig_ide_timerfunc(unsigned long data);
 
 DEFINE_LED_TRIGGER(ledtrig_ide);
-static unsigned long ide_blink_delay = BLINK_DELAY;
+static DEFINE_TIMER(ledtrig_ide_timer, ledtrig_ide_timerfunc, 0, 0);
+static int ide_activity;
+static int ide_lastactivity;
 
 void ledtrig_ide_activity(void)
 {
-	led_trigger_blink_oneshot(ledtrig_ide,
-				  &ide_blink_delay, &ide_blink_delay, 0);
+	ide_activity++;
+	if (!timer_pending(&ledtrig_ide_timer))
+		mod_timer(&ledtrig_ide_timer, jiffies + msecs_to_jiffies(10));
 }
 EXPORT_SYMBOL(ledtrig_ide_activity);
+
+static void ledtrig_ide_timerfunc(unsigned long data)
+{
+	if (ide_lastactivity != ide_activity) {
+		ide_lastactivity = ide_activity;
+		/* INT_MAX will set each LED to its maximum brightness */
+		led_trigger_event(ledtrig_ide, INT_MAX);
+		mod_timer(&ledtrig_ide_timer, jiffies + msecs_to_jiffies(10));
+	} else {
+		led_trigger_event(ledtrig_ide, LED_OFF);
+	}
+}
 
 static int __init ledtrig_ide_init(void)
 {

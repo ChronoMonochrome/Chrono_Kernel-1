@@ -393,8 +393,7 @@ static int __devinit lp3944_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 
-	data = devm_kzalloc(&client->dev, sizeof(struct lp3944_data),
-			GFP_KERNEL);
+	data = kzalloc(sizeof(struct lp3944_data), GFP_KERNEL);
 	if (!data)
 		return -ENOMEM;
 
@@ -404,8 +403,10 @@ static int __devinit lp3944_probe(struct i2c_client *client,
 	mutex_init(&data->lock);
 
 	err = lp3944_configure(client, data, lp3944_pdata);
-	if (err < 0)
+	if (err < 0) {
+		kfree(data);
 		return err;
+	}
 
 	dev_info(&client->dev, "lp3944 enabled\n");
 	return 0;
@@ -429,6 +430,8 @@ static int __devexit lp3944_remove(struct i2c_client *client)
 		default:
 			break;
 		}
+
+	kfree(data);
 
 	return 0;
 }

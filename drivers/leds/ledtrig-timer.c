@@ -31,17 +31,21 @@ static ssize_t led_delay_on_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-	unsigned long state;
-	ssize_t ret = -EINVAL;
+	int ret = -EINVAL;
+	char *after;
+	unsigned long state = simple_strtoul(buf, &after, 10);
+	size_t count = after - buf;
 
-	ret = kstrtoul(buf, 10, &state);
-	if (ret)
-		return ret;
+	if (isspace(*after))
+		count++;
 
-	led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
-	led_cdev->blink_delay_on = state;
+	if (count == size) {
+		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+		led_cdev->blink_delay_on = state;
+		ret = count;
+	}
 
-	return size;
+	return ret;
 }
 
 static ssize_t led_delay_off_show(struct device *dev,
@@ -56,17 +60,21 @@ static ssize_t led_delay_off_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-	unsigned long state;
-	ssize_t ret = -EINVAL;
+	int ret = -EINVAL;
+	char *after;
+	unsigned long state = simple_strtoul(buf, &after, 10);
+	size_t count = after - buf;
 
-	ret = kstrtoul(buf, 10, &state);
-	if (ret)
-		return ret;
+	if (isspace(*after))
+		count++;
 
-	led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
-	led_cdev->blink_delay_off = state;
+	if (count == size) {
+		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+		led_cdev->blink_delay_off = state;
+		ret = count;
+	}
 
-	return size;
+	return ret;
 }
 
 static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
@@ -87,7 +95,8 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
 
 	led_blink_set(led_cdev, &led_cdev->blink_delay_on,
 		      &led_cdev->blink_delay_off);
-	led_cdev->activated = true;
+
+	led_cdev->trigger_data = (void *)1;
 
 	return;
 
@@ -97,14 +106,13 @@ err_out_delayon:
 
 static void timer_trig_deactivate(struct led_classdev *led_cdev)
 {
-	if (led_cdev->activated) {
+	if (led_cdev->trigger_data) {
 		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
 		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-		led_cdev->activated = false;
 	}
 
 	/* Stop blinking */
-	led_set_brightness(led_cdev, LED_OFF);
+	led_brightness_set(led_cdev, LED_OFF);
 }
 
 static struct led_trigger timer_led_trigger = {

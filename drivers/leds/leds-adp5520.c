@@ -119,8 +119,7 @@ static int __devinit adp5520_led_probe(struct platform_device *pdev)
 		return -EFAULT;
 	}
 
-	led = devm_kzalloc(&pdev->dev, sizeof(*led) * pdata->num_leds,
-				GFP_KERNEL);
+	led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
 	if (led == NULL) {
 		dev_err(&pdev->dev, "failed to alloc memory\n");
 		return -ENOMEM;
@@ -130,7 +129,7 @@ static int __devinit adp5520_led_probe(struct platform_device *pdev)
 
 	if (ret) {
 		dev_err(&pdev->dev, "failed to write\n");
-		return ret;
+		goto err_free;
 	}
 
 	for (i = 0; i < pdata->num_leds; ++i) {
@@ -180,6 +179,8 @@ err:
 		}
 	}
 
+err_free:
+	kfree(led);
 	return ret;
 }
 
@@ -199,6 +200,7 @@ static int __devexit adp5520_led_remove(struct platform_device *pdev)
 		cancel_work_sync(&led[i].work);
 	}
 
+	kfree(led);
 	return 0;
 }
 

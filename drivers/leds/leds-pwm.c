@@ -111,8 +111,7 @@ static int led_pwm_probe(struct platform_device *pdev)
 	if (!pdata)
 		return -EBUSY;
 
-	leds_data = devm_kzalloc(&pdev->dev,
-			sizeof(struct led_pwm_data) * pdata->num_leds,
+	leds_data = kzalloc(sizeof(struct led_pwm_data) * pdata->num_leds,
 				GFP_KERNEL);
 	if (!leds_data)
 		return -ENOMEM;
@@ -163,6 +162,8 @@ err:
 		}
 	}
 
+	kfree(leds_data);
+
 	return ret;
 }
 
@@ -178,6 +179,8 @@ static int __devexit led_pwm_remove(struct platform_device *pdev)
 		led_classdev_unregister(&leds_data[i].cdev);
 		pwm_free(leds_data[i].pwm);
 	}
+
+	kfree(leds_data);
 
 	return 0;
 }

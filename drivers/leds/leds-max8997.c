@@ -49,37 +49,71 @@ struct max8997_led {
 	struct mutex mutex;
 };
 
+static void max8997_led_clear_mode(struct max8997_led *led,
+			enum max8997_led_mode mode)
+{
+	struct i2c_client *client = led->iodev->i2c;
+	u8 val = 0, mask = 0;
+	int ret;
+
+	switch (mode) {
+	case MAX8997_FLASH_MODE:
+		mask = led->id ?
+		      MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
+		break;
+	case MAX8997_MOVIE_MODE:
+		mask = led->id ?
+		      MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
+		break;
+	case MAX8997_FLASH_PIN_CONTROL_MODE:
+		mask = led->id ?
+		      MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
+		break;
+	case MAX8997_MOVIE_PIN_CONTROL_MODE:
+		mask = led->id ?
+		      MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
+		break;
+	default:
+		break;
+	}
+
+	if (mask) {
+		ret = max8997_update_reg(client,
+				MAX8997_REG_LEN_CNTL, val, mask);
+		if (ret)
+			dev_err(led->iodev->dev,
+				"failed to update register(%d)\n", ret);
+	}
+}
+
 static void max8997_led_set_mode(struct max8997_led *led,
 			enum max8997_led_mode mode)
 {
 	int ret;
 	struct i2c_client *client = led->iodev->i2c;
-	u8 mask = 0, val;
+	u8 mask = 0;
+
+	/* First, clear the previous mode */
+	max8997_led_clear_mode(led, led->led_mode);
 
 	switch (mode) {
 	case MAX8997_FLASH_MODE:
-		mask = MAX8997_LED1_FLASH_MASK | MAX8997_LED0_FLASH_MASK;
-		val = led->id ?
+		mask = led->id ?
 		      MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
 		led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
 		break;
 	case MAX8997_MOVIE_MODE:
-		mask = MAX8997_LED1_MOVIE_MASK | MAX8997_LED0_MOVIE_MASK;
-		val = led->id ?
+		mask = led->id ?
 		      MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
 		led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
 		break;
 	case MAX8997_FLASH_PIN_CONTROL_MODE:
-		mask = MAX8997_LED1_FLASH_PIN_MASK |
-		       MAX8997_LED0_FLASH_PIN_MASK;
-		val = led->id ?
+		mask = led->id ?
 		      MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
 		led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
 		break;
 	case MAX8997_MOVIE_PIN_CONTROL_MODE:
-		mask = MAX8997_LED1_MOVIE_PIN_MASK |
-		       MAX8997_LED0_MOVIE_PIN_MASK;
-		val = led->id ?
+		mask = led->id ?
 		      MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
 		led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
 		break;
@@ -89,8 +123,8 @@ static void max8997_led_set_mode(struct max8997_led *led,
 	}
 
 	if (mask) {
-		ret = max8997_update_reg(client, MAX8997_REG_LEN_CNTL, val,
-					 mask);
+		ret = max8997_update_reg(client,
+				MAX8997_REG_LEN_CNTL, mask, mask);
 		if (ret)
 			dev_err(led->iodev->dev,
 				"failed to update register(%d)\n", ret);
@@ -242,9 +276,11 @@ static int __devinit max8997_led_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	led = devm_kzalloc(&pdev->dev, sizeof(*led), GFP_KERNEL);
-	if (led == NULL)
-		return -ENOMEM;
+	led = kzalloc(sizeof(*led), GFP_KERNEL);
+	if (led == NULL) {
+		ret = -ENOMEM;
+		goto err_mem;
+	}
 
 	led->id = pdev->id;
 	snprintf(name, sizeof(name), "max8997-led%d", pdev->id);
@@ -279,17 +315,23 @@ static int __devinit max8997_led_probe(struct platform_device *pdev)
 
 	ret = led_classdev_register(&pdev->dev, &led->cdev);
 	if (ret < 0)
-		return ret;
+		goto err_led;
 
 	ret = device_create_file(led->cdev.dev, &dev_attr_mode);
 	if (ret != 0) {
 		dev_err(&pdev->dev,
 			"failed to create file: %d\n", ret);
-		led_classdev_unregister(&led->cdev);
-		return ret;
+		goto err_file;
 	}
 
 	return 0;
+
+err_file:
+	led_classdev_unregister(&led->cdev);
+err_led:
+	kfree(led);
+err_mem:
+	return ret;
 }
 
 static int __devexit max8997_led_remove(struct platform_device *pdev)
@@ -298,6 +340,7 @@ static int __devexit max8997_led_remove(struct platform_device *pdev)
 
 	device_remove_file(led->cdev.dev, &dev_attr_mode);
 	led_classdev_unregister(&led->cdev);
+	kfree(led);
 
 	return 0;
 }
@@ -311,7 +354,17 @@ static struct platform_driver max8997_led_driver = {
 	.remove = __devexit_p(max8997_led_remove),
 };
 
-module_platform_driver(max8997_led_driver);
+static int __init max8997_led_init(void)
+{
+	return platform_driver_register(&max8997_led_driver);
+}
+module_init(max8997_led_init);
+
+static void __exit max8997_led_exit(void)
+{
+	platform_driver_unregister(&max8997_led_driver);
+}
+module_exit(max8997_led_exit);
 
 MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
 MODULE_DESCRIPTION("MAX8997 LED driver");

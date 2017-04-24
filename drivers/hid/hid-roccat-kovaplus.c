@@ -47,21 +47,67 @@ static int kovaplus_send_control(struct usb_device *usb_dev, uint value,
 		enum kovaplus_control_requests request)
 {
 	int retval;
-	struct roccat_common2_control control;
+	struct kovaplus_control control;
 
 	if ((request == KOVAPLUS_CONTROL_REQUEST_PROFILE_SETTINGS ||
 			request == KOVAPLUS_CONTROL_REQUEST_PROFILE_BUTTONS) &&
 			value > 4)
 		return -EINVAL;
 
-	control.command = ROCCAT_COMMON_COMMAND_CONTROL;
+	control.command = KOVAPLUS_COMMAND_CONTROL;
 	control.value = value;
 	control.request = request;
 
-	retval = roccat_common2_send(usb_dev, ROCCAT_COMMON_COMMAND_CONTROL,
-			&control, sizeof(struct roccat_common2_control));
+	retval = roccat_common_send(usb_dev, KOVAPLUS_COMMAND_CONTROL,
+			&control, sizeof(struct kovaplus_control));
 
 	return retval;
+}
+
+static int kovaplus_receive_control_status(struct usb_device *usb_dev)
+{
+	int retval;
+	struct kovaplus_control control;
+
+	do {
+		retval = roccat_common_receive(usb_dev, KOVAPLUS_COMMAND_CONTROL,
+				&control, sizeof(struct kovaplus_control));
+
+		/* check if we get a completely wrong answer */
+		if (retval)
+			return retval;
+
+		if (control.value == KOVAPLUS_CONTROL_REQUEST_STATUS_OK)
+			return 0;
+
+		/* indicates that hardware needs some more time to complete action */
+		if (control.value == KOVAPLUS_CONTROL_REQUEST_STATUS_WAIT) {
+			msleep(500); /* windows driver uses 1000 */
+			continue;
+		}
+
+		/* seems to be critical - replug necessary */
+		if (control.value == KOVAPLUS_CONTROL_REQUEST_STATUS_OVERLOAD)
+			return -EINVAL;
+
+		hid_err(usb_dev, "roccat_common_receive_control_status: "
+				"unknown response value 0x%x\n", control.value);
+		return -EINVAL;
+	} while (1);
+}
+
+static int kovaplus_send(struct usb_device *usb_dev, uint command,
+		void const *buf, uint size)
+{
+	int retval;
+
+	retval = roccat_common_send(usb_dev, command, buf, size);
+	if (retval)
+		return retval;
+
+	msleep(100);
+
+	return kovaplus_receive_control_status(usb_dev);
 }
 
 static int kovaplus_select_profile(struct usb_device *usb_dev, uint number,
@@ -73,7 +119,7 @@ static int kovaplus_select_profile(struct usb_device *usb_dev, uint number,
 static int kovaplus_get_info(struct usb_device *usb_dev,
 		struct kovaplus_info *buf)
 {
-	return roccat_common2_receive(usb_dev, KOVAPLUS_COMMAND_INFO,
+	return roccat_common_receive(usb_dev, KOVAPLUS_COMMAND_INFO,
 			buf, sizeof(struct kovaplus_info));
 }
 
@@ -87,15 +133,14 @@ static int kovaplus_get_profile_settings(struct usb_device *usb_dev,
 	if (retval)
 		return retval;
 
-	return roccat_common2_receive(usb_dev, KOVAPLUS_COMMAND_PROFILE_SETTINGS,
+	return roccat_common_receive(usb_dev, KOVAPLUS_COMMAND_PROFILE_SETTINGS,
 			buf, sizeof(struct kovaplus_profile_settings));
 }
 
 static int kovaplus_set_profile_settings(struct usb_device *usb_dev,
 		struct kovaplus_profile_settings const *settings)
 {
-	return roccat_common2_send_with_status(usb_dev,
-			KOVAPLUS_COMMAND_PROFILE_SETTINGS,
+	return kovaplus_send(usb_dev, KOVAPLUS_COMMAND_PROFILE_SETTINGS,
 			settings, sizeof(struct kovaplus_profile_settings));
 }
 
@@ -109,15 +154,14 @@ static int kovaplus_get_profile_buttons(struct usb_device *usb_dev,
 	if (retval)
 		return retval;
 
-	return roccat_common2_receive(usb_dev, KOVAPLUS_COMMAND_PROFILE_BUTTONS,
+	return roccat_common_receive(usb_dev, KOVAPLUS_COMMAND_PROFILE_BUTTONS,
 			buf, sizeof(struct kovaplus_profile_buttons));
 }
 
 static int kovaplus_set_profile_buttons(struct usb_device *usb_dev,
 		struct kovaplus_profile_buttons const *buttons)
 {
-	return roccat_common2_send_with_status(usb_dev,
-			KOVAPLUS_COMMAND_PROFILE_BUTTONS,
+	return kovaplus_send(usb_dev, KOVAPLUS_COMMAND_PROFILE_BUTTONS,
 			buttons, sizeof(struct kovaplus_profile_buttons));
 }
 
@@ -127,7 +171,7 @@ static int kovaplus_get_actual_profile(struct usb_device *usb_dev)
 	struct kovaplus_actual_profile buf;
 	int retval;
 
-	retval = roccat_common2_receive(usb_dev, KOVAPLUS_COMMAND_ACTUAL_PROFILE,
+	retval = roccat_common_receive(usb_dev, KOVAPLUS_COMMAND_ACTUAL_PROFILE,
 			&buf, sizeof(struct kovaplus_actual_profile));
 
 	return retval ? retval : buf.actual_profile;
@@ -142,8 +186,7 @@ static int kovaplus_set_actual_profile(struct usb_device *usb_dev,
 	buf.size = sizeof(struct kovaplus_actual_profile);
 	buf.actual_profile = new_profile;
 
-	return roccat_common2_send_with_status(usb_dev,
-			KOVAPLUS_COMMAND_ACTUAL_PROFILE,
+	return kovaplus_send(usb_dev, KOVAPLUS_COMMAND_ACTUAL_PROFILE,
 			&buf, sizeof(struct kovaplus_actual_profile));
 }
 

@@ -45,8 +45,7 @@ static int __init pwmled_probe(struct platform_device *pdev)
 	if (!pdata || pdata->num_leds < 1)
 		return -ENODEV;
 
-	leds = devm_kzalloc(&pdev->dev, pdata->num_leds * sizeof(*leds),
-			GFP_KERNEL);
+	leds = kcalloc(pdata->num_leds, sizeof(*leds), GFP_KERNEL);
 	if (!leds)
 		return -ENOMEM;
 
@@ -108,6 +107,7 @@ err:
 			pwm_channel_free(&leds[i].pwmc);
 		}
 	}
+	kfree(leds);
 
 	return status;
 }
@@ -128,6 +128,7 @@ static int __exit pwmled_remove(struct platform_device *pdev)
 		pwm_channel_free(&led->pwmc);
 	}
 
+	kfree(leds);
 	platform_set_drvdata(pdev, NULL);
 	return 0;
 }

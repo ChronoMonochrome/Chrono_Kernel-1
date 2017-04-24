@@ -108,7 +108,7 @@ static int __devinit da903x_led_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	led = devm_kzalloc(&pdev->dev, sizeof(struct da903x_led), GFP_KERNEL);
+	led = kzalloc(sizeof(struct da903x_led), GFP_KERNEL);
 	if (led == NULL) {
 		dev_err(&pdev->dev, "failed to alloc memory for LED%d\n", id);
 		return -ENOMEM;
@@ -129,11 +129,15 @@ static int __devinit da903x_led_probe(struct platform_device *pdev)
 	ret = led_classdev_register(led->master, &led->cdev);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register LED %d\n", id);
-		return ret;
+		goto err;
 	}
 
 	platform_set_drvdata(pdev, led);
 	return 0;
+
+err:
+	kfree(led);
+	return ret;
 }
 
 static int __devexit da903x_led_remove(struct platform_device *pdev)
@@ -141,6 +145,7 @@ static int __devexit da903x_led_remove(struct platform_device *pdev)
 	struct da903x_led *led = platform_get_drvdata(pdev);
 
 	led_classdev_unregister(&led->cdev);
+	kfree(led);
 	return 0;
 }
 

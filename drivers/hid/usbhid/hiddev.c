@@ -34,7 +34,6 @@
 #include <linux/hid.h>
 #include <linux/hiddev.h>
 #include <linux/compat.h>
-#include <linux/vmalloc.h>
 #include "usbhid.h"
 
 #ifdef CONFIG_USB_DYNAMIC_MINORS
@@ -251,13 +250,13 @@ static int hiddev_release(struct inode * inode, struct file * file)
 		} else {
 			mutex_unlock(&list->hiddev->existancelock);
 			kfree(list->hiddev);
-			vfree(list);
+			kfree(list);
 			return 0;
 		}
 	}
 
 	mutex_unlock(&list->hiddev->existancelock);
-	vfree(list);
+	kfree(list);
 
 	return 0;
 }
@@ -279,7 +278,7 @@ static int hiddev_open(struct inode *inode, struct file *file)
 	hid = usb_get_intfdata(intf);
 	hiddev = hid->hiddev;
 
-	if (!(list = vzalloc(sizeof(struct hiddev_list))))
+	if (!(list = kzalloc(sizeof(struct hiddev_list), GFP_KERNEL)))
 		return -ENOMEM;
 	mutex_init(&list->thread_lock);
 	list->hiddev = hiddev;
@@ -323,7 +322,7 @@ bail_unlock:
 	mutex_unlock(&hiddev->existancelock);
 bail:
 	file->private_data = NULL;
-	vfree(list);
+	kfree(list);
 	return res;
 }
 

@@ -54,12 +54,12 @@ static void gpio_trig_work(struct work_struct *work)
 
 	if (tmp) {
 		if (gpio_data->desired_brightness)
-			__led_set_brightness(gpio_data->led,
+			led_set_brightness(gpio_data->led,
 					   gpio_data->desired_brightness);
 		else
-			__led_set_brightness(gpio_data->led, LED_FULL);
+			led_set_brightness(gpio_data->led, LED_FULL);
 	} else {
-		__led_set_brightness(gpio_data->led, LED_OFF);
+		led_set_brightness(gpio_data->led, LED_OFF);
 	}
 }
 
@@ -200,7 +200,6 @@ static void gpio_trig_activate(struct led_classdev *led)
 	gpio_data->led = led;
 	led->trigger_data = gpio_data;
 	INIT_WORK(&gpio_data->work, gpio_trig_work);
-	led->activated = true;
 
 	return;
 
@@ -218,7 +217,7 @@ static void gpio_trig_deactivate(struct led_classdev *led)
 {
 	struct gpio_trig_data *gpio_data = led->trigger_data;
 
-	if (led->activated) {
+	if (gpio_data) {
 		device_remove_file(led->dev, &dev_attr_gpio);
 		device_remove_file(led->dev, &dev_attr_inverted);
 		device_remove_file(led->dev, &dev_attr_desired_brightness);
@@ -226,7 +225,6 @@ static void gpio_trig_deactivate(struct led_classdev *led)
 		if (gpio_data->gpio != 0)
 			free_irq(gpio_to_irq(gpio_data->gpio), led);
 		kfree(gpio_data);
-		led->activated = false;
 	}
 }
 

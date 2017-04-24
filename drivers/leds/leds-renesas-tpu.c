@@ -243,30 +243,31 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
 	struct led_renesas_tpu_config *cfg = pdev->dev.platform_data;
 	struct r_tpu_priv *p;
 	struct resource *res;
-	int ret;
+	int ret = -ENXIO;
 
 	if (!cfg) {
 		dev_err(&pdev->dev, "missing platform data\n");
-		return -ENODEV;
+		goto err0;
 	}
 
-	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
+	p = kzalloc(sizeof(*p), GFP_KERNEL);
 	if (p == NULL) {
 		dev_err(&pdev->dev, "failed to allocate driver data\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto err0;
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "failed to get I/O memory\n");
-		return -ENXIO;
+		goto err1;
 	}
 
 	/* map memory, let mapbase point to our channel */
 	p->mapbase = ioremap_nocache(res->start, resource_size(res));
 	if (p->mapbase == NULL) {
 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-		return -ENXIO;
+		goto err1;
 	}
 
 	/* get hold of clock */
@@ -274,7 +275,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
 	if (IS_ERR(p->clk)) {
 		dev_err(&pdev->dev, "cannot get clock\n");
 		ret = PTR_ERR(p->clk);
-		goto err0;
+		goto err2;
 	}
 
 	p->pdev = pdev;
@@ -293,7 +294,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
 	p->ldev.flags |= LED_CORE_SUSPENDRESUME;
 	ret = led_classdev_register(&pdev->dev, &p->ldev);
 	if (ret < 0)
-		goto err1;
+		goto err3;
 
 	/* max_brightness may be updated by the LED core code */
 	p->min_rate = p->ldev.max_brightness * p->refresh_rate;
@@ -301,11 +302,14 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 	return 0;
 
- err1:
+ err3:
 	r_tpu_set_pin(p, R_TPU_PIN_UNUSED, LED_OFF);
 	clk_put(p->clk);
- err0:
+ err2:
 	iounmap(p->mapbase);
+ err1:
+	kfree(p);
+ err0:
 	return ret;
 }
 
@@ -323,6 +327,7 @@ static int __devexit r_tpu_remove(struct platform_device *pdev)
 	clk_put(p->clk);
 
 	iounmap(p->mapbase);
+	kfree(p);
 	return 0;
 }
 

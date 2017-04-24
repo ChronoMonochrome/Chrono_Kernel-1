@@ -931,6 +931,12 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 {
 	int err = 0;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+#ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
+	struct netlink_kernel_cfg cfg = {
+		.groups = 1,
+		.input  = shm_nl_receive,
+	};
+#endif
 
 	shm_dev = shrm;
 	boot_state = BOOT_INIT;
@@ -1052,8 +1058,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 	/* init netlink socket for user-space communication */
-	shrm_nl_sk = netlink_kernel_create(NULL, NETLINK_SHRM, 1,
-			shm_nl_receive, NULL, THIS_MODULE);
+	shrm_nl_sk = netlink_kernel_create(NULL, NETLINK_SHRM, THIS_MODULE, &cfg);
 
 	if (!shrm_nl_sk) {
 		dev_err(shm_dev->dev, "netlink socket creation failed\n");

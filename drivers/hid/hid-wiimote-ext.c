@@ -77,7 +77,7 @@ static __u16 wiiext_keymap[] = {
 	BTN_TR,		/* WIIEXT_KEY_RT */
 };
 
-/* disable all extensions */
+/* diable all extensions */
 static void ext_disable(struct wiimote_ext *ext)
 {
 	unsigned long flags;
@@ -378,14 +378,14 @@ static void handler_nunchuck(struct wiimote_ext *ext, const __u8 *payload)
 
 	if (ext->motionp) {
 		input_report_key(ext->input,
-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x04));
+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x04));
 		input_report_key(ext->input,
-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x08));
+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x08));
 	} else {
 		input_report_key(ext->input,
-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x01));
+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x01));
 		input_report_key(ext->input,
-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x02));
+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x02));
 	}
 
 	input_sync(ext->input);

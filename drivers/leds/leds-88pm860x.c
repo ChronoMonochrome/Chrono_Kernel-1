@@ -185,7 +185,7 @@ static int pm860x_led_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	data = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_led), GFP_KERNEL);
+	data = kzalloc(sizeof(struct pm860x_led), GFP_KERNEL);
 	if (data == NULL)
 		return -ENOMEM;
 	strncpy(data->name, res->name, MFD_NAME_SIZE - 1);
@@ -196,6 +196,7 @@ static int pm860x_led_probe(struct platform_device *pdev)
 	data->port = pdata->flags;
 	if (data->port < 0) {
 		dev_err(&pdev->dev, "check device failed\n");
+		kfree(data);
 		return -EINVAL;
 	}
 
@@ -208,10 +209,13 @@ static int pm860x_led_probe(struct platform_device *pdev)
 	ret = led_classdev_register(chip->dev, &data->cdev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register LED: %d\n", ret);
-		return ret;
+		goto out;
 	}
 	pm860x_led_set(&data->cdev, 0);
 	return 0;
+out:
+	kfree(data);
+	return ret;
 }
 
 static int pm860x_led_remove(struct platform_device *pdev)
@@ -219,6 +223,7 @@ static int pm860x_led_remove(struct platform_device *pdev)
 	struct pm860x_led *data = platform_get_drvdata(pdev);
 
 	led_classdev_unregister(&data->cdev);
+	kfree(data);
 
 	return 0;
 }
