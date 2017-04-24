@@ -1657,7 +1657,7 @@ static inline unsigned long hash_name(const char *name, unsigned int *hashp)
 		len += sizeof(unsigned long);
 		a = load_unaligned_zeropad(name+len);
 		b = a ^ REPEAT_BYTE('/');
-	} while (!(has_zero(a, &adata, &constants) | has_zero(b, &bdata, &constants)));
+	} while (!(has_zero1(a, &adata, &constants) | has_zero1(b, &bdata, &constants)));
 
 	adata = prep_zero_mask(a, adata, &constants);
 	bdata = prep_zero_mask(b, bdata, &constants);
