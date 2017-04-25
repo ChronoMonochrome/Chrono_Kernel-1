@@ -30,7 +30,7 @@
 #include <linux/mfd/abx500/ux500_chargalg.h>
 #include <linux/timer.h>
 
-#ifdef CONFIG_UX500_USB_SWITCHER
+#ifdef CONFIG_USB_SWITCHER
 #include <linux/usb_switcher.h>
 #endif
 
@@ -299,7 +299,7 @@ struct ab8500_charger {
 	struct wake_lock ab8500_vbus_wake_lock;
 	struct wake_lock ab8500_vbus_detect_charging_lock;
 	struct wake_lock charger_attached_lock;
-#ifdef CONFIG_UX500_USB_SWITCHER
+#ifdef CONFIG_USB_SWITCHER
 	struct notifier_block nb ;
 	struct platform_device *pdev ;
 
@@ -642,7 +642,7 @@ static int ab8500_charger_detect_chargers(struct ab8500_charger *di)
 	unsigned long connection ;
 	int usb_line_state;
 
- #ifdef CONFIG_UX500_USB_SWITCHER
+ #ifdef CONFIG_USB_SWITCHER
 	connection = usb_switch_get_current_connection() ;
 	usb_line_state =  ab8500_usb_line_state(di);
 	vbus_state = ab8500_vbus_is_detected(di);
@@ -767,7 +767,7 @@ static int ab8500_charger_detect_chargers(struct ab8500_charger *di)
 	}
 	
 	return result;
-#ifndef CONFIG_UX500_USB_SWITCHER
+#ifndef CONFIG_USB_SWITCHER
 
 out:
 	if (di->vddadc_en) {
@@ -3156,7 +3156,7 @@ static int dummy(struct ux500_charger *charger,
 void register_charging_i2c_dev(struct device * dev) ;
 #endif
 
-#ifdef CONFIG_UX500_USB_SWITCHER
+#ifdef CONFIG_USB_SWITCHER
 /*
 	The USB switcher can confuse the charger detection logic so we need to refer to the switcher
 	driver.
@@ -3290,9 +3290,9 @@ free_charger_wq:
 
 static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 {
-#ifndef CONFIG_UX500_USB_SWITCHER
+#ifndef CONFIG_USB_SWITCHER
 	int irq, i, charger_status;
-#endif //CONFIG_UX500_USB_SWITCHER
+#endif //CONFIG_USB_SWITCHER
 
 	int ret = 0;
 	struct ab8500_platform_data *plat;
@@ -3448,7 +3448,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 				   2 * HZ);
 	}
 
-#ifdef CONFIG_UX500_USB_SWITCHER
+#ifdef CONFIG_USB_SWITCHER
 
 	di->pdev = pdev ;
 	platform_set_drvdata(pdev, di);

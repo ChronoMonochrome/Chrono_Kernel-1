@@ -669,7 +669,7 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
 	return temp;
 }
 
-#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 
 /* For checking VBUS status */
 

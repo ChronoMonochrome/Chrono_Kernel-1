@@ -602,7 +602,7 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.main_safety_tmr_h	= 4,
 	.temp_interval_chg	= 20,
 	.temp_interval_nochg	= 120,
-#ifdef CONFIG_UX500_USB_SWITCHER
+#ifdef CONFIG_USB_SWITCHER
 	.ta_chg_current			= 1500,
 	.ta_chg_current_input		= 800,
 	.ta_chg_voltage			= 4350,

@@ -878,7 +878,7 @@ static struct resource __devinitdata ab8500_charger_resources[] = {
 		.flags = IORESOURCE_IRQ,
 	},
 
-#if defined(CONFIG_UX500_USB_SWITCHER) || defined(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)
+#if defined(CONFIG_USB_SWITCHER) || defined(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)
 	{
 		.name = "MAIN_CH_DROP_END",
 		.start = AB8500_INT_MAIN_CH_DROP_END,
