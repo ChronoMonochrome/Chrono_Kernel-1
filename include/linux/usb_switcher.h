@@ -1,5 +1,5 @@
-#ifndef USB_SWITCHER_H
-#define USB_SWITCHER_H
+#ifndef UX500_USB_SWITCHER_H
+#define UX500_USB_SWITCHER_H
 
 #include <linux/notifier.h>
 
@@ -52,7 +52,7 @@ struct usb_switch
 
 extern int jig_smd;
 
-#endif //USB_SWITCHER_H
+#endif //UX500_USB_SWITCHER_H
 
 
 

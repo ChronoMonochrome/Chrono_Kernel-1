@@ -1,62 +1,66 @@
 menu "Device Drivers"
 
-source "drivers/base/Kconfig"
+config ARM_UX500_AMBA
+	bool
+	default y
 
-source "drivers/battery/Kconfig"
+#source "arch/arm/mach-ux500/drivers/base/Kconfig"
+
+#source "arch/arm/mach-ux500/drivers/battery/Kconfig"
 
 # misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
 
-source "drivers/misc/Kconfig"
+source "arch/arm/mach-ux500/drivers/misc/Kconfig"
 
-source "drivers/scsi/Kconfig"
+#source "arch/arm/mach-ux500/drivers/scsi/Kconfig"
 
-source "drivers/net/Kconfig"
+#source "arch/arm/mach-ux500/drivers/net/Kconfig"
 
-source "drivers/input/Kconfig"
+#source "arch/arm/mach-ux500/drivers/input/Kconfig"
 
-source "drivers/char/Kconfig"
+#source "arch/arm/mach-ux500/drivers/char/Kconfig"
 
-source "drivers/i2c/Kconfig"
+#source "arch/arm/mach-ux500/drivers/i2c/Kconfig"
 
-source "drivers/spi/Kconfig"
+#source "arch/arm/mach-ux500/drivers/spi/Kconfig"
 
-source "drivers/gpio/Kconfig"
+#source "arch/arm/mach-ux500/drivers/gpio/Kconfig"
 
-source "drivers/power/Kconfig"
+#source "arch/arm/mach-ux500/drivers/power/Kconfig"
 
-source "drivers/hwmon/Kconfig"
+#source "arch/arm/mach-ux500/drivers/hwmon/Kconfig"
 
-source "drivers/watchdog/Kconfig"
+#source "arch/arm/mach-ux500/drivers/watchdog/Kconfig"
 
-source "drivers/mfd/Kconfig"
+#source "arch/arm/mach-ux500/drivers/mfd/Kconfig"
 
-source "drivers/regulator/Kconfig"
+#source "arch/arm/mach-ux500/drivers/regulator/Kconfig"
 
-source "drivers/video/Kconfig"
+#source "arch/arm/mach-ux500/drivers/video/Kconfig"
 
-source "drivers/usb/Kconfig"
+#source "arch/arm/mach-ux500/drivers/usb/Kconfig"
 
-source "drivers/mmc/Kconfig"
+#source "arch/arm/mach-ux500/drivers/mmc/Kconfig"
 
-source "drivers/rtc/Kconfig"
+#source "arch/arm/mach-ux500/drivers/rtc/Kconfig"
 
-source "drivers/dma/Kconfig"
+#source "arch/arm/mach-ux500/drivers/dma/Kconfig"
 
-source "drivers/staging/Kconfig"
+#source "arch/arm/mach-ux500/drivers/staging/Kconfig"
 
-source "drivers/clk/Kconfig"
+#source "arch/arm/mach-ux500/drivers/clk/Kconfig"
 
-source "drivers/tee/Kconfig"
+#source "arch/arm/mach-ux500/drivers/tee/Kconfig"
 
-source "drivers/clocksource/Kconfig"
+#source "arch/arm/mach-ux500/drivers/clocksource/Kconfig"
 
-source "drivers/modem/Kconfig"
+#source "arch/arm/mach-ux500/drivers/modem/Kconfig"
 
-source "drivers/samsung/Kconfig"
+#source "arch/arm/mach-ux500/drivers/samsung/Kconfig"
 
-source "drivers/sensor/Kconfig"
+#source "arch/arm/mach-ux500/drivers/sensor/Kconfig"
 
-source "drivers/phone_svn/Kconfig"
+#source "arch/arm/mach-ux500/drivers/phone_svn/Kconfig"
 
 endmenu
 

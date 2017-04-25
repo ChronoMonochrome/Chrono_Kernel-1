@@ -460,7 +460,7 @@ void abb_dock_cb(bool attached)
 }
 #endif 
 
-#if defined(CONFIG_USB_SWITCHER)
+#if defined(CONFIG_UX500_USB_SWITCHER)
 static struct usb_switch fsa880_data =	{
 		.name					=	"FSA880",
 		.id	 				=	0x0	,
@@ -600,7 +600,7 @@ static struct i2c_board_info __initdata skomer_bringup_i2c0_devices[] = {
 
 static struct i2c_board_info __initdata skomer_bringup_i2c1_devices[] = {
 #if 0
-#if defined(CONFIG_USB_SWITCHER)
+#if defined(CONFIG_UX500_USB_SWITCHER)
 	{
 		I2C_BOARD_INFO("musb", 0x25),
 		.platform_data = &fsa880_data ,

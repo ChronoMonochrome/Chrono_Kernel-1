@@ -144,8 +144,6 @@ source "drivers/phone_svn/Kconfig"
 
 source "drivers/interceptor/Kconfig" 
 
-source "drivers/modem/Kconfig"
-
 source "drivers/gator/Kconfig"
 
 endmenu

@@ -514,7 +514,7 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.main_safety_tmr_h	= 4,
 	.temp_interval_chg	= 20,
 	.temp_interval_nochg	= 120,
-#if defined(CONFIG_USB_SWITCHER) || defined(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)
+#if defined(CONFIG_UX500_USB_SWITCHER) || defined(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)
 	.ta_chg_current		= 800,
 	.ta_chg_voltage		= 4350,
 	.usb_chg_current	= 500,

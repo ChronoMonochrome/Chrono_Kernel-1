@@ -50,7 +50,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/timer.h>
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 #include <linux/usb_switcher.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
 #endif
@@ -338,7 +338,7 @@ struct mxt_data {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend		early_suspend;
 #endif
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	struct notifier_block		nb;
 #endif
 	struct timer_list		ta_status_timer;
@@ -474,7 +474,7 @@ static void mxt_early_suspend(struct early_suspend *);
 static void mxt_late_resume(struct early_suspend *);
 #endif
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 extern int micro_usb_register_usb_notifier(struct notifier_block *nb);
 extern int use_ab8505_iddet;
 #endif
@@ -2097,7 +2097,7 @@ static void mxt_mode_transit_worker(struct work_struct *work)
 		(mode) ? "TA" : "NORMAL");
 }
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 int mxt_usb_switch_notify(struct notifier_block *nb, unsigned long val,
 			  void *dev)
 {
@@ -3946,7 +3946,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	data->dev_mode = NORMAL_MODE;
 	INIT_DELAYED_WORK(&data->wq, mxt_mode_transit_worker);
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	data->nb.notifier_call = mxt_usb_switch_notify;
 
 	if (use_ab8505_iddet)

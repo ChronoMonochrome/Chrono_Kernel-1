@@ -353,5 +353,6 @@ config MACH_CODINA_EURO
 source "arch/arm/mach-ux500/Kconfig-arch"
 source "arch/arm/mach-ux500/pm/Kconfig"
 source "arch/arm/mach-ux500/test/Kconfig"
+source "arch/arm/mach-ux500/drivers/Kconfig"
 
 endif

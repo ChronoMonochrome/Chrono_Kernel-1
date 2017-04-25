@@ -20,7 +20,7 @@ struct ux500_charger_ops {
 	int (*check_enable) (struct ux500_charger *, int, int);
 	int (*kick_wd) (struct ux500_charger *);
 	int (*update_curr) (struct ux500_charger *, int);
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 	int (*update_input_curr) (struct ux500_charger *, int);
 	void (*siop_activation) (struct ux500_charger *, bool);
 #endif
