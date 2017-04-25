@@ -81,6 +81,11 @@ static inline bool __attribute_const__ cpu_is_u9540(void)
 #endif
 }
 
+static inline bool cpu_is_u8500v20_or_later(void)
+{
+       return cpu_is_u8500() && ((dbx500_revision() & 0xf0) >= 0xB0);
+}
+
 #define ux500_unknown_soc()	BUG()
 
 #endif
