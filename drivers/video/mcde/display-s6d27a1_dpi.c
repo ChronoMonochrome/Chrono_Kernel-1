@@ -28,6 +28,7 @@
 #include <linux/irq.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/lcd.h>
 #include <linux/backlight.h>
 #include <linux/mutex.h>

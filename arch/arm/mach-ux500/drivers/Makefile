@@ -31,7 +31,6 @@ obj-y				+= base/ misc/
 #obj-$(CONFIG_USB_GADGET)	+= usb/
 #obj-$(CONFIG_INPUT)		+= input/
 #obj-$(CONFIG_RTC_LIB)		+= rtc/
-#obj-y				+= i2c/
 #obj-$(CONFIG_POWER_SUPPLY)	+= power/
 #obj-$(CONFIG_HWMON)		+= hwmon/
 #obj-$(CONFIG_WATCHDOG)		+= watchdog/
