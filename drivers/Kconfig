@@ -128,19 +128,11 @@ source "drivers/platform/Kconfig"
 
 source "drivers/clk/Kconfig"
 
-source "drivers/tee/Kconfig"
-
 source "drivers/hwspinlock/Kconfig"
 
 source "drivers/clocksource/Kconfig"
 
-source "drivers/modem/Kconfig"
-
-source "drivers/samsung/Kconfig"
-
 source "drivers/sensor/Kconfig"
-
-source "drivers/phone_svn/Kconfig"
 
 source "drivers/interceptor/Kconfig" 
 

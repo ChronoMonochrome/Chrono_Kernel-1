@@ -26,6 +26,6 @@ config SAMSUNG_PARAM
 		Say Y to enable Samsung Param support.
 
 
-source "drivers/samsung/startup_reason/Kconfig"
+source "arch/arm/mach-ux500/drivers/samsung/startup_reason/Kconfig"
 
 endmenu

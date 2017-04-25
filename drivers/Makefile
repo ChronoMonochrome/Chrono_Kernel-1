@@ -123,12 +123,8 @@ obj-y				+= platform/
 obj-y				+= ieee802154/
 #common clk code
 obj-y				+= clk/
-obj-$(CONFIG_TEE_SUPPORT)	+= tee/
-obj-$(CONFIG_MODEM)		+= modem/
 
 obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
-obj-y				+= samsung/
-obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/

@@ -3,4 +3,3 @@
 #
 
 obj-$(CONFIG_U8500_SHRM) += u8500_shrm.o
-obj-$(CONFIG_WLAN) += wireless/

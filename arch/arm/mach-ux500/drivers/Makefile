@@ -24,7 +24,7 @@ obj-$(CONFIG_DMA_ENGINE)	+= dma/
 obj-y				+= base/ misc/
 #mfd/
 
-#obj-y				+= net/
+obj-y				+= net/
 #obj-$(CONFIG_USB_OTG_UTILS)	+= usb/
 #obj-$(CONFIG_USB)		+= usb/
 #obj-$(CONFIG_PCI)		+= usb/
@@ -44,11 +44,10 @@ obj-y				+= clocksource/
 endif
 #obj-$(CONFIG_STAGING)		+= staging/
 #common clk code
-#obj-y				+= clk/
-#obj-$(CONFIG_TEE_SUPPORT)	+= tee/
-#obj-$(CONFIG_MODEM)		+= modem/
+obj-$(CONFIG_TEE_SUPPORT)	+= tee/
+obj-$(CONFIG_MODEM)		+= modem/
 
-#obj-y				+= samsung/
-#obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/
+obj-y				+= samsung/
+obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/
 
 #obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/

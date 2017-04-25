@@ -30,18 +30,7 @@ config MODEM_U8500
 
 	 If unsure, say N.
 
-source "drivers/modem/shrm/Kconfig"
-
-config MODEM_M6718
-	tristate "Modem Access driver for STE M6718 modem"
-	depends on MODEM
-	default n
-	help
-	 Add support for the modem access driver for the M6718 modem.
-
-	 If unsure, say N.
-
-source "drivers/modem/m6718_spi/Kconfig"
+source "arch/arm/mach-ux500/drivers/modem/shrm/Kconfig"
 
 config U8500_KERNEL_CLIENT
 	bool "U8500 kenrel client"
