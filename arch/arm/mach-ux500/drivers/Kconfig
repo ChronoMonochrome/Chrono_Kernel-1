@@ -10,7 +10,7 @@ source "arch/arm/mach-ux500/drivers/base/Kconfig"
 
 # misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
 
-#source "arch/arm/mach-ux500/drivers/misc/Kconfig"
+source "arch/arm/mach-ux500/drivers/misc/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/net/Kconfig"
 

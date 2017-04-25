@@ -513,7 +513,7 @@ hwen_gpio_req_failed:
 }
 #endif
 
-#if defined(CONFIG_USB_SWITCHER)
+#if defined(CONFIG_UX500_USB_SWITCHER)
 static void tsu6111_reset(void)
 {
 	/* Hold SCL&SDA Low more than 30ms */
@@ -562,7 +562,7 @@ static void mxt224_power_con(bool on)
 						__func__, (on) ? "on" : "off");
 }
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 /*
 static struct notifier_block mxt224_usb_nb;
 
@@ -586,7 +586,7 @@ static void mxt224_register_callback(void *function)
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	/*
 	mxt224_usb_nb.notifier_call = mxt224_usb_switcher_notify;
 	usb_switch_register_notify(&mxt224_usb_nb);
@@ -826,7 +826,7 @@ static struct platform_device opt_gp2a_00C = {
 #endif
 
 static struct i2c_board_info __initdata gavini_r0_0_i2c1_devices[] = {
-#if defined(CONFIG_USB_SWITCHER)
+#if defined(CONFIG_UX500_USB_SWITCHER)
 	{
 		I2C_BOARD_INFO("musb", 0x25),
 		.platform_data = &fsa880_data ,
@@ -836,7 +836,7 @@ static struct i2c_board_info __initdata gavini_r0_0_i2c1_devices[] = {
 };
 
 static struct i2c_board_info __initdata gavini_r0_0_c_i2c2_devices[] = {
-#if defined(CONFIG_USB_SWITCHER)
+#if defined(CONFIG_UX500_USB_SWITCHER)
 	{
 		I2C_BOARD_INFO("musb", 0x25),
 		.platform_data = &fsa880_data ,

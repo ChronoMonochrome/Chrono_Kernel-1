@@ -48,7 +48,7 @@
 #include <linux/list.h>
 #endif
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 #include <linux/usb_switcher.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
 #endif
@@ -169,7 +169,7 @@ enum {
 	TOUCH_KEY
 };
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 enum {
 	NORMAL_MODE = 0,
 	TA_MODE,
@@ -249,7 +249,7 @@ struct mms_ts_info {
 	bool				*key_pressed;
 #endif
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	struct notifier_block		nb;
 	u8				dev_mode;
 	bool				ts_noise;
@@ -345,7 +345,7 @@ static void mms_ts_early_suspend(struct early_suspend *h);
 static void mms_ts_late_resume(struct early_suspend *h);
 #endif
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 extern int micro_usb_register_usb_notifier(struct notifier_block *nb);
 extern int use_ab8505_iddet;
 #endif
@@ -438,7 +438,7 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 		goto out;
 	}
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	if (buf[0] == 0x0E) {
 		dev_info(&client->dev, "enter the noise mode\n");
 		buf[0] = 0x0;
@@ -604,7 +604,7 @@ static inline void mms_pwr_on_reset(struct mms_ts_info *info)
 	msleep(250);
 }
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 int mms_usb_switch_notify(struct notifer_block *nb, unsigned long val,
 			  void *dev)
 {
@@ -3213,7 +3213,7 @@ static int __devinit mms_ts_probe(struct i2c_client *client,
 	info->irq = client->irq;
 	info->enabled = true;
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	info->nb.notifier_call = mms_usb_switch_notify;
 
 	if (use_ab8505_iddet)
@@ -3415,7 +3415,7 @@ static int mms_ts_resume(struct device *dev)
 	if (info->input_dev_ts->users)
 		ret = mms_ts_enable(info);
 
-#ifdef CONFIG_USB_SWITCHER
+#ifdef CONFIG_UX500_USB_SWITCHER
 	if (info->ts_noise) {
 		if (info->dev_mode) {
 			dev_info(&info->client->dev, "TA MODE\n");

@@ -21,8 +21,7 @@ obj-$(CONFIG_DMA_ENGINE)	+= dma/
 
 # gpu/ comes after char for AGP vs DRM startup
 #obj-y				+= gpu/
-obj-y				+= base/
-#misc/
+obj-y				+= base/ misc/
 #mfd/
 
 obj-y				+= net/

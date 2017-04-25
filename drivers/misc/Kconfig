@@ -555,106 +555,6 @@ config APANIC_PLABEL
 	 If your platform uses a different flash partition label for storing
  	 crashdumps, enter it here.
 
-config HWMEM
-	bool "Hardware memory driver"
-	default n
-	help
-	  This driver provides a way to allocate contiguous system memory which
-	  can be used by hardware. It also enables accessing hwmem allocated
-	  memory buffers through a secure id which can be shared across processes.
-
-config DISPDEV
-	bool "Display overlay device"
-	depends on FB_MCDE
-	default n
-	help
-	  This driver provides a way to use a second overlay for a display (in
-	  addition to the framebuffer). The device allows for registration of
-	  userspace buffers to be used with the overlay.
-
-config COMPDEV
-	bool "Display composition device"
-	depends on FB_MCDE && HWMEM
-	default n
-	help
-	  This driver provides a way to use several overlays for a display.
-	  This driver replaces the use of the framebuffer The device allows
-	  for posting userspace buffers to be used with the overlays.
-
-config COMPDEV_DEBUG
-	bool "Display composition device debug"
-	depends on COMPDEV
-	default n
-	help
-	  Debug help for compdev.
-
-config CLONEDEV
-	bool "Display cloning device"
-	depends on FB_MCDE && HWMEM && COMPDEV
-	default n
-	help
-	  This driver provides a way to clone content between two compdev
-	  devices.
-
-config CLONEDEV_DEBUG
-	bool "Display cloning device debug"
-	depends on CLONEDEV
-	default n
-	help
-	  This driver provides a way to clone content between two compdev
-	  devices.
-
-config NFC_PN544
-        bool "NXP PN544 NFC Controller Driver"
-        default n
-        help
-          NXP PN544 Near Field Communication controller support.
-
-
-
-config U5500_MBOX
-	bool "Mailbox support"
-	depends on (UX500_SOC_DB5500 && U5500_MODEM_IRQ)
-	default y
-	help
-	  Add support for U5500 mailbox communication with modem side
-config SAMSUNG_JACK
-	bool "3.5MM ear jack driver for Samsung devices on STE AB8500"
-	depends on INPUT && AB8500_CORE
-	default n
-	---help---
-	 This is 3.5MM ear jack driver for Samsung devices on STE AB8500.
-	 If unsure, say N
-
-config SAMSUNG_JACK_SW_WATERPROOF
-	bool "prevent earjack mis-detect caused by water on STE AB8500"
-	depends on SAMSUNG_JACK
-	default n
-	---help---
-	 This is SW solution to prevent earjack mis-detect caused by water on STE AB8500.
-	 This codes should only be applied to a device that does not have a defense circuit.
-	 If unsure, say N
-
-config U8500_SIM_DETECT
-	bool "Sim hot swap detection support"
-	depends on (MODEM && UX500_SOC_DB8500)
-	default n
-	help
-	  Add support for sim hot swap detection support in U8500.Driver
-	  basically wakes up the modem if its sleeping when sim hot plug
-	  in/out has happened.
-
-config USB_SWITCHER
-	bool "USB Switch support"
-	help
-	  Say Y to enable support for USB switch devices.
-
-config TORCH_FLASH
-	bool "torch flash driver"
-	default n
-	help
-	  This driver provides torch flash function.
-
 source "drivers/misc/Kconfig.stm"
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
@@ -665,6 +565,5 @@ source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/modem_audio/Kconfig"
 source "drivers/misc/projector/Kconfig"
-source "drivers/misc/tspdrv/Kconfig"
 
 endif # MISC_DEVICES

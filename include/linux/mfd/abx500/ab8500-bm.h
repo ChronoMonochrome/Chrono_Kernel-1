@@ -510,7 +510,7 @@ struct ab8500_bm_data {
 	int temp_over;
 	int temp_interval_chg;
 	int temp_interval_nochg;
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 	int ta_chg_current;
 	int ta_chg_current_input;
 	int ta_chg_voltage;

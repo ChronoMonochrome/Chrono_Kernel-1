@@ -515,7 +515,7 @@ static int ab8500_chargalg_check_charger_connection(struct ab8500_chargalg *di)
 		if ((di->chg_info.conn_chg & AC_CHG) &&
 		    !di->susp_status.ac_suspended) {
 			dev_dbg(di->dev, "Charging source is AC\n");
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 			if ( is_ab8500(di->parent) ){
 				/* AB8500 has AC charger input, select it */
 				di->chg_info.charger_type = AC_CHG;
@@ -539,7 +539,7 @@ static int ab8500_chargalg_check_charger_connection(struct ab8500_chargalg *di)
 		} else if ((di->chg_info.conn_chg & USB_CHG) &&
 		    !di->susp_status.usb_suspended) {
 			dev_dbg(di->dev, "Charging source is USB\n");
-#if (defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )) && defined( CONFIG_U8XX0_USBCHG_ON_MAIN )
+#if (defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )) && defined( CONFIG_U8XX0_USBCHG_ON_MAIN )
 			di->chg_info.charger_type = AC_CHG;
 #else
 			di->chg_info.charger_type = USB_CHG;
@@ -568,7 +568,7 @@ static int ab8500_chargalg_check_charger_connection(struct ab8500_chargalg *di)
 		di->recharging_status = false;
 #endif
 	}
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 	return di->chg_info.charger_type;
 #else
 	return di->chg_info.conn_chg;
@@ -586,7 +586,7 @@ static void ab8500_chargalg_start_safety_timer(struct ab8500_chargalg *di)
 {
 	unsigned long timer_expiration = 0;
 
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 	switch (di->chg_info.conn_chg)
 #else
 	switch (di->chg_info.charger_type)
@@ -871,7 +871,7 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 
 	switch (di->chg_info.charger_type) {
 	case AC_CHG:
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 		pr_debug("[CHARGALG]Enable AC charger input, start charging\n");
 #else
 		pr_debug("[CHARGALG]Charging is started by AC Type charger\n");
@@ -887,7 +887,7 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 		break;
 
 	case USB_CHG:
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 		pr_debug("[CHARGALG]Enable USB charger input, start charging\n");
 #else
 		pr_debug("[CHARGALG]Charging is started by USB Type charger\n");
@@ -1429,7 +1429,7 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 				}
 				break;
 			case POWER_SUPPLY_TYPE_MAINS:
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 				/* Ignore Mains (AC) charger input if AB chip is not AB8500 */
 				if ( ! is_ab8500(di->parent) )
 					break;
@@ -1470,7 +1470,7 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 #endif
 				break;
 			case POWER_SUPPLY_TYPE_USB:
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 				/* Ignore USB charger input if AB chip is AB8500 */
 				if ( is_ab8500(di->parent) )
 					break;
@@ -1982,7 +1982,7 @@ static void ab8500_chargalg_algorithm(struct ab8500_chargalg *di)
 
 		regulator_disable(di->regu);
 #endif
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 		/* To address race on startup wait for chargers to register before moving to next state */
 		if (di->ac_chg &&  di->usb_chg)
 #endif
@@ -2147,7 +2147,7 @@ static void ab8500_chargalg_algorithm(struct ab8500_chargalg *di)
 	case STATE_NORMAL:
 		handle_maxim_chg_curr(di);
 
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 		/* Originally,
 		 * if usb cable is attached, USB driver set the charger
 		 * input current as 500mA.
@@ -2739,7 +2739,7 @@ static int ab8500_chargalg_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_CHARGING_SOURCE:
-#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+#if defined( CONFIG_UX500_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
 		switch (di->chg_info.conn_chg)
 #else
 		switch (di->chg_info.charger_type)
