@@ -6,7 +6,6 @@ obj-$(CONFIG_UX500_AB8500_PWM)	+= ab8500-pwm.o
 obj-$(CONFIG_STM_TRACE) 	+= stm.o
 obj-$(CONFIG_STE_TRACE_MODEM) 	+= db8500-modem-trace.o
 obj-$(CONFIG_DBX500_MLOADER) 	+= dbx500-mloader.o
-obj-$(CONFIG_HWMEM)             += hwmem/
 obj-$(CONFIG_DISPDEV)		+= dispdev/
 obj-$(CONFIG_COMPDEV)		+= compdev/
 obj-$(CONFIG_CLONEDEV)		+= clonedev/

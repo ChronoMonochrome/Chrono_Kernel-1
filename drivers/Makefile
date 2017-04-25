@@ -133,9 +133,10 @@ obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
 
+obj-$(CONFIG_HWMEM)		+= hwmem/
+
 ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; fi))
 obj-y   += exfat/
 endif
-
 
 
