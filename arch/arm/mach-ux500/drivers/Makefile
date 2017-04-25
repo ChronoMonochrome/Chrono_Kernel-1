@@ -41,7 +41,7 @@ obj-y				+= base/ misc/
 #obj-$(CONFIG_UX500_MMC)		+= mmc/
 #obj-$(CONFIG_NEW_SENSORS)	+= sensor/
 ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
-#obj-y				+= clocksource/
+obj-y				+= clocksource/
 endif
 #obj-$(CONFIG_STAGING)		+= staging/
 #common clk code

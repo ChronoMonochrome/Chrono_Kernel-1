@@ -7,7 +7,7 @@ config CLKSRC_MMIO
 config CLKSRC_DBX500_PRCMU
 	bool "Clocksource PRCMU Timer"
 	depends on UX500_SOC_DB5500 || UX500_SOC_DB8500
-	default y if UX500_SOC_DB8500
+	#default y if UX500_SOC_DB8500
 	help
 	  Use the always on PRCMU Timer as clocksource
 

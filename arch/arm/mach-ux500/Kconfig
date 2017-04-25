@@ -168,8 +168,8 @@ choice
 
 config DBX500_SCHED_CLOCK_PRCMU
 	bool "PRCMU Timer sched_clock"
-	depends on CLKSRC_DBX500_PRCMU
-	select CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+	depends on UX500_CLKSRC_DBX500_PRCMU
+	select UX500_CLKSRC_DBX500_PRCMU_SCHED_CLOCK
 	help
 	  Use the always on PRCMU Timer as sched_clock
 

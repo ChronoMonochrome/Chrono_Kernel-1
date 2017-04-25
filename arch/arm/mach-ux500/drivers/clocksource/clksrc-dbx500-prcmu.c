@@ -58,7 +58,7 @@ static struct clocksource clocksource_dbx500_prcmu = {
 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
 };
 
-#ifdef CONFIG_CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+#ifdef CONFIG_UX500_CLKSRC_DBX500_PRCMU_SCHED_CLOCK
 
 static u32 notrace dbx500_prcmu_sched_clock_read(void)
 {
@@ -104,7 +104,7 @@ void __init clksrc_dbx500_prcmu_init(void __iomem *base)
 		writel(TIMER_DOWNCOUNT_VAL,
 		       clksrc_dbx500_timer_base + PRCMU_TIMER_REF);
 	}
-#ifdef CONFIG_CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+#ifdef CONFIG_UX500_CLKSRC_DBX500_PRCMU_SCHED_CLOCK
 	setup_sched_clock(dbx500_prcmu_sched_clock_read,
 			 32, RATE_32K);
 #endif
