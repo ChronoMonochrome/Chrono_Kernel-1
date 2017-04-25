@@ -5,9 +5,6 @@
 # Each configuration option enables a list of files.
 
 obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
-obj-$(CONFIG_INPUT_AB8500_ACCDET)       += abx500-accdet.o ab8500-accdet.o
-obj-$(CONFIG_INPUT_AB5500_ACCDET)	+= abx500-accdet.o ab5500-accdet.o
-obj-$(CONFIG_INPUT_AB8500_PONKEY)	+= ab8500-ponkey.o
 obj-$(CONFIG_INPUT_AD714X)		+= ad714x.o
 obj-$(CONFIG_INPUT_AD714X_I2C)		+= ad714x-i2c.o
 obj-$(CONFIG_INPUT_AD714X_SPI)		+= ad714x-spi.o
@@ -59,5 +56,4 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
 obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
 obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 obj-$(CONFIG_INPUT_STE_FF_VIBRA)	+= ste_ff_vibra.o
-obj-$(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)	+= ab8505_micro_usb_iddet.o
 obj-$(CONFIG_INPUT_MPU6050)		+= mpu6050_input.o mpu6050_selftest.o

@@ -784,29 +784,6 @@ config TOUCHSCREEN_TPS6507X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
 
-config TOUCHSCREEN_ZINITIX_BT404
-	tristate "Zinitix BT404 Touchscreens"
-	depends on I2C
-	default n
-	help
-		Say Y if you want support for Zinitix bt404 touchscreen
-		controllers.
-config TOUCHSCREEN_ZINITIX
-	bool "Zinitix Touchscreens"
-	depends on I2C
-	default n
-	help
-		Say Y if you want support for Zinitix  touchscreen
-		controllers.
-config TOUCHSCREEN_ATMEL_MXT224E
-	bool "Atmel MXT224E Touchscreen Interface"
-	depends on I2C
-	default n
-	help
-		Say Y here if you want support for atmel_224E touchscreen controllers.
-		To compile this driver as a module, choose M here: the
-		module will be called atmel_mxt224E.
-
 config TOUCHSCREEN_MMS136_TS
 	tristate "MELFAS mms-136 touchscreen driver"
 	depends on I2C

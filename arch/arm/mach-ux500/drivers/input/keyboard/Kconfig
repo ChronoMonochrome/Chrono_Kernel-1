@@ -1,14 +1,6 @@
 #
 # Input core configuration
 #
-menuconfig INPUT_KEYBOARD
-	bool "Keyboards" if EXPERT || !X86
-	default y
-	help
-	  Say Y here, and a list of supported keyboards will be displayed.
-	  This option doesn't affect the kernel.
-
-	  If unsure, say Y.
 
 if INPUT_KEYBOARD
 config KEYBOARD_GPIO

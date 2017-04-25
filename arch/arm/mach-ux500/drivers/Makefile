@@ -29,7 +29,7 @@ obj-y				+= base/ misc/
 #obj-$(CONFIG_USB)		+= usb/
 #obj-$(CONFIG_PCI)		+= usb/
 #obj-$(CONFIG_USB_GADGET)	+= usb/
-#obj-$(CONFIG_INPUT)		+= input/
+obj-$(CONFIG_INPUT)		+= input/
 #obj-$(CONFIG_RTC_LIB)		+= rtc/
 #obj-$(CONFIG_POWER_SUPPLY)	+= power/
 #obj-$(CONFIG_HWMON)		+= hwmon/
@@ -43,7 +43,6 @@ obj-y				+= clocksource/
 endif
 #obj-$(CONFIG_STAGING)		+= staging/
 #common clk code
-#obj-y				+= clk/
 #obj-$(CONFIG_TEE_SUPPORT)	+= tee/
 #obj-$(CONFIG_MODEM)		+= modem/
 
