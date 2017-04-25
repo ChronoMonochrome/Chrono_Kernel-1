@@ -271,83 +271,231 @@ enum ddr_pwrst {
 	DDR_PWR_STATE_OFFHIGHLAT    = 0x03
 };
 
-/**
- * enum ap_pwrst_trans - Transition states defined in PRCMU firmware
- * @NO_TRANSITION: No power state transition
- * @APEXECUTE_TO_APSLEEP: Power state transition from ApExecute to ApSleep
- * @APIDLE_TO_APSLEEP: Power state transition from ApIdle to ApSleep
- * @APEXECUTE_TO_APDEEPSLEEP: Power state transition from ApExecute to
- *                          ApDeepSleep
- * @APEXECUTE_TO_APIDLE: Power state transition from ApExecute to ApIdle
- */
-enum ap_pwrst_trans {
-	PRCMU_AP_NO_CHANGE		= 0x00,
-	PRCMU_AP_SLEEP,
-	PRCMU_AP_DEEP_SLEEP,
-	PRCMU_AP_IDLE,
-	PRCMU_AP_DEEP_IDLE,
-};
-
 #include <linux/mfd/db8500-prcmu.h>
 #include <linux/mfd/db5500-prcmu.h>
-#include <linux/mfd/dbx540-prcmu.h>
 
 #if defined(CONFIG_UX500_SOC_DB8500) || defined(CONFIG_UX500_SOC_DB5500)
 
 #include <mach/id.h>
 
-void prcmu_early_init(void);
+static inline void __init prcmu_early_init(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_early_init();
+	else
+		return db8500_prcmu_early_init();
+}
 
-int prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll);
-u8 prcmu_get_power_state_result(void);
-void prcmu_enable_wakeups(u32 wakeups);
-void prcmu_disable_wakeups(void);
+static inline int prcmu_set_power_state(u8 state, bool keep_ulp_clk,
+		bool keep_ap_pll)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_set_power_state(state, keep_ulp_clk,
+			keep_ap_pll);
+	else
+		return db8500_prcmu_set_power_state(state, keep_ulp_clk,
+			keep_ap_pll);
+}
 
-void prcmu_config_abb_event_readout(u32 abb_events);
+static inline u8 prcmu_get_power_state_result(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_get_power_state_result();
+	else
+		return db8500_prcmu_get_power_state_result();
+}
 
-void prcmu_get_abb_event_buffer(void __iomem **buf);
+static inline int prcmu_gic_decouple(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_gic_decouple();
+}
+
+static inline int prcmu_gic_recouple(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_gic_recouple();
+}
+
+static inline bool prcmu_gic_pending_irq(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_gic_pending_irq();
+}
+
+static inline bool prcmu_is_cpu_in_wfi(int cpu)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_is_cpu_in_wfi(cpu);
+}
+
+static inline int prcmu_copy_gic_settings(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_copy_gic_settings();
+}
+
+static inline bool prcmu_pending_irq(void)
+{
+        if (cpu_is_u5500())
+                return -EINVAL;
+        else
+                return db8500_prcmu_pending_irq();
+}
+
+static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_set_epod(epod_id, epod_state);
+	else
+		return db8500_prcmu_set_epod(epod_id, epod_state);
+}
+
+static inline void prcmu_enable_wakeups(u32 wakeups)
+{
+	if (cpu_is_u5500())
+		db5500_prcmu_enable_wakeups(wakeups);
+	else
+		db8500_prcmu_enable_wakeups(wakeups);
+}
+
+static inline void prcmu_disable_wakeups(void)
+{
+	prcmu_enable_wakeups(0);
+}
+
+static inline void prcmu_config_abb_event_readout(u32 abb_events)
+{
+	if (cpu_is_u5500())
+		db5500_prcmu_config_abb_event_readout(abb_events);
+	else
+		db8500_prcmu_config_abb_event_readout(abb_events);
+}
+
+static inline void prcmu_get_abb_event_buffer(void __iomem **buf)
+{
+	if (cpu_is_u5500())
+		db5500_prcmu_get_abb_event_buffer(buf);
+	else
+		db8500_prcmu_get_abb_event_buffer(buf);
+}
 
 int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
 int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
 int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size);
 
-#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
-int prcmu_panic_request_clock(u8 clock, bool enable);
-int prcmu_panic_set_epod(u16 epod_id, u8 epod_state);
-int prcmu_panic_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
-int prcmu_panic_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
-#endif
-
 int prcmu_config_clkout(u8 clkout, u8 source, u8 div);
 
-int prcmu_request_clock(u8 clock, bool enable);
+static inline int prcmu_request_clock(u8 clock, bool enable)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_request_clock(clock, enable);
+	else
+		return db8500_prcmu_request_clock(clock, enable);
+}
 
 unsigned long prcmu_clock_rate(u8 clock);
 long prcmu_round_clock_rate(u8 clock, unsigned long rate);
 int prcmu_set_clock_rate(u8 clock, unsigned long rate);
 
-int prcmu_set_ddr_opp(u8 opp);
-int prcmu_get_ddr_opp(void);
+static inline int prcmu_set_ddr_opp(u8 opp)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_set_ddr_opp(opp);
+	else
+		return db8500_prcmu_set_ddr_opp(opp);
+}
+static inline int prcmu_get_ddr_opp(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_get_ddr_opp();
+	else
+		return db8500_prcmu_get_ddr_opp();
+}
 
-int prcmu_get_arm_opp(void);
+static inline int prcmu_set_arm_opp(u8 opp)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_set_arm_opp(opp);
+	else
+		return db8500_prcmu_set_arm_opp(opp);
+}
 
-int prcmu_set_ape_opp(u8 opp);
+static inline int prcmu_get_arm_opp(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_get_arm_opp();
+	else
+		return db8500_prcmu_get_arm_opp();
+}
 
-int prcmu_get_ape_opp(void);
+static inline int prcmu_set_ape_opp(u8 opp)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_set_ape_opp(opp);
+	else
+		return db8500_prcmu_set_ape_opp(opp);
+}
 
-void prcmu_system_reset(u16 reset_code);
+static inline int prcmu_get_ape_opp(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_get_ape_opp();
+	else
+		return db8500_prcmu_get_ape_opp();
+}
 
-u16 prcmu_get_reset_code(void);
+static inline void prcmu_system_reset(u16 reset_code)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_system_reset(reset_code);
+	else
+		return db8500_prcmu_system_reset(reset_code);
+}
 
-u32 prcmu_get_reset_status(void);
+static inline u16 prcmu_get_reset_code(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_get_reset_code();
+	else
+		return db8500_prcmu_get_reset_code();
+}
 
-void prcmu_modem_reset(void);
+static inline u32 prcmu_get_reset_status(void)
+{
+	if (cpu_is_u8500())
+		return db8500_prcmu_get_reset_status();
+	else
+		return 0;
+}
 
-bool prcmu_is_ac_wake_requested(void);
+void prcmu_ac_wake_req(void);
+void prcmu_ac_sleep_req(void);
+static inline void prcmu_modem_reset(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_modem_reset();
+	else
+		return db8500_prcmu_modem_reset();
+}
 
-bool prcmu_is_mcdeclk_on(void);
-
-bool prcmu_is_mmcclk_on(void);
+static inline bool prcmu_is_ac_wake_requested(void)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_is_modem_requested();
+	else
+		return db8500_prcmu_is_ac_wake_requested();
+}
 
 static inline int prcmu_set_display_clocks(void)
 {
@@ -373,238 +521,375 @@ static inline int prcmu_enable_dsipll(void)
 		return db8500_prcmu_enable_dsipll();
 }
 
-int prcmu_disable_dsipll(void);
+static inline int prcmu_config_esram0_deep_sleep(u8 state)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_config_esram0_deep_sleep(state);
+	else
+		return db8500_prcmu_config_esram0_deep_sleep(state);
+}
 
-int prcmu_enable_dsipll(void);
+static inline int prcmu_config_hotdog(u8 threshold)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_config_hotdog(threshold);
+	else
+		return db8500_prcmu_config_hotdog(threshold);
+}
 
-int prcmu_config_esram0_deep_sleep(u8 state);
+static inline int prcmu_config_hotmon(u8 low, u8 high)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_config_hotmon(low, high);
+	else
+		return db8500_prcmu_config_hotmon(low, high);
+}
 
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
-u32 prcmu_tcdm_read(unsigned int reg);
-#endif
-u32 prcmu_read(unsigned int reg);
+static inline int prcmu_start_temp_sense(u16 cycles32k)
+{
+	if (cpu_is_u5500())
+		return  db5500_prcmu_start_temp_sense(cycles32k);
+	else
+		return  db8500_prcmu_start_temp_sense(cycles32k);
+}
 
-void prcmu_write(unsigned int reg, u32 value);
+static inline int prcmu_stop_temp_sense(void)
+{
+	if (cpu_is_u5500())
+		return  db5500_prcmu_stop_temp_sense();
+	else
+		return  db8500_prcmu_stop_temp_sense();
+}
 
-void prcmu_write_masked(unsigned int reg, u32 mask, u32 value);
+static inline u32 prcmu_read(unsigned int reg)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_read(reg);
+	else
+		return db8500_prcmu_read(reg);
+}
 
-u32 db8500_prcmu_readl(u32 reg);
+static inline void prcmu_write(unsigned int reg, u32 value)
+{
+	if (cpu_is_u5500())
+		db5500_prcmu_write(reg, value);
+	else
+		db8500_prcmu_write(reg, value);
+}
 
-void db8500_prcmu_writel(u32 reg, u32 value);
+static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
+{
+	if (cpu_is_u5500())
+		db5500_prcmu_write_masked(reg, mask, value);
+	else
+		db8500_prcmu_write_masked(reg, mask, value);
+}
 
-void db8500_prcmu_writel_relaxed(u32 reg, u32 value);
+static inline int prcmu_enable_a9wdog(u8 id)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_enable_a9wdog(id);
+	else
+		return db8500_prcmu_enable_a9wdog(id);
+}
 
-u32 db8500_prcmu_tcdm_readl(u32 reg);
+static inline int prcmu_disable_a9wdog(u8 id)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_disable_a9wdog(id);
+	else
+		return db8500_prcmu_disable_a9wdog(id);
+}
 
-void db8500_prcmu_tcdm_writel(u32 reg, u32 value);
+static inline int prcmu_kick_a9wdog(u8 id)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_kick_a9wdog(id);
+	else
+		return db8500_prcmu_kick_a9wdog(id);
+}
 
-u32 db8500_prcmu_tcdm_readb(u32 reg);
+static inline int prcmu_load_a9wdog(u8 id, u32 timeout)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_load_a9wdog(id, timeout);
+	else
+		return db8500_prcmu_load_a9wdog(id, timeout);
+}
 
-void db8500_prcmu_tcdm_writeb(u32 reg, u32 value);
+static inline int prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
+{
+	if (cpu_is_u5500())
+		return db5500_prcmu_config_a9wdog(num, sleep_auto_off);
+	else
+		return db8500_prcmu_config_a9wdog(num, sleep_auto_off);
+}
 
-int prcmu_stay_in_wfi_check(void);
-
-int prcmu_unplug_cpu1(void);
-
-int prcmu_replug_cpu1(void);
-
-/* prcmu_get_val /prcmu_set_val */
-enum prcmu_val {
-	DDR_OPP,
-	ARM_OPP,
-	APE_OPP,
-
-	PRCMU_VAL_MAX /*  used for dimensioning */
-};
-
-int prcmu_set_val(enum prcmu_val type, u32 value);
-int prcmu_get_val(enum prcmu_val type);
-
-/*  prcmu_enable/prcmu_disable */
-enum prcmu_out {
-	SPI2_MUX,
-	STM_MOD_UART_MUX,
-	STM_APE_MUX,
-
-	PRCMU_OUT_MAX /* used for dimensioning  */
-};
-
-int prcmu_enable(enum prcmu_out out);
-int prcmu_disable(enum prcmu_out out);
-
-
-struct prcmu_out_data {
-	enum prcmu_out out;
-	int (*enable)(void);
-	int (*disable)(void);
-};
-
-struct prcmu_val_data {
-	enum prcmu_val val;
-	int (*get_val)(void);
-	int (*set_val)(u8 value);
-};
-
-
-/**
- * @brief mfd device dbx500-prmcu early fops
- */
-struct prcmu_early_data {
-	/* reset */
-	void (*system_reset) (u16 reset_code);
-
-	/*  clock api  */
-	int (*config_clkout) (u8 clkout, u8 source, u8 div);
-	int (*request_clock) (u8 clock, bool enable);
-
-	/* direct access to prcmu reg */
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
-	u32 (*tcdm_read) (unsigned int reg);
-#endif
-	u32 (*read) (unsigned int reg);
-	void (*write) (unsigned int reg, u32 value);
-	void (*write_masked) (unsigned int reg, u32 mask, u32 value);
-
-
-	/*  other specific 8500 */
-	long (*round_clock_rate) (u8 clock, unsigned long rate);
-	int (*set_clock_rate) (u8 clock, unsigned long rate);
-	unsigned long (*clock_rate) (u8 clock);
-	/*  clock specific */
-	struct prcmu_fw_version *(*get_fw_version) (void);
-	void (*vc) (bool enable);
-};
-
-/**
- * @brief mfd device dbx500-prmcu platform data
- */
-struct prcmu_probe_data {
-	/* ux500 soc sysfs */
-	u16 (*get_reset_code) (void);
-
-
-	/* pm/suspend.c  */
-	int (*config_esram0_deep_sleep) (u8 state);
-	void (*enable_wakeups)(u32 wakeups);
-	bool (*is_ac_wake_requested) (void);
-	int (*set_power_state) (u8 state, bool keep_ulp_clk,
-			bool keep_ap_pll);
-	u8  (*get_power_state_result) (void);
-
-	/* modem */
-	void (*modem_reset)(void);
-
-	/* no used at all */
-	void (*config_abb_event_readout) (u32 abb_events);
-	void (*get_abb_event_buffer) (void __iomem **buf);
-
-	/* abb access */
-	int (*abb_read) (u8 slave, u8 reg, u8 *value, u8 size);
-	int (*abb_write) (u8 slave, u8 reg, u8 *value, u8 size);
-
-	u32 (*get_reset_status)(void);
-	/*  other u8500 specific */
-	int (*request_ape_opp_100_voltage) (bool enable);
-	void (*configure_auto_pm) (struct prcmu_auto_pm_config *sleep,
-	struct prcmu_auto_pm_config *idle);
-	/* abb specific */
-	int (*abb_write_masked) (u8 slave, u8 reg, u8 *value,
-		u8 *mask, u8 size);
-};
-/* on u8500 default behaviour return 0 */
-struct prcmu_probe_ux540_data {
-	int (*stay_in_wfi_check)(void);
-	int (*replug_cpu1) (void);
-	int (*unplug_cpu1) (void);
-};
-
-
-enum prcmu_fops_type {
-	PRCMU_VAL,
-	PRCMU_OUT,
-	PRCMU_EARLY,
-	PRCMU_PROBE,
-	PRCMU_PROBE_UX540,
-};
-
-struct prcmu_fops_register {
-	enum prcmu_fops_type fops;
-	int size;
-	union {
-		struct prcmu_val_data *pval;
-		struct prcmu_out_data *pout;
-		struct prcmu_early_data *pearly;
-		struct prcmu_probe_data *pprobe;
-		struct prcmu_probe_ux540_data *pprobeux540;
-	} data;
-};
-/**
- * @brief mfd device dbx500-prcmu platform data
- */
-struct prcmu_fops_register_data {
-	int size;
-	struct prcmu_fops_register *tab;
-};
-
-/**
- * struct dbx500_regulator_init_data - mfd device prcmu-regulators data
- *
- */
-struct dbx500_regulator_init_data {
-	int (*set_epod) (u16 epod_id, u8 epod_state);
-	void *regulators;
-	int reg_num;
-};
-
-void prcmu_vc(bool enable);
-
-struct prcmu_fw_version *prcmu_get_fw_version(void);
-int prcmu_request_ape_opp_100_voltage(bool enable);
-void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
-	struct prcmu_auto_pm_config *idle);
-
-int dbx500_prcmu_early_init(struct prcmu_fops_register_data *data);
+static inline void prcmu_vc(bool enable)
+{
+	if (cpu_is_u8500())
+		db8500_prcmu_vc(enable);
+}
 
 #else
 
 static inline void __init prcmu_early_init(void) {}
 
+static inline int prcmu_set_power_state(u8 state, bool keep_ulp_clk,
+	bool keep_ap_pll)
+{
+	return 0;
+}
+
+static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
+{
+	return 0;
+}
+
+static inline void prcmu_enable_wakeups(u32 wakeups) {}
+
+static inline void prcmu_disable_wakeups(void) {}
+
+static inline int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	return -ENOSYS;
+}
+
+static inline int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	return -ENOSYS;
+}
+
+static inline int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask,
+	u8 size)
+{
+	return -ENOSYS;
+}
+
+static inline int prcmu_config_clkout(u8 clkout, u8 source, u8 div)
+{
+	return 0;
+}
+
+static inline int prcmu_request_clock(u8 clock, bool enable)
+{
+	return 0;
+}
+
+static inline long prcmu_round_clock_rate(u8 clock, unsigned long rate)
+{
+	return 0;
+}
+
+static inline int prcmu_set_clock_rate(u8 clock, unsigned long rate)
+{
+	return 0;
+}
+
+static inline unsigned long prcmu_clock_rate(u8 clock)
+{
+	return 0;
+}
+
+static inline int prcmu_set_ape_opp(u8 opp)
+{
+	return 0;
+}
+
+static inline int prcmu_get_ape_opp(void)
+{
+	return APE_100_OPP;
+}
+
+static inline int prcmu_set_arm_opp(u8 opp)
+{
+	return 0;
+}
+
+static inline int prcmu_get_arm_opp(void)
+{
+	return ARM_100_OPP;
+}
+
+static inline int prcmu_set_ddr_opp(u8 opp)
+{
+	return 0;
+}
+
+static inline int prcmu_get_ddr_opp(void)
+{
+	return DDR_100_OPP;
+}
+
+static inline void prcmu_system_reset(u16 reset_code) {}
+
+static inline u16 prcmu_get_reset_code(void)
+{
+	return 0;
+}
+
+static inline u32 prcmu_get_reset_status(void)
+{
+	return 0;
+}
+
+static inline void prcmu_ac_wake_req(void) {}
+
+static inline void prcmu_ac_sleep_req(void) {}
+
+static inline void prcmu_modem_reset(void) {}
+
+static inline bool prcmu_is_ac_wake_requested(void)
+{
+	return false;
+}
+
+static inline int prcmu_set_display_clocks(void)
+{
+	return 0;
+}
+
+static inline int prcmu_disable_dsipll(void)
+{
+	return 0;
+}
+
+static inline int prcmu_enable_dsipll(void)
+{
+	return 0;
+}
+
+static inline int prcmu_config_esram0_deep_sleep(u8 state)
+{
+	return 0;
+}
+
+static inline void prcmu_config_abb_event_readout(u32 abb_events) {}
+
+static inline void prcmu_get_abb_event_buffer(void __iomem **buf)
+{
+	*buf = NULL;
+}
+
+static inline int prcmu_config_hotdog(u8 threshold)
+{
+	return 0;
+}
+
+static inline int prcmu_config_hotmon(u8 low, u8 high)
+{
+	return 0;
+}
+
+static inline int prcmu_start_temp_sense(u16 cycles32k)
+{
+	return 0;
+}
+
+static inline int prcmu_stop_temp_sense(void)
+{
+	return 0;
+}
+
+static inline u32 prcmu_read(unsigned int reg)
+{
+	return 0;
+}
+
+static inline void prcmu_write(unsigned int reg, u32 value) {}
+
+static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value) {}
+
+static inline void prcmu_vc(bool enable) {}
 
 #endif
 
+static inline void prcmu_set(unsigned int reg, u32 bits)
+{
+	prcmu_write_masked(reg, bits, bits);
+}
+
+static inline void prcmu_clear(unsigned int reg, u32 bits)
+{
+	prcmu_write_masked(reg, bits, 0);
+}
 
 #if defined(CONFIG_UX500_SOC_DB8500) || defined(CONFIG_UX500_SOC_DB5500)
 
-/*
+/**
  * prcmu_enable_spi2 - Enables pin muxing for SPI2 on OtherAlternateC1.
  */
-void prcmu_enable_spi2(void);
+static inline void prcmu_enable_spi2(void)
+{
+	if (cpu_is_u8500())
+		prcmu_set(DB8500_PRCM_GPIOCR, DB8500_PRCM_GPIOCR_SPI2_SELECT);
+}
 
 /**
  * prcmu_disable_spi2 - Disables pin muxing for SPI2 on OtherAlternateC1.
  */
-void prcmu_disable_spi2(void);
+static inline void prcmu_disable_spi2(void)
+{
+	if (cpu_is_u8500())
+		prcmu_clear(DB8500_PRCM_GPIOCR, DB8500_PRCM_GPIOCR_SPI2_SELECT);
+}
+
 /**
  * prcmu_enable_stm_mod_uart - Enables pin muxing for STMMOD
  * and UARTMOD on OtherAlternateC3.
  */
-void prcmu_enable_stm_mod_uart(void);
+static inline void prcmu_enable_stm_mod_uart(void)
+{
+	if (cpu_is_u8500()) {
+		prcmu_set(DB8500_PRCM_GPIOCR,
+			(DB8500_PRCM_GPIOCR_DBG_STM_MOD_CMD1 |
+			 DB8500_PRCM_GPIOCR_DBG_UARTMOD_CMD0));
+	}
+}
 
 /**
  * prcmu_disable_stm_mod_uart - Disables pin muxing for STMMOD
  * and UARTMOD on OtherAlternateC3.
  */
-void prcmu_disable_stm_mod_uart(void);
+static inline void prcmu_disable_stm_mod_uart(void)
+{
+	if (cpu_is_u8500()) {
+		prcmu_clear(DB8500_PRCM_GPIOCR,
+			(DB8500_PRCM_GPIOCR_DBG_STM_MOD_CMD1 |
+			 DB8500_PRCM_GPIOCR_DBG_UARTMOD_CMD0));
+	}
+}
 
 /**
  * prcmu_enable_stm_ape - Enables pin muxing for STM APE on OtherAlternateC1.
  */
-void prcmu_enable_stm_ape(void);
+static inline void prcmu_enable_stm_ape(void)
+{
+	if (cpu_is_u8500()) {
+		prcmu_set(DB8500_PRCM_GPIOCR,
+			DB8500_PRCM_GPIOCR_DBG_STM_APE_CMD);
+	}
+}
 
 /**
  * prcmu_disable_stm_ape - Disables pin muxing for STM APE on OtherAlternateC1.
  */
-void prcmu_disable_stm_ape(void);
+static inline void prcmu_disable_stm_ape(void)
+{
+	if (cpu_is_u8500()) {
+		prcmu_clear(DB8500_PRCM_GPIOCR,
+			DB8500_PRCM_GPIOCR_DBG_STM_APE_CMD);
+	}
+}
+
+#else
+
+static inline void prcmu_enable_spi2(void) {}
+static inline void prcmu_disable_spi2(void) {}
+static inline void prcmu_enable_stm_mod_uart(void) {}
+static inline void prcmu_disable_stm_mod_uart(void) {}
+static inline void prcmu_enable_stm_ape(void) {}
+static inline void prcmu_disable_stm_ape(void) {}
 
 #endif
 

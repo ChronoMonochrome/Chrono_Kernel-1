@@ -24,8 +24,6 @@
 static int power_state_active_cnt; /* will initialize to zero */
 static DEFINE_SPINLOCK(power_state_active_lock);
 
-extern int (*prcmu_set_epod) (u16 epod_id, u8 epod_state);
-
 int power_state_active_get(void)
 {
 	unsigned long flags;

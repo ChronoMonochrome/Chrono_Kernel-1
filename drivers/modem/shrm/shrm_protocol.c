@@ -52,7 +52,9 @@
 #define PRCM_MOD_AWAKE_STATUS	0x4A0
 #define PRCM_MOD_RESETN_VAL	0x204
 
-extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+//extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+#define log_this(a, b, c, d, e) \
+	do {} while(0);
 
 static u8 boot_state = BOOT_INIT;
 static u8 recieve_common_msg[8*1024];

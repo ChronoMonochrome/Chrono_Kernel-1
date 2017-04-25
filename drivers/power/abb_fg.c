@@ -1079,7 +1079,7 @@ static int ab8500_fg_bat_voltage(struct ab8500_fg *di,
 
 	static int prev;
 
-	ad_value = ab8500_gpadc_read_raw(di->gpadc, MAIN_BAT_V, SAMPLE_16, RISING_EDGE, 0, ADC_SW);
+	ad_value = ab8500_gpadc_read_raw(di->gpadc, MAIN_BAT_V);
 	if (ad_value < 0) {
 		dev_err(di->dev, "GPADC raw value failed ch: %d\n", MAIN_BAT_V);
 		return prev;
@@ -3145,7 +3145,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 	/* get parent data */
 	di->dev = &pdev->dev;
 	di->parent = dev_get_drvdata(pdev->dev.parent);
-	di->gpadc = ab8500_gpadc_get();
+	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 
 	plat = dev_get_platdata(di->parent->dev);
 

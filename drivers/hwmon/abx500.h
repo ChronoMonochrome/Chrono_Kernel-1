@@ -53,7 +53,6 @@ struct abx500_temp_ops {
  * @max_hyst_alarm: sensor temperature hysteresis alarm
  * @crit_alarm: sensor temperature critical value alarm
  * @work: delayed work scheduled to monitor temperature periodically
- * @work_active: True if work is active
  * @power_off_work: delayed work scheduled to power off the system
 		when critical temperature is reached
  * @lock: mutex
@@ -81,7 +80,6 @@ struct abx500_temp {
 	unsigned long max_hyst_alarm[NUM_SENSORS];
 	unsigned long crit_alarm[NUM_SENSORS];
 	struct delayed_work work;
-	bool work_active;
 	struct delayed_work power_off_work;
 	struct mutex lock;
 	/* Delay (ms) between temperature readings */
@@ -91,6 +89,7 @@ struct abx500_temp {
 	int monitored_sensors;
 };
 
-int abx500_hwmon_init(struct abx500_temp *data) __init;
+int ab8500_hwmon_init(struct abx500_temp *data) __init;
+int ab5500_hwmon_init(struct abx500_temp *data) __init;
 
 #endif /* _ABX500_H */

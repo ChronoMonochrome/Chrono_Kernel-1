@@ -252,7 +252,7 @@ static irqreturn_t adp5588_irq_handler(int irq, void *devid)
 		if (ret < 0)
 			memset(dev->irq_stat, 0, ARRAY_SIZE(dev->irq_stat));
 
-		for (bank = 0; bank <= ADP5588_BANK(ADP5588_MAXGPIO);
+		for (bank = 0, bit = 0; bank <= ADP5588_BANK(ADP5588_MAXGPIO);
 			bank++, bit = 0) {
 			pending = dev->irq_stat[bank] & dev->irq_mask[bank];
 
@@ -418,9 +418,8 @@ static int __devinit adp5588_gpio_probe(struct i2c_client *client,
 	if (ret)
 		goto err_irq;
 
-	dev_info(&client->dev, "gpios %d..%d (IRQ Base %d) on a %s Rev. %d\n",
-			gc->base, gc->base + gc->ngpio - 1,
-			pdata->irq_base, client->name, revid);
+	dev_info(&client->dev, "IRQ Base: %d Rev.: %d\n",
+			pdata->irq_base, revid);
 
 	if (pdata->setup) {
 		ret = pdata->setup(client, gc->base, gc->ngpio, pdata->context);

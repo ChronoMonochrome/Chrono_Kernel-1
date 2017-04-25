@@ -1432,7 +1432,7 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 	/* get parent data */
 	di->dev = &pdev->dev;
 	di->parent = dev_get_drvdata(pdev->dev.parent);
-	di->gpadc = ab8500_gpadc_get();
+	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 
 	di->initialized = false;
 

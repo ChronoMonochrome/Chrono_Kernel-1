@@ -23,7 +23,7 @@
 #include <asm/smp_scu.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
-#include <linux/mfd/dbx500-prcmu.h>
+
 /* This is called from headsmp.S to wakeup the secondary core */
 extern void u8500_secondary_startup(void);
 
@@ -85,18 +85,11 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
-	int ret;
-
-	ret = prcmu_replug_cpu1();
-	/*  if CPU1 not switch on Abort sequence */
-	if (ret != 0)
-		return ret;
 
 	/*
 	 * set synchronisation state between this boot processor
 	 * and the secondary one
 	 */
-
 	spin_lock(&boot_lock);
 
 	/*
@@ -164,9 +157,9 @@ void __init smp_init_cpus(void)
 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
 
 	/* sanity check */
-        if (ncores > nr_cpu_ids) {
-		pr_err("SMP: %u cores greater than maximum (%u), clipping\n",
-		ncores, nr_cpu_ids);
+	if (ncores > nr_cpu_ids) {
+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
+			ncores, nr_cpu_ids);
 		ncores = nr_cpu_ids;
 	}
 

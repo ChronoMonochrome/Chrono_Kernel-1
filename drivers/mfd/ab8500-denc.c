@@ -10,6 +10,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/device.h>
 #include <linux/debugfs.h>
 #include <linux/list.h>
@@ -21,10 +22,10 @@
 #include <linux/spinlock.h>
 #include <linux/err.h>
 #include <linux/uaccess.h>
-#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab8500-denc-regs.h>
-#include <linux/mfd/abx500/ab8500-denc.h>
+#include <linux/mfd/abx500/ab8500.h>
+#include <linux/mfd/ab8500/denc-regs.h>
+#include <linux/mfd/ab8500/denc.h>
 
 #define AB8500_NAME      "ab8500"
 #define AB8500_DENC_NAME "ab8500_denc"

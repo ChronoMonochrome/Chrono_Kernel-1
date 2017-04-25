@@ -824,7 +824,7 @@ static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
 
 	/* get parent data */
 	pm2->dev = &i2c_client->dev;
-	pm2->gpadc = ab8500_gpadc_get();
+	pm2->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 
 	pm2->pm2_int = &pm2xxx_int;
 

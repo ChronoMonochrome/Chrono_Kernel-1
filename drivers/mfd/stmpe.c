@@ -8,8 +8,8 @@
  */
 
 #include <linux/gpio.h>
-#include <linux/kernel.h>
 #include <linux/export.h>
+#include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/pm.h>
@@ -1009,7 +1009,7 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
 }
 
 /* Called from client specific probe routines */
-int stmpe_probe(struct stmpe_client_info *ci, int partnum)
+int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
 {
 	struct stmpe_platform_data *pdata = dev_get_platdata(ci->dev);
 	struct stmpe *stmpe;

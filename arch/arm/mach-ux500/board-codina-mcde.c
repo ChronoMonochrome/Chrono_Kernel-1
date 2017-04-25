@@ -382,8 +382,8 @@ static void update_mcde_opp(struct device *dev,
  */
 if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 		 (diff < 5000)) {
-		req_ape = PRCMU_QOS_MAX_VALUE;
-				req_ddr = PRCMU_QOS_MAX_VALUE;
+		req_ape = 100;//PRCMU_QOS_MAX_VALUE;
+				req_ddr = 100; //PRCMU_QOS_MAX_VALUE;
 	} else {
 		req_ape = PRCMU_QOS_DEFAULT_VALUE;
 		req_ddr = PRCMU_QOS_DEFAULT_VALUE;

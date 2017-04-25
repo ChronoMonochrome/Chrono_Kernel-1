@@ -357,6 +357,8 @@ static int __devexit tc3589x_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+
 static u32 sleep_regs[] = {
 	TC3589x_IOPC0_L,
 	TC3589x_IOPC0_H,
@@ -428,8 +430,6 @@ static int tc3589x_suspend(struct device *dev)
 	int i, j;
 	int val;
 
-	disable_irq(client->irq);
-
 	/* Put the system to sleep mode */
 	if (!device_may_wakeup(&client->dev)) {
 		for (i = 0; i < ARRAY_SIZE(sleep_regs); i++) {
@@ -497,15 +497,13 @@ static int tc3589x_resume(struct device *dev)
 	} else {
 		disable_irq_wake(client->irq);
 	}
-
-	enable_irq(client->irq);
-
 out:
 	return ret;
 }
 
 static const SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
 						tc3589x_resume);
+#endif
 
 static const struct i2c_device_id tc3589x_id[] = {
 	{ "tc3589x", 24 },

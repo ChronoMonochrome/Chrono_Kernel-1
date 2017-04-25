@@ -4,8 +4,8 @@
  * Author: Naga Radhesh <naga.radheshy@stericsson.com>
  * Licensed under GPLv2.
  */
-#ifndef _UX500_AB8500_PWMLED_H
-#define _UX500_AB8500_PWMLED_H
+#ifndef _AB8500_PWMLED_H
+#define _AB8500_PWMLED_H
 
 struct ab8500_led_pwm {
 	int	pwm_id;

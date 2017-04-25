@@ -18,7 +18,6 @@
 #include <linux/notifier.h>
 #include <linux/clk.h>
 #include <linux/err.h>
-
 #include <plat/gpio-nomadik.h>
 
 #include <mach/hardware.h>
@@ -61,7 +60,6 @@
 #define U8500_CPU1_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR	0x80151FE0
 
 #define GIC_DIST_ENABLE_NS 0x0
-#define GIC_DIST_ENABLE_PPI_MASK 0xF0000000
 
 /* 32 interrupts fits in 4 bytes */
 #define GIC_DIST_ENABLE_SET_COMMON_NUM ((DBX500_NR_INTERNAL_IRQS - \
@@ -195,6 +193,8 @@ static u32 gpio_bankaddr[GPIO_NUM_BANKS] = {IO_ADDRESS(U8500_GPIOBANK0_BASE),
 
 static u32 gpio_save[GPIO_NUM_BANKS][GPIO_NUM_SAVE_REGISTERS];
 
+void __iomem *fsmc_base_addr;
+static u32 fsmc_bcr0;
 /*
  * Stacks and stack pointers
  */
@@ -206,12 +206,6 @@ static DEFINE_PER_CPU(u32 *, varm_cp15_pointer);
 
 static ATOMIC_NOTIFIER_HEAD(context_ape_notifier_list);
 static ATOMIC_NOTIFIER_HEAD(context_arm_notifier_list);
-
-/*
- * Store PPI irq mask before in ARM retention - use this to restore when
- * waking up. One per CPU.
- */
-static unsigned int cpu_ppi_irqs[NR_CPUS];
 
 /*
  * Register a simple callback for handling vape context save/restore
@@ -538,33 +532,6 @@ static void restore_gic_dist_cpu(struct context_gic_dist_cpu *c_gic)
 }
 
 /*
- * Store irq mask and disable PPI interrupts in ARM retention
- */
-void context_gic_dist_store_ppi_irqs(void)
-{
-	int this_cpu = smp_processor_id();
-
-	/* Store PPI irqs */
-	cpu_ppi_irqs[this_cpu] = readl_relaxed(context_gic_dist_common.base +
-			GIC_DIST_ENABLE_CLEAR_0) & GIC_DIST_ENABLE_PPI_MASK;
-	/* Disable PPI irqs */
-	writel_relaxed(cpu_ppi_irqs[this_cpu],
-			context_gic_dist_common.base + GIC_DIST_ENABLE_CLEAR_0);
-}
-
-/*
- * Restore PPI interrupts after in ARM retention
- */
-void context_gic_dist_restore_ppi_irqs(void)
-{
-	int this_cpu = smp_processor_id();
-
-	/* Restore PPI irqs */
-	writel_relaxed(cpu_ppi_irqs[this_cpu],
-			context_gic_dist_common.base + GIC_DIST_ENABLE_SET);
-}
-
-/*
  * Disable interrupts that are not necessary
  * to have turned on during ApDeepSleep.
  */
@@ -669,13 +636,32 @@ void context_vape_restore(void)
 }
 
 /*
+ * Save FSMC registers that will be reset
+ * during power save.
+ */
+void context_fsmc_save(void)
+{
+	fsmc_base_addr = ioremap_nocache(U8500_FSMC_BASE, 8);
+	fsmc_bcr0 = readl(fsmc_base_addr);
+}
+
+/*
+ * Restore FSMC registers that will be reset
+ * during power save.
+ */
+void context_fsmc_restore(void)
+{
+	writel(fsmc_bcr0, fsmc_base_addr);
+	iounmap(fsmc_base_addr);
+}
+
+/*
  * Save GPIO registers that might be modified
  * for power save reasons.
  */
 void context_gpio_save(void)
 {
 	int i;
-	unsigned int rimsc, fimsc;
 
 	for (i = 0; i < GPIO_NUM_BANKS; i++) {
 		gpio_save[i][0] = readl(gpio_bankaddr[i] + NMK_GPIO_AFSLA);
@@ -685,22 +671,7 @@ void context_gpio_save(void)
 		gpio_save[i][4] = readl(gpio_bankaddr[i] + NMK_GPIO_DAT);
 		gpio_save[i][6] = readl(gpio_bankaddr[i] + NMK_GPIO_SLPC);
 	}
-	/* Mask GPIO140 and GPIO32 which gives
-	 * spurious interrupts during sleep
-	 */
-	rimsc = readl(gpio_bankaddr[4] + NMK_GPIO_RIMSC);
-	fimsc = readl(gpio_bankaddr[4] + NMK_GPIO_FIMSC);
-	rimsc &= ~(0x1 << (140 % NMK_GPIO_PER_CHIP));
-	fimsc &= ~(0x1 << (140 % NMK_GPIO_PER_CHIP));
-	writel(rimsc, gpio_bankaddr[4] + NMK_GPIO_RIMSC);
-	writel(fimsc, gpio_bankaddr[4] + NMK_GPIO_FIMSC);
 
-	rimsc = readl(gpio_bankaddr[1] + NMK_GPIO_RIMSC);
-	fimsc = readl(gpio_bankaddr[1] + NMK_GPIO_FIMSC);
-	rimsc &= ~0x1;
-	fimsc &= ~0x1;
-	writel(rimsc, gpio_bankaddr[1] + NMK_GPIO_RIMSC);
-	writel(fimsc, gpio_bankaddr[1] + NMK_GPIO_FIMSC);
 }
 
 /*
@@ -714,7 +685,6 @@ void context_gpio_restore(void)
 	u32 pull_up;
 	u32 pull_down;
 	u32 pull;
-	unsigned int rimsc, fimsc;
 
 	for (i = 0; i < GPIO_NUM_BANKS; i++) {
 		writel(gpio_save[i][2], gpio_bankaddr[i] + NMK_GPIO_PDIS);
@@ -751,22 +721,7 @@ void context_gpio_restore(void)
 
 		writel(gpio_save[i][6], gpio_bankaddr[i] + NMK_GPIO_SLPC);
 	}
-	/* Restore Masks for GPIO140 and GPIO32 which gives
-	 * spurious interrupts during sleep
-	 */
-	rimsc = readl(gpio_bankaddr[4] + NMK_GPIO_RIMSC);
-	fimsc = readl(gpio_bankaddr[4] + NMK_GPIO_FIMSC);
-	rimsc |= (0x1 << 140 % NMK_GPIO_PER_CHIP);
-	fimsc |= (0x1 << 140 % NMK_GPIO_PER_CHIP);
-	writel(rimsc, gpio_bankaddr[4] + NMK_GPIO_RIMSC);
-	writel(fimsc, gpio_bankaddr[4] + NMK_GPIO_FIMSC);
 
-	rimsc = readl(gpio_bankaddr[1] + NMK_GPIO_RIMSC);
-	fimsc = readl(gpio_bankaddr[1] + NMK_GPIO_FIMSC);
-	rimsc |= 0x1;
-	fimsc |= 0x1;
-	writel(rimsc, gpio_bankaddr[1] + NMK_GPIO_RIMSC);
-	writel(fimsc, gpio_bankaddr[1] + NMK_GPIO_FIMSC);
 }
 
 /*
@@ -1010,20 +965,6 @@ static int __init context_init(void)
 
 		context_gic_dist_common.base = ioremap(U8500_GIC_DIST_BASE, SZ_4K);
 		per_cpu(context_gic_cpu, 0).base = ioremap(U8500_GIC_CPU_BASE, SZ_4K);
-	}
-
-	if (!context_tpiu.base
-	    || !context_stm_ape.base
-	    || !context_scu.base
-	    || !context_prcc[0].base
-	    || !context_prcc[1].base
-	    || !context_prcc[2].base
-	    || !context_prcc[3].base
-	    || !context_prcc[4].base
-	    || !context_gic_dist_common.base
-	    || !per_cpu(context_gic_cpu, 0).base) {
-		printk("context: ioremap failed\n");
-		return -ENOMEM;
 	}
 
 	per_cpu(context_gic_dist_cpu, 0).base = context_gic_dist_common.base;

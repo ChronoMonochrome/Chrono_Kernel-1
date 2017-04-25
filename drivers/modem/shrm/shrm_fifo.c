@@ -660,7 +660,9 @@ void update_ca_audio_local_wptr(struct shrm_dev *shrm)
 	fifo->reader_local_wptr = fifo->shared_wptr;
 }
 
-extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+//extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+#define log_this(a, b, c, d, e) \
+        do {} while(0);
 
 void update_ac_common_local_rptr(struct shrm_dev *shrm)
 {

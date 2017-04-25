@@ -409,9 +409,6 @@ static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
 	int ret = 0;
 	val = (ucontrol->value.enumerated.item[0] != 0);
 
-	if ((master_clock_sel == val) || prcmu_is_ulppll_disabled())
-		return ret;
-
 	mutex_lock(&power_lock);
 	master_clock_sel = val;
 	if (ab850x_power_count > 0) {
@@ -1047,13 +1044,8 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	}
 
 	/* Initialize intclk default parent */
-	if (prcmu_is_ulppll_disabled()) {
-		ret = clk_set_parent(clk_ptr_intclk, clk_ptr_sysclk);
-		master_clock_sel = 0;
-	} else {
-		ret = clk_set_parent(clk_ptr_intclk, clk_ptr_ulpclk);
-		master_clock_sel = 1;
-	}
+	ret = clk_set_parent(clk_ptr_intclk, clk_ptr_ulpclk);
+	master_clock_sel = 1;
 
 	if (ret) {
 		pr_err("%s: ERROR: Setting intclk parent to ulpclk failed (ret = %d)!",

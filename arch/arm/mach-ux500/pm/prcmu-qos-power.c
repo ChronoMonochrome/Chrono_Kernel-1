@@ -297,6 +297,7 @@ static void update_target(int target, bool sem)
 		}
 		prcmu_debug_ddr_opp_log(op);
 		break;
+#if 0
 	case PRCMU_QOS_VSAFE_OPP:
 			switch (extreme_value) {
 			case 50:
@@ -315,6 +316,7 @@ static void update_target(int target, bool sem)
 			prcmu_set_vsafe_opp(op);
 			prcmu_debug_vsafe_opp_log(op);
 			break;
+#endif
 	case PRCMU_QOS_APE_OPP:
 		switch (extreme_value) {
 		case 50:

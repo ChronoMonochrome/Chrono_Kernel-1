@@ -178,7 +178,7 @@ static void update_adc_attribute(struct adc_attribute * instance)
 {
 	if( instance->adc_code != 0 ) {
 		instance->last_value =
-			ab8500_gpadc_read_raw(ab8500_gpadc_get(),
+			ab8500_gpadc_read_raw(ab8500_gpadc_get("ab8500-gpadc.0"),
 					      instance->adc_code, SAMPLE_16, RISING_EDGE, 0, ADC_SW);
 
 		if (instance->average)

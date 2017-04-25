@@ -1775,7 +1775,7 @@ static struct sec_jack_buttons_zone sec_jack_buttons_zones[] = {
 
 static int sec_jack_get_adc_value(void)
 {
-	return ab8500_gpadc_convert(ab8500_gpadc_get(), 5);
+	return ab8500_gpadc_convert(ab8500_gpadc_get("ab8500-gpadc.0"), 5);
 
 }
 
