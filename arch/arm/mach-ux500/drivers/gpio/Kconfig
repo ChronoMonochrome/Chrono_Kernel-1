@@ -2,8 +2,74 @@
 # GPIO infrastructure and drivers
 #
 
-config GPIO_AB8500
+config ARCH_WANT_OPTIONAL_GPIOLIB
+	bool
+	help
+	  Select this config option from the architecture Kconfig, if
+	  it is possible to use gpiolib on the architecture, but let the
+	  user decide whether to actually build it or not.
+	  Select this instead of ARCH_REQUIRE_GPIOLIB, if your architecture does
+	  not depend on GPIOs being available, but rather let the user
+	  decide whether he needs it or not.
+
+config ARCH_REQUIRE_GPIOLIB
+	bool
+	select GPIOLIB
+	help
+	  Platforms select gpiolib if they use this infrastructure
+	  for all their GPIOs, usually starting with ones integrated
+	  into SOC processors.
+	  Selecting this from the architecture code will cause the gpiolib
+	  code to always get built in.
+
+
+
+menuconfig GPIOLIB
+	bool "GPIO Support"
+	depends on ARCH_WANT_OPTIONAL_GPIOLIB || ARCH_REQUIRE_GPIOLIB
+	select GENERIC_GPIO
+	help
+	  This enables GPIO support through the generic GPIO library.
+	  You only need to enable this, if you also want to enable
+	  one or more of the GPIO drivers below.
+
+	  If unsure, say N.
+
+if GPIOLIB
+
+config DEBUG_GPIO
+	bool "Debug GPIO calls"
+	depends on DEBUG_KERNEL
+	help
+	  Say Y here to add some extra checks and diagnostics to GPIO calls.
+	  These checks help ensure that GPIOs have been properly initialized
+	  before they are used, and that sleeping calls are not made from
+	  non-sleeping contexts.  They can make bitbanged serial protocols
+	  slower.  The diagnostics help catch the type of setup errors
+	  that are most common when setting up new platforms or boards.
+
+config GPIO_SYSFS
+	bool "/sys/class/gpio/... (sysfs interface)"
+	depends on SYSFS && EXPERIMENTAL
+	help
+	  Say Y here to add a sysfs interface for GPIOs.
+
+	  This is mostly useful to work around omissions in a system's
+	  kernel support.  Those are common in custom and semicustom
+	  hardware assembled using standard kernels with a minimum of
+	  custom patches.  In those cases, userspace code may import
+	  a given GPIO from the kernel, if no kernel driver requested it.
+
+	  Kernel drivers may also request that a particular GPIO be
+	  exported to userspace; this can be useful when debugging.
+
+config GPIO_GENERIC
+	tristate
+
+
+config UX500_GPIO_AB8500
 	bool "ST-Ericsson AB8500 Mixed Signal Circuit gpio functions"
 	depends on AB8500_CORE
 	help
 	  Select this to enable the AB8500 IC GPIO driver
+endif

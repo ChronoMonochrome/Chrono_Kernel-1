@@ -5,7 +5,7 @@
 # Rewritten to use lists instead of if-statements.
 #
 
-#obj-y				+= gpio/
+obj-y				+= gpio/
 #obj-$(CONFIG_ARM_AMBA)		+= amba/
 # Many drivers will want to use DMA so this has to be made available
 # really early.
@@ -21,9 +21,7 @@
 
 # gpu/ comes after char for AGP vs DRM startup
 #obj-y				+= gpu/
-
-#base/
-obj-y				+= misc/
+obj-y				+= base/ misc/
 #mfd/
 
 #obj-$(CONFIG_SCSI)		+= scsi/

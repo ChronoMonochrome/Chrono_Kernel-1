@@ -60,7 +60,7 @@ source "drivers/pps/Kconfig"
 
 source "drivers/ptp/Kconfig"
 
-source "drivers/gpio/Kconfig"
+#source "drivers/gpio/Kconfig"
 
 source "drivers/w1/Kconfig"
 

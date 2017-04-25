@@ -1,6 +1,2 @@
-menu "Generic Driver Options"
-
 config SYS_SOC
-        bool
-
-endmenu
+        bool "SYS_SOC"

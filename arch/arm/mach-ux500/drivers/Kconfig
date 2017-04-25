@@ -4,7 +4,7 @@ config ARM_UX500_AMBA
 	bool
 	default y
 
-#source "arch/arm/mach-ux500/drivers/base/Kconfig"
+source "arch/arm/mach-ux500/drivers/base/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/battery/Kconfig"
 
@@ -24,7 +24,7 @@ source "arch/arm/mach-ux500/drivers/misc/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/spi/Kconfig"
 
-#source "arch/arm/mach-ux500/drivers/gpio/Kconfig"
+source "arch/arm/mach-ux500/drivers/gpio/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/power/Kconfig"
 
