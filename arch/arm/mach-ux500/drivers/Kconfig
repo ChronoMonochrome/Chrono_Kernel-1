@@ -12,8 +12,6 @@ source "arch/arm/mach-ux500/drivers/base/Kconfig"
 
 source "arch/arm/mach-ux500/drivers/misc/Kconfig"
 
-#source "arch/arm/mach-ux500/drivers/scsi/Kconfig"
-
 #source "arch/arm/mach-ux500/drivers/net/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/input/Kconfig"
