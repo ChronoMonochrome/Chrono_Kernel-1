@@ -30,7 +30,7 @@ extern void __init db5500_dma_init(void);
 extern void __init db8500_dma_init(void);
 
 /* We re-use nomadik_timer for this platform */
-extern void nmdk_timer_init(void);
+extern void nmdk_timer_init(void __iomem *mtu_base);
 
 struct amba_device;
 extern void __init amba_add_devices(struct amba_device *devs[], int num);

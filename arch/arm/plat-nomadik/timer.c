@@ -18,16 +18,8 @@
 #include <linux/jiffies.h>
 #include <linux/err.h>
 #include <linux/delay.h>
-#include <linux/sched.h>
-#include <linux/mfd/dbx500-prcmu.h>
 #include <asm/mach/time.h>
 #include <asm/sched_clock.h>
-
-/*
- * Guaranteed runtime conversion range in seconds for
- * the clocksource and clockevent.
- */
-#define MTU_MIN_RANGE 4
 
 /*
  * The MTU device hosts four different counters, with 4 set of
@@ -69,11 +61,10 @@
 #define MTU_PCELL2	0xff8
 #define MTU_PCELL3	0xffC
 
+static void __iomem *mtu_base;
 static bool clkevt_periodic;
 static u32 clk_prescale;
 static u32 nmdk_cycle;		/* write-once */
-
-void __iomem *mtu_base; /* Assigned by machine code */
 
 #ifdef CONFIG_NOMADIK_MTU_SCHED_CLOCK
 /*
@@ -81,23 +72,12 @@ void __iomem *mtu_base; /* Assigned by machine code */
  * local implementation which uses the clocksource to get some
  * better resolution when scheduling the kernel.
  */
-static DEFINE_CLOCK_DATA(cd);
-
-unsigned long long notrace sched_clock(void)
+static u32 notrace nomadik_read_sched_clock(void)
 {
-	u32 cyc;
-
 	if (unlikely(!mtu_base))
 		return 0;
 
-	cyc = -readl(mtu_base + MTU_VAL(0));
-	return cyc_to_sched_clock(&cd, cyc, (u32)~0);
-}
-
-static void notrace nomadik_update_sched_clock(void)
-{
-	u32 cyc = -readl(mtu_base + MTU_VAL(0));
-	update_sched_clock(&cd, cyc, (u32)~0);
+	return -readl(mtu_base + MTU_VAL(0));
 }
 #endif
 
@@ -117,7 +97,6 @@ static int nmdk_clkevt_next(unsigned long evt, struct clock_event_device *ev)
 void nmdk_clkevt_reset(void)
 {
 	if (clkevt_periodic) {
-
 		/* Timer: configure load and background-load, and fire it up */
 		writel(nmdk_cycle, mtu_base + MTU_LR(1));
 		writel(nmdk_cycle, mtu_base + MTU_BGLR(1));
@@ -135,7 +114,6 @@ void nmdk_clkevt_reset(void)
 static void nmdk_clkevt_mode(enum clock_event_mode mode,
 			     struct clock_event_device *dev)
 {
-
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
 		clkevt_periodic = true;
@@ -182,9 +160,6 @@ static void nmdk_timer_delay_loop(unsigned long loops)
 /* Used to calibrate the delay */
 int read_current_timer(unsigned long *timer_val)
 {
-	if (prcmu_is_ulppll_disabled())
-		return -EINVAL;
-
 	*timer_val = ~readl(mtu_base + MTU_VAL(0));
 	return 0;
 }
@@ -227,16 +202,16 @@ struct clock_event_device *nmdk_clkevt_get(void)
 	return &nmdk_clkevt;
 }
 
-void __init nmdk_timer_init(void)
+void __init nmdk_timer_init(void __iomem *base)
 {
 	unsigned long rate;
 	struct clk *clk0;
-	unsigned long min_delta_ticks;
 
+	mtu_base = base;
 	clk0 = clk_get_sys("mtu0", NULL);
 	BUG_ON(IS_ERR(clk0));
-
-	clk_enable(clk0);
+	BUG_ON(clk_prepare(clk0) < 0);
+	BUG_ON(clk_enable(clk0) < 0);
 
 	/*
 	 * Tick rate is 2.4MHz for Nomadik and 2.4Mhz, 100MHz or 133 MHz
@@ -264,28 +239,17 @@ void __init nmdk_timer_init(void)
 			rate, 200, 32, clocksource_mmio_readl_down))
 		pr_err("timer: failed to initialize clock source %s\n",
 		       "mtu_0");
+
 #ifdef CONFIG_NOMADIK_MTU_SCHED_CLOCK
-	init_sched_clock(&cd, nomadik_update_sched_clock, 32, rate);
+	setup_sched_clock(nomadik_read_sched_clock, 32, rate);
 #endif
-	/* Timer 1 is used for events */
 
-	clockevents_calc_mult_shift(&nmdk_clkevt, rate, MTU_MIN_RANGE);
-
-	nmdk_clkevt.max_delta_ns =
-		clockevent_delta2ns(0xffffffff, &nmdk_clkevt);
-
-	/* When ulppll is disabled timer is working on 32kHz clock. */
-	min_delta_ticks = prcmu_is_ulppll_disabled()? 0x5 : 0x2;
-	nmdk_clkevt.min_delta_ns =
-		clockevent_delta2ns(min_delta_ticks, &nmdk_clkevt);
-	nmdk_clkevt.cpumask	= cpumask_of(0);
-
-	/* Register irq and clockevents */
+	/* Timer 1 is used for events, register irq and clockevents */
 	setup_irq(IRQ_MTU0, &nmdk_timer_irq);
-	clockevents_register_device(&nmdk_clkevt);
+	nmdk_clkevt.cpumask = cpumask_of(0);
+	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
 #ifdef ARCH_HAS_READ_CURRENT_TIMER
-	if (!prcmu_is_ulppll_disabled())
-		set_delay_fn(nmdk_timer_delay_loop);
+	set_delay_fn(nmdk_timer_delay_loop);
 #endif
 
 }

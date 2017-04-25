@@ -33,11 +33,6 @@ static struct notifier_block mtu_context_notifier = {
 };
 #endif
 
-static void ux500_timer_reset(void)
-{
-	nmdk_clkevt_reset();
-}
-
 #ifdef CONFIG_HAVE_ARM_TWD
 static DEFINE_TWD_LOCAL_TIMER(u5500_twd_local_timer,
 			      U5500_TWD_BASE, IRQ_LOCALTIMER);
@@ -66,13 +61,15 @@ static void __init ux500_twd_init(void)
 
 static void __init ux500_timer_init(void)
 {
+	void __iomem *mtu_timer_base;
 	void __iomem *prcmu_timer_base;
+	int err;
 
 	if (cpu_is_u5500()) {
-		mtu_base = __io_address(U5500_MTU0_BASE);
+		mtu_timer_base = __io_address(U5500_MTU0_BASE);
 		prcmu_timer_base = __io_address(U5500_PRCMU_TIMER_3_BASE);
 	} else if (cpu_is_u8500() || cpu_is_u9540()) {
-		mtu_base = __io_address(U8500_MTU0_BASE);
+		mtu_timer_base = __io_address(U8500_MTU0_BASE);
 		prcmu_timer_base = __io_address(U8500_PRCMU_TIMER_4_BASE);
 	} else {
 		ux500_unknown_soc();
@@ -99,14 +96,21 @@ static void __init ux500_timer_init(void)
 	 * PRCMU timer, it doesn't occasionally go backwards.
 	 */
 
-	nmdk_timer_init();
+	nmdk_timer_init(mtu_timer_base);
 	if (cpu_is_u5500())
 		db5500_mtimer_init(__io_address(U5500_MTIMER_BASE));
 	clksrc_dbx500_prcmu_init(prcmu_timer_base);
+	ux500_twd_init();
+
 #ifdef CONFIG_DBX500_CONTEXT
 	WARN_ON(context_ape_notifier_register(&mtu_context_notifier));
 #endif
-	ux500_twd_init();
+}
+
+static void ux500_timer_reset(void)
+{
+	nmdk_clkevt_reset();
+	nmdk_clksrc_reset();
 }
 
 struct sys_timer ux500_timer = {
