@@ -12,7 +12,6 @@
 #define _MMC_CORE_CORE_H
 
 #include <linux/delay.h>
-#include <linux/export.h>
 
 #define MMC_CMD_RETRIES        3
 
@@ -20,12 +19,11 @@ struct mmc_bus_ops {
 	int (*awake)(struct mmc_host *);
 	int (*sleep)(struct mmc_host *);
 	void (*remove)(struct mmc_host *);
-	void (*detect)(struct mmc_host *);
+	int (*detect)(struct mmc_host *);
 	int (*suspend)(struct mmc_host *);
 	int (*resume)(struct mmc_host *);
 	int (*power_save)(struct mmc_host *);
 	int (*power_restore)(struct mmc_host *);
-	int (*alive)(struct mmc_host *);
 };
 
 void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops);
@@ -45,20 +43,20 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage,
 			   bool cmd11);
 void mmc_set_timing(struct mmc_host *host, unsigned int timing);
 void mmc_set_driver_type(struct mmc_host *host, unsigned int drv_type);
-void mmc_power_off(struct mmc_host *host);
 
 static inline void mmc_delay(unsigned int ms)
 {
-	unsigned long us = ms * USEC_PER_MSEC;
-	usleep_range(us, us + 1000);
+	if (ms < 1000 / HZ) {
+		cond_resched();
+		mdelay(ms);
+	} else {
+		msleep(ms);
+	}
 }
 
 void mmc_rescan(struct work_struct *work);
 void mmc_start_host(struct mmc_host *host);
 void mmc_stop_host(struct mmc_host *host);
-void mmc_resume_work(struct work_struct *work);
-
-int _mmc_detect_card_removed(struct mmc_host *host);
 
 int mmc_attach_mmc(struct mmc_host *host);
 int mmc_attach_sd(struct mmc_host *host);
@@ -74,6 +72,5 @@ void mmc_remove_host_debugfs(struct mmc_host *host);
 void mmc_add_card_debugfs(struct mmc_card *card);
 void mmc_remove_card_debugfs(struct mmc_card *card);
 
-void stedma40_dump_state(void);
 #endif
 

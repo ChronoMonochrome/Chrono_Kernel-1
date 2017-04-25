@@ -2,7 +2,7 @@
  *  linux/drivers/mmc/host/omap.c
  *
  *  Copyright (C) 2004 Nokia Corporation
- *  Written by Tuukka Tikkanen and Juha YrjÃ¶lÃ¤<juha.yrjola@nokia.com>
+ *  Written by Tuukka Tikkanen and Juha Yrjölä<juha.yrjola@nokia.com>
  *  Misc hacks here and there by Tony Lindgren <tony@atomide.com>
  *  Other hacks (DMA, SD, etc) by David Brownell
  *
@@ -701,16 +701,8 @@ static inline void mmc_omap_report_irq(u16 status)
 	for (i = 0; i < ARRAY_SIZE(mmc_omap_status_bits); i++)
 		if (status & (1 << i)) {
 			if (c)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ");
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s", mmc_omap_status_bits[i]);
-#else
-			;
-#endif
 			c++;
 		}
 }
@@ -751,11 +743,7 @@ static irqreturn_t mmc_omap_irq(int irq, void *dev_id)
 		dev_dbg(mmc_dev(host->mmc), "MMC IRQ %04x (CMD %d): ",
 			status, cmd);
 		mmc_omap_report_irq(status);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 #endif
 		if (host->total_bytes_left) {
 			if ((status & OMAP_MMC_STAT_A_FULL) ||
@@ -1646,4 +1634,4 @@ module_exit(mmc_omap_exit);
 MODULE_DESCRIPTION("OMAP Multimedia Card driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" DRIVER_NAME);
-MODULE_AUTHOR("Juha YrjÃ¶lÃ¤");
+MODULE_AUTHOR("Juha Yrjölä");

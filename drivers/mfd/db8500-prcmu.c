@@ -595,7 +595,6 @@ static struct dsiescclk dsiescclk[3] = {
 #define PRCMU_PLLDSI_LOCKP_LOCKED	0x3
 
 struct wake_lock prcmu_uart_wake_lock;
-extern void ux500_ci_dbg_console(void);
 
 int db8500_prcmu_enable_dsipll(void)
 {
@@ -3218,7 +3217,6 @@ static bool read_mailbox_0(void)
                         if(ev == 0x00800000) {
                                 pr_info("Wakeup Status: UART\n");
                                 wake_lock_timeout(&prcmu_uart_wake_lock, 20*HZ);
-                                ux500_ci_dbg_console();
                         } 			
 		}
 //- WAKEUP CHECK

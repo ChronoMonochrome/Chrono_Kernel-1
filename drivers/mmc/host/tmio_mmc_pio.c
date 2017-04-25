@@ -118,23 +118,15 @@ static int tmio_mmc_next_sg(struct tmio_mmc_host *host)
 	do { \
 		if (status & TMIO_STAT_##a) { \
 			if (i++) \
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(" | "); \
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(#a); \
-#else
-			;
-#endif
 		} \
 	} while (0)
 
 static void pr_debug_status(u32 status)
 {
 	int i = 0;
-	pr_debug("status: %08x = ", status);
+	printk(KERN_DEBUG "status: %08x = ", status);
 	STATUS_TO_TEXT(CARD_REMOVE, status, i);
 	STATUS_TO_TEXT(CARD_INSERT, status, i);
 	STATUS_TO_TEXT(SIGSTATE, status, i);
@@ -156,11 +148,7 @@ static void pr_debug_status(u32 status)
 	STATUS_TO_TEXT(RXRDY, status, i);
 	STATUS_TO_TEXT(TXRQ, status, i);
 	STATUS_TO_TEXT(ILL_ACCESS, status, i);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 }
 
 #else

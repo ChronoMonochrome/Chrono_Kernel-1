@@ -194,15 +194,12 @@ static struct stedma40_chan_cfg sdi0_dma_cfg_tx = {
 };
 #endif
 
-static int sdi0_ios_handler(struct device *dev, struct mmc_ios *ios,  enum rpm_status pm)
+
+static u32 sdi0_vdd_handler(struct device *dev, unsigned int vdd,
+                                   unsigned char power_mode)
 {
-	static int power_mode = -1;
-	
-	if (power_mode == ios->power_mode)
-		return 0;
-		
-	switch (ios->power_mode) {
-	case MMC_POWER_UP:
+	switch (power_mode) {
+        case MMC_POWER_UP:
 		break;
 	case MMC_POWER_ON:
 		/* Enable level shifter */
@@ -214,12 +211,12 @@ static int sdi0_ios_handler(struct device *dev, struct mmc_ios *ios,  enum rpm_s
 		gpio_direction_output(TXS0206_EN_CODINA_R0_0, 0);
 		break;
 	}
-	power_mode = ios->power_mode;
-	return 0;
+
+        return 0;
 }
 
 static struct mmci_platform_data ssg_sdi0_data = {
-	.ios_handler	= sdi0_ios_handler,
+	.vdd_handler	= sdi0_vdd_handler,
 	.ocr_mask	= MMC_VDD_29_30,
 	.f_max		= 100000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA |
@@ -227,13 +224,13 @@ static struct mmci_platform_data ssg_sdi0_data = {
 				MMC_CAP_MMC_HIGHSPEED,
 //				MMC_CAP_UHS_SDR12 |
 //				MMC_CAP_UHS_SDR25,
-	.capabilities2	= MMC_CAP2_DETECT_ON_ERR,
-	.levelshifter   = true,
+	//.capabilities2	= MMC_CAP2_DETECT_ON_ERR,
+	//.levelshifter   = true,
 	.gpio_cd	= T_FLASH_DETECT_CODINA_R0_0,
 	.gpio_wp	= -1,
 	.cd_invert	= true,
-	.sigdir		= MCI_ST_FBCLKEN,
-	.reset		= ux500_sdi_reset,
+	//.sigdir		= MCI_ST_FBCLKEN,
+	//.reset		= ux500_sdi_reset,
 #ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,
 	.dma_rx_param	= &sdi0_dma_cfg_rx,
@@ -317,12 +314,12 @@ static struct mmci_platform_data ssg_sdi1_data = {
 				MMC_CAP_SD_HIGHSPEED /*|*/
 				/* MMC_CAP_SDIO_IRQ | */
 				/* MMC_CAP_NONREMOVABLE*/,
-	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
+	//.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 #endif
 //	.pm_flags	= MMC_PM_KEEP_POWER,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-	.reset		= ux500_sdi_reset,
+	//.reset		= ux500_sdi_reset,
 #ifndef CONFIG_STE_WLAN
 	.status = sdi1_card_status,
 #endif
@@ -332,7 +329,7 @@ static struct mmci_platform_data ssg_sdi1_data = {
 	.dma_tx_param	= &sdi1_dma_cfg_tx,
 #endif
 #ifndef CONFIG_STE_WLAN
-	.register_status_notify = codina_wifi_status_register,
+	//.register_status_notify = codina_wifi_status_register,
 #endif
 };
 
@@ -381,11 +378,11 @@ static struct mmci_platform_data ssg_sdi2_data = {
 				MMC_CAP_ERASE |
 				MMC_CAP_1_8V_DDR |
 				MMC_CAP_UHS_DDR50,
-	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
+	//.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 //	.pm_flags	= MMC_PM_KEEP_POWER,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-	.reset		= ux500_sdi_reset,
+	//.reset		= ux500_sdi_reset,
 //	.suspend_resume_handler	= suspend_resume_handler_sdi2,
 #ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,

@@ -121,13 +121,15 @@ int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
 int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	unsigned addr, int incr_addr, u8 *buf, unsigned blocks, unsigned blksz)
 {
-	struct mmc_request mrq = {NULL};
+	struct mmc_request mrq = {0};
 	struct mmc_command cmd = {0};
 	struct mmc_data data = {0};
 	struct scatterlist sg;
 
 	BUG_ON(!card);
 	BUG_ON(fn > 7);
+	BUG_ON(blocks == 1 && blksz > 512);
+	WARN_ON(blocks == 0);
 	WARN_ON(blksz == 0);
 
 	/* sanity check */
@@ -142,20 +144,24 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	cmd.arg |= fn << 28;
 	cmd.arg |= incr_addr ? 0x04000000 : 0x00000000;
 	cmd.arg |= addr << 9;
-	if (blocks == 0)
-		cmd.arg |= (blksz == 512) ? 0 : blksz;	/* byte mode */
+
+	if (blocks == 1 && blksz < 512)
+		cmd.arg |= blksz;			/* byte mode */
+	else if (blocks == 1 && blksz == 512 &&
+		 !(card->host->caps & MMC_CAP_BROKEN_SDIO_CMD53))
+		cmd.arg |= 0;				/* byte mode, 0=512 */
 	else
 		cmd.arg |= 0x08000000 | blocks;		/* block mode */
+
 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
 
 	data.blksz = blksz;
-	/* Code in host drivers/fwk assumes that "blocks" always is >=1 */
-	data.blocks = blocks ? blocks : 1;
+	data.blocks = blocks;
 	data.flags = write ? MMC_DATA_WRITE : MMC_DATA_READ;
 	data.sg = &sg;
 	data.sg_len = 1;
 
-	sg_init_one(&sg, buf, data.blksz * data.blocks);
+	sg_init_one(&sg, buf, blksz * blocks);
 
 	mmc_set_data_timeout(&data, card);
 

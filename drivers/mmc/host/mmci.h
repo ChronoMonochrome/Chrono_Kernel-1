@@ -13,6 +13,16 @@
 #define MCI_PWR_ON		0x03
 #define MCI_OD			(1 << 6)
 #define MCI_ROD			(1 << 7)
+/*
+ * The ST Micro version does not have ROD and reuse the voltage registers
+ * for direction settings
+ */
+#define MCI_ST_DATA2DIREN	(1 << 2)
+#define MCI_ST_CMDDIREN		(1 << 3)
+#define MCI_ST_DATA0DIREN	(1 << 4)
+#define MCI_ST_DATA31DIREN	(1 << 5)
+#define MCI_ST_FBCLKEN		(1 << 7)
+#define MCI_ST_DATA74DIREN	(1 << 8)
 
 #define MMCICLOCK		0x004
 #define MCI_CLK_ENABLE		(1 << 8)
@@ -60,13 +70,6 @@
 #define MCI_ST_DPSM_RWMOD	(1 << 10)
 #define MCI_ST_DPSM_SDIOEN	(1 << 11)
 /* Control register extensions in the ST Micro Ux500 versions */
-/*
- * DMA request control is required for write
- * if transfer size is not 32 byte aligned.
- * DMA request control is also needed if the total
- * transfer size is 32 byte aligned but any of the
- * sg element lengths are not aligned with 32 byte.
- */
 #define MCI_ST_DPSM_DMAREQCTL	(1 << 12)
 #define MCI_ST_DPSM_DBOOTMODEEN	(1 << 13)
 #define MCI_ST_DPSM_BUSYMODE	(1 << 14)
@@ -99,7 +102,6 @@
 /* Extended status bits for the ST Micro variants */
 #define MCI_ST_SDIOIT		(1 << 22)
 #define MCI_ST_CEATAEND		(1 << 23)
-#define MCI_ST_CARDBUSY		(1 << 24)
 
 #define MMCICLEAR		0x038
 #define MCI_CMDCRCFAILCLR	(1 << 0)
@@ -116,7 +118,6 @@
 /* Extended status bits for the ST Micro variants */
 #define MCI_ST_SDIOITC		(1 << 22)
 #define MCI_ST_CEATAENDC	(1 << 23)
-#define MCI_ST_BUSYENDC		(1 << 24)
 
 #define MMCIMASK0		0x03c
 #define MCI_CMDCRCFAILMASK	(1 << 0)
@@ -159,17 +160,11 @@
 	(MCI_RXFIFOHALFFULLMASK | MCI_RXDATAAVLBLMASK | \
 	 MCI_TXFIFOHALFEMPTYMASK)
 
-#define NR_SG		128
+#define NR_SG		16
 
 struct clk;
 struct variant_data;
 struct dma_chan;
-
-struct mmci_host_next {
-	struct dma_async_tx_descriptor	*dma_desc;
-	struct dma_chan			*dma_chan;
-	s32				cookie;
-};
 
 struct mmci_host {
 	phys_addr_t		phybase;
@@ -188,10 +183,7 @@ struct mmci_host {
 
 	unsigned int		mclk;
 	unsigned int		cclk;
-	unsigned int		cclk_desired;
-	u32			pwr_reg;
-	u32			clk_reg;
-	u32			datactrl_reg;
+	u32			pwr;
 	struct mmci_platform_data *plat;
 	struct variant_data	*variant;
 
@@ -204,6 +196,9 @@ struct mmci_host {
 	/* pio stuff */
 	struct sg_mapping_iter	sg_miter;
 	unsigned int		size;
+	unsigned int		cache;
+	unsigned int		cache_len;
+
 	struct regulator	*vcc;
 
 #ifdef CONFIG_DMA_ENGINE
@@ -211,13 +206,14 @@ struct mmci_host {
 	struct dma_chan		*dma_current;
 	struct dma_chan		*dma_rx_channel;
 	struct dma_chan		*dma_tx_channel;
-	struct dma_async_tx_descriptor	*dma_desc_current;
-	struct mmci_host_next	next_data;
-	bool			dma_was_disabled;
 
 #define dma_inprogress(host)	((host)->dma_current)
 #else
 #define dma_inprogress(host)	(0)
+#endif
+
+#ifdef CONFIG_DEBUG_FS
+	struct dentry		*debug_regs;
 #endif
 };
 

@@ -1037,28 +1037,10 @@ static void dw_mci_read_data_pio(struct dw_mci *host)
 	unsigned int nbytes = 0, len;
 
 	do {
-<<<<<<< HEAD
 		len = SDMMC_GET_FCNT(mci_readl(host, STATUS)) << shift;
 		if (offset + len <= sg->length) {
 			host->pull_data(host, (void *)(buf + offset), len);
 
-=======
-		if (!sg_miter_next(sg_miter))
-			goto done;
-
-		host->sg = sg_miter->piter.sg;
-		buf = sg_miter->addr;
-		remain = sg_miter->length;
-		offset = 0;
-
-		do {
-			fcnt = (SDMMC_GET_FCNT(mci_readl(host, STATUS))
-					<< shift) + host->part_buf_count;
-			len = min(remain, fcnt);
-			if (!len)
-				break;
-			dw_mci_pull_data(host, (void *)(buf + offset), len);
->>>>>>> 4225fc8... lib/scatterlist: use page iterator in the mapping iterator
 			offset += len;
 			nbytes += len;
 
@@ -1123,27 +1105,9 @@ static void dw_mci_write_data_pio(struct dw_mci *host)
 	unsigned int nbytes = 0, len;
 
 	do {
-<<<<<<< HEAD
 		len = SDMMC_FIFO_SZ -
 			(SDMMC_GET_FCNT(mci_readl(host, STATUS)) << shift);
 		if (offset + len <= sg->length) {
-=======
-		if (!sg_miter_next(sg_miter))
-			goto done;
-
-		host->sg = sg_miter->piter.sg;
-		buf = sg_miter->addr;
-		remain = sg_miter->length;
-		offset = 0;
-
-		do {
-			fcnt = ((fifo_depth -
-				 SDMMC_GET_FCNT(mci_readl(host, STATUS)))
-					<< shift) - host->part_buf_count;
-			len = min(remain, fcnt);
-			if (!len)
-				break;
->>>>>>> 4225fc8... lib/scatterlist: use page iterator in the mapping iterator
 			host->push_data(host, (void *)(buf + offset), len);
 
 			offset += len;
@@ -1479,7 +1443,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 
 	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
 	if (IS_ERR(host->vmmc)) {
-		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+		printk(KERN_INFO "%s: no vmmc regulator found\n", mmc_hostname(mmc));
 		host->vmmc = NULL;
 	} else
 		regulator_enable(host->vmmc);

@@ -21,8 +21,8 @@
 #define DRIVER_NAME "tifm_sd"
 #define DRIVER_VERSION "0.8"
 
-static bool no_dma = 0;
-static bool fixed_timeout = 0;
+static int no_dma = 0;
+static int fixed_timeout = 0;
 module_param(no_dma, bool, 0644);
 module_param(fixed_timeout, bool, 0644);
 
@@ -631,7 +631,7 @@ static void tifm_sd_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 
 	if (host->req) {
-		pr_err("%s : unfinished request detected\n",
+		printk(KERN_ERR "%s : unfinished request detected\n",
 		       dev_name(&sock->dev));
 		mrq->cmd->error = -ETIMEDOUT;
 		goto err_out;
@@ -671,7 +671,7 @@ static void tifm_sd_request(struct mmc_host *mmc, struct mmc_request *mrq)
 					    r_data->flags & MMC_DATA_WRITE
 					    ? PCI_DMA_TODEVICE
 					    : PCI_DMA_FROMDEVICE)) {
-				pr_err("%s : scatterlist map failed\n",
+				printk(KERN_ERR "%s : scatterlist map failed\n",
 				       dev_name(&sock->dev));
 				mrq->cmd->error = -ENOMEM;
 				goto err_out;
@@ -683,7 +683,7 @@ static void tifm_sd_request(struct mmc_host *mmc, struct mmc_request *mrq)
 						   ? PCI_DMA_TODEVICE
 						   : PCI_DMA_FROMDEVICE);
 			if (host->sg_len < 1) {
-				pr_err("%s : scatterlist map failed\n",
+				printk(KERN_ERR "%s : scatterlist map failed\n",
 				       dev_name(&sock->dev));
 				tifm_unmap_sg(sock, &host->bounce_buf, 1,
 					      r_data->flags & MMC_DATA_WRITE
@@ -747,7 +747,7 @@ static void tifm_sd_end_cmd(unsigned long data)
 	host->req = NULL;
 
 	if (!mrq) {
-		pr_err(" %s : no request to complete?\n",
+		printk(KERN_ERR " %s : no request to complete?\n",
 		       dev_name(&sock->dev));
 		spin_unlock_irqrestore(&sock->lock, flags);
 		return;
@@ -786,7 +786,8 @@ static void tifm_sd_abort(unsigned long data)
 {
 	struct tifm_sd *host = (struct tifm_sd*)data;
 
-	pr_err("%s : card failed to respond for a long period of time "
+	printk(KERN_ERR
+	       "%s : card failed to respond for a long period of time "
 	       "(%x, %x)\n",
 	       dev_name(&host->dev->dev), host->req->cmd->opcode, host->cmd_flags);
 
@@ -904,7 +905,7 @@ static int tifm_sd_initialize_host(struct tifm_sd *host)
 	}
 
 	if (rc) {
-		pr_err("%s : controller failed to reset\n",
+		printk(KERN_ERR "%s : controller failed to reset\n",
 		       dev_name(&sock->dev));
 		return -ENODEV;
 	}
@@ -930,7 +931,8 @@ static int tifm_sd_initialize_host(struct tifm_sd *host)
 	}
 
 	if (rc) {
-		pr_err("%s : card not ready - probe failed on initialization\n",
+		printk(KERN_ERR
+		       "%s : card not ready - probe failed on initialization\n",
 		       dev_name(&sock->dev));
 		return -ENODEV;
 	}
@@ -951,7 +953,7 @@ static int tifm_sd_probe(struct tifm_dev *sock)
 
 	if (!(TIFM_SOCK_STATE_OCCUPIED
 	      & readl(sock->addr + SOCK_PRESENT_STATE))) {
-		pr_warning("%s : card gone, unexpectedly\n",
+		printk(KERN_WARNING "%s : card gone, unexpectedly\n",
 		       dev_name(&sock->dev));
 		return rc;
 	}

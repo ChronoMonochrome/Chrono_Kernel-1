@@ -9,7 +9,6 @@
  * your option) any later version.
  */
 
-#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/scatterlist.h>
@@ -82,15 +81,9 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
 	 * SEND_STATUS command to poll the status because that command (and most
 	 * others) is invalid while the card sleeps.
 	 */
-	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
-		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
-		   range. Round it up to 1us and use an appropriate delay method. */
-		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 10);
-		if (us < 10)
-			udelay(us);
-		else
-			usleep_range(us, us + 100);
-	}
+	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
+		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
+
 	if (!sleep)
 		err = mmc_select_card(card);
 
@@ -240,7 +233,7 @@ static int
 mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
 		u32 opcode, void *buf, unsigned len)
 {
-	struct mmc_request mrq = {NULL};
+	struct mmc_request mrq = {0};
 	struct mmc_command cmd = {0};
 	struct mmc_data data = {0};
 	struct scatterlist sg;
@@ -405,9 +398,6 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 	if (err)
 		return err;
 
-	/*add 2ms for change mode. This is inand bug*/ 
-		mdelay(2);
-
 	/* Must check status to be sure of no errors */
 	do {
 		err = mmc_send_status(card, &status);
@@ -417,14 +407,14 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 			break;
 		if (mmc_host_is_spi(card->host))
 			break;
-	} while (R1_CURRENT_STATE(status) == R1_STATE_PRG);
+	} while (R1_CURRENT_STATE(status) == 7);
 
 	if (mmc_host_is_spi(card->host)) {
 		if (status & R1_SPI_ILLEGAL_COMMAND)
 			return -EBADMSG;
 	} else {
 		if (status & 0xFDFFA000)
-			pr_warning("%s: unexpected status %#x after "
+			printk(KERN_WARNING "%s: unexpected status %#x after "
 			       "switch", mmc_hostname(card->host), status);
 		if (status & R1_SWITCH_ERROR)
 			return -EBADMSG;
@@ -464,7 +454,7 @@ static int
 mmc_send_bus_test(struct mmc_card *card, struct mmc_host *host, u8 opcode,
 		  u8 len)
 {
-	struct mmc_request mrq = {NULL};
+	struct mmc_request mrq = {0};
 	struct mmc_command cmd = {0};
 	struct mmc_data data = {0};
 	struct scatterlist sg;
@@ -486,7 +476,7 @@ mmc_send_bus_test(struct mmc_card *card, struct mmc_host *host, u8 opcode,
 	else if (len == 4)
 		test_buf = testdata_4bit;
 	else {
-		pr_err("%s: Invalid bus_width %d\n",
+		printk(KERN_ERR "%s: Invalid bus_width %d\n",
 		       mmc_hostname(host), len);
 		kfree(data_buf);
 		return -EINVAL;
@@ -556,39 +546,4 @@ int mmc_bus_test(struct mmc_card *card, u8 bus_width)
 	mmc_send_bus_test(card, card->host, MMC_BUS_TEST_W, width);
 	err = mmc_send_bus_test(card, card->host, MMC_BUS_TEST_R, width);
 	return err;
-}
-
-int mmc_send_hpi_cmd(struct mmc_card *card, u32 *status)
-{
-	struct mmc_command cmd = {0};
-	unsigned int opcode;
-	int err;
-
-	if (!card->ext_csd.hpi) {
-		pr_warning("%s: Card didn't support HPI command\n",
-			   mmc_hostname(card->host));
-		return -EINVAL;
-	}
-
-	opcode = card->ext_csd.hpi_cmd;
-	if (opcode == MMC_STOP_TRANSMISSION)
-		cmd.flags = MMC_RSP_R1B | MMC_CMD_AC;
-	else if (opcode == MMC_SEND_STATUS)
-		cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
-
-	cmd.opcode = opcode;
-	cmd.arg = card->rca << 16 | 1;
-	cmd.cmd_timeout_ms = card->ext_csd.out_of_int_time;
-
-	err = mmc_wait_for_cmd(card->host, &cmd, 0);
-	if (err) {
-		pr_warn("%s: error %d interrupting operation. "
-			"HPI command response %#x\n", mmc_hostname(card->host),
-			err, cmd.resp[0]);
-		return err;
-	}
-	if (status)
-		*status = cmd.resp[0];
-
-	return 0;
 }
