@@ -211,7 +211,6 @@ struct mmc_host {
 #define MMC_CAP_MAX_CURRENT_600	(1 << 28)	/* Host max current limit is 600mA */
 #define MMC_CAP_MAX_CURRENT_800	(1 << 29)	/* Host max current limit is 800mA */
 #define MMC_CAP_CMD23		(1 << 30)	/* CMD23 supported. */
-#define MMC_CAP_BROKEN_SDIO_CMD53 (1 << 15)	/* Broken CMD53 byte mode */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
@@ -222,6 +221,7 @@ struct mmc_host {
 	struct work_struct	clk_gate_work; /* delayed clock gate */
 	unsigned int		clk_old;	/* old clock value cache */
 	spinlock_t		clk_lock;	/* lock for clk fields */
+	struct mutex		clk_gate_mutex;	/* mutex for clock gating */
 #endif
 
 	/* host specific block data */
@@ -266,9 +266,8 @@ struct mmc_host {
 	unsigned int		bus_refs;	/* reference counter */
 
 	unsigned int		sdio_irqs;
-	struct delayed_work	sdio_irq_work;
-	struct workqueue_struct	*sdio_irq_workqueue;
-	unsigned long		sdio_poll_period;
+	struct task_struct	*sdio_irq_thread;
+	atomic_t		sdio_irq_thread_abort;
 
 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
 
@@ -313,7 +312,7 @@ extern void mmc_request_done(struct mmc_host *, struct mmc_request *);
 static inline void mmc_signal_sdio_irq(struct mmc_host *host)
 {
 	host->ops->enable_sdio_irq(host, 0);
-	queue_delayed_work(host->sdio_irq_workqueue, &host->sdio_irq_work, 0);
+	wake_up_process(host->sdio_irq_thread);
 }
 
 struct regulator;

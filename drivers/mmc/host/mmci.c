@@ -34,11 +34,6 @@
 #include <asm/io.h>
 #include <asm/sizes.h>
 
-#ifdef CONFIG_ARCH_U8500
-/* To be withdrawn when cpu_is_u8500v20_or_later() call will disapear */
-#include <mach/hardware.h>
-#endif
-
 #include "mmci.h"
 
 #define DRIVER_NAME "mmci-pl18x"
@@ -57,10 +52,6 @@ static unsigned int fmax = 515633;
  * @sdio: variant supports SDIO
  * @st_clkdiv: true if using a ST-specific clock divider algorithm
  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
- * @pwrreg_powerup: power up value for MMCIPOWER register
- * @non_power_of_2_blksize: variant supports block sizes that are not
- *		a power of two.
- * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
  */
 struct variant_data {
 	unsigned int		clkreg;
@@ -71,15 +62,12 @@ struct variant_data {
 	bool			sdio;
 	bool			st_clkdiv;
 	bool			blksz_datactrl16;
-	unsigned int		pwrreg_powerup;
-	bool			non_power_of_2_blksize;
 };
 
 static struct variant_data variant_arm = {
 	.fifosize		= 16 * 4,
 	.fifohalfsize		= 8 * 4,
 	.datalength_bits	= 16,
-	.pwrreg_powerup		= MCI_PWR_UP,
 };
 
 static struct variant_data variant_arm_extended_fifo = {
@@ -94,7 +82,6 @@ static struct variant_data variant_u300 = {
 	.clkreg_enable		= MCI_ST_U300_HWFCEN,
 	.datalength_bits	= 16,
 	.sdio			= true,
-	.pwrreg_powerup		= MCI_PWR_ON,
 };
 
 static struct variant_data variant_ux500 = {
@@ -105,107 +92,7 @@ static struct variant_data variant_ux500 = {
 	.datalength_bits	= 24,
 	.sdio			= true,
 	.st_clkdiv		= true,
-	.pwrreg_powerup		= MCI_PWR_ON,
-	.non_power_of_2_blksize	= true,
 };
-/*
- * Debugfs
- */
-#ifdef CONFIG_DEBUG_FS
-#include <linux/debugfs.h>
-#include <linux/seq_file.h>
-
-static int mmci_regs_show(struct seq_file *seq, void *v)
-{
-	struct mmci_host *host = seq->private;
-	unsigned long iflags;
-	u32 pwr, clk, arg, cmd, rspcmd, r0, r1, r2, r3;
-	u32 dtimer, dlength, dctrl, dcnt;
-	u32 sta, clear, mask0, mask1, fifocnt, fifo;
-
-	mmc_host_enable(host->mmc);
-	spin_lock_irqsave(&host->lock, iflags);
-
-	pwr = readl(host->base + MMCIPOWER);
-	clk = readl(host->base + MMCICLOCK);
-	arg = readl(host->base + MMCIARGUMENT);
-	cmd = readl(host->base + MMCICOMMAND);
-	rspcmd = readl(host->base + MMCIRESPCMD);
-	r0 = readl(host->base + MMCIRESPONSE0);
-	r1 = readl(host->base + MMCIRESPONSE1);
-	r2 = readl(host->base + MMCIRESPONSE2);
-	r3 = readl(host->base + MMCIRESPONSE3);
-	dtimer = readl(host->base + MMCIDATATIMER);
-	dlength = readl(host->base + MMCIDATALENGTH);
-	dctrl = readl(host->base + MMCIDATACTRL);
-	dcnt = readl(host->base + MMCIDATACNT);
-	sta = readl(host->base + MMCISTATUS);
-	clear = readl(host->base + MMCICLEAR);
-	mask0 = readl(host->base + MMCIMASK0);
-	mask1 = readl(host->base + MMCIMASK1);
-	fifocnt = readl(host->base + MMCIFIFOCNT);
-	fifo = readl(host->base + MMCIFIFO);
-
-	spin_unlock_irqrestore(&host->lock, iflags);
-	mmc_host_disable(host->mmc);
-
-	seq_printf(seq, "\033[1;34mMMCI registers\033[0m\n");
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_power", pwr);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_clock", clk);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_arg", arg);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_cmd", cmd);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_respcmd", rspcmd);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp0", r0);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp1", r1);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp2", r2);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp3", r3);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_datatimer", dtimer);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_datalen", dlength);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_datactrl", dctrl);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_datacnt", dcnt);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_status", sta);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_iclear", clear);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_imask0", mask0);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_imask1", mask1);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_fifocnt", fifocnt);
-	seq_printf(seq, "%-20s:0x%x\n", "mmci_fifo", fifo);
-
-	return 0;
-}
-
-static int mmci_regs_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mmci_regs_show, inode->i_private);
-}
-
-static const struct file_operations mmci_fops_regs = {
-	.owner		= THIS_MODULE,
-	.open		= mmci_regs_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
-
-static void mmci_debugfs_create(struct mmci_host *host)
-{
-	host->debug_regs = debugfs_create_file("regs", S_IRUGO,
-					       host->mmc->debugfs_root, host,
-					       &mmci_fops_regs);
-
-	if (IS_ERR(host->debug_regs))
-		dev_err(mmc_dev(host->mmc),
-				"failed to create debug regs file\n");
-}
-
-static void mmci_debugfs_remove(struct mmci_host *host)
-{
-	debugfs_remove(host->debug_regs);
-}
-
-#else
-static inline void mmci_debugfs_create(struct mmci_host *host) { }
-static inline void mmci_debugfs_remove(struct mmci_host *host) { }
-#endif
 
 static struct variant_data variant_ux500v2 = {
 	.fifosize		= 30 * 4,
@@ -215,8 +102,6 @@ static struct variant_data variant_ux500v2 = {
 	.datalength_bits	= 24,
 	.sdio			= true,
 	.st_clkdiv		= true,
-	.pwrreg_powerup		= MCI_PWR_ON,
-	.non_power_of_2_blksize	= true,
 	.blksz_datactrl16	= true,
 };
 
@@ -307,31 +192,8 @@ static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
 
 static void mmci_stop_data(struct mmci_host *host)
 {
-	u32 clk;
-	unsigned int datactrl = 0;
-
-	/*
-	 * The ST Micro variants has a special bit
-	 * to enable SDIO mode. This bit must remain set even when not
-	 * doing data transfers, otherwise no SDIO interrupts can be
-	 * received.
-	 */
-	if (host->variant->sdio &&
-		host->mmc->card &&
-		mmc_card_sdio(host->mmc->card))
-		datactrl |= MCI_ST_DPSM_SDIOEN;
-
-	writel(datactrl, host->base + MMCIDATACTRL);
+	writel(0, host->base + MMCIDATACTRL);
 	mmci_set_mask1(host, 0);
-
-	/* Needed for DDR */
-	if (host->mmc->card && mmc_card_ddr_mode(host->mmc->card)) {
-		clk = readl(host->base + MMCICLOCK);
-		clk &= ~MCI_ST_UX500_NEG_EDGE;
-
-		writel(clk, (host->base + MMCICLOCK));
-	}
-
 	host->data = NULL;
 }
 
@@ -508,10 +370,6 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 	struct dma_async_tx_descriptor *desc;
 	int nr_sg;
 
-	/* If less than or equal to the fifo size, don't bother with DMA */
-	if (host->size <= variant->fifosize)
-		return -EINVAL;
-
 	host->dma_current = NULL;
 
 	if (data->flags & MMC_DATA_READ) {
@@ -537,7 +395,7 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 
 	dmaengine_slave_config(chan, &conf);
 	desc = device->device_prep_slave_sg(chan, data->sg, nr_sg,
-					    conf.direction, DMA_CTRL_ACK, NULL);
+					    conf.direction, DMA_CTRL_ACK);
 	if (!desc)
 		goto unmap_exit;
 
@@ -600,7 +458,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 	unsigned long long clks;
 	void __iomem *base;
 	int blksz_bits;
-	u32 clk;
 
 	dev_dbg(mmc_dev(host->mmc), "blksz %04x blks %04x flags %08x\n",
 		data->blksz, data->blocks, data->flags);
@@ -608,8 +465,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 	host->data = data;
 	host->size = data->blksz * data->blocks;
 	data->bytes_xfered = 0;
-	host->cache_len = 0;
-	host->cache = 0;
 
 	clks = (unsigned long long)data->timeout_ns * host->cclk;
 	do_div(clks, 1000000000UL);
@@ -621,6 +476,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 	writel(host->size, base + MMCIDATALENGTH);
 
 	blksz_bits = ffs(data->blksz) - 1;
+	BUG_ON(1 << blksz_bits != data->blksz);
 
 	if (variant->blksz_datactrl16)
 		datactrl = MCI_DPSM_ENABLE | (data->blksz << 16);
@@ -629,48 +485,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 
 	if (data->flags & MMC_DATA_READ)
 		datactrl |= MCI_DPSM_DIRECTION;
-
-	if (host->mmc->card && mmc_card_ddr_mode(host->mmc->card)) {
-		datactrl |= MCI_ST_DPSM_DDRMODE;
-
-		/* Needed for DDR */
-		clk = readl(base + MMCICLOCK);
-		clk |= MCI_ST_UX500_NEG_EDGE;
-
-		writel(clk, (base + MMCICLOCK));
-	}
-
-	if (variant->sdio &&
-		host->mmc->card &&
-		mmc_card_sdio(host->mmc->card)) {
-			/*
-			 * The ST Micro variants has a special bit
-			 * to enable SDIO mode. This bit is set the first time
-			 * a SDIO data transfer is done and must remain set
-			 * after the data transfer is completed. The reason is
-			 * because of otherwise no SDIO interrupts can be
-			 * received.
-			 */
-			datactrl |= MCI_ST_DPSM_SDIOEN;
-
-			/*
-			 * The ST Micro variant for SDIO transfer sizes
-			 * less than or equal to 8 bytes needs to have clock
-			 * H/W flow control disabled. Since flow control is
-			 * not really needed for anything that fits in the
-			 * FIFO, we can disable it for any write smaller
-			 * than the FIFO size.
-			 */
-			if ((host->size <= variant->fifosize) &&
-			    (data->flags & MMC_DATA_WRITE))
-				writel(readl(host->base + MMCICLOCK) &
-					~variant->clkreg_enable,
-					host->base + MMCICLOCK);
-			else
-				writel(readl(host->base + MMCICLOCK) |
-					variant->clkreg_enable,
-					host->base + MMCICLOCK);
-	}
 
 	/*
 	 * Attempt to use DMA operation mode, if this
@@ -699,6 +513,11 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 		 */
 		irqmask = MCI_TXFIFOHALFEMPTYMASK;
 	}
+
+	/* The ST Micro variants has a special bit to enable SDIO */
+	if (variant->sdio && host->mmc->card)
+		if (mmc_card_sdio(host->mmc->card))
+			datactrl |= MCI_ST_DPSM_SDIOEN;
 
 	writel(datactrl, base + MMCIDATACTRL);
 	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
@@ -825,14 +644,14 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
 	}
 }
 
-static int mmci_pio_read(struct mmci_host *host, char *buffer,
-			 unsigned int remain, u32 status)
+static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
 {
 	void __iomem *base = host->base;
 	char *ptr = buffer;
+	u32 status;
 	int host_remain = host->size;
 
-	while (status & MCI_RXDATAAVLBL) {
+	do {
 		int count = host_remain - (readl(base + MMCIFIFOCNT) << 2);
 
 		if (count > remain)
@@ -851,107 +670,59 @@ static int mmci_pio_read(struct mmci_host *host, char *buffer,
 			break;
 
 		status = readl(base + MMCISTATUS);
-	}
+	} while (status & MCI_RXDATAAVLBL);
 
 	return ptr - buffer;
 }
 
-static int mmci_pio_write(struct mmci_host *host, char *buffer,
-			  unsigned int remain, u32 status)
+static int mmci_pio_write(struct mmci_host *host, char *buffer, unsigned int remain, u32 status)
 {
 	struct variant_data *variant = host->variant;
 	void __iomem *base = host->base;
-
-	unsigned int data_left = host->size;
-	unsigned int maxcnt;
 	char *ptr = buffer;
 
-	while (status & MCI_TXFIFOHALFEMPTY) {
-		unsigned int count;
-		char *cache_ptr;
-		int i;
+	do {
+		unsigned int count, maxcnt;
 
-		count = min(remain, variant->fifohalfsize);
+		maxcnt = status & MCI_TXFIFOEMPTY ?
+			 variant->fifosize : variant->fifohalfsize;
+		count = min(remain, maxcnt);
 
 		/*
-		 * A write to the FIFO must always be done of 4 bytes aligned
-		 * data. If the buffer is not 4 bytes aligned we must pad the
-		 * data, but this must only be done for the final write for the
-		 * entire data transfer, otherwise we will corrupt the data.
-		 * Thus a buffer cache of four bytes is needed to temporary
-		 * store data.
+		 * The ST Micro variant for SDIO transfer sizes
+		 * less then 8 bytes should have clock H/W flow
+		 * control disabled.
 		 */
-
-		if (host->cache_len) {
-			cache_ptr = (char *)&host->cache;
-			cache_ptr = cache_ptr + host->cache_len;
-			data_left += host->cache_len;
-
-			while ((host->cache_len < 4) && (remain > 0)) {
-				*cache_ptr = *ptr;
-				cache_ptr++;
-				ptr++;
-				host->cache_len++;
-				remain--;
-			}
-
-			if ((host->cache_len == 4) ||
-				(data_left == host->cache_len)) {
-
-				writesl(base + MMCIFIFO, &host->cache, 1);
-				if (data_left == host->cache_len)
-					break;
-
-				host->cache = 0;
-				host->cache_len = 0;
-				maxcnt -= 4;
-				data_left -= 4;
-			}
-
-			if (remain == 0)
-				break;
+		if (variant->sdio &&
+		    mmc_card_sdio(host->mmc->card)) {
+			if (count < 8)
+				writel(readl(host->base + MMCICLOCK) &
+					~variant->clkreg_enable,
+					host->base + MMCICLOCK);
+			else
+				writel(readl(host->base + MMCICLOCK) |
+					variant->clkreg_enable,
+					host->base + MMCICLOCK);
 		}
 
+		/*
+		 * SDIO especially may want to send something that is
+		 * not divisible by 4 (as opposed to card sectors
+		 * etc), and the FIFO only accept full 32-bit writes.
+		 * So compensate by adding +3 on the count, a single
+		 * byte become a 32bit write, 7 bytes will be two
+		 * 32bit writes etc.
+		 */
+		writesl(base + MMCIFIFO, ptr, (count + 3) >> 2);
 
-		if (!(count % 4) || (data_left == count)) {
-			/*
-			 * The data is either 4-bytes aligned or it is the
-			 * last data to write. It is thus fine to potentially
-			 * pad the data if needed.
-			 */
-			writesl(base + MMCIFIFO, ptr, (count + 3) >> 2);
-			ptr += count;
-			remain -= count;
-			data_left -= count;
-
-		} else {
-
-			host->cache_len = count % 4;
-			count = (count >> 2) << 2;
-
-			if (count)
-				writesl(base + MMCIFIFO, ptr, count >> 2);
-
-			ptr += count;
-			remain -= count;
-			data_left -= count;
-
-			i = 0;
-			cache_ptr = (char *)&host->cache;
-			while (i < host->cache_len) {
-				*cache_ptr = *ptr;
-				cache_ptr++;
-				ptr++;
-				remain--;
-				i++;
-			}
-		}
+		ptr += count;
+		remain -= count;
 
 		if (remain == 0)
 			break;
 
 		status = readl(base + MMCISTATUS);
-	};
+	} while (status & MCI_TXFIFOHALFEMPTY);
 
 	return ptr - buffer;
 }
@@ -996,14 +767,11 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
 
 		len = 0;
 		if (status & MCI_RXACTIVE)
-			len = mmci_pio_read(host, buffer, remain, status);
+			len = mmci_pio_read(host, buffer, remain);
 		if (status & MCI_TXACTIVE)
 			len = mmci_pio_write(host, buffer, remain, status);
 
-		if (len > sg_miter->consumed)
-			len = sg_miter->consumed;
-		else
-			sg_miter->consumed = len;
+		sg_miter->consumed = len;
 
 		host->size -= len;
 		remain -= len;
@@ -1046,7 +814,6 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 {
 	struct mmci_host *host = dev_id;
 	u32 status;
-	int sdio_irq = 0;
 	int ret = 0;
 
 	spin_lock(&host->lock);
@@ -1069,9 +836,6 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 
 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
 
-		if (status & MCI_ST_SDIOIT)
-			sdio_irq = 1;
-
 		data = host->data;
 		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
 			      MCI_RXOVERRUN|MCI_DATAEND|MCI_DATABLOCKEND) && data)
@@ -1086,27 +850,17 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 
 	spin_unlock(&host->lock);
 
-	if (sdio_irq)
-		mmc_signal_sdio_irq(host->mmc);
-
 	return IRQ_RETVAL(ret);
 }
 
 static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct mmci_host *host = mmc_priv(mmc);
-	struct variant_data *variant = host->variant;
 	unsigned long flags;
 
 	WARN_ON(host->mrq != NULL);
 
-	if (mrq->data &&
-	    (!variant->non_power_of_2_blksize ||
-#ifdef CONFIG_ARCH_U8500
-	     !cpu_is_u8500v20_or_later() ||
-#endif
-	    (mmc->card && mmc_card_ddr_mode(mmc->card))) &&
-	    !is_power_of_2(mrq->data->blksz)) {
+	if (mrq->data && !is_power_of_2(mrq->data->blksz)) {
 		dev_err(mmc_dev(mmc), "unsupported block size (%d bytes)\n",
 			mrq->data->blksz);
 		mrq->cmd->error = -EINVAL;
@@ -1129,7 +883,6 @@ static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct mmci_host *host = mmc_priv(mmc);
-	struct variant_data *variant = host->variant;
 	u32 pwr = 0;
 	unsigned long flags;
 	int ret;
@@ -1156,15 +909,11 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		if (host->plat->vdd_handler)
 			pwr |= host->plat->vdd_handler(mmc_dev(mmc), ios->vdd,
 						       ios->power_mode);
-
-		/*
-		 * The ST Micro variant doesn't have the PL180s MCI_PWR_UP
-		 * and instead uses MCI_PWR_ON so apply whatever value is
-		 * configured in the variant data.
-		 */
-		pwr |= variant->pwrreg_powerup;
-
-		break;
+		/* The ST version does not have this, fall through to POWER_ON */
+		if (host->hw_designer != AMBA_VENDOR_ST) {
+			pwr |= MCI_PWR_UP;
+			break;
+		}
 	case MMC_POWER_ON:
 		pwr |= MCI_PWR_ON;
 		break;
@@ -1235,30 +984,11 @@ static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static void mmci_enable_sdio_irq(struct mmc_host *mmc, int enable)
-{
-	unsigned long flags;
-	unsigned int mask0;
-	struct mmci_host *host = mmc_priv(mmc);
-
-	spin_lock_irqsave(&host->lock, flags);
-
-	mask0 = readl(host->base + MMCIMASK0);
-	if (enable)
-		mask0 |= MCI_ST_SDIOIT;
-	else
-		mask0 &= ~MCI_ST_SDIOIT;
-	writel(mask0, host->base + MMCIMASK0);
-
-	spin_unlock_irqrestore(&host->lock, flags);
-}
-
 static const struct mmc_host_ops mmci_ops = {
 	.request	= mmci_request,
 	.set_ios	= mmci_set_ios,
 	.get_ro		= mmci_get_ro,
 	.get_cd		= mmci_get_cd,
-	.enable_sdio_irq = mmci_enable_sdio_irq,
 };
 
 static int __devinit mmci_probe(struct amba_device *dev,
@@ -1333,10 +1063,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
 	}
 
 	mmc->ops = &mmci_ops;
-	if (variant->st_clkdiv)
-		mmc->f_min = host->mclk / 257;
-	else
-		mmc->f_min = (host->mclk + 511) / 512;
+	mmc->f_min = (host->mclk + 511) / 512;
 	/*
 	 * If the platform data supplies a maximum operating
 	 * frequency, this takes precedence. Else, we fall back
@@ -1473,8 +1200,6 @@ static int __devinit mmci_probe(struct amba_device *dev,
 
 	mmc_add_host(mmc);
 
-	mmci_debugfs_create(host);
-
 	return 0;
 
  irq0_free:
@@ -1510,7 +1235,6 @@ static int __devexit mmci_remove(struct amba_device *dev)
 	if (mmc) {
 		struct mmci_host *host = mmc_priv(mmc);
 
-		mmci_debugfs_remove(host);
 		mmc_remove_host(mmc);
 
 		writel(0, host->base + MMCIMASK0);
