@@ -24,7 +24,6 @@ obj-$(CONFIG_DMA_ENGINE)	+= dma/
 obj-y				+= base/ misc/
 #mfd/
 
-#obj-$(CONFIG_SPI)		+= spi/
 #obj-y				+= net/
 #obj-$(CONFIG_USB_OTG_UTILS)	+= usb/
 #obj-$(CONFIG_USB)		+= usb/
