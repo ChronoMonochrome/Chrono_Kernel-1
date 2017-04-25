@@ -44,17 +44,19 @@ source "arch/arm/mach-ux500/drivers/dma/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/staging/Kconfig"
 
-source "arch/arm/mach-ux500/drivers/tee/Kconfig"
+#source "arch/arm/mach-ux500/drivers/clk/Kconfig"
+
+#source "arch/arm/mach-ux500/drivers/tee/Kconfig"
 
 source "arch/arm/mach-ux500/drivers/clocksource/Kconfig"
 
-source "arch/arm/mach-ux500/drivers/modem/Kconfig"
+#source "arch/arm/mach-ux500/drivers/modem/Kconfig"
 
-source "arch/arm/mach-ux500/drivers/samsung/Kconfig"
+#source "arch/arm/mach-ux500/drivers/samsung/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/sensor/Kconfig"
 
-source "arch/arm/mach-ux500/drivers/phone_svn/Kconfig"
+#source "arch/arm/mach-ux500/drivers/phone_svn/Kconfig"
 
 endmenu
 
