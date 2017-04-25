@@ -35,7 +35,7 @@
 #include <linux/mutex.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
-#include <mach/gpio.h>
+#include <asm/gpio.h>
 #include <plat/keypad.h>
 #include <plat/menelaus.h>
 #include <asm/irq.h>
@@ -185,23 +185,15 @@ static void omap_kp_tasklet(unsigned long data)
 			if (!(changed & (1 << row)))
 				continue;
 #ifdef NEW_BOARD_LEARNING_MODE
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "omap-keypad: key %d-%d %s\n", col,
 			       row, (new_state[col] & (1 << row)) ?
 			       "pressed" : "released");
 #else
-			;
-#endif
-#else
 			key = keycodes[MATRIX_SCAN_CODE(row, col, row_shift)];
 			if (key < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				      "omap-keypad: Spurious key event %d-%d\n",
 				       col, row);
-#else
-				;
-#endif
 				/* We scan again after a couple of seconds */
 				spurious = 1;
 				continue;
@@ -481,24 +473,7 @@ static struct platform_driver omap_kp_driver = {
 		.owner	= THIS_MODULE,
 	},
 };
-
-static int __init omap_kp_init(void)
-{
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "OMAP Keypad Driver\n");
-#else
-	;
-#endif
-	return platform_driver_register(&omap_kp_driver);
-}
-
-static void __exit omap_kp_exit(void)
-{
-	platform_driver_unregister(&omap_kp_driver);
-}
-
-module_init(omap_kp_init);
-module_exit(omap_kp_exit);
+module_platform_driver(omap_kp_driver);
 
 MODULE_AUTHOR("Timo Teräs");
 MODULE_DESCRIPTION("OMAP Keypad Driver");

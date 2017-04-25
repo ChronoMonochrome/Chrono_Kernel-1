@@ -33,10 +33,10 @@ config KEYBOARD_ADP5588
 	  module will be called adp5588-keys.
 
 config KEYBOARD_ADP5589
-	tristate "ADP5589 I2C QWERTY Keypad and IO Expander"
+	tristate "ADP5585/ADP5589 I2C QWERTY Keypad and IO Expander"
 	depends on I2C
 	help
-	  Say Y here if you want to use a ADP5589 attached to your
+	  Say Y here if you want to use a ADP5585/ADP5589 attached to your
 	  system I2C bus.
 
 	  To compile this driver as a module, choose M here: the
@@ -151,16 +151,6 @@ config KEYBOARD_BFIN
 	  To compile this driver as a module, choose M here: the
 	  module will be called bf54x-keys.
 
-config KEYBOARD_DB5500
-	tristate "DB5500 keyboard"
-	depends on UX500_SOC_DB5500
-	help
-	  Say Y here to enable the on-chip keypad controller on the
-	  ST-Ericsson U5500 platform.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called db5500_keypad.
-
 config KEYBOARD_LKKBD
 	tristate "DECstation/VAXstation LK201/LK401 keyboard"
 	select SERIO
@@ -182,6 +172,37 @@ config KEYBOARD_EP93XX
 	  To compile this driver as a module, choose M here: the
 	  module will be called ep93xx_keypad.
 
+config KEYBOARD_GPIO
+	tristate "GPIO Buttons"
+	depends on GENERIC_GPIO
+	help
+	  This driver implements support for buttons connected
+	  to GPIO pins of various CPUs (and some other chips).
+
+	  Say Y here if your device has buttons connected
+	  directly to such GPIO pins.  Your board-specific
+	  setup logic must also provide a platform device,
+	  with configuration data saying which GPIOs are used.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gpio_keys.
+
+config KEYBOARD_GPIO_POLLED
+	tristate "Polled GPIO buttons"
+	depends on GENERIC_GPIO
+	select INPUT_POLLDEV
+	help
+	  This driver implements support for buttons connected
+	  to GPIO pins that are not capable of generating interrupts.
+
+	  Say Y here if your device has buttons connected
+	  directly to such GPIO pins.  Your board-specific
+	  setup logic must also provide a platform device,
+	  with configuration data saying which GPIOs are used.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gpio_keys_polled.
+
 config KEYBOARD_TCA6416
 	tristate "TCA6416/TCA6408A Keypad Support"
 	depends on I2C
@@ -199,6 +220,22 @@ config KEYBOARD_TCA6416
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called tca6416_keypad.
+
+config KEYBOARD_TCA8418
+	tristate "TCA8418 Keypad Support"
+	depends on I2C
+	help
+	  This driver implements basic keypad functionality
+	  for keys connected through TCA8418 keypad decoder.
+
+	  Say Y here if your device has keys connected to
+	  TCA8418 keypad decoder.
+
+	  If enabled the complete TCA8418 device will be managed through
+	  this driver.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called tca8418_keypad.
 
 config KEYBOARD_MATRIX
 	tristate "GPIO driven matrix keypad support"
@@ -344,7 +381,7 @@ config KEYBOARD_NEWTON
 	  To compile this driver as a module, choose M here: the
 	  module will be called newtonkbd.
 
-config KEYBOARD_NOMADIK_SKE
+config KEYBOARD_NOMADIK
 	tristate "ST-Ericsson Nomadik SKE keyboard"
 	depends on PLAT_NOMADIK
 	help
@@ -357,6 +394,7 @@ config KEYBOARD_NOMADIK_SKE
 config KEYBOARD_TEGRA
 	tristate "NVIDIA Tegra internal matrix keyboard controller support"
 	depends on ARCH_TEGRA
+	select INPUT_OF_MATRIX_KEYMAP if USE_OF
 	help
 	  Say Y here if you want to use a matrix keyboard connected directly
 	  to the internal keyboard controller on Tegra SoCs.
@@ -404,9 +442,10 @@ config KEYBOARD_PMIC8XXX
 
 config KEYBOARD_SAMSUNG
 	tristate "Samsung keypad support"
-	depends on SAMSUNG_DEV_KEYPAD
+	depends on HAVE_CLK
 	help
-	  Say Y here if you want to use the Samsung keypad.
+	  Say Y here if you want to use the keypad on your Samsung mobile
+	  device.
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called samsung-keypad.
@@ -474,7 +513,6 @@ config KEYBOARD_OMAP
 
 config KEYBOARD_OMAP4
 	tristate "TI OMAP4 keypad support"
-	depends on ARCH_OMAP4
 	help
 	  Say Y here if you want to use the OMAP4 keypad.
 
@@ -541,24 +579,5 @@ config KEYBOARD_W90P910
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called w90p910_keypad.
-	  
-config KEYBOARD_NTS_TOUCHKEY
-	tristate "NEXTCHIP NTS series touchkey support"
-	depends on I2C
-	help
-	  Say Y here if you want to use the NEXTCHIP NTS series touchkey.
 
-	  To compile this driver as a module, choose M here: the
-	  module will be called nts_touchkey.
-
-config KEYBOARD_TC360_TOUCHKEY
-	tristate "CORERIVER TC360 touchkey support"
-	depends on I2C
-	help
-	  Say Y here if you want to use the CORERIVER TC360 touchkey.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called touchcore.
-
-source "drivers/input/keyboard/cypress/Kconfig"
 endif

@@ -3,7 +3,7 @@
 #
 
 if INPUT_KEYBOARD
-config KEYBOARD_GPIO
+config UX500_KEYBOARD_GPIO
 	tristate "GPIO Buttons"
 	depends on GENERIC_GPIO
 	help
@@ -18,9 +18,9 @@ config KEYBOARD_GPIO
 	  To compile this driver as a module, choose M here: the
 	  module will be called gpio_keys.
 
-config KEYBOARD_GPIO_POLLED
+config UX500_KEYBOARD_GPIO_POLLED
 	tristate "Polled GPIO buttons"
-	depends on GENERIC_GPIO
+	depends on UX500_KEYBOARD_GPIO
 	select INPUT_POLLDEV
 	help
 	  This driver implements support for buttons connected

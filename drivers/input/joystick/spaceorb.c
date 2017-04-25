@@ -89,12 +89,8 @@ static void spaceorb_process_packet(struct spaceorb *spaceorb)
 		case 'R':				/* Reset packet */
 			spaceorb->data[spaceorb->idx - 1] = 0;
 			for (i = 1; i < spaceorb->idx && spaceorb->data[i] == ' '; i++);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "input: %s [%s] is %s\n",
 				 dev->name, spaceorb->data + i, spaceorb->phys);
-#else
-			;
-#endif
 			break;
 
 		case 'D':				/* Ball + button data */
@@ -123,11 +119,7 @@ static void spaceorb_process_packet(struct spaceorb *spaceorb)
 			if (spaceorb->idx != 4) return;
 			printk(KERN_ERR "spaceorb: Device error. [ ");
 			for (i = 0; i < 7; i++) if (data[1] & (1 << i)) printk("%s ", spaceorb_errors[i]);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("]\n");
-#else
-			;
-#endif
 			break;
 	}
 

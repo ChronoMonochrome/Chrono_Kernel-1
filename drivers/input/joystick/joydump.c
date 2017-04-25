@@ -56,74 +56,34 @@ static int joydump_connect(struct gameport *gameport, struct gameport_driver *dr
 	unsigned long flags;
 	unsigned char u;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: ,------------------ START ----------------.\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: | Dumping: %30s |\n", gameport->phys);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: | Speed: %28d kHz |\n", gameport->speed);
-#else
-	;
-#endif
 
 	if (gameport_open(gameport, drv, GAMEPORT_MODE_RAW)) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "joydump: | Raw mode not available - trying cooked.    |\n");
-#else
-		;
-#endif
 
 		if (gameport_open(gameport, drv, GAMEPORT_MODE_COOKED)) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "joydump: | Cooked not available either. Failing.   |\n");
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "joydump: `------------------- END -----------------'\n");
-#else
-			;
-#endif
 			return -ENODEV;
 		}
 
 		gameport_cooked_read(gameport, axes, &buttons);
 
 		for (i = 0; i < 4; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "joydump: | Axis %d: %4d.                           |\n", i, axes[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "joydump: | Buttons %02x.                             |\n", buttons);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "joydump: `------------------- END -----------------'\n");
-#else
-		;
-#endif
 	}
 
 	timeout = gameport_time(gameport, 10000); /* 10 ms */
 
 	buf = kmalloc(BUF_SIZE * sizeof(struct joydump), GFP_KERNEL);
 	if (!buf) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "joydump: no memory for testing\n");
-#else
-		;
-#endif
 		goto jd_end;
 	}
 	dump = buf;
@@ -163,56 +123,24 @@ static int joydump_connect(struct gameport *gameport, struct gameport_driver *dr
 	dump = buf;
 	prev = dump;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: >------------------ DATA -----------------<\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: | index: %3d delta: %3d us data: ", 0, 0);
-#else
-	;
-#endif
 	for (j = 7; j >= 0; j--)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d", (dump->data >> j) & 1);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" |\n");
-#else
-	;
-#endif
 	dump++;
 
 	for (i = 1; i < t; i++, dump++, prev++) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "joydump: | index: %3d delta: %3d us data: ",
 			i, dump->time - prev->time);
-#else
-		;
-#endif
 		for (j = 7; j >= 0; j--)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%d", (dump->data >> j) & 1);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" |\n");
-#else
-		;
-#endif
 	}
 	kfree(buf);
 
 jd_end:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "joydump: `------------------- END -----------------'\n");
-#else
-	;
-#endif
 
 	return 0;
 }

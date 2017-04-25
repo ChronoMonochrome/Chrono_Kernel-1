@@ -37,22 +37,10 @@ void iforce_dump_packet(char *msg, u16 cmd, unsigned char *data)
 {
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG __FILE__ ": %s cmd = %04x, data = ", msg, cmd);
-#else
-	;
-#endif
 	for (i = 0; i < LO(cmd); i++)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x ", data[i]);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 }
 
 /*

@@ -184,11 +184,7 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
 	serio->dev.parent = tty->dev;
 
 	serio_register_port(serport->serio);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
-#else
-	;
-#endif
 
 	wait_event_interruptible(serport->wait, test_bit(SERPORT_DEAD, &serport->flags));
 	serio_unregister_port(serport->serio);

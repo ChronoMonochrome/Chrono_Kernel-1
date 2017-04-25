@@ -201,12 +201,8 @@ static int __init parkbd_init(void)
 
 	serio_register_port(parkbd_port);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "serio: PARKBD %s adapter on %s\n",
                         parkbd_mode ? "AT" : "XT", parkbd_dev->port->name);
-#else
-	;
-#endif
 
 	return 0;
 }

@@ -22,39 +22,15 @@ config INPUT_88PM860X_ONKEY
 	  To compile this driver as a module, choose M here: the module
 	  will be called 88pm860x_onkey.
 
-config INPUT_AB8500_ACCDET
-	bool "AB8500 AV Accessory detection"
-	depends on AB8500_CORE && AB8500_GPADC && GPIO_AB8500
-	help
-	  Say Y here to enable AV accessory detection features for ST-Ericsson's
-	  AB8500 Mix-Sig PMIC.
-
-config INPUT_AB5500_ACCDET
-	bool "AB5500 AV Accessory detection"
-	depends on AB5500_CORE && AB5500_GPADC
-	help
-	  Say Y here to enable AV accessory detection features for ST-Ericsson's
-	  AB5500 Mix-Sig PMIC.
-
 config INPUT_AB8500_PONKEY
-	tristate "AB5500/AB8500 Pon (PowerOn) Key"
-	depends on AB5500_CORE || AB8500_CORE
+	tristate "AB8500 Pon (PowerOn) Key"
+	depends on AB8500_CORE
 	help
-	  Say Y here to use the PowerOn Key for ST-Ericsson's AB5500/AB8500
-	  Mix-Sig PMICs.
+	  Say Y here to use the PowerOn Key for ST-Ericsson's AB8500
+	  Mix-Sig PMIC.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called ab8500-ponkey.
-
-config INPUT_AB8505_MICRO_USB_DETECT
-	bool "AB8505/AB9540 Micro USB device detection support"
-	depends on AB8500_CORE
-	help
-	  Say Y here to enable Micro USB cable detection driver. This Driver
-	  detects the accessory devices connected to the micro usb connector,
-	  like micro usb headset, uart, carkit etc.
-
-	  If unsure, say N.
 
 config INPUT_AD714X
 	tristate "Analog Devices AD714x Capacitance Touch Sensor"
@@ -158,15 +134,17 @@ config INPUT_MAX8925_ONKEY
 	  To compile this driver as a module, choose M here: the module
 	  will be called max8925_onkey.
 
-config INPUT_MPU3050
-	tristate "MPU3050 Triaxial gyroscope sensor"
-	depends on I2C
+config INPUT_MAX8997_HAPTIC
+	tristate "MAXIM MAX8997 haptic controller support"
+	depends on HAVE_PWM && MFD_MAX8997
+	select INPUT_FF_MEMLESS
 	help
-	  Say Y here if you want to support InvenSense MPU3050
-	  connected via an I2C bus.
+	  This option enables device driver support for the haptic controller
+	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
+	  from input framework.
 
-	  To compile this driver as a module, choose M here: the
-	  module will be called mpu3050.
+	  To compile this driver as module, choose M here: the
+	  module will be called max8997-haptic.
 
 config INPUT_MC13783_PWRBUTTON
 	tristate "MC13783 ON buttons"
@@ -189,6 +167,16 @@ config INPUT_MMA8450
 	  To compile this driver as a module, choose M here: the
 	  module will be called mma8450.
 
+config INPUT_MPU3050
+	tristate "MPU3050 Triaxial gyroscope sensor"
+	depends on I2C
+	help
+	  Say Y here if you want to support InvenSense MPU3050
+	  connected via an I2C bus.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called mpu3050.
+
 config INPUT_APANEL
 	tristate "Fujitsu Lifebook Application Panel buttons"
 	depends on X86 && I2C && LEDS_CLASS
@@ -202,6 +190,31 @@ config INPUT_APANEL
 
 	 To compile this driver as a module, choose M here: the module will
 	 be called apanel.
+
+config INPUT_GP2A
+	tristate "Sharp GP2AP002A00F I2C Proximity/Opto sensor driver"
+	depends on I2C
+	depends on GENERIC_GPIO
+	help
+	  Say Y here if you have a Sharp GP2AP002A00F proximity/als combo-chip
+	  hooked to an I2C bus.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gp2ap002a00f.
+
+config INPUT_GPIO_TILT_POLLED
+	tristate "Polled GPIO tilt switch"
+	depends on GENERIC_GPIO
+	select INPUT_POLLDEV
+	help
+	  This driver implements support for tilt switches connected
+	  to GPIO pins that are not capable of generating interrupts.
+
+	  The list of gpios to use and the mapping of their states
+	  to specific angles is done via platform data.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gpio_tilt_polled.
 
 config INPUT_IXP4XX_BEEPER
 	tristate "IXP4XX Beeper support"
@@ -251,22 +264,6 @@ config INPUT_ATLAS_BTNS
 	  To compile this driver as a module, choose M here: the module will
 	  be called atlas_btns.
 
-config INPUT_ATI_REMOTE
-	tristate "ATI / X10 USB RF remote control"
-	depends on USB_ARCH_HAS_HCD
-	select USB
-	help
-	  Say Y here if you want to use an ATI or X10 "Lola" USB remote control.
-	  These are RF remotes with USB receivers.
-	  The ATI remote comes with many of ATI's All-In-Wonder video cards.
-	  The X10 "Lola" remote is available at:
-	     <http://www.x10.com/products/lola_sg1.htm>
-	  This driver provides mouse pointer, left and right mouse buttons,
-	  and maps all the other remote buttons to keypress events.
-
-	  To compile this driver as a module, choose M here: the module will be
-	  called ati_remote.
-
 config INPUT_ATI_REMOTE2
 	tristate "ATI / Philips USB RF remote control"
 	depends on USB_ARCH_HAS_HCD
@@ -281,17 +278,6 @@ config INPUT_ATI_REMOTE2
 
 	  To compile this driver as a module, choose M here: the module will be
 	  called ati_remote2.
-
-config INPUT_KEYCHORD
-	tristate "Key chord input driver support"
-	help
-	  Say Y here if you want to enable the key chord driver
-	  accessible at /dev/keychord.  This driver can be used
-	  for receiving notifications when client specified key
-	  combinations are pressed.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called keychord.
 
 config INPUT_KEYSPAN_REMOTE
 	tristate "Keyspan DMR USB remote control (EXPERIMENTAL)"
@@ -308,40 +294,6 @@ config INPUT_KEYSPAN_REMOTE
 
 	  To compile this driver as a module, choose M here: the module will
 	  be called keyspan_remote.
-
-config INPUT_LPS001WP
-	tristate "LPS0001WP pressure sensor from ST Micro"
-	default y if MACH_U8500
-	help
-	  This is a pressure sensor connected to I2C, mounted on the
-	  snowball and other ST-E boards
-
-config LPS001WP_INPUT_DEVICE
-	bool "ST LPS001WP INPUT DEVICE"
-	depends on INPUT_LPS001WP
-	default n
-	help
-	   This driver allows device to be used as an input device
-	   need to be enabled only when input device support
-	   is required.
-
-config INPUT_LPS331AP
-	tristate "LPS331AP pressure sensor from ST Micro"
-	depends on I2C
-	help
-	  Say Y here if you want to support a pressure sensor connetced via I2C
-	  with a LPS331AP, mounted on the U9540 and other ST-E boards.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called lps331ap.
-
-config LPS331AP_INPUT_DEVICE
-	bool "ST LPS331AP INPUT DEVICE"
-	depends on INPUT_LPS331AP
-	default n
-	help
-	  Say Y here if LPS331AP device is required, when enable here, the driver
-	  allows LPS331AP device to be used as an input device.
 
 config INPUT_KXTJ9
 	tristate "Kionix KXTJ9 tri-axis digital accelerometer"
@@ -418,7 +370,7 @@ config INPUT_TWL4030_PWRBUTTON
 config INPUT_TWL4030_VIBRA
 	tristate "Support for TWL4030 Vibrator"
 	depends on TWL4030_CORE
-	select TWL4030_CODEC
+	select MFD_TWL4030_AUDIO
 	select INPUT_FF_MEMLESS
 	help
 	  This option enables support for TWL4030 Vibrator Driver.
@@ -428,8 +380,7 @@ config INPUT_TWL4030_VIBRA
 
 config INPUT_TWL6040_VIBRA
 	tristate "Support for TWL6040 Vibrator"
-	depends on TWL4030_CORE
-	select TWL6040_CORE
+	depends on TWL6040_CORE
 	select INPUT_FF_MEMLESS
 	help
 	  This option enables support for TWL6040 Vibrator Driver.
@@ -456,11 +407,6 @@ config INPUT_SGI_BTNS
 	  To compile this driver as a module, choose M here: the
 	  module will be called sgi_btns.
 
-config INPUT_GPIO
-	tristate "GPIO driver support"
-	help
-	  Say Y here if you want to support gpio based keys, wheels etc...
-
 config HP_SDC_RTC
 	tristate "HP SDC Real Time Clock"
 	depends on (GSC || HP300) && SERIO
@@ -480,7 +426,7 @@ config INPUT_PCF8574
 	tristate "PCF8574 Keypad input device"
 	depends on I2C && EXPERIMENTAL
 	help
-	  Say Y here if you want to support a keypad connetced via I2C
+	  Say Y here if you want to support a keypad connected via I2C
 	  with a PCF8574.
 
 	  To compile this driver as a module, choose M here: the
@@ -519,6 +465,16 @@ config INPUT_RB532_BUTTON
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called rb532_button.
+
+config INPUT_DA9052_ONKEY
+	tristate "Dialog DA9052/DA9053 Onkey"
+	depends on PMIC_DA9052
+	help
+	  Support the ONKEY of Dialog DA9052 PMICs as an input device
+	  reporting power button status.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called da9052_onkey.
 
 config INPUT_DM355EVM
 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
@@ -623,7 +579,7 @@ config INPUT_CMA3000_I2C
 
 config INPUT_XEN_KBDDEV_FRONTEND
 	tristate "Xen virtual keyboard and mouse support"
-	depends on XEN_FBDEV_FRONTEND
+	depends on XEN
 	default y
 	select XEN_XENBUS_FRONTEND
 	help
@@ -634,24 +590,4 @@ config INPUT_XEN_KBDDEV_FRONTEND
 	  To compile this driver as a module, choose M here: the
 	  module will be called xen-kbdfront.
 
-config INPUT_STE_FF_VIBRA
-	tristate "ST-Ericsson Force Feedback Vibrator"
-	depends on STE_AUDIO_IO_DEV
-	select INPUT_FF_MEMLESS
-	help
-	  This option enables support for ST-Ericsson's Vibrator which
-	  registers as an input force feedback driver.
-
-	  To compile this driver as a module, choose M here. The module will
-	  be called ste_ff_vibra.
-
-config INPUT_MPU6050
-	bool "Invensense MPU-6050 sensor"
-	default n
-
-config INPUT_MPU6050_POLLING
-	depends on INPUT_MPU6050
-	bool "Invensense MPU-6050 sensor polling"
-	default n
-	
 endif

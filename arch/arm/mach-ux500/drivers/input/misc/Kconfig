@@ -26,7 +26,7 @@ config INPUT_AB5500_ACCDET
 	  Say Y here to enable AV accessory detection features for ST-Ericsson's
 	  AB5500 Mix-Sig PMIC.
 
-config INPUT_AB8500_PONKEY
+config UX500_INPUT_AB8500_PONKEY
 	tristate "AB5500/AB8500 Pon (PowerOn) Key"
 	depends on AB5500_CORE || AB8500_CORE
 	help

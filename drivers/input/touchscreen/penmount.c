@@ -271,19 +271,6 @@ static int pm_connect(struct serio *serio, struct serio_driver *drv)
 				     ABS_MT_POSITION_Y, 0, max_y, 0, 0);
 	}
 
-	switch (serio->id.id) {
-	default:
-	case 0:
-		pm->packetsize = 5;
-		input_dev->id.product = 0x9000;
-		break;
-
-	case 1:
-		pm->packetsize = 6;
-		input_dev->id.product = 0x6000;
-		break;
-	}
-
 	serio_set_drvdata(serio, pm);
 
 	err = serio_open(serio, drv);

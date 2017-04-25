@@ -66,11 +66,7 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 
 	write_lock(&mlc->lock);
 	if (mlc->icount < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "HIL Overflow!\n");
-#else
-		;
-#endif
 		up(&mlc->isem);
 		goto out;
 	}
@@ -108,19 +104,11 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 	goto out;
 
  err:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PREFIX "err code %x\n", data);
-#else
-	;
-#endif
 
 	switch (data) {
 	case HP_SDC_HIL_RC_DONE:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Bastard SDC reconfigured loop!\n");
-#else
-		;
-#endif
 		break;
 
 	case HP_SDC_HIL_ERR:
@@ -133,19 +121,11 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 		break;
 
 	case HP_SDC_HIL_RC:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Bastard SDC decided to reconfigure loop!\n");
-#else
-		;
-#endif
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Unknown HIL Error status (%x)!\n", data);
-#else
-		;
-#endif
 		break;
 	}
 
@@ -177,23 +157,15 @@ static int hp_sdc_mlc_in(hil_mlc *mlc, suseconds_t timeout)
 						HIL_PKT_ADDR_MASK |
 						HIL_PKT_DATA_MASK));
 			mlc->icount = 14;
-#ifdef CONFIG_DEBUG_PRINTK
 			/* printk(KERN_DEBUG PREFIX ">[%x]\n", mlc->ipacket[0]); */
-#else
-			/* ;
-#endif
 			goto wasup;
 		}
 		do_gettimeofday(&tv);
 		tv.tv_usec += USEC_PER_SEC * (tv.tv_sec - mlc->instart.tv_sec);
 		if (tv.tv_usec - mlc->instart.tv_usec > mlc->intimeout) {
-#ifdef CONFIG_DEBUG_PRINTK
 			/*	printk("!%i %i",
 				tv.tv_usec - mlc->instart.tv_usec,
 				mlc->intimeout);
-#else
-			/*	;
-#endif
 			 */
 			rc = 1;
 			up(&mlc->isem);
@@ -340,11 +312,7 @@ static int __init hp_sdc_mlc_init(void)
 		return -ENODEV;
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "Registering the System Domain Controller's HIL MLC.\n");
-#else
-	;
-#endif
 
 	hp_sdc_mlc_priv.emtestmode = 0;
 	hp_sdc_mlc_priv.trans.seq = hp_sdc_mlc_priv.tseq;
@@ -358,20 +326,12 @@ static int __init hp_sdc_mlc_init(void)
 
 	err = hil_mlc_register(mlc);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Failed to register MLC structure with hil_mlc\n");
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (hp_sdc_request_hil_irq(&hp_sdc_mlc_isr)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Request for raw HIL ISR hook denied\n");
-#else
-		;
-#endif
 		if (hil_mlc_unregister(mlc))
 			printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
 				"This is bad.  Could cause an oops.\n");

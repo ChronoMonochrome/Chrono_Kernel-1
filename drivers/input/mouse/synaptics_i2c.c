@@ -570,7 +570,7 @@ static int __devinit synaptics_i2c_probe(struct i2c_client *client,
 			 "Requesting IRQ: %d\n", touch->client->irq);
 
 		ret = request_irq(touch->client->irq, synaptics_i2c_irq,
-				  IRQF_DISABLED|IRQ_TYPE_EDGE_FALLING,
+				  IRQ_TYPE_EDGE_FALLING,
 				  DRIVER_NAME, touch);
 		if (ret) {
 			dev_warn(&touch->client->dev,
@@ -619,7 +619,7 @@ static int __devexit synaptics_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_SLEEP
 static int synaptics_i2c_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
@@ -672,18 +672,7 @@ static struct i2c_driver synaptics_i2c_driver = {
 	.id_table	= synaptics_i2c_id_table,
 };
 
-static int __init synaptics_i2c_init(void)
-{
-	return i2c_add_driver(&synaptics_i2c_driver);
-}
-
-static void __exit synaptics_i2c_exit(void)
-{
-	i2c_del_driver(&synaptics_i2c_driver);
-}
-
-module_init(synaptics_i2c_init);
-module_exit(synaptics_i2c_exit);
+module_i2c_driver(synaptics_i2c_driver);
 
 MODULE_DESCRIPTION("Synaptics I2C touchpad driver");
 MODULE_AUTHOR("Mike Rapoport, Igor Grinberg, Compulab");

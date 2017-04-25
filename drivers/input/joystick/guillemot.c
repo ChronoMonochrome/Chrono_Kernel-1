@@ -211,12 +211,8 @@ static int guillemot_connect(struct gameport *gameport, struct gameport_driver *
 			break;
 
 	if (!guillemot_type[i].name) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "guillemot.c: Unknown joystick on %s. [ %02x%02x:%04x, ver %d.%02d ]\n",
 			gameport->phys, data[12], data[13], data[11], data[14], data[15]);
-#else
-		;
-#endif
 		err = -ENODEV;
 		goto fail2;
 	}
@@ -270,11 +266,7 @@ static void guillemot_disconnect(struct gameport *gameport)
 {
 	struct guillemot *guillemot = gameport_get_drvdata(gameport);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "guillemot.c: Failed %d reads out of %d on %s\n", guillemot->reads, guillemot->bads, guillemot->phys);
-#else
-	;
-#endif
 	input_unregister_device(guillemot->dev);
 	gameport_close(gameport);
 	kfree(guillemot);

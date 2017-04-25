@@ -177,12 +177,8 @@ static int cobra_connect(struct gameport *gameport, struct gameport_driver *drv)
 
 	for (i = 0; i < 2; i++)
 		if ((cobra->exists >> i) & data[i] & 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "cobra.c: Device %d on %s has the Ext bit set. ID is: %d"
 				" Contact vojtech@ucw.cz\n", i, gameport->phys, (data[i] >> 2) & 7);
-#else
-			;
-#endif
 			cobra->exists &= ~(1 << i);
 		}
 

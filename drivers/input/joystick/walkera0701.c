@@ -107,14 +107,10 @@ static inline void walkera0701_parse_frame(struct walkera_dev *w)
 		int magic, magic_bit;
 		magic = (w->buf[21] << 4) | w->buf[22];
 		magic_bit = (w->buf[24] & 8) >> 3;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "walkera0701: %4d %4d %4d %4d  %4d %4d %4d %4d (magic %2x %d)\n",
 		       val1, val2, val3, val4, val5, val6, val7, val8, magic,
 		       magic_bit);
-#else
-		;
-#endif
 	}
 #endif
 	input_report_abs(w->input_dev, ABS_X, val2);
@@ -200,7 +196,6 @@ static void walkera0701_close(struct input_dev *dev)
 	struct walkera_dev *w = input_get_drvdata(dev);
 
 	parport_disable_irq(w->parport);
-	hrtimer_cancel(&w->timer);
 }
 
 static int walkera0701_connect(struct walkera_dev *w, int parport)
@@ -228,9 +223,6 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
 
 	if (parport_claim(w->pardevice))
 		goto init_err1;
-
-	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	w->timer.function = timer_handler;
 
 	w->input_dev = input_allocate_device();
 	if (!w->input_dev)
@@ -262,6 +254,8 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
 	if (err)
 		goto init_err3;
 
+	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	w->timer.function = timer_handler;
 	return 0;
 
  init_err3:
@@ -277,6 +271,7 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
 
 static void walkera0701_disconnect(struct walkera_dev *w)
 {
+	hrtimer_cancel(&w->timer);
 	input_unregister_device(w->input_dev);
 	parport_release(w->pardevice);
 	parport_unregister_device(w->pardevice);

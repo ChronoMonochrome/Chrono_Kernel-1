@@ -295,12 +295,8 @@ static int a3d_connect(struct gameport *gameport, struct gameport_driver *drv)
 	a3d->mode = data[0];
 
 	if (!a3d->mode || a3d->mode > 5) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "a3d.c: Unknown A3D device detected "
 			"(%s, id=%d), contact <vojtech@ucw.cz>\n", gameport->phys, a3d->mode);
-#else
-		;
-#endif
 		err = -ENODEV;
 		goto fail2;
 	}
