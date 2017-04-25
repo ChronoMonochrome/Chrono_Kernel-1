@@ -25,7 +25,7 @@
 /*
  * SDI 0 (eMMC)
  */
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static struct stedma40_chan_cfg sdi0_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
@@ -54,7 +54,7 @@ static struct mmci_platform_data u5500_sdi0_data = {
 	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,
 	.dma_rx_param	= &sdi0_dma_cfg_rx,
 	.dma_tx_param	= &sdi0_dma_cfg_tx,
@@ -96,7 +96,7 @@ static int u5500_sdi1_ios_handler(struct device *dev, struct mmc_ios *ios)
 	return 0;
 }
 
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
@@ -126,7 +126,7 @@ static struct mmci_platform_data u5500_sdi1_data = {
 	.gpio_cd        = GPIO_SDMMC_CD,
 	.gpio_wp        = -1,
 	.cd_invert	= true,
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,
 	.dma_rx_param	= &sdi1_dma_cfg_rx,
 	.dma_tx_param	= &sdi1_dma_cfg_tx,
@@ -164,7 +164,7 @@ static struct mmci_platform_data u5500_sdi2_data = {
 	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,
 	.dma_rx_param	= &sdi2_dma_cfg_rx,
 	.dma_tx_param	= &sdi2_dma_cfg_tx,
@@ -175,7 +175,7 @@ static struct mmci_platform_data u5500_sdi2_data = {
  * SDI 3 (SDIO WLAN)
  */
 #ifdef SDIO_DMA_ON
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static struct stedma40_chan_cfg sdi3_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
@@ -203,7 +203,7 @@ static struct mmci_platform_data u5500_sdi3_data = {
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
 #ifdef SDIO_DMA_ON
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter	= stedma40_filter,
 	.dma_rx_param	= &sdi3_dma_cfg_rx,
 	.dma_tx_param	= &sdi3_dma_cfg_tx,

@@ -23,7 +23,7 @@
 
 #include "ste_dma40_ll.h"
 
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 #include "ste_dma40_debug.h"
 #define MARK sted40_history_text((char *)__func__)
 #else
@@ -893,7 +893,7 @@ static int __d40_execute_command_phy(struct d40_chan *d40c,
 			goto done;
 	}
 
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 	if (command == D40_DMA_RUN)
 		sted40_history_snapshot();
 #endif
@@ -926,7 +926,7 @@ static int __d40_execute_command_phy(struct d40_chan *d40c,
 				"unable to suspend the chl %d (log: %d) status %x\n",
 				d40c->phy_chan->num, d40c->log_num,
 				status);
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 			sted40_history_dump();
 #endif
 			dump_stack();
@@ -1501,7 +1501,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
 	struct d40_base *base = data;
 
 	spin_lock_irqsave(&base->interrupt_lock, flags);
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 	sted40_history_text("IRQ enter");
 #endif
 	/* Read interrupt status of both logical and physical channels */
@@ -1544,14 +1544,14 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
 		} else {
 			d40_err(base->dev, "IRQ chan: %ld offset %d idx %d\n",
 				chan, il[row].offset, idx);
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 			sted40_history_dump();
 #endif
 		}
 
 		spin_unlock(&d40c->lock);
 	}
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 	sted40_history_text("IRQ leave");
 #endif
 	spin_unlock_irqrestore(&base->interrupt_lock, flags);
@@ -3559,7 +3559,7 @@ static int __init d40_probe(struct platform_device *pdev)
 		}
 	}
 
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 	sted40_history_set_virtbase(base->virtbase,
 				    base->lcpa_base,
 				    base->lcpa_size,

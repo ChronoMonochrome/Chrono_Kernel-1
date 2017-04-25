@@ -108,7 +108,7 @@
 struct stedma40_chan_cfg;
 
 struct ste_hsi_port_cfg {
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
        bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
        struct stedma40_chan_cfg *dma_tx_cfg;
        struct stedma40_chan_cfg *dma_rx_cfg;

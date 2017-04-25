@@ -17,7 +17,7 @@
 #include <linux/gpio.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
 #endif
@@ -78,7 +78,7 @@ struct ste_hsi_controller {
 	unsigned int ck_on:1;
 };
 
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 struct ste_hsi_channel_dma {
 	struct dma_chan *dma_chan;
 	struct dma_async_tx_descriptor *desc;
@@ -102,7 +102,7 @@ struct ste_hsi_port {
 	struct tasklet_struct exception_tasklet;
 	struct tasklet_struct overrun_tasklet;
 	unsigned char channels;
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	struct ste_hsi_channel_dma tx_dma[STE_HSI_MAX_CHANNELS];
 	struct ste_hsi_channel_dma rx_dma[STE_HSI_MAX_CHANNELS];
 #endif
@@ -210,7 +210,7 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 	 * is greater than the value programmed in TX_WATERMARKX field.
 	 * The field value must be less than the corresponding SPAN value.
 	 */
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 		writel(STE_HSI_DMA_MAX_BURST-1,
 			ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
 #else /* IRQ mode */
@@ -257,7 +257,7 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 	 * is greater than the value programmed in RX_WATERMARKX field.
 	 * The field value must be less than the corresponding SPAN value.
 	 */
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 		writel(STE_HSI_DMA_MAX_BURST-1,
 			ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
 #else /* IRQ mode */
@@ -472,7 +472,7 @@ static int ste_hsi_start_irq(struct hsi_msg *msg)
 
 static int ste_hsi_start_transfer(struct ste_hsi_port *ste_port,
 				  struct list_head *queue);
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static void ste_hsi_dma_callback(void *dma_async_param)
 {
 	struct hsi_msg *msg = dma_async_param;

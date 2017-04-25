@@ -44,7 +44,7 @@ source "arch/arm/mach-ux500/drivers/gpio/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/rtc/Kconfig"
 
-#source "arch/arm/mach-ux500/drivers/dma/Kconfig"
+source "arch/arm/mach-ux500/drivers/dma/Kconfig"
 
 #source "arch/arm/mach-ux500/drivers/staging/Kconfig"
 

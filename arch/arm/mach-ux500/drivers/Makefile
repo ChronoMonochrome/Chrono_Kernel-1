@@ -9,7 +9,7 @@ obj-y				+= gpio/
 #obj-$(CONFIG_ARM_AMBA)		+= amba/
 # Many drivers will want to use DMA so this has to be made available
 # really early.
-#obj-$(CONFIG_DMA_ENGINE)	+= dma/
+obj-$(CONFIG_DMA_ENGINE)	+= dma/
 
 # regulators early, since some subsystems rely on them to initialize
 #obj-$(CONFIG_REGULATOR)		+= regulator/

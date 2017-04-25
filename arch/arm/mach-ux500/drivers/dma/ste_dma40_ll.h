@@ -4,8 +4,8 @@
  * Author: Jonas Aaberg <jonas.aberg@stericsson.com> for ST-Ericsson SA
  * License terms: GNU General Public License (GPL) version 2
  */
-#ifndef STE_DMA40_LL_H
-#define STE_DMA40_LL_H
+#ifndef UX500_STE_DMA40_LL_H
+#define UX500_STE_DMA40_LL_H
 
 #define D40_DREG_PCBASE		0x400
 #define D40_DREG_PCDELTA	(8 * 4)
@@ -364,4 +364,4 @@ void d40_log_lli_lcla_write(struct d40_log_lli *lcla,
 			    struct d40_log_lli *lli_src,
 			    int next, bool interrupt);
 
-#endif /* STE_DMA40_LLI_H */
+#endif /* UX500_STE_DMA40_LLI_H */

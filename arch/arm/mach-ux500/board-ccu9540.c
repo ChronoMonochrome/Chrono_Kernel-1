@@ -379,7 +379,7 @@ static void __init ccu9540_i2c_init(void)
 
 #define NUM_SSP_CLIENTS 10
 
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
@@ -401,7 +401,7 @@ static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
 
 static struct pl022_ssp_controller ssp0_platform_data = {
 	.bus_id = 4,
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.enable_dma = 1,
 	.dma_filter = stedma40_filter,
 	.dma_rx_param = &ssp0_dma_cfg_rx,

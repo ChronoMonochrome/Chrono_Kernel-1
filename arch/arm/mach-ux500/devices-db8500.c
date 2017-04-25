@@ -462,7 +462,7 @@ static struct resource u8500_hsi_resources[] = {
        HSI0_ACWAKE,
 };
 
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 static struct stedma40_chan_cfg ste_hsi_port0_dma_tx_cfg[] = {
        STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV20_SLIM0_CH0_TX_HSI_TX_CH0)
        STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV21_SLIM0_CH1_TX_HSI_TX_CH1)
@@ -479,7 +479,7 @@ static struct stedma40_chan_cfg ste_hsi_port0_dma_rx_cfg[] = {
 #endif
 
 static struct ste_hsi_port_cfg ste_hsi_port0_cfg = {
-#ifdef CONFIG_STE_DMA40
+#ifdef CONFIG_UX500_STE_DMA40
 	.dma_filter = stedma40_filter,
 	.dma_tx_cfg = ste_hsi_port0_dma_tx_cfg,
 	.dma_rx_cfg = ste_hsi_port0_dma_rx_cfg

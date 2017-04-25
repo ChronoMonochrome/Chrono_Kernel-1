@@ -7,8 +7,8 @@
  * DB5500-SoC-specific configuration for DMA40
  */
 
-#ifndef STE_DMA40_DB5500_H
-#define STE_DMA40_DB5500_H
+#ifndef UX500_STE_DMA40_DB5500_H
+#define UX500_STE_DMA40_DB5500_H
 
 #define DB5500_DMA_NR_DEV 64
 

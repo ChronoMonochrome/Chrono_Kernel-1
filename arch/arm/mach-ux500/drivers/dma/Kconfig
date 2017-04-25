@@ -1,4 +1,4 @@
-config STE_DMA40
+config UX500_STE_DMA40
 	bool "ST-Ericsson DMA40 support"
 	depends on ARCH_U8500
 	select DMA_ENGINE

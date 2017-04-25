@@ -9,7 +9,7 @@
 #include <plat/ste_dma40.h>
 
 #include "ste_dma40_ll.h"
-#ifdef CONFIG_STE_DMA40_DEBUG
+#ifdef CONFIG_UX500_STE_DMA40_DEBUG
 #include "ste_dma40_debug.h"
 #define MARK sted40_history_text((char *)__func__)
 #else

@@ -1988,7 +1988,7 @@ static void u8500_uart2_reset(void)
 }
 
 static struct amba_pl011_data uart0_plat = {
-#ifdef CONFIG_STE_DMA40_REMOVE
+#ifdef CONFIG_UX500_STE_DMA40_REMOVE
 	.dma_filter = stedma40_filter,
 	.dma_rx_param = &uart0_dma_cfg_rx,
 	.dma_tx_param = &uart0_dma_cfg_tx,
@@ -2004,7 +2004,7 @@ static struct amba_pl011_data uart0_plat = {
 };
 
 static struct amba_pl011_data uart1_plat = {
-#ifdef CONFIG_STE_DMA40_REMOVE
+#ifdef CONFIG_UX500_STE_DMA40_REMOVE
 	.dma_filter = stedma40_filter,
 	.dma_rx_param = &uart1_dma_cfg_rx,
 	.dma_tx_param = &uart1_dma_cfg_tx,
@@ -2014,7 +2014,7 @@ static struct amba_pl011_data uart1_plat = {
 };
 
 static struct amba_pl011_data uart2_plat = {
-#ifdef CONFIG_STE_DMA40_REMOVE
+#ifdef CONFIG_UX500_STE_DMA40_REMOVE
 	.dma_filter = stedma40_filter,
 	.dma_rx_param = &uart2_dma_cfg_rx,
 	.dma_tx_param = &uart2_dma_cfg_tx,

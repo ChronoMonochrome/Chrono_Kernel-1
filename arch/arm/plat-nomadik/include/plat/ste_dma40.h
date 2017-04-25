@@ -6,8 +6,8 @@
  */
 
 
-#ifndef STE_DMA40_H
-#define STE_DMA40_H
+#ifndef UX500_STE_DMA40_H
+#define UX500_STE_DMA40_H
 
 #include <linux/dmaengine.h>
 #include <linux/workqueue.h>
