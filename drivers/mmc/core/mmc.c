@@ -1282,7 +1282,7 @@ static int mmc_alive(struct mmc_host *host)
 /*
  * Card detection callback from host.
  */
-static int mmc_detect(struct mmc_host *host)
+static void mmc_detect(struct mmc_host *host)
 {
 	int err;
 
@@ -1306,8 +1306,6 @@ static int mmc_detect(struct mmc_host *host)
 		mmc_power_off(host);
 		mmc_release_host(host);
 	}
-
-	return err;
 }
 
 /*

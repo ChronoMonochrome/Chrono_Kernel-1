@@ -12,7 +12,8 @@
 #define MMC_CD_GPIO_H
 
 struct mmc_host;
-int mmc_cd_gpio_request(struct mmc_host *host, unsigned int gpio);
+int mmc_cd_gpio_request(struct mmc_host *host, unsigned int gpio,
+			unsigned int irq, unsigned long flags);
 void mmc_cd_gpio_free(struct mmc_host *host);
 
 #endif
