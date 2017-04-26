@@ -462,7 +462,7 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
 		/*
 		 * Read the common registers.
 		 */
-		err = sdio_read_cccr(card,  ocr);
+		err = sdio_read_cccr(card);
 		if (err)
 			goto remove;
 #ifdef CONFIG_MMC_EMBEDDED_SDIO

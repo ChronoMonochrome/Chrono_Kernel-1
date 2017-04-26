@@ -194,12 +194,15 @@ static struct stedma40_chan_cfg sdi0_dma_cfg_tx = {
 };
 #endif
 
-
-static u32 sdi0_vdd_handler(struct device *dev, unsigned int vdd,
-                                   unsigned char power_mode)
+static int sdi0_ios_handler(struct device *dev, struct mmc_ios *ios,  enum rpm_status pm)
 {
-	switch (power_mode) {
-        case MMC_POWER_UP:
+	static int power_mode = -1;
+	
+	if (power_mode == ios->power_mode)
+		return 0;
+		
+	switch (ios->power_mode) {
+	case MMC_POWER_UP:
 		break;
 	case MMC_POWER_ON:
 		/* Enable level shifter */
@@ -211,12 +214,12 @@ static u32 sdi0_vdd_handler(struct device *dev, unsigned int vdd,
 		gpio_direction_output(TXS0206_EN_CODINA_R0_0, 0);
 		break;
 	}
-
-        return 0;
+	power_mode = ios->power_mode;
+	return 0;
 }
 
 static struct mmci_platform_data ssg_sdi0_data = {
-	.vdd_handler	= sdi0_vdd_handler,
+	.ios_handler	= sdi0_ios_handler,
 	.ocr_mask	= MMC_VDD_29_30,
 	.f_max		= 100000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA |

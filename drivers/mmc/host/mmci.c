@@ -58,22 +58,25 @@ static unsigned int fmax = 515633;
  * @sdio: variant supports SDIO
  * @st_clkdiv: true if using a ST-specific clock divider algorithm
  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
+ * @non_power_of_2_blksize: true if block sizes can be other than power of two
  * @pwrreg_powerup: power up value for MMCIPOWER register
- * @non_power_of_2_blksize: variant supports block sizes that are not
- *		a power of two.
- * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
+ * @signal_direction: input/out direction of bus signals can be indicated
+ * @pwrreg_ctrl_power: bits in MMCIPOWER register controls ext. power supply
  */
 struct variant_data {
 	unsigned int		clkreg;
 	unsigned int		clkreg_enable;
+	unsigned int		dma_sdio_req_ctrl;
 	unsigned int		datalength_bits;
 	unsigned int		fifosize;
 	unsigned int		fifohalfsize;
 	bool			sdio;
 	bool			st_clkdiv;
 	bool			blksz_datactrl16;
-	unsigned int		pwrreg_powerup;
 	bool			non_power_of_2_blksize;
+	unsigned int		pwrreg_powerup;
+	bool			signal_direction;
+	bool			pwrreg_ctrl_power;
 };
 
 static struct variant_data variant_arm = {
@@ -81,12 +84,15 @@ static struct variant_data variant_arm = {
 	.fifohalfsize		= 8 * 4,
 	.datalength_bits	= 16,
 	.pwrreg_powerup		= MCI_PWR_UP,
+	.pwrreg_ctrl_power	= true,
 };
 
 static struct variant_data variant_arm_extended_fifo = {
 	.fifosize		= 128 * 4,
 	.fifohalfsize		= 64 * 4,
 	.datalength_bits	= 16,
+	.pwrreg_powerup		= MCI_PWR_UP,
+	.pwrreg_ctrl_power	= true,
 };
 
 static struct variant_data variant_u300 = {
@@ -96,18 +102,35 @@ static struct variant_data variant_u300 = {
 	.datalength_bits	= 16,
 	.sdio			= true,
 	.pwrreg_powerup		= MCI_PWR_ON,
+	.signal_direction	= true,
 };
 
 static struct variant_data variant_ux500 = {
 	.fifosize		= 30 * 4,
-	.fifohalfsize		= 8 * 4,
-	.clkreg			= MCI_CLK_ENABLE,
-	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
-	.datalength_bits	= 24,
-	.sdio			= true,
-	.st_clkdiv		= true,
-	.pwrreg_powerup		= MCI_PWR_ON,
-	.non_power_of_2_blksize	= true,
+        .fifohalfsize           = 8 * 4,
+        .clkreg                 = MCI_CLK_ENABLE,
+        .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+        .dma_sdio_req_ctrl      = MCI_ST_DPSM_DMAREQCTL,
+        .datalength_bits        = 24,
+        .sdio                   = true,
+        .st_clkdiv              = true,
+        .pwrreg_powerup         = MCI_PWR_ON,
+        .signal_direction       = true,
+ };
+
+static struct variant_data variant_ux500v2 = {
+        .fifosize               = 30 * 4,
+        .fifohalfsize           = 8 * 4,
+        .clkreg                 = MCI_CLK_ENABLE,
+        .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+        .dma_sdio_req_ctrl      = MCI_ST_DPSM_DMAREQCTL,
+        .datalength_bits        = 24,
+        .sdio                   = true,
+        .st_clkdiv              = true,
+        .blksz_datactrl16       = true,
+        .non_power_of_2_blksize = true,
+        .pwrreg_powerup         = MCI_PWR_ON,
+        .signal_direction       = true,
 };
 /*
  * Debugfs
@@ -207,19 +230,6 @@ static void mmci_debugfs_remove(struct mmci_host *host)
 static inline void mmci_debugfs_create(struct mmci_host *host) { }
 static inline void mmci_debugfs_remove(struct mmci_host *host) { }
 #endif
-
-static struct variant_data variant_ux500v2 = {
-	.fifosize		= 30 * 4,
-	.fifohalfsize		= 8 * 4,
-	.clkreg			= MCI_CLK_ENABLE,
-	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
-	.datalength_bits	= 24,
-	.sdio			= true,
-	.st_clkdiv		= true,
-	.pwrreg_powerup		= MCI_PWR_ON,
-	.non_power_of_2_blksize	= true,
-	.blksz_datactrl16	= true,
-};
 
 /*
  * This must be called with host->lock held
@@ -1137,8 +1147,14 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch (ios->power_mode) {
 	case MMC_POWER_OFF:
-		if (host->vcc)
+		if (host->vcc) 
 			ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);
+
+		if (host->plat->ios_handler &&
+			host->plat->ios_handler(mmc_dev(mmc), ios, RPM_ACTIVE))
+				dev_err(mmc_dev(mmc), "platform ios_handler failed\n");
+
+		mdelay(60);
 		break;
 	case MMC_POWER_UP:
 		if (host->vcc) {
@@ -1152,12 +1168,9 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 				 * and return here.
 				 */
 				return;
-			}
+			}else
+				mdelay(10);
 		}
-		if (host->plat->vdd_handler)
-			pwr |= host->plat->vdd_handler(mmc_dev(mmc), ios->vdd,
-						       ios->power_mode);
-
 		/*
 		 * The ST Micro variant doesn't have the PL180s MCI_PWR_UP
 		 * and instead uses MCI_PWR_ON so apply whatever value is
@@ -1165,13 +1178,49 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		 */
 		pwr |= variant->pwrreg_powerup;
 
+		if (host->plat->ios_handler &&
+			host->plat->ios_handler(mmc_dev(mmc), ios, RPM_ACTIVE))
+				dev_err(mmc_dev(mmc), "platform ios_handler failed\n");
+
 		break;
 	case MMC_POWER_ON:
 		pwr |= MCI_PWR_ON;
+            mdelay(10);
+		if (host->plat->ios_handler &&
+			host->plat->ios_handler(mmc_dev(mmc), ios, RPM_ACTIVE))
+				dev_err(mmc_dev(mmc), "platform ios_handler failed\n");
+
 		break;
 	}
 
+	if (variant->signal_direction && ios->power_mode != MMC_POWER_OFF) {
+		/*
+		 * The ST Micro variant has some additional bits
+		 * indicating signal direction for the signals in
+		 * the SD/MMC bus and feedback-clock usage.
+		 */
+		pwr |= host->plat->sigdir;
+
+		if (ios->bus_width == MMC_BUS_WIDTH_4)
+			pwr &= ~MCI_ST_DATA74DIREN;
+		else if (ios->bus_width == MMC_BUS_WIDTH_1)
+			pwr &= (~MCI_ST_DATA74DIREN &
+				~MCI_ST_DATA31DIREN &
+				~MCI_ST_DATA2DIREN);
+	}
+
+	/*
+	 * ER 474514: Remove open drain on SD card. We assume that
+	 * SD card controllers have the levelshifter attribute set.
+	 * This is to avoid false response when there is no sd card
+	 * present.
+	 */
+#if defined(CONFIG_MACH_SEC_SKOMER)
+	if (!host->plat->levelshifter
+	    && ios->bus_mode == MMC_BUSMODE_OPENDRAIN) {
+#else
 	if (ios->bus_mode == MMC_BUSMODE_OPENDRAIN) {
+#endif
 		if (host->hw_designer != AMBA_VENDOR_ST)
 			pwr |= MCI_ROD;
 		else {
