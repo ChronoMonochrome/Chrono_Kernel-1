@@ -85,11 +85,15 @@ static const char * const iio_chan_type_name_spec[] = {
 	[IIO_TIMESTAMP] = "timestamp",
 	[IIO_CAPACITANCE] = "capacitance",
 	[IIO_ALTVOLTAGE] = "altvoltage",
+<<<<<<< HEAD
 >>>>>>> lk-3.5:drivers/iio/industrialio-core.c
 };
 
 static const char * const iio_chan_type_name_spec_complex[] = {
 	[IIO_IN_DIFF] = "in%d-in%d",
+=======
+	[IIO_CCT] = "cct",
+>>>>>>> 419e9266884fa853179ab726c27a63a9d3ae46e3
 };
 
 static const char * const iio_modifier_names_light[] = {
@@ -101,6 +105,17 @@ static const char * const iio_modifier_names_axial[] = {
 	[IIO_MOD_X] = "x",
 	[IIO_MOD_Y] = "y",
 	[IIO_MOD_Z] = "z",
+<<<<<<< HEAD
+=======
+	[IIO_MOD_ROOT_SUM_SQUARED_X_Y] = "sqrt(x^2+y^2)",
+	[IIO_MOD_SUM_SQUARED_X_Y_Z] = "x^2+y^2+z^2",
+	[IIO_MOD_LIGHT_BOTH] = "both",
+	[IIO_MOD_LIGHT_IR] = "ir",
+	[IIO_MOD_LIGHT_CLEAR] = "clear",
+	[IIO_MOD_LIGHT_RED] = "red",
+	[IIO_MOD_LIGHT_GREEN] = "green",
+	[IIO_MOD_LIGHT_BLUE] = "blue",
+>>>>>>> 419e9266884fa853179ab726c27a63a9d3ae46e3
 };
 
 /* relies on pairs of these shared then separate */
@@ -473,6 +488,69 @@ static void __exit iio_exit(void)
 			       this_attr->c, buf, len);
 >>>>>>> lk-3.5:drivers/iio/industrialio-core.c
 }
+
+ssize_t iio_enum_available_read(struct iio_dev *indio_dev,
+	uintptr_t priv, const struct iio_chan_spec *chan, char *buf)
+{
+	const struct iio_enum *e = (const struct iio_enum *)priv;
+	unsigned int i;
+	size_t len = 0;
+
+	if (!e->num_items)
+		return 0;
+
+	for (i = 0; i < e->num_items; ++i)
+		len += scnprintf(buf + len, PAGE_SIZE - len, "%s ", e->items[i]);
+
+	/* replace last space with a newline */
+	buf[len - 1] = '\n';
+
+	return len;
+}
+EXPORT_SYMBOL_GPL(iio_enum_available_read);
+
+ssize_t iio_enum_read(struct iio_dev *indio_dev,
+	uintptr_t priv, const struct iio_chan_spec *chan, char *buf)
+{
+	const struct iio_enum *e = (const struct iio_enum *)priv;
+	int i;
+
+	if (!e->get)
+		return -EINVAL;
+
+	i = e->get(indio_dev, chan);
+	if (i < 0)
+		return i;
+	else if (i >= e->num_items)
+		return -EINVAL;
+
+	return sprintf(buf, "%s\n", e->items[i]);
+}
+EXPORT_SYMBOL_GPL(iio_enum_read);
+
+ssize_t iio_enum_write(struct iio_dev *indio_dev,
+	uintptr_t priv, const struct iio_chan_spec *chan, const char *buf,
+	size_t len)
+{
+	const struct iio_enum *e = (const struct iio_enum *)priv;
+	unsigned int i;
+	int ret;
+
+	if (!e->set)
+		return -EINVAL;
+
+	for (i = 0; i < e->num_items; i++) {
+		if (sysfs_streq(buf, e->items[i]))
+			break;
+	}
+
+	if (i == e->num_items)
+		return -EINVAL;
+
+	ret = e->set(indio_dev, chan, i);
+	return ret ? ret : len;
+}
+EXPORT_SYMBOL_GPL(iio_enum_write);
 
 static ssize_t iio_read_channel_info(struct device *dev,
 				     struct device_attribute *attr,
