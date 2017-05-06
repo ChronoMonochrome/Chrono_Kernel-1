@@ -34,7 +34,6 @@
 #define RADEON_IDLE_LOOP_MS 100
 #define RADEON_RECLOCK_DELAY_MS 200
 #define RADEON_WAIT_VBLANK_TIMEOUT 200
-#define RADEON_WAIT_IDLE_TIMEOUT 200
 
 static const char *radeon_pm_state_type_name[5] = {
 	"Default",
@@ -52,6 +51,24 @@ static void radeon_pm_update_profile(struct radeon_device *rdev);
 static void radeon_pm_set_clocks(struct radeon_device *rdev);
 
 #define ACPI_AC_CLASS           "ac_adapter"
+
+int radeon_pm_get_type_index(struct radeon_device *rdev,
+			     enum radeon_pm_state_type ps_type,
+			     int instance)
+{
+	int i;
+	int found_instance = -1;
+
+	for (i = 0; i < rdev->pm.num_power_states; i++) {
+		if (rdev->pm.power_state[i].type == ps_type) {
+			found_instance++;
+			if (found_instance == instance)
+				return i;
+		}
+	}
+	/* return default if no match */
+	return rdev->pm.default_power_state_index;
+}
 
 #ifdef CONFIG_ACPI
 static int radeon_acpi_event(struct notifier_block *nb,
@@ -203,7 +220,7 @@ static void radeon_set_power_state(struct radeon_device *rdev)
 		}
 
 		/* set memory clock */
-		if (rdev->asic->set_memory_clock && (mclk != rdev->pm.current_mclk)) {
+		if (rdev->asic->pm.set_memory_clock && (mclk != rdev->pm.current_mclk)) {
 			radeon_pm_debug_check_in_vbl(rdev, false);
 			radeon_set_memory_clock(rdev, mclk);
 			radeon_pm_debug_check_in_vbl(rdev, true);
@@ -233,31 +250,19 @@ static void radeon_pm_set_clocks(struct radeon_device *rdev)
 		return;
 
 	mutex_lock(&rdev->ddev->struct_mutex);
-	mutex_lock(&rdev->vram_mutex);
-	mutex_lock(&rdev->cp.mutex);
+	down_write(&rdev->pm.mclk_lock);
+	mutex_lock(&rdev->ring_lock);
 
 	/* gui idle int has issues on older chips it seems */
 	if (rdev->family >= CHIP_R600) {
 		if (rdev->irq.installed) {
-			/* wait for GPU idle */
-			rdev->pm.gui_idle = false;
-			rdev->irq.gui_idle = true;
-			radeon_irq_set(rdev);
-			wait_event_interruptible_timeout(
-				rdev->irq.idle_queue, rdev->pm.gui_idle,
-				msecs_to_jiffies(RADEON_WAIT_IDLE_TIMEOUT));
-			rdev->irq.gui_idle = false;
-			radeon_irq_set(rdev);
+			/* wait for GPU to become idle */
+			radeon_irq_kms_wait_gui_idle(rdev);
 		}
 	} else {
-		if (rdev->cp.ready) {
-			struct radeon_fence *fence;
-			radeon_ring_alloc(rdev, 64);
-			radeon_fence_create(rdev, &fence);
-			radeon_fence_emit(rdev, fence);
-			radeon_ring_commit(rdev);
-			radeon_fence_wait(fence, false);
-			radeon_fence_unref(&fence);
+		struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+		if (ring->ready) {
+			radeon_fence_wait_empty_locked(rdev, RADEON_RING_TYPE_GFX_INDEX);
 		}
 	}
 	radeon_unmap_vram_bos(rdev);
@@ -289,8 +294,8 @@ static void radeon_pm_set_clocks(struct radeon_device *rdev)
 
 	rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
 
-	mutex_unlock(&rdev->cp.mutex);
-	mutex_unlock(&rdev->vram_mutex);
+	mutex_unlock(&rdev->ring_lock);
+	up_write(&rdev->pm.mclk_lock);
 	mutex_unlock(&rdev->ddev->struct_mutex);
 }
 
@@ -449,6 +454,9 @@ static ssize_t radeon_hwmon_show_temp(struct device *dev,
 	case THERMAL_TYPE_SUMO:
 		temp = sumo_get_temp(rdev);
 		break;
+	case THERMAL_TYPE_SI:
+		temp = si_get_temp(rdev);
+		break;
 	default:
 		temp = 0;
 		break;
@@ -489,6 +497,10 @@ static int radeon_hwmon_init(struct radeon_device *rdev)
 	case THERMAL_TYPE_EVERGREEN:
 	case THERMAL_TYPE_NI:
 	case THERMAL_TYPE_SUMO:
+	case THERMAL_TYPE_SI:
+		/* No support for TN yet */
+		if (rdev->family == CHIP_ARUBA)
+			return err;
 		rdev->pm.int_hwmon_dev = hwmon_device_register(rdev->dev);
 		if (IS_ERR(rdev->pm.int_hwmon_dev)) {
 			err = PTR_ERR(rdev->pm.int_hwmon_dev);
@@ -535,9 +547,7 @@ void radeon_pm_suspend(struct radeon_device *rdev)
 void radeon_pm_resume(struct radeon_device *rdev)
 {
 	/* set up the default clocks if the MC ucode is loaded */
-	if ((rdev->family >= CHIP_BARTS) &&
-	    (rdev->family <= CHIP_CAYMAN) &&
-	    rdev->mc_fw) {
+	if (ASIC_IS_DCE5(rdev) && rdev->mc_fw) {
 		if (rdev->pm.default_vddc)
 			radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
 						SET_VOLTAGE_TYPE_ASIC_VDDC);
@@ -592,9 +602,7 @@ int radeon_pm_init(struct radeon_device *rdev)
 		radeon_pm_print_states(rdev);
 		radeon_pm_init_profile(rdev);
 		/* set up the default clocks if the MC ucode is loaded */
-		if ((rdev->family >= CHIP_BARTS) &&
-		    (rdev->family <= CHIP_CAYMAN) &&
-		    rdev->mc_fw) {
+		if (ASIC_IS_DCE5(rdev) && rdev->mc_fw) {
 			if (rdev->pm.default_vddc)
 				radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
 							SET_VOLTAGE_TYPE_ASIC_VDDC);
@@ -781,19 +789,18 @@ static void radeon_dynpm_idle_work_handler(struct work_struct *work)
 	resched = ttm_bo_lock_delayed_workqueue(&rdev->mman.bdev);
 	mutex_lock(&rdev->pm.mutex);
 	if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE) {
-		unsigned long irq_flags;
 		int not_processed = 0;
+		int i;
 
-		read_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
-		if (!list_empty(&rdev->fence_drv.emited)) {
-			struct list_head *ptr;
-			list_for_each(ptr, &rdev->fence_drv.emited) {
-				/* count up to 3, that's enought info */
-				if (++not_processed >= 3)
+		for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+			struct radeon_ring *ring = &rdev->ring[i];
+
+			if (ring->ready) {
+				not_processed += radeon_fence_count_emitted(rdev, i);
+				if (not_processed >= 3)
 					break;
 			}
 		}
-		read_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
 
 		if (not_processed >= 3) { /* should upclock */
 			if (rdev->pm.dynpm_planned_action == DYNPM_ACTION_DOWNCLOCK) {
@@ -845,17 +852,13 @@ static int radeon_debugfs_pm_info(struct seq_file *m, void *data)
 	struct radeon_device *rdev = dev->dev_private;
 
 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
-	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
-	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
-		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
-	else
-		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
+	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
-	if (rdev->asic->get_memory_clock)
+	if (rdev->asic->pm.get_memory_clock)
 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
 	if (rdev->pm.current_vddc)
 		seq_printf(m, "voltage: %u mV\n", rdev->pm.current_vddc);
-	if (rdev->asic->get_pcie_lanes)
+	if (rdev->asic->pm.get_pcie_lanes)
 		seq_printf(m, "PCIE lanes: %d\n", radeon_get_pcie_lanes(rdev));
 
 	return 0;

@@ -41,12 +41,8 @@
 void
 nouveau_irq_preinstall(struct drm_device *dev)
 {
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-
 	/* Master disable */
 	nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
-
-	INIT_LIST_HEAD(&dev_priv->vbl_waiting);
 }
 
 int
@@ -79,7 +75,7 @@ nouveau_irq_handler(DRM_IRQ_ARGS)
 	int i;
 
 	stat = nv_rd32(dev, NV03_PMC_INTR_0);
-	if (!stat)
+	if (stat == 0 || stat == ~0)
 		return IRQ_NONE;
 
 	spin_lock_irqsave(&dev_priv->context_switch_lock, flags);

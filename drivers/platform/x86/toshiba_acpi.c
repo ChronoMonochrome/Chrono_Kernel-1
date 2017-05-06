@@ -1063,6 +1063,7 @@ static int __init toshiba_acpi_init(void)
 =======
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int toshiba_acpi_suspend(struct device *device)
 {
 	struct toshiba_acpi_dev *dev = acpi_driver_data(to_acpi_device(device));
@@ -1087,6 +1088,7 @@ static int toshiba_acpi_resume(struct device *device)
 
 	return 0;
 }
+#endif
 
 static SIMPLE_DEV_PM_OPS(toshiba_acpi_pm,
 			 toshiba_acpi_suspend, toshiba_acpi_resume);

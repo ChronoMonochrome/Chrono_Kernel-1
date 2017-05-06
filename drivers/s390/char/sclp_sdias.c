@@ -214,11 +214,13 @@ int sclp_sdias_copy(void *dest, int start_blk, int nr_blks)
 	switch (sccb.evbuf.event_status) {
 		case EVSTATE_ALL_STORED:
 			TRACE("all stored\n");
+			break;
 		case EVSTATE_PART_STORED:
 			TRACE("part stored: %i\n", sccb.evbuf.blk_cnt);
 			break;
 		case EVSTATE_NO_DATA:
 			TRACE("no data\n");
+			/* fall through */
 		default:
 			pr_err("Error from SCLP while copying hsa. "
 			       "Event status = %x\n",

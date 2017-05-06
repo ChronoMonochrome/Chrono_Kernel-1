@@ -311,9 +311,33 @@ DEFINE_EVENT(i915_gem_request, i915_gem_request_retire,
 	    TP_ARGS(ring, seqno)
 );
 
-DEFINE_EVENT(i915_gem_request, i915_gem_request_wait_begin,
+TRACE_EVENT(i915_gem_request_wait_begin,
 	    TP_PROTO(struct intel_ring_buffer *ring, u32 seqno),
-	    TP_ARGS(ring, seqno)
+	    TP_ARGS(ring, seqno),
+
+	    TP_STRUCT__entry(
+			     __field(u32, dev)
+			     __field(u32, ring)
+			     __field(u32, seqno)
+			     __field(bool, blocking)
+			     ),
+
+	    /* NB: the blocking information is racy since mutex_is_locked
+	     * doesn't check that the current thread holds the lock. The only
+	     * other option would be to pass the boolean information of whether
+	     * or not the class was blocking down through the stack which is
+	     * less desirable.
+	     */
+	    TP_fast_assign(
+			   __entry->dev = ring->dev->primary->index;
+			   __entry->ring = ring->id;
+			   __entry->seqno = seqno;
+			   __entry->blocking = mutex_is_locked(&ring->dev->struct_mutex);
+			   ),
+
+	    TP_printk("dev=%u, ring=%u, seqno=%u, blocking=%s",
+		      __entry->dev, __entry->ring, __entry->seqno,
+		      __entry->blocking ?  "yes (NB)" : "no")
 );
 
 DEFINE_EVENT(i915_gem_request, i915_gem_request_wait_end,
@@ -385,29 +409,29 @@ TRACE_EVENT(i915_flip_complete,
 );
 
 TRACE_EVENT(i915_reg_rw,
-           TP_PROTO(bool write, u32 reg, u64 val, int len),
+	TP_PROTO(bool write, u32 reg, u64 val, int len),
 
-           TP_ARGS(write, reg, val, len),
+	TP_ARGS(write, reg, val, len),
 
-           TP_STRUCT__entry(
-                   __field(u64, val)
-                   __field(u32, reg)
-                   __field(u16, write)
-                   __field(u16, len)
-                   ),
+	TP_STRUCT__entry(
+		__field(u64, val)
+		__field(u32, reg)
+		__field(u16, write)
+		__field(u16, len)
+		),
 
-           TP_fast_assign(
-                   __entry->val = (u64)val;
-                   __entry->reg = reg;
-                   __entry->write = write;
-                   __entry->len = len;
-                   ),
+	TP_fast_assign(
+		__entry->val = (u64)val;
+		__entry->reg = reg;
+		__entry->write = write;
+		__entry->len = len;
+		),
 
-           TP_printk("%s reg=0x%x, len=%d, val=(0x%x, 0x%x)",
-                     __entry->write ? "write" : "read",
-		     __entry->reg, __entry->len,
-		     (u32)(__entry->val & 0xffffffff),
-		     (u32)(__entry->val >> 32))
+	TP_printk("%s reg=0x%x, len=%d, val=(0x%x, 0x%x)",
+		__entry->write ? "write" : "read",
+		__entry->reg, __entry->len,
+		(u32)(__entry->val & 0xffffffff),
+		(u32)(__entry->val >> 32))
 );
 
 #endif /* _I915_TRACE_H_ */
