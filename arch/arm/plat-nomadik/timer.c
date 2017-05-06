@@ -166,7 +166,7 @@ static struct clock_event_device nmdk_clkevt = {
 };
 
 #ifdef ARCH_HAS_READ_CURRENT_TIMER
-static void nmdk_timer_delay_loop(unsigned long loops)
+void nmdk_timer_delay_loop(unsigned long loops)
 {
 	unsigned long bclock, now;
 
@@ -178,6 +178,7 @@ static void nmdk_timer_delay_loop(unsigned long loops)
 			return;
 	} while ((now - bclock) < loops);
 }
+__strong_alias(__loop_delay, nmdk_timer_delay_loop);
 
 /* Used to calibrate the delay */
 int read_current_timer(unsigned long *timer_val)
@@ -283,9 +284,4 @@ void __init nmdk_timer_init(void)
 	/* Register irq and clockevents */
 	setup_irq(IRQ_MTU0, &nmdk_timer_irq);
 	clockevents_register_device(&nmdk_clkevt);
-#ifdef ARCH_HAS_READ_CURRENT_TIMER
-	if (!prcmu_is_ulppll_disabled())
-		set_delay_fn(nmdk_timer_delay_loop);
-#endif
-
 }
