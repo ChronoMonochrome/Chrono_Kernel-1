@@ -1482,6 +1482,7 @@ hfc_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
 			context->ctrl_in_pipe =
 			    usb_rcvctrlpipe(context->dev, 0);
 			context->ctrl_out_pipe =
+<<<<<<< HEAD
 			    usb_sndctrlpipe(context->dev, 0);
 			context->ctrl_urb = usb_alloc_urb(0, GFP_KERNEL);
 
@@ -1490,6 +1491,24 @@ hfc_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
 			    driver_info;
 			printk(KERN_INFO "HFC-S USB: detected \"%s\"\n",
 			       driver_info->vend_name);
+=======
+				usb_sndctrlpipe(context->dev, 0);
+
+			driver_info = (hfcsusb_vdata *)
+				      hfcusb_idtab[vend_idx].driver_info;
+
+			context->ctrl_urb = usb_alloc_urb(0, GFP_KERNEL);
+
+			if (!context->ctrl_urb) {
+				pr_warn("%s: No memory for control urb\n",
+					driver_info->vend_name);
+				kfree(context);
+				return -ENOMEM;
+			}
+
+			pr_info("HFC-S USB: detected \"%s\"\n",
+				driver_info->vend_name);
+>>>>>>> 614a6d4341b3760ca98a1c2c09141b71db5d1e90
 
 			DBG(HFCUSB_DBG_INIT,
 			    "HFC-S USB: Endpoint-Config: %s (if=%d alt=%d), E-Channel(%d)",

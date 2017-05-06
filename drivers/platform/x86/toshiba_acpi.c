@@ -1059,9 +1059,85 @@ static int __init toshiba_acpi_init(void)
 					   &toshiba_led))
 			toshiba_acpi.illumination_installed = 1;
 	}
+<<<<<<< HEAD
+=======
+}
+
+static int toshiba_acpi_suspend(struct device *device)
+{
+	struct toshiba_acpi_dev *dev = acpi_driver_data(to_acpi_device(device));
+	u32 result;
+
+	if (dev->hotkey_dev)
+		hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_DISABLE, &result);
+>>>>>>> 614a6d4341b3760ca98a1c2c09141b71db5d1e90
 
 	return 0;
 }
 
+<<<<<<< HEAD
+=======
+static int toshiba_acpi_resume(struct device *device)
+{
+	struct toshiba_acpi_dev *dev = acpi_driver_data(to_acpi_device(device));
+	u32 result;
+
+	if (dev->hotkey_dev)
+		hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_ENABLE, &result);
+
+	return 0;
+}
+
+static SIMPLE_DEV_PM_OPS(toshiba_acpi_pm,
+			 toshiba_acpi_suspend, toshiba_acpi_resume);
+
+static struct acpi_driver toshiba_acpi_driver = {
+	.name	= "Toshiba ACPI driver",
+	.owner	= THIS_MODULE,
+	.ids	= toshiba_device_ids,
+	.flags	= ACPI_DRIVER_ALL_NOTIFY_EVENTS,
+	.ops	= {
+		.add		= toshiba_acpi_add,
+		.remove		= toshiba_acpi_remove,
+		.notify		= toshiba_acpi_notify,
+	},
+	.drv.pm	= &toshiba_acpi_pm,
+};
+
+static int __init toshiba_acpi_init(void)
+{
+	int ret;
+
+	/*
+	 * Machines with this WMI guid aren't supported due to bugs in
+	 * their AML. This check relies on wmi initializing before
+	 * toshiba_acpi to guarantee guids have been identified.
+	 */
+	if (wmi_has_guid(TOSHIBA_WMI_EVENT_GUID))
+		return -ENODEV;
+
+	toshiba_proc_dir = proc_mkdir(PROC_TOSHIBA, acpi_root_dir);
+	if (!toshiba_proc_dir) {
+		pr_err("Unable to create proc dir " PROC_TOSHIBA "\n");
+		return -ENODEV;
+	}
+
+	ret = acpi_bus_register_driver(&toshiba_acpi_driver);
+	if (ret) {
+		pr_err("Failed to register ACPI driver: %d\n", ret);
+		remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+	}
+
+	return ret;
+}
+
+static void __exit toshiba_acpi_exit(void)
+{
+	acpi_bus_unregister_driver(&toshiba_acpi_driver);
+	if (toshiba_proc_dir)
+		remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+}
+
+>>>>>>> 614a6d4341b3760ca98a1c2c09141b71db5d1e90
 module_init(toshiba_acpi_init);
 module_exit(toshiba_acpi_exit);

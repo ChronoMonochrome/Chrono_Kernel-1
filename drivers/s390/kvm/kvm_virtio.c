@@ -1,5 +1,5 @@
 /*
- * kvm_virtio.c - virtio for kvm on s390
+ * virtio for kvm on s390
  *
  * Copyright IBM Corp. 2008
  *
@@ -24,6 +24,7 @@
 #include <asm/io.h>
 #include <asm/kvm_para.h>
 #include <asm/kvm_virtio.h>
+#include <asm/sclp.h>
 #include <asm/setup.h>
 #include <asm/irq.h>
 
@@ -463,7 +464,7 @@ static __init int early_put_chars(u32 vtermno, const char *buf, int count)
 
 static int __init s390_virtio_console_init(void)
 {
-	if (!MACHINE_IS_KVM)
+	if (sclp_has_vt220() || sclp_has_linemode())
 		return -ENODEV;
 	return virtio_cons_early_init(early_put_chars);
 }
