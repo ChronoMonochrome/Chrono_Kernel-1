@@ -71,6 +71,7 @@
  */
 
 #include <linux/slab.h>
+#include <linux/module.h>
 #include "megaraid_mbox.h"
 
 static int megaraid_init(void);
@@ -2730,7 +2731,7 @@ megaraid_reset_handler(struct scsi_cmnd *scp)
 	}
 
  out:
-	spin_unlock_irq(&adapter->lock);
+	spin_unlock(&adapter->lock);
 	return rval;
 }
 
