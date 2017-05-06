@@ -110,3 +110,8 @@
 #define uninitialized_var(x) x = x
 
 #define __always_inline		inline __attribute__((always_inline))
+
+#define __strong_alias(alias, sym) \
+    __asm__(".global " #alias "\n" \
+            #alias " = " #sym);
+
