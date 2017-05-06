@@ -69,6 +69,7 @@ struct max8925_rtc_info {
 	struct max8925_chip	*chip;
 	struct i2c_client	*rtc;
 	struct device		*dev;
+	int			irq;
 };
 
 static irqreturn_t rtc_update_handler(int irq, void *data)
@@ -239,7 +240,7 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
 {
 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
 	struct max8925_rtc_info *info;
-	int irq, ret;
+	int ret;
 
 	info = kzalloc(sizeof(struct max8925_rtc_info), GFP_KERNEL);
 	if (!info)
@@ -247,13 +248,13 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
 	info->chip = chip;
 	info->rtc = chip->rtc;
 	info->dev = &pdev->dev;
-	irq = chip->irq_base + MAX8925_IRQ_RTC_ALARM0;
+	info->irq = platform_get_irq(pdev, 0);
 
-	ret = request_threaded_irq(irq, NULL, rtc_update_handler,
+	ret = request_threaded_irq(info->irq, NULL, rtc_update_handler,
 				   IRQF_ONESHOT, "rtc-alarm0", info);
 	if (ret < 0) {
 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
-			irq, ret);
+			info->irq, ret);
 		goto out_irq;
 	}
 
@@ -272,7 +273,7 @@ static int __devinit max8925_rtc_probe(struct platform_device *pdev)
 	return 0;
 out_rtc:
 	platform_set_drvdata(pdev, NULL);
-	free_irq(chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
+	free_irq(info->irq, info);
 out_irq:
 	kfree(info);
 	return ret;
@@ -283,7 +284,7 @@ static int __devexit max8925_rtc_remove(struct platform_device *pdev)
 	struct max8925_rtc_info *info = platform_get_drvdata(pdev);
 
 	if (info) {
-		free_irq(info->chip->irq_base + MAX8925_IRQ_RTC_ALARM0, info);
+		free_irq(info->irq, info);
 		rtc_device_unregister(info->rtc_dev);
 		kfree(info);
 	}

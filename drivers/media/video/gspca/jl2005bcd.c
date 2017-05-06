@@ -501,8 +501,6 @@ static void sd_stop0(struct gspca_dev *gspca_dev)
 /* sub-driver description */
 static const struct sd_desc sd_desc = {
 	.name = MODULE_NAME,
-	/* .ctrls = none have been detected */
-	/* .nctrls = ARRAY_SIZE(sd_ctrls),  */
 	.config = sd_config,
 	.init = sd_init,
 	.start = sd_start,
@@ -532,6 +530,7 @@ static struct usb_driver sd_driver = {
 #ifdef CONFIG_PM
 	.suspend = gspca_suspend,
 	.resume = gspca_resume,
+	.reset_resume = gspca_resume,
 #endif
 };
 

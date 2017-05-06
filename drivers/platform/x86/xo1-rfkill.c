@@ -12,8 +12,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/rfkill.h>
-
-#include <asm/olpc.h>
+#include <linux/olpc-ec.h>
 
 static int rfkill_set_block(void *data, bool blocked)
 {

@@ -40,6 +40,8 @@
 static int debug;
 static int fake_signal_str = 1;
 
+#define LGS8GXX_FIRMWARE "lgs8g75.fw"
+
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off frontend debugging (default:off).");
 
@@ -593,7 +595,7 @@ static int lgs8g75_init_data(struct lgs8gxx_state *priv)
 	int rc;
 	int i;
 
-	rc = request_firmware(&fw, "lgs8g75.fw", &priv->i2c->dev);
+	rc = request_firmware(&fw, LGS8GXX_FIRMWARE, &priv->i2c->dev);
 	if (rc)
 		return rc;
 
@@ -1071,3 +1073,4 @@ EXPORT_SYMBOL(lgs8gxx_attach);
 MODULE_DESCRIPTION("Legend Silicon LGS8913/LGS8GXX DMB-TH demodulator driver");
 MODULE_AUTHOR("David T. L. Wong <davidtlwong@gmail.com>");
 MODULE_LICENSE("GPL");
+MODULE_FIRMWARE(LGS8GXX_FIRMWARE);
