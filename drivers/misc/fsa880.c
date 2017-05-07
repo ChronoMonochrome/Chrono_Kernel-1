@@ -14,6 +14,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/sysfs.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <mach/gpio.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
@@ -455,42 +456,58 @@ static struct device_attribute FSA9480_device_attrs[] = {
 static DEVICE_ATTR(usb_state, 0444, show_usb_state, NULL);
 static DEVICE_ATTR(adc, 0444, show_adc, NULL);
 
-static int FSA9480_readproc(char *page, char **start, off_t off,
-		int count, int *eof, void *data)
+static int FSA9480_proc_read(struct seq_file *m, void *v)
 {
-	struct FSA9480_instance *instance = (struct FSA9480_instance *) data ;
+	struct FSA9480_instance *instance = (struct FSA9480_instance *) (m->private) ;
 	int i ;
 	char c ;
-	int len = 0;
 	int ret = 0;
+
+	if (!instance) {
+		pr_err("%s: FSA880 instance is NULL!\n");
+		return 0;
+	}
 
 	for (i = 1; i <= 0x14; i++) {
 		c = i;
 		ret = read_FSA9480_register(instance, i, &c);
 		if (ret >= 0)
-			len += sprintf(page+len, "reg 0x%02x = 0x%02x\n", i, c);
+			seq_printf(m, "reg 0x%02x = 0x%02x\n", i, c);
 		else
-			len += sprintf(page+len, "reg 0x%02x failed return=%d\n", i, ret);
+			seq_printf(m, "reg 0x%02x failed return=%d\n", i, ret);
 
 	}
 
 	if (instance->charge_detect_gpio)
-		len += sprintf(page + len, "charge detect= 0x%02x\n", FSA9480_USB_charger_present(instance));
+		seq_printf(m, "charge detect= 0x%02x\n", FSA9480_USB_charger_present(instance));
 
-	len += sprintf(page + len, "connection detect= 0x%02x\n", FSA9480_connection_change_gpio(instance));
+	seq_printf(m, "connection detect= 0x%02x\n", FSA9480_connection_change_gpio(instance));
 
 	read_FSA9480_register(instance, FSA9490_DEVICE_TYPE_1_REGISTER, &c);
 
 	for (i = 0; i < ARRAY_SIZE(device_1_register_bits); i++) {
 		if (c&device_1_register_bits[i].mask) {
-			len += sprintf(page + len, "%s \n", device_1_register_bits[i].name);
+			seq_printf(m, "%s \n", device_1_register_bits[i].name);
 		}
 	}
 
-	*eof = -1;
-
-	return len;
+	return 0;
 }
+
+/*
+ * seq_file wrappers for procfile show routines.
+ */
+static int FSA9480_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, FSA9480_proc_read, PDE_DATA(file_inode(file)));
+}
+
+static const struct file_operations FSA9480_proc_fops = {
+	.open           = FSA9480_proc_open,
+	.read           = seq_read,
+	.llseek         = seq_lseek,
+	.release        = seq_release,
+};
 
 #if !defined(FSA_DELAYED_WORK)
 static irqreturn_t FSA9480_irq_handler(int irq, void *data)
@@ -887,7 +904,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 #else
 	INIT_WORK(&instance->notifier_queue, usb_switch_notify_clients);
 #endif
-	instance->proc_entry = create_proc_read_entry("MUSB", 0444, NULL, FSA9480_readproc, instance);
+	instance->proc_entry = proc_create_data("MUSB", 0444, NULL, &FSA9480_proc_fops, instance);
 
 	/* Read Control register of MUIC */
 	read_FSA9480_register(instance, FSA9490_CONTROL_REGISTER, &c);
