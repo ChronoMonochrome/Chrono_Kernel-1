@@ -5,6 +5,7 @@
  * Author: Mattias Wallin <mattias.wallin@stericsson.com> for ST-Ericsson
  */
 #include <linux/io.h>
+#include <linux/clocksource.h>
 #include <linux/errno.h>
 #include <linux/clksrc-dbx500-prcmu.h>
 #include <linux/clksrc-db5500-mtimer.h>
@@ -53,7 +54,7 @@ static void __init ux500_twd_init(void)
 					   &u8500_twd_local_timer;
 
 	if (of_have_populated_dt())
-		twd_local_timer_of_register();
+		clocksource_of_init();
 	else {
 		err = twd_local_timer_register(twd_local_timer);
 		if (err)
