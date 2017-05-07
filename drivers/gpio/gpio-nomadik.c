@@ -24,6 +24,8 @@
 #include <linux/irq.h>
 #include <linux/slab.h>
 
+
+#include <linux/irqchip/chained_irq.h>
 #include <asm/mach/irq.h>
 #include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>

@@ -766,7 +766,7 @@ done:
 }
 EXPORT_SYMBOL_GPL(gpio_export);
 
-static int match_export(struct device *dev, void *data)
+static int match_export(struct device *dev, const void *data)
 {
 	return dev_get_drvdata(dev) == data;
 }
@@ -1147,7 +1147,7 @@ EXPORT_SYMBOL_GPL(gpiochip_remove);
  * more gpio_chips.
  */
 struct gpio_chip *gpiochip_find(void *data,
-				int (*match)(struct gpio_chip *chip, void *data))
+				int (*match)(struct gpio_chip *chip, const void *data))
 {
 	struct gpio_chip *chip = NULL;
 	unsigned long flags;

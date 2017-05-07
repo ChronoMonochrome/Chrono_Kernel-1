@@ -117,6 +117,7 @@ ux500_pcm_dma_start(
 	int stream_id)
 {
 	dma_cookie_t status_submit;
+	unsigned long flags = 0;
 	int direction;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -139,7 +140,7 @@ ux500_pcm_dma_start(
 		dma_addr,
 		period_cnt * period_len,
 		period_len,
-		direction, NULL);
+		direction, flags, NULL);
 
 	if (IS_ERR(cdesc)) {
 		pr_err("%s: ERROR: device_prep_dma_cyclic failed (%ld)!\n",
