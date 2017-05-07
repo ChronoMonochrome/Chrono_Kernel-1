@@ -102,6 +102,10 @@ config ARM_DMA_IOMMU_ALIGNMENT
 
 endif
 
+config EXPERIMENTAL
+	bool
+	default y
+
 config HAVE_PWM
 	bool
 
@@ -928,6 +932,7 @@ config ARCH_U8500
 	select PM_GENERIC_DOMAINS if PM
 	select PM_GENERIC_DOMAINS_RUNTIME if PM
 	select PM_GENERIC_DOMAINS_SLEEP if PM
+	select EXPERIMENTAL
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
