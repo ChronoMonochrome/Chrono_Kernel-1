@@ -109,6 +109,3 @@ static void __init ux500_timer_init(void)
 	ux500_twd_init();
 }
 
-struct sys_timer ux500_timer = {
-	.init		= ux500_timer_init,
-};
