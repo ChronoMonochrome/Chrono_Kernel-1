@@ -31,7 +31,14 @@ unsigned int __machine_arch_type;
 static void putstr(const char *ptr);
 extern void error(char *x);
 
+#ifdef CONFIG_ARCH_MULTIPLATFORM
+static inline void putc(int c) {}
+static inline void flush(void) {}
+static inline void arch_decomp_setup(void) {}
+#else
+#define BOOT_COMPRESSED
 #include <mach/uncompress.h>
+#endif
 
 #ifdef CONFIG_DEBUG_ICEDCC
 
