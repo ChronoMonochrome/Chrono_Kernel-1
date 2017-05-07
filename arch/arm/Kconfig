@@ -100,6 +100,10 @@ config ARM_DMA_IOMMU_ALIGNMENT
 
 endif
 
+config EXPERIMENTAL
+	bool
+	default y
+
 config HAVE_PWM
 	bool
 
@@ -927,6 +931,7 @@ config ARCH_U8500
 	select NEED_MACH_MEMORY_H
 	select NEED_MACH_IO_H
 	select MIGHT_HAVE_CACHE_L2X0
+	select EXPERIMENTAL
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
