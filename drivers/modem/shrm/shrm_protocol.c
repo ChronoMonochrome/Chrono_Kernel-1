@@ -245,7 +245,7 @@ int nl_send_multicast_message(int msg, gfp_t gfp_mask)
 	*(int *)NLMSG_DATA(nlh) = msg;
 	skb_put(skb, MAX_PAYLOAD);
 	/* sender is in group 1<<0 */
-	NETLINK_CB(skb).pid = 0;  /* from kernel */
+	NETLINK_CB(skb).portid = 0;  /* from kernel */
 	/* to mcast group 1<<0 */
 	NETLINK_CB(skb).dst_group = 1;
 
@@ -292,7 +292,7 @@ static void nl_send_unicast_message(int dst_pid)
 
 	skb_put(skb, MAX_PAYLOAD);
 	/* sender is in group 1<<0 */
-	NETLINK_CB(skb).pid = 0;  /* from kernel */
+	NETLINK_CB(skb).portid = 0;  /* from kernel */
 	NETLINK_CB(skb).dst_group = 0;
 
 	/*unicast the message to the querying processes*/
@@ -933,6 +933,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 	struct netlink_kernel_cfg cfg = {
+		.flags  = NL_CFG_F_NONROOT_RECV,
 		.groups = 1,
 		.input  = shm_nl_receive,
 	};
@@ -1058,14 +1059,12 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 	/* init netlink socket for user-space communication */
-	shrm_nl_sk = netlink_kernel_create(NULL, NETLINK_SHRM, THIS_MODULE, &cfg);
+	shrm_nl_sk = netlink_kernel_create(NULL, NETLINK_SHRM, &cfg);
 
 	if (!shrm_nl_sk) {
 		dev_err(shm_dev->dev, "netlink socket creation failed\n");
 		goto drop;
 	}
-
-	netlink_set_nonroot(NETLINK_SHRM, NL_NONROOT_RECV);
 #endif
 #ifdef CONFIG_U8500_KERNEL_CLIENT
 	err = u8500_kernel_client_init(shrm);
