@@ -106,7 +106,11 @@ again:
 		} else if (!dentry->d_fsdata)
 			dentry->d_fsdata = (void *)(unsigned long)cnid;
 	} else {
+<<<<<<< HEAD
 ;
+=======
+		pr_err("invalid catalog entry type in lookup\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		err = -EIO;
 		goto fail;
 	}
@@ -162,12 +166,20 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		hfs_bnode_read(fd.bnode, &entry, fd.entryoffset,
 			fd.entrylength);
 		if (be16_to_cpu(entry.type) != HFSPLUS_FOLDER_THREAD) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("bad catalog folder thread\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
 		if (fd.entrylength < HFSPLUS_MIN_THREAD_SZ) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("truncated catalog thread\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
@@ -186,7 +198,11 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 
 	for (;;) {
 		if (be32_to_cpu(fd.key->cat.parent) != inode->i_ino) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("walked past end of dir\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
@@ -206,7 +222,11 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		if (type == HFSPLUS_FOLDER) {
 			if (fd.entrylength <
 					sizeof(struct hfsplus_cat_folder)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("small dir entry\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				err = -EIO;
 				goto out;
 			}
@@ -219,7 +239,11 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				break;
 		} else if (type == HFSPLUS_FILE) {
 			if (fd.entrylength < sizeof(struct hfsplus_cat_file)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("small file entry\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				err = -EIO;
 				goto out;
 			}
@@ -227,7 +251,11 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				    be32_to_cpu(entry.file.id), DT_REG))
 				break;
 		} else {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("bad catalog entry type\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}

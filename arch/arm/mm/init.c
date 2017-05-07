@@ -57,10 +57,8 @@ early_param("initrd", early_initrd);
 
 static int __init parse_tag_initrd(const struct tag *tag)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "ATAG_INITRD is deprecated; "
 		"please update your bootloader.\n");
-#endif
 	phys_initrd_start = __virt_to_phys(tag->u.initrd.start);
 	phys_initrd_size = tag->u.initrd.size;
 	return 0;
@@ -98,12 +96,11 @@ void show_mem(unsigned int filter)
 	int shared = 0, cached = 0, slab = 0, i;
 	struct meminfo * mi = &meminfo;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Mem-info:\n");
-#else
-	;
-#endif
 	show_free_areas(filter);
+
+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+		return;
 
 	for_each_bank (i, mi) {
 		struct membank *bank = &mi->bank[i];
@@ -132,36 +129,12 @@ void show_mem(unsigned int filter)
 		} while (page < end);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages of RAM\n", total);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d free pages\n", free);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d reserved pages\n", reserved);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d slab pages\n", slab);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages shared\n", shared);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages swap cached\n", cached);
-#else
-	;
-#endif
 }
 
 static void __init find_limits(unsigned long *min, unsigned long *max_low,
@@ -454,28 +427,6 @@ void __init bootmem_init(void)
 	max_pfn = max_high - PHYS_PFN_OFFSET;
 }
 
-static inline int free_area(unsigned long pfn, unsigned long end, char *s)
-{
-	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
-
-	for (; pfn < end; pfn++) {
-		struct page *page = pfn_to_page(pfn);
-		ClearPageReserved(page);
-		init_page_count(page);
-		__free_page(page);
-		pages++;
-	}
-
-	if (size && s)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "Freeing %s memory: %dK\n", s, size);
-#else
-		;
-#endif
-
-	return pages;
-}
-
 /*
  * Poison init memory with an undefined instruction (ARM) or a branch to an
  * undefined instruction (Thumb).
@@ -568,6 +519,14 @@ static void __init free_unused_memmap(struct meminfo *mi)
 #endif
 }
 
+#ifdef CONFIG_HIGHMEM
+static inline void free_area_high(unsigned long pfn, unsigned long end)
+{
+	for (; pfn < end; pfn++)
+		free_highmem_page(pfn_to_page(pfn));
+}
+#endif
+
 static void __init free_highpages(void)
 {
 #ifdef CONFIG_HIGHMEM
@@ -603,8 +562,7 @@ static void __init free_highpages(void)
 			if (res_end > end)
 				res_end = end;
 			if (res_start != start)
-				totalhigh_pages += free_area(start, res_start,
-							     NULL);
+				free_area_high(start, res_start);
 			start = res_end;
 			if (start == end)
 				break;
@@ -612,9 +570,8 @@ static void __init free_highpages(void)
 
 		/* And now free anything which remains */
 		if (start < end)
-			totalhigh_pages += free_area(start, end, NULL);
+			free_area_high(start, end);
 	}
-	totalram_pages += totalhigh_pages;
 #endif
 }
 
@@ -643,8 +600,7 @@ void __init mem_init(void)
 
 #ifdef CONFIG_SA1111
 	/* now that our DMA memory is actually so designated, we can free it */
-	totalram_pages += free_area(PHYS_PFN_OFFSET,
-				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
+	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
 #endif
 
 	free_highpages();
@@ -675,43 +631,26 @@ void __init mem_init(void)
 	 * Since our memory may not be contiguous, calculate the
 	 * real number of pages we have in this system
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Memory:");
-#else
-	;
-#endif
 	num_physpages = 0;
 	for_each_memblock(memory, reg) {
 		unsigned long pages = memblock_region_memory_end_pfn(reg) -
 			memblock_region_memory_base_pfn(reg);
 		num_physpages += pages;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
-#else
-		;
-#endif
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
-#else
-	;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
 		nr_free_pages() << (PAGE_SHIFT-10),
 		free_pages << (PAGE_SHIFT-10),
 		reserved_pages << (PAGE_SHIFT-10),
 		totalhigh_pages << (PAGE_SHIFT-10));
-#else
-	;
-#endif
 
 #define MLK(b, t) b, t, ((t) - (b)) >> 10
 #define MLM(b, t) b, t, ((t) - (b)) >> 20
 #define MLK_ROUNDUP(b, t) b, t, DIV_ROUND_UP(((t) - (b)), SZ_1K)
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
 			"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
 #ifdef CONFIG_HAVE_TCM
@@ -753,9 +692,6 @@ void __init mem_init(void)
 			MLK_ROUNDUP(__init_begin, __init_end),
 			MLK_ROUNDUP(_sdata, _edata),
 			MLK_ROUNDUP(__bss_start, __bss_stop));
-#else
-	;
-#endif
 
 #undef MLK
 #undef MLM
@@ -792,16 +728,12 @@ void free_initmem(void)
 	extern char __tcm_start, __tcm_end;
 
 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
-	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
-				    __phys_to_pfn(__pa(&__tcm_end)),
-				    "TCM link");
+	free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
 #endif
 
 	poison_init_mem(__init_begin, __init_end - __init_begin);
 	if (!machine_is_integrator() && !machine_is_cintegrator())
-		totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
-					    __phys_to_pfn(__pa(__init_end)),
-					    "init");
+		free_initmem_default(0);
 }
 
 #ifdef CONFIG_BLK_DEV_INITRD
@@ -812,9 +744,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
 {
 	if (!keep_initrd) {
 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
-		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
-					    __phys_to_pfn(__pa(end)),
-					    "initrd");
+		free_reserved_area(start, end, 0, "initrd");
 	}
 }
 

@@ -1750,7 +1750,7 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
 	return 0;
 }
 
-static int floppy_release(struct gendisk *disk, fmode_t mode)
+static void floppy_release(struct gendisk *disk, fmode_t mode)
 {
 	struct amiga_floppy_struct *p = disk->private_data;
 	int drive = p - unit;
@@ -1774,7 +1774,6 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
 	floppy_off (drive | 0x40000000);
 #endif
 	mutex_unlock(&amiflop_mutex);
-	return 0;
 }
 
 /*

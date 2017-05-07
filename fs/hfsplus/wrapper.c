@@ -156,7 +156,11 @@ static int hfsplus_get_last_session(struct super_block *sb,
 			*start = (sector_t)te.cdte_addr.lba << 2;
 			return 0;
 		}
+<<<<<<< HEAD
 ;
+=======
+		pr_err("invalid session number or type of track\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		return -EINVAL;
 	}
 	ms_info.addr_format = CDROM_LBA;
@@ -234,8 +238,12 @@ reread:
 
 	error = -EINVAL;
 	if (sbi->s_backup_vhdr->signature != sbi->s_vhdr->signature) {
+<<<<<<< HEAD
 //		printk(KERN_WARNING
 ;
+=======
+		pr_warn("invalid secondary volume header\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		goto out_free_backup_vhdr;
 	}
 
@@ -259,8 +267,12 @@ reread:
 		blocksize >>= 1;
 
 	if (sb_set_blocksize(sb, blocksize) != blocksize) {
+<<<<<<< HEAD
 //		printk(KERN_ERR "hfs: unable to set blocksize to %u!\n",
 ;
+=======
+		pr_err("unable to set blocksize to %u!\n", blocksize);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		goto out_free_backup_vhdr;
 	}
 

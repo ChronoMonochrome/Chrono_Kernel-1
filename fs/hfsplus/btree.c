@@ -40,8 +40,12 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 	tree->inode = inode;
 
 	if (!HFSPLUS_I(tree->inode)->first_blocks) {
+<<<<<<< HEAD
 //		printk(KERN_ERR
 ;
+=======
+		pr_err("invalid btree extent records (0 size)\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		goto free_inode;
 	}
 
@@ -68,12 +72,21 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 	switch (id) {
 	case HFSPLUS_EXT_CNID:
 		if (tree->max_key_len != HFSPLUS_EXT_KEYLEN - sizeof(u16)) {
+<<<<<<< HEAD
 //			printk(KERN_ERR "hfs: invalid extent max_key_len %d\n",
 ;
 			goto fail_page;
 		}
 		if (tree->attributes & HFS_TREE_VARIDXKEYS) {
 ;
+=======
+			pr_err("invalid extent max_key_len %d\n",
+				tree->max_key_len);
+			goto fail_page;
+		}
+		if (tree->attributes & HFS_TREE_VARIDXKEYS) {
+			pr_err("invalid extent btree flag\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			goto fail_page;
 		}
 
@@ -81,12 +94,21 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 		break;
 	case HFSPLUS_CAT_CNID:
 		if (tree->max_key_len != HFSPLUS_CAT_KEYLEN - sizeof(u16)) {
+<<<<<<< HEAD
 //			printk(KERN_ERR "hfs: invalid catalog max_key_len %d\n",
 ;
 			goto fail_page;
 		}
 		if (!(tree->attributes & HFS_TREE_VARIDXKEYS)) {
 ;
+=======
+			pr_err("invalid catalog max_key_len %d\n",
+				tree->max_key_len);
+			goto fail_page;
+		}
+		if (!(tree->attributes & HFS_TREE_VARIDXKEYS)) {
+			pr_err("invalid catalog btree flag\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			goto fail_page;
 		}
 
@@ -100,19 +122,23 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 		break;
 	case HFSPLUS_ATTR_CNID:
 		if (tree->max_key_len != HFSPLUS_ATTR_KEYLEN - sizeof(u16)) {
-			printk(KERN_ERR "hfs: invalid attributes max_key_len %d\n",
+			pr_err("invalid attributes max_key_len %d\n",
 				tree->max_key_len);
 			goto fail_page;
 		}
 		tree->keycmp = hfsplus_attr_bin_cmp_key;
 		break;
 	default:
-		printk(KERN_ERR "hfs: unknown B*Tree requested\n");
+		pr_err("unknown B*Tree requested\n");
 		goto fail_page;
 	}
 
 	if (!(tree->attributes & HFS_TREE_BIGKEYS)) {
+<<<<<<< HEAD
 ;
+=======
+		pr_err("invalid btree flag\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		goto fail_page;
 	}
 
@@ -155,10 +181,17 @@ void hfs_btree_close(struct hfs_btree *tree)
 		while ((node = tree->node_hash[i])) {
 			tree->node_hash[i] = node->next_hash;
 			if (atomic_read(&node->refcnt))
+<<<<<<< HEAD
 //				printk(KERN_CRIT "hfs: node %d:%d "
 //						"still has %d user(s)!\n",
 //					node->tree->cnid, node->this,
 ;
+=======
+				pr_crit("node %d:%d "
+						"still has %d user(s)!\n",
+					node->tree->cnid, node->this,
+					atomic_read(&node->refcnt));
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			hfs_bnode_free(node);
 			tree->node_hash_cnt--;
 		}
@@ -303,7 +336,7 @@ struct hfs_bnode *hfs_bmap_alloc(struct hfs_btree *tree)
 		kunmap(*pagep);
 		nidx = node->next;
 		if (!nidx) {
-			dprint(DBG_BNODE_MOD, "hfs: create new bmap node.\n");
+			hfs_dbg(BNODE_MOD, "create new bmap node\n");
 			next_node = hfs_bmap_new_bmap(node, idx);
 		} else
 			next_node = hfs_bnode_find(tree, nidx);
@@ -329,7 +362,7 @@ void hfs_bmap_free(struct hfs_bnode *node)
 	u32 nidx;
 	u8 *data, byte, m;
 
-	dprint(DBG_BNODE_MOD, "btree_free_node: %u\n", node->this);
+	hfs_dbg(BNODE_MOD, "btree_free_node: %u\n", node->this);
 	BUG_ON(!node->this);
 	tree = node->tree;
 	nidx = node->this;
@@ -345,9 +378,15 @@ void hfs_bmap_free(struct hfs_bnode *node)
 		hfs_bnode_put(node);
 		if (!i) {
 			/* panic */;
+<<<<<<< HEAD
 //			printk(KERN_CRIT "hfs: unable to free bnode %u. "
 //					"bmap not found!\n",
 ;
+=======
+			pr_crit("unable to free bnode %u. "
+					"bmap not found!\n",
+				node->this);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			return;
 		}
 		node = hfs_bnode_find(tree, i);
@@ -355,9 +394,15 @@ void hfs_bmap_free(struct hfs_bnode *node)
 			return;
 		if (node->type != HFS_NODE_MAP) {
 			/* panic */;
+<<<<<<< HEAD
 //			printk(KERN_CRIT "hfs: invalid bmap found! "
 //					"(%u,%d)\n",
 ;
+=======
+			pr_crit("invalid bmap found! "
+					"(%u,%d)\n",
+				node->this, node->type);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			hfs_bnode_put(node);
 			return;
 		}
@@ -370,9 +415,15 @@ void hfs_bmap_free(struct hfs_bnode *node)
 	m = 1 << (~nidx & 7);
 	byte = data[off];
 	if (!(byte & m)) {
+<<<<<<< HEAD
 //		printk(KERN_CRIT "hfs: trying to free free bnode "
 //				"%u(%d)\n",
 ;
+=======
+		pr_crit("trying to free free bnode "
+				"%u(%d)\n",
+			node->this, node->type);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		kunmap(page);
 		hfs_bnode_put(node);
 		return;

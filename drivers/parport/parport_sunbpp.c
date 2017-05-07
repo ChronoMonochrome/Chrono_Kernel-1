@@ -324,13 +324,17 @@ static int bpp_probe(struct platform_device *op)
 	size = resource_size(&op->resource[0]);
 	dma = PARPORT_DMA_NONE;
 
-	ops = kmalloc(sizeof(struct parport_operations), GFP_KERNEL);
+	ops = kmemdup(&parport_sunbpp_ops, sizeof(struct parport_operations),
+		      GFP_KERNEL);
         if (!ops)
 		goto out_unmap;
 
+<<<<<<< HEAD
         memcpy (ops, &parport_sunbpp_ops, sizeof(struct parport_operations));
 
 #ifdef CONFIG_DEBUG_PRINTK
+=======
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 	dprintk(("register_port\n"));
 #else
 	d;

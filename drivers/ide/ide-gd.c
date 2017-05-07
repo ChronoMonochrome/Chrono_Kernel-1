@@ -254,7 +254,7 @@ static int ide_gd_unlocked_open(struct block_device *bdev, fmode_t mode)
 }
 
 
-static int ide_gd_release(struct gendisk *disk, fmode_t mode)
+static void ide_gd_release(struct gendisk *disk, fmode_t mode)
 {
 	struct ide_disk_obj *idkp = ide_drv_g(disk, ide_disk_obj);
 	ide_drive_t *drive = idkp->drive;
@@ -274,8 +274,6 @@ static int ide_gd_release(struct gendisk *disk, fmode_t mode)
 
 	ide_disk_put(idkp);
 	mutex_unlock(&ide_gd_mutex);
-
-	return 0;
 }
 
 static int ide_gd_getgeo(struct block_device *bdev, struct hd_geometry *geo)

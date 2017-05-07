@@ -25,7 +25,9 @@ static struct dentry *hfs_lookup(struct inode *dir, struct dentry *dentry,
 	struct inode *inode = NULL;
 	int res;
 
-	hfs_find_init(HFS_SB(dir->i_sb)->cat_tree, &fd);
+	res = hfs_find_init(HFS_SB(dir->i_sb)->cat_tree, &fd);
+	if (res)
+		return ERR_PTR(res);
 	hfs_cat_build_key(dir->i_sb, fd.search_key, dir->i_ino, &dentry->d_name);
 	res = hfs_brec_read(&fd, &rec, sizeof(rec));
 	if (res) {
@@ -63,7 +65,9 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 	if (filp->f_pos >= inode->i_size)
 		return 0;
 
-	hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+	err = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+	if (err)
+		return err;
 	hfs_cat_build_key(sb, fd.search_key, inode->i_ino, NULL);
 	err = hfs_brec_find(&fd);
 	if (err)
@@ -84,12 +88,20 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 
 		hfs_bnode_read(fd.bnode, &entry, fd.entryoffset, fd.entrylength);
 		if (entry.type != HFS_CDR_THD) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("bad catalog folder thread\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
 		//if (fd.entrylength < HFS_MIN_THREAD_SZ) {
+<<<<<<< HEAD
 ;
+=======
+		//	pr_err("truncated catalog thread\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		//	err = -EIO;
 		//	goto out;
 		//}
@@ -108,7 +120,11 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 
 	for (;;) {
 		if (be32_to_cpu(fd.key->cat.ParID) != inode->i_ino) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("walked past end of dir\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
@@ -123,7 +139,11 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		len = hfs_mac2asc(sb, strbuf, &fd.key->cat.CName);
 		if (type == HFS_CDR_DIR) {
 			if (fd.entrylength < sizeof(struct hfs_cat_dir)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("small dir entry\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				err = -EIO;
 				goto out;
 			}
@@ -132,7 +152,11 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				break;
 		} else if (type == HFS_CDR_FIL) {
 			if (fd.entrylength < sizeof(struct hfs_cat_file)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("small file entry\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				err = -EIO;
 				goto out;
 			}
@@ -140,7 +164,11 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				    be32_to_cpu(entry.file.FlNum), DT_REG))
 				break;
 		} else {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("bad catalog entry type %d\n", type);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			err = -EIO;
 			goto out;
 		}
@@ -172,7 +200,9 @@ static int hfs_dir_release(struct inode *inode, struct file *file)
 {
 	struct hfs_readdir_data *rd = file->private_data;
 	if (rd) {
+		mutex_lock(&inode->i_mutex);
 		list_del(&rd->list);
+		mutex_unlock(&inode->i_mutex);
 		kfree(rd);
 	}
 	return 0;

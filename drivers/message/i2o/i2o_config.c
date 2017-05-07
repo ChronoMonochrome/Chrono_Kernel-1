@@ -707,6 +707,11 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 		}
 		size = size >> 16;
 		size *= 4;
+		if (size > sizeof(rmsg)) {
+			rcode = -EINVAL;
+			goto sg_list_cleanup;
+		}
+
 		/* Copy in the user's I2O command */
 		if (copy_from_user(rmsg, user_msg, size)) {
 			rcode = -EFAULT;
@@ -974,6 +979,11 @@ static int i2o_cfg_passthru(unsigned long arg)
 		}
 		size = size >> 16;
 		size *= 4;
+		if (size > sizeof(rmsg)) {
+			rcode = -EFAULT;
+			goto sg_list_cleanup;
+		}
+
 		/* Copy in the user's I2O command */
 		if (copy_from_user(rmsg, user_msg, size)) {
 			rcode = -EFAULT;

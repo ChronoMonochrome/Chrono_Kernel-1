@@ -113,69 +113,107 @@ int hfsplus_parse_options(char *input, struct hfsplus_sb_info *sbi)
 		switch (token) {
 		case opt_creator:
 			if (match_fourchar(&args[0], &sbi->creator)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("creator requires a 4 character value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_type:
 			if (match_fourchar(&args[0], &sbi->type)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("type requires a 4 character value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_umask:
 			if (match_octal(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("umask requires a value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			sbi->umask = (umode_t)tmp;
 			break;
 		case opt_uid:
 			if (match_int(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("uid requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			sbi->uid = make_kuid(current_user_ns(), (uid_t)tmp);
 			if (!uid_valid(sbi->uid)) {
-				printk(KERN_ERR "hfs: invalid uid specified\n");
+				pr_err("invalid uid specified\n");
 				return 0;
 			}
 			break;
 		case opt_gid:
 			if (match_int(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("gid requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			sbi->gid = make_kgid(current_user_ns(), (gid_t)tmp);
 			if (!gid_valid(sbi->gid)) {
-				printk(KERN_ERR "hfs: invalid gid specified\n");
+				pr_err("invalid gid specified\n");
 				return 0;
 			}
 			break;
 		case opt_part:
 			if (match_int(&args[0], &sbi->part)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("part requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_session:
 			if (match_int(&args[0], &sbi->session)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("session requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_nls:
 			if (sbi->nls) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("unable to change nls mapping\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			p = match_strdup(&args[0]);
 			if (p)
 				sbi->nls = load_nls(p);
 			if (!sbi->nls) {
+<<<<<<< HEAD
 //				printk(KERN_ERR "hfs: unable to load "
 //						"nls mapping \"%s\"\n",
 ;
+=======
+				pr_err("unable to load "
+						"nls mapping \"%s\"\n",
+					p);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				kfree(p);
 				return 0;
 			}

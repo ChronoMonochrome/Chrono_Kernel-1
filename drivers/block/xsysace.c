@@ -939,7 +939,7 @@ static int ace_open(struct block_device *bdev, fmode_t mode)
 	return 0;
 }
 
-static int ace_release(struct gendisk *disk, fmode_t mode)
+static void ace_release(struct gendisk *disk, fmode_t mode)
 {
 	struct ace_device *ace = disk->private_data;
 	unsigned long flags;
@@ -956,7 +956,6 @@ static int ace_release(struct gendisk *disk, fmode_t mode)
 	}
 	spin_unlock_irqrestore(&ace->lock, flags);
 	mutex_unlock(&xsysace_mutex);
-	return 0;
 }
 
 static int ace_getgeo(struct block_device *bdev, struct hd_geometry *geo)
@@ -1185,8 +1184,7 @@ static int ace_probe(struct platform_device *dev)
 	dev_dbg(&dev->dev, "ace_probe(%p)\n", dev);
 
 	/* device id and bus width */
-	of_property_read_u32(dev->dev.of_node, "port-number", &id);
-	if (id < 0)
+	if (of_property_read_u32(dev->dev.of_node, "port-number", &id))
 		id = 0;
 	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
 		bus_width = ACE_BUS_WIDTH_8;

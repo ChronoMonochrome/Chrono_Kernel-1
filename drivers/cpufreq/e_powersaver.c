@@ -50,7 +50,7 @@ static unsigned int eps_get(unsigned int cpu)
 }
 
 static int eps_set_state(struct eps_cpu_data *centaur,
-			 unsigned int cpu,
+			 struct cpufreq_policy *policy,
 			 u32 dest_state)
 {
 	struct cpufreq_freqs freqs;
@@ -58,10 +58,9 @@ static int eps_set_state(struct eps_cpu_data *centaur,
 	int err = 0;
 	int i;
 
-	freqs.old = eps_get(cpu);
+	freqs.old = eps_get(policy->cpu);
 	freqs.new = centaur->fsb * ((dest_state >> 8) & 0xff);
-	freqs.cpu = cpu;
-	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 
 	/* Wait while CPU is busy */
 	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
@@ -108,7 +107,7 @@ postchange:
 		current_multiplier);
 	}
 #endif
-	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 	return err;
 }
 
@@ -136,7 +135,7 @@ static int eps_target(struct cpufreq_policy *policy,
 
 	/* Make frequency transition */
 	dest_state = centaur->freq_table[newstate].index & 0xffff;
-	ret = eps_set_state(centaur, cpu, dest_state);
+	ret = eps_set_state(centaur, policy, dest_state);
 	if (ret)
 		printk(KERN_ERR "eps: Timeout!\n");
 	return ret;

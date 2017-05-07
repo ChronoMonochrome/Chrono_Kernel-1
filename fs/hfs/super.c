@@ -117,12 +117,20 @@ static int hfs_remount(struct super_block *sb, int *flags, char *data)
 		return 0;
 	if (!(*flags & MS_RDONLY)) {
 		if (!(HFS_SB(sb)->mdb->drAtrb & cpu_to_be16(HFS_SB_ATTRIB_UNMNT))) {
+<<<<<<< HEAD
 //			printk(KERN_WARNING "hfs: filesystem was not cleanly unmounted, "
 ;
 			sb->s_flags |= MS_RDONLY;
 			*flags |= MS_RDONLY;
 		} else if (HFS_SB(sb)->mdb->drAtrb & cpu_to_be16(HFS_SB_ATTRIB_SLOCK)) {
 ;
+=======
+			pr_warn("filesystem was not cleanly unmounted, running fsck.hfs is recommended.  leaving read-only.\n");
+			sb->s_flags |= MS_RDONLY;
+			*flags |= MS_RDONLY;
+		} else if (HFS_SB(sb)->mdb->drAtrb & cpu_to_be16(HFS_SB_ATTRIB_SLOCK)) {
+			pr_warn("filesystem is marked locked, leaving read-only.\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			sb->s_flags |= MS_RDONLY;
 			*flags |= MS_RDONLY;
 		}
@@ -253,29 +261,41 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 		switch (token) {
 		case opt_uid:
 			if (match_int(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("uid requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			hsb->s_uid = make_kuid(current_user_ns(), (uid_t)tmp);
 			if (!uid_valid(hsb->s_uid)) {
-				printk(KERN_ERR "hfs: invalid uid %d\n", tmp);
+				pr_err("invalid uid %d\n", tmp);
 				return 0;
 			}
 			break;
 		case opt_gid:
 			if (match_int(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("gid requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			hsb->s_gid = make_kgid(current_user_ns(), (gid_t)tmp);
 			if (!gid_valid(hsb->s_gid)) {
-				printk(KERN_ERR "hfs: invalid gid %d\n", tmp);
+				pr_err("invalid gid %d\n", tmp);
 				return 0;
 			}
 			break;
 		case opt_umask:
 			if (match_octal(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("umask requires a value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			hsb->s_file_umask = (umode_t)tmp;
@@ -283,39 +303,63 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_file_umask:
 			if (match_octal(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("file_umask requires a value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			hsb->s_file_umask = (umode_t)tmp;
 			break;
 		case opt_dir_umask:
 			if (match_octal(&args[0], &tmp)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("dir_umask requires a value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			hsb->s_dir_umask = (umode_t)tmp;
 			break;
 		case opt_part:
 			if (match_int(&args[0], &hsb->part)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("part requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_session:
 			if (match_int(&args[0], &hsb->session)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("session requires an argument\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_type:
 			if (match_fourchar(&args[0], &hsb->s_type)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("type requires a 4 character value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
 		case opt_creator:
 			if (match_fourchar(&args[0], &hsb->s_creator)) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("creator requires a 4 character value\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			break;
@@ -324,14 +368,22 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_codepage:
 			if (hsb->nls_disk) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("unable to change codepage\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			p = match_strdup(&args[0]);
 			if (p)
 				hsb->nls_disk = load_nls(p);
 			if (!hsb->nls_disk) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("unable to load codepage \"%s\"\n", p);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				kfree(p);
 				return 0;
 			}
@@ -339,14 +391,22 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 			break;
 		case opt_iocharset:
 			if (hsb->nls_io) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("unable to change iocharset\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				return 0;
 			}
 			p = match_strdup(&args[0]);
 			if (p)
 				hsb->nls_io = load_nls(p);
 			if (!hsb->nls_io) {
+<<<<<<< HEAD
 ;
+=======
+				pr_err("unable to load iocharset \"%s\"\n", p);
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 				kfree(p);
 				return 0;
 			}
@@ -360,7 +420,11 @@ static int parse_options(char *options, struct hfs_sb_info *hsb)
 	if (hsb->nls_disk && !hsb->nls_io) {
 		hsb->nls_io = load_nls_default();
 		if (!hsb->nls_io) {
+<<<<<<< HEAD
 ;
+=======
+			pr_err("unable to load default iocharset\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 			return 0;
 		}
 	}
@@ -400,7 +464,11 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	res = -EINVAL;
 	if (!parse_options((char *)data, sbi)) {
+<<<<<<< HEAD
 ;
+=======
+		pr_err("unable to parse mount options\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		goto bail;
 	}
 
@@ -411,14 +479,21 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 	res = hfs_mdb_get(sb);
 	if (res) {
 		if (!silent)
+<<<<<<< HEAD
 //			printk(KERN_WARNING "hfs: can't find a HFS filesystem on dev %s.\n",
 ;
+=======
+			pr_warn("can't find a HFS filesystem on dev %s\n",
+				hfs_mdb_name(sb));
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 		res = -EINVAL;
 		goto bail;
 	}
 
 	/* try to get the root inode */
-	hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+	res = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+	if (res)
+		goto bail_no_root;
 	res = hfs_cat_find_brec(sb, HFS_ROOT_CNID, &fd);
 	if (!res) {
 		if (fd.entrylength > sizeof(rec) || fd.entrylength < 0) {
@@ -447,7 +522,11 @@ static int hfs_fill_super(struct super_block *sb, void *data, int silent)
 	return 0;
 
 bail_no_root:
+<<<<<<< HEAD
 ;
+=======
+	pr_err("get root inode failed\n");
+>>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 bail:
 	hfs_mdb_put(sb);
 	return res;

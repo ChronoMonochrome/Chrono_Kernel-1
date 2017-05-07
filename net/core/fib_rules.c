@@ -304,7 +304,7 @@ errout:
 	return err;
 }
 
-static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh)
 {
 	struct net *net = sock_net(skb->sk);
 	struct fib_rule_hdr *frh = nlmsg_data(nlh);
@@ -468,7 +468,7 @@ errout:
 	return err;
 }
 
-static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh)
 {
 	struct net *net = sock_net(skb->sk);
 	struct fib_rule_hdr *frh = nlmsg_data(nlh);
