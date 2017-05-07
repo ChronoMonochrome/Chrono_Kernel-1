@@ -333,15 +333,19 @@ static int param_init(void)
 		return -ENOMEM;
 	}
 
+#if 0
 	/* Creats RW '/proc/param/sleep/debug' entry */
 	ent = create_proc_entry("debug", 0, param_dir);
 	if (ent == NULL) {
+#endif
+	ent = NULL;
+
 		kloge("Unable to create /proc/param/debug entry");
 		ret = -ENOMEM;
 		goto fail;
-	}
-	ent->read_proc = param_read_proc_debug;
-	ent->write_proc = param_write_proc_debug;
+	//}
+	//ent->read_proc = param_read_proc_debug;
+	//ent->write_proc = param_write_proc_debug;
 #endif
 
 	klogi("param_init");

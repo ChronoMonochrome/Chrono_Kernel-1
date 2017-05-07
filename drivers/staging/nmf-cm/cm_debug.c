@@ -12,6 +12,8 @@
 #ifdef CONFIG_DEBUG_FS
 #include <linux/sched.h>
 
+#define PROC_NUMBUF 13
+
 static struct dentry *cm_dir;        /* nmf-cm/            */
 static struct dentry *proc_dir;      /* nmf-cm/proc/       */
 static struct dentry *core_dir;      /* nmf-cm/dsp/        */
