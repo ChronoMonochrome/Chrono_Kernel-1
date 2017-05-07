@@ -66,7 +66,7 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 
 	/* pre-change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
-		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+		cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 
 	BUG_ON(idx >= freq_table_len);
 
@@ -78,7 +78,7 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 
 	/* post change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
-		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+		cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 
 	return ret;
 }
