@@ -905,7 +905,6 @@ config ARCH_U8500
 	select NEED_MACH_MEMORY_H
 	select NEED_MACH_IO_H
 	select MIGHT_HAVE_CACHE_L2X0
-	select SPARSE_IRQ
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
