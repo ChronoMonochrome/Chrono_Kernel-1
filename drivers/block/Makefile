@@ -40,4 +40,5 @@ obj-$(CONFIG_BLK_DEV_RBD)     += rbd.o
 
 obj-$(CONFIG_BLK_DEV_RSXX) += rsxx/
 
+nvme-y		:= nvme-core.o nvme-scsi.o
 swim_mod-y	:= swim.o swim_asm.o

@@ -9,11 +9,9 @@
  * Software Foundation; version 2 of the License.
  */
 
+#include <linux/mod_devicetable.h>
 #include <linux/device.h>
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
-=======
 #include <linux/interrupt.h>
->>>>>>> 19f949f:include/linux/ipack.h
 
 #define IPACK_IDPROM_OFFSET_I			0x01
 #define IPACK_IDPROM_OFFSET_P			0x03
@@ -66,10 +64,6 @@ struct ipack_driver;
 
 enum ipack_space {
 	IPACK_IO_SPACE    = 0,
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
-	IPACK_ID_SPACE    = 1,
-	IPACK_MEM_SPACE   = 2,
-=======
 	IPACK_ID_SPACE,
 	IPACK_INT_SPACE,
 	IPACK_MEM8_SPACE,
@@ -77,7 +71,6 @@ enum ipack_space {
 	/* Dummy for counting the number of entries.  Must remain the last
 	 * entry */
 	IPACK_SPACE_COUNT,
->>>>>>> 19f949f:include/linux/ipack.h
 };
 
 /**
@@ -91,8 +84,6 @@ struct ipack_region {
  *	struct ipack_device
  *
  *	@slot: Slot where the device is plugged in the carrier board
- *	@irq: IRQ vector
- *	@driver: Pointer to the ipack_driver that manages the device
  *	@bus: ipack_bus_device where the device is plugged to.
  *	@id_space: Virtual address to ID space.
  *	@io_space: Virtual address to IO space.
@@ -105,15 +96,7 @@ struct ipack_region {
  */
 struct ipack_device {
 	unsigned int slot;
-	unsigned int irq;
-	struct ipack_driver *driver;
 	struct ipack_bus_device *bus;
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
-	struct ipack_addr_space id_space;
-	struct ipack_addr_space io_space;
-	struct ipack_addr_space mem_space;
-	struct device dev;
-=======
 	struct device dev;
 	void (*release) (struct ipack_device *dev);
 	struct ipack_region      region[IPACK_SPACE_COUNT];
@@ -125,25 +108,17 @@ struct ipack_device {
 	unsigned int		 id_crc_correct:1;
 	unsigned int		 speed_8mhz:1;
 	unsigned int		 speed_32mhz:1;
->>>>>>> 19f949f:include/linux/ipack.h
 };
 
 /**
  * struct ipack_driver_ops -- Callbacks to IPack device driver
  *
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
- *	@match: Match function
- *	@probe: Probe function
- *	@remove: tell the driver that the carrier board wants to remove one device
-=======
  * @probe:  Probe function
  * @remove: Prepare imminent removal of the device.  Services provided by the
  *          device should be revoked.
->>>>>>> 19f949f:include/linux/ipack.h
  */
 
 struct ipack_driver_ops {
-	int (*match) (struct ipack_device *dev);
 	int (*probe) (struct ipack_device *dev);
 	void (*remove) (struct ipack_device *dev);
 };
@@ -156,7 +131,8 @@ struct ipack_driver_ops {
  */
 struct ipack_driver {
 	struct device_driver driver;
-	struct ipack_driver_ops *ops;
+	const struct ipack_device_id *id_table;
+	const struct ipack_driver_ops *ops;
 };
 
 /**
@@ -166,31 +142,25 @@ struct ipack_driver {
  *	@unmap_space: unmap IP address space
  *	@request_irq: request IRQ
  *	@free_irq: free IRQ
- *	@read8: read unsigned char
- *	@read16: read unsigned short
- *	@read32: read unsigned int
- *	@write8: read unsigned char
- *	@write16: read unsigned short
- *	@write32: read unsigned int
- *	@remove_device: tell the bridge module that the device has been removed
+ *	@get_clockrate: Returns the clockrate the carrier is currently
+ *		communicating with the device at.
+ *	@set_clockrate: Sets the clock-rate for carrier / module communication.
+ *		Should return -EINVAL if the requested speed is not supported.
+ *	@get_error: Returns the error state for the slot the device is attached
+ *		to.
+ *	@get_timeout: Returns 1 if the communication with the device has
+ *		previously timed out.
+ *	@reset_timeout: Resets the state returned by get_timeout.
  */
 struct ipack_bus_ops {
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
-	int (*map_space) (struct ipack_device *dev, unsigned int memory_size, int space);
-	int (*unmap_space) (struct ipack_device *dev, int space);
-	int (*request_irq) (struct ipack_device *dev, int vector, int (*handler)(void *), void *arg);
-=======
 	int (*request_irq) (struct ipack_device *dev,
 			    irqreturn_t (*handler)(void *), void *arg);
->>>>>>> 19f949f:include/linux/ipack.h
 	int (*free_irq) (struct ipack_device *dev);
-	int (*read8) (struct ipack_device *dev, int space, unsigned long offset, unsigned char *value);
-	int (*read16) (struct ipack_device *dev, int space, unsigned long offset, unsigned short *value);
-	int (*read32) (struct ipack_device *dev, int space, unsigned long offset, unsigned int *value);
-	int (*write8) (struct ipack_device *dev, int space, unsigned long offset, unsigned char value);
-	int (*write16) (struct ipack_device *dev, int space, unsigned long offset, unsigned short value);
-	int (*write32) (struct ipack_device *dev, int space, unsigned long offset, unsigned int value);
-	int (*remove_device) (struct ipack_device *dev);
+	int (*get_clockrate) (struct ipack_device *dev);
+	int (*set_clockrate) (struct ipack_device *dev, int mherz);
+	int (*get_error) (struct ipack_device *dev);
+	int (*get_timeout) (struct ipack_device *dev);
+	int (*reset_timeout) (struct ipack_device *dev);
 };
 
 /**
@@ -205,7 +175,7 @@ struct ipack_bus_device {
 	struct device *parent;
 	int slots;
 	int bus_nr;
-	struct ipack_bus_ops *ops;
+	const struct ipack_bus_ops *ops;
 };
 
 /**
@@ -219,7 +189,7 @@ struct ipack_bus_device {
  * available bus device in ipack.
  */
 struct ipack_bus_device *ipack_bus_register(struct device *parent, int slots,
-					    struct ipack_bus_ops *ops);
+					    const struct ipack_bus_ops *ops);
 
 /**
  *	ipack_bus_unregister -- unregister an ipack bus
@@ -232,33 +202,46 @@ int ipack_bus_unregister(struct ipack_bus_device *bus);
  * Called by a ipack driver to register itself as a driver
  * that can manage ipack devices.
  */
-int ipack_driver_register(struct ipack_driver *edrv, struct module *owner, char *name);
+int ipack_driver_register(struct ipack_driver *edrv, struct module *owner,
+			  const char *name);
 void ipack_driver_unregister(struct ipack_driver *edrv);
 
 /**
- *	ipack_device_register -- register an IPack device with the kernel
- *	@dev: the new device to register.
+ *	ipack_device_init -- initialize an IPack device
+ * @dev: the new device to initialize.
  *
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
- * @bus: ipack bus device it is plugged to.
- * @slot: slot position in the bus device.
- * @irqv: IRQ vector for the mezzanine.
-=======
- *	Register a new IPack device ("module" in IndustryPack jargon). The call
- *	is done by the carrier driver.  The carrier should populate the fields
- *	bus and slot as well as the region array of @dev prior to calling this
- *	function.  The rest of the fields will be allocated and populated
- *	during registration.
->>>>>>> 19f949f:include/linux/ipack.h
+ * Initialize a new IPack device ("module" in IndustryPack jargon). The call
+ * is done by the carrier driver.  The carrier should populate the fields
+ * bus and slot as well as the region array of @dev prior to calling this
+ * function.  The rest of the fields will be allocated and populated
+ * during initalization.
  *
- *	Return zero on success or error code on failure.
+ * Return zero on success or error code on failure.
+ *
+ * NOTE: _Never_ directly free @dev after calling this function, even
+ * if it returned an error! Always use ipack_put_device() to give up the
+ * reference initialized in this function instead.
  */
-<<<<<<< HEAD:drivers/staging/ipack/ipack.h
-struct ipack_device *ipack_device_register(struct ipack_bus_device *bus, int slot, int irqv);
-void ipack_device_unregister(struct ipack_device *dev);
-=======
-int ipack_device_register(struct ipack_device *dev);
-void ipack_device_unregister(struct ipack_device *dev);
+int ipack_device_init(struct ipack_device *dev);
+
+/**
+ *	ipack_device_add -- Add an IPack device
+ * @dev: the new device to add.
+ *
+ * Add a new IPack device. The call is done by the carrier driver
+ * after calling ipack_device_init().
+ *
+ * Return zero on success or error code on failure.
+ *
+ * NOTE: _Never_ directly free @dev after calling this function, even
+ * if it returned an error! Always use ipack_put_device() to give up the
+ * reference initialized in this function instead.
+ */
+int ipack_device_add(struct ipack_device *dev);
+void ipack_device_del(struct ipack_device *dev);
+
+void ipack_get_device(struct ipack_device *dev);
+void ipack_put_device(struct ipack_device *dev);
 
 /**
  * DEFINE_IPACK_DEVICE_TABLE - macro used to describe a IndustryPack table
@@ -282,4 +265,3 @@ void ipack_device_unregister(struct ipack_device *dev);
 	 .format = (_format), \
 	 .vendor = (vend), \
 	 .device = (dev)
->>>>>>> 19f949f:include/linux/ipack.h

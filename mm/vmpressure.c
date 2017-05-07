@@ -21,7 +21,6 @@
 #include <linux/eventfd.h>
 #include <linux/swap.h>
 #include <linux/printk.h>
-#include <linux/slab.h>
 #include <linux/vmpressure.h>
 
 /*

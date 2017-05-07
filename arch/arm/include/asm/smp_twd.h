@@ -34,14 +34,6 @@ struct twd_local_timer name __initdata = {	\
 
 int twd_local_timer_register(struct twd_local_timer *);
 
-#ifdef CONFIG_HAVE_ARM_TWD
-void twd_local_timer_of_register(void);
-#else
-static inline void twd_local_timer_of_register(void)
-{
-}
-#endif
-
 #if defined(CONFIG_HOTPLUG) || defined(CONFIG_CPU_IDLE)
 void twd_save(void);
 void twd_restore(void);
@@ -49,5 +41,4 @@ void twd_restore(void);
 static inline void twd_save(void) { }
 static inline void twd_restore(void) { }
 #endif
-
 #endif
