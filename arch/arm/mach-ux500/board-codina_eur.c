@@ -2669,7 +2669,7 @@ MACHINE_START(CODINA, "SAMSUNG CODINA")
 	.map_io		= u8500_map_io,
 	.smp		= smp_ops(ux500_smp_ops),
 	.init_irq	= ux500_init_irq,
-	.timer		= &ux500_timer,
+	.init_time	= ux500_timer_init,
 	.handle_irq     = gic_handle_irq,
 	.init_machine	= codina_init_machine,
 	.restart	= ux500_restart,

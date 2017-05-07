@@ -35,8 +35,7 @@ extern void nmdk_timer_init(void);
 struct amba_device;
 extern void __init amba_add_devices(struct amba_device *devs[], int num);
 
-struct sys_timer;
-extern struct sys_timer ux500_timer;
+extern void ux500_timer_init(void);
 
 void ux500_restart(char mode, const char *cmd);
 
