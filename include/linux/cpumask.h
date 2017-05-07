@@ -597,6 +597,7 @@ static inline int cpulist_scnprintf(char *buf, int len,
  *
  * Returns -errno, or 0 for success.
  */
+#ifndef BOOT_COMPRESSED
 static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
 {
 	char *nl = strchr(buf, '\n');
@@ -604,6 +605,7 @@ static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
 
 	return bitmap_parse(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
 }
+#endif
 
 /**
  * cpulist_parse - extract a cpumask from a user string of ranges
