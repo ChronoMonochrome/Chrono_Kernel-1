@@ -857,6 +857,8 @@ config ARCH_U8500
 	select HAVE_CLK
 	select GENERIC_CLOCKEVENTS
 	select HAVE_SMP
+	select HAVE_ARM_SCU
+	select HAVE_ARM_TWD
 	select NOMADIK_GPIO
 	select ARCH_HAS_PASR
 	select NEED_MACH_MEMORY_H
