@@ -18,12 +18,12 @@
 #include "nl80211.h"
 #include "wext-compat.h"
 
-#define IEEE80211_SCAN_RESULT_EXPIRE	(30 * HZ)
+#define IEEE80211_SCAN_RESULT_EXPIRE	(15 * HZ)
 
 void ___cfg80211_scan_done(struct cfg80211_registered_device *rdev, bool leak)
 {
 	struct cfg80211_scan_request *request;
-	struct wireless_dev *wdev;
+	struct net_device *dev;
 #ifdef CONFIG_CFG80211_WEXT
 	union iwreq_data wrqu;
 #endif
@@ -35,31 +35,29 @@ void ___cfg80211_scan_done(struct cfg80211_registered_device *rdev, bool leak)
 	if (!request)
 		return;
 
-	wdev = request->wdev;
+	dev = request->dev;
 
 	/*
 	 * This must be before sending the other events!
 	 * Otherwise, wpa_supplicant gets completely confused with
 	 * wext events.
 	 */
-	if (wdev->netdev)
-		cfg80211_sme_scan_done(wdev->netdev);
+	cfg80211_sme_scan_done(dev);
 
 	if (request->aborted)
-		nl80211_send_scan_aborted(rdev, wdev);
+		nl80211_send_scan_aborted(rdev, dev);
 	else
-		nl80211_send_scan_done(rdev, wdev);
+		nl80211_send_scan_done(rdev, dev);
 
 #ifdef CONFIG_CFG80211_WEXT
-	if (wdev->netdev && !request->aborted) {
+	if (!request->aborted) {
 		memset(&wrqu, 0, sizeof(wrqu));
 
-		wireless_send_event(wdev->netdev, SIOCGIWSCAN, &wrqu, NULL);
+		wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
 	}
 #endif
 
-	if (wdev->netdev)
-		dev_put(wdev->netdev);
+	dev_put(dev);
 
 	rdev->scan_req = NULL;
 
@@ -283,7 +281,7 @@ static bool is_bss(struct cfg80211_bss *a,
 {
 	const u8 *ssidie;
 
-	if (bssid && !ether_addr_equal(a->bssid, bssid))
+	if (bssid && compare_ether_addr(a->bssid, bssid))
 		return false;
 
 	if (!ssid)
@@ -380,11 +378,7 @@ static int cmp_bss_core(struct cfg80211_bss *a,
 			       b->len_information_elements);
 	}
 
-	/*
-	 * we can't use compare_ether_addr here since we need a < > operator.
-	 * The binary return value of compare_ether_addr isn't enough
-	 */
-	return memcmp(a->bssid, b->bssid, sizeof(a->bssid));
+	return memcmp(a->bssid, b->bssid, ETH_ALEN);
 }
 
 static int cmp_bss(struct cfg80211_bss *a,
@@ -957,7 +951,7 @@ int cfg80211_wext_siwscan(struct net_device *dev,
 	}
 
 	creq->wiphy = wiphy;
-	creq->wdev = dev->ieee80211_ptr;
+	creq->dev = dev;
 	/* SSIDs come after channels */
 	creq->ssids = (void *)&creq->channels[n_channels];
 	creq->n_channels = n_channels;
@@ -1026,12 +1020,12 @@ int cfg80211_wext_siwscan(struct net_device *dev,
 			creq->rates[i] = (1 << wiphy->bands[i]->n_bitrates) - 1;
 
 	rdev->scan_req = creq;
-	err = rdev->ops->scan(wiphy, creq);
+	err = rdev->ops->scan(wiphy, dev, creq);
 	if (err) {
 		rdev->scan_req = NULL;
 		/* creq will be freed below */
 	} else {
-		nl80211_send_scan_start(rdev, dev->ieee80211_ptr);
+		nl80211_send_scan_start(rdev, dev);
 		/* creq now owned by driver */
 		creq = NULL;
 		dev_hold(dev);
