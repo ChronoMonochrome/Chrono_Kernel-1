@@ -440,7 +440,7 @@ static int __init ram_console_late_init(void)
 		return 0;
 	}
 
-	entry->size = ram_console_old_log_size;
+	proc_set_size(entry, ram_console_old_log_size);
 	return 0;
 }
 
