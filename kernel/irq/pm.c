@@ -28,6 +28,8 @@ void suspend_device_irqs(void)
 
 	for_each_irq_desc(irq, desc) {
 		unsigned long flags;
+		if (irq_settings_is_nested_thread(desc))
+			continue;
 
 		if (irq_settings_is_nested_thread(desc))
 			continue;
@@ -56,6 +58,9 @@ static void resume_irqs(bool want_early)
 			continue;
 		if (irq_settings_is_nested_thread(desc))
 			continue;
+		if (irq_settings_is_nested_thread(desc))
+			continue;
+
 
 		raw_spin_lock_irqsave(&desc->lock, flags);
 		__enable_irq(desc, irq, true);
