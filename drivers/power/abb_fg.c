@@ -895,7 +895,7 @@ int ab8500_fg_inst_curr_start(struct ab8500_fg *di)
 
 	/* Return and WFI */
 	INIT_COMPLETION(di->ab8500_fg_complete);
-	//enable_irq(di->irq);
+	enable_irq(di->irq);
 
 	/* Note: cc_lock is still locked */
 	return 0;
@@ -938,14 +938,14 @@ int ab8500_fg_inst_curr_finalize(struct ab8500_fg *di, int *res)
 			((INS_CURR_TIMEOUT - timeout) * 1000) / HZ);
 		if (!timeout) {
 			ret = -ETIME;
-			//disable_irq(di->irq);
+			disable_irq(di->irq);
 			dev_err(di->dev, "completion timed out [%d]\n",
 				__LINE__);
 			goto fail;
 		}
 	}
 
-	//disable_irq(di->irq);
+	disable_irq(di->irq);
 
 	ret = abx500_mask_and_set_register_interruptible(di->dev,
 			AB8500_GAS_GAUGE, AB8500_GASG_CC_CTRL_REG,
@@ -3738,8 +3738,8 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 		dev_dbg(di->dev, "Requested %s IRQ %d: %d\n",
 			ab8500_fg_irq[i].name, irq, ret);
 	}
-	//di->irq = platform_get_irq_byname(pdev, "CCEOC");
-	//disable_irq(di->irq);
+	di->irq = platform_get_irq_byname(pdev, "CCEOC");
+	disable_irq(di->irq);
 
 	platform_set_drvdata(pdev, di);
 	list_add(&di->node, &ab8500_fg_list);
