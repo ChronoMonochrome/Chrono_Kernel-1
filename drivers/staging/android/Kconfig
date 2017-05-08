@@ -101,6 +101,11 @@ config ANDROID_RAM_CONSOLE_EARLY_SIZE
 	default 0
 	depends on ANDROID_RAM_CONSOLE_EARLY_INIT
 
+config ANDROID_RAM_CONSOLE
+	bool "Android RAM buffer console"
+	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM=y
+	default n
+
 config ANDROID_TIMED_OUTPUT
 	bool "Timed output class driver"
 	default y
@@ -139,6 +144,16 @@ config ANDROID_STE_TIMED_VIBRA
 	default y
 	help
 	  ST-Ericsson's vibrator driver using timed output class device
+
+
+config ANDROID_INTF_ALARM_DEV
+	bool "Android alarm driver"
+	depends on RTC_CLASS
+	default n
+	help
+	 Provides non-wakeup and rtc backed wakeup alarms based on rtc or
+	 elapsed realtime, and a non-wakeup alarm on the monotonic clock.
+	 Also exports the alarm interface to user-space.
 
 endif # if ANDROID
 
