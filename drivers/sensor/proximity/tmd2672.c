@@ -947,7 +947,7 @@ static int taos_opt_probe(struct i2c_client *client,
 		goto err_setup_regulator;
 	}
 	err = request_threaded_irq(taos->irq, NULL, taos_irq_handler,
-				 IRQF_DISABLED | IRQ_TYPE_EDGE_FALLING,
+				IRQ_TYPE_EDGE_FALLING | IRQF_ONESHOT | IRQF_NOBALANCING,
 				 "taos_int", taos);
 	if (err) {
 		pr_err("%s: request_irq failed for taos\n", __func__);
