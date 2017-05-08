@@ -72,7 +72,7 @@ int cfg80211_mgd_wext_siwfreq(struct net_device *dev,
 	int err, freq;
 
 	/* call only for station! */
-	if ((wdev->iftype != NL80211_IFTYPE_P2P_CLIENT) && WARN_ON(wdev->iftype != NL80211_IFTYPE_STATION))
+	if (WARN_ON(wdev->iftype != NL80211_IFTYPE_STATION))
 		return -EINVAL;
 
 	freq = cfg80211_wext_freq(wdev->wiphy, wextfreq);
@@ -276,7 +276,7 @@ int cfg80211_mgd_wext_siwap(struct net_device *dev,
 
 		/* fixed already - and no change */
 		if (wdev->wext.connect.bssid && bssid &&
-		    ether_addr_equal(bssid, wdev->wext.connect.bssid))
+		    compare_ether_addr(bssid, wdev->wext.connect.bssid) == 0)
 			goto out;
 
 		err = __cfg80211_disconnect(rdev, dev,
