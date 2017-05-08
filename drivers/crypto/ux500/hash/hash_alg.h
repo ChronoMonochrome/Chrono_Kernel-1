@@ -147,7 +147,7 @@ struct uint64 {
 };
 
 /**
- * struct hash_register - Contains all registers in u8500 hash hardware.
+ * struct hash_register - Contains all registers in ux500 hash hardware.
  * @cr:		HASH control register (0x000).
  * @din:	HASH data input register (0x004).
  * @str:	HASH start register (0x008).
@@ -319,23 +319,30 @@ struct hash_dma {
  * struct hash_ctx - The context used for hash calculations.
  * @key:	The key used in the operation.
  * @keylen:	The length of the key.
- * @updated:	Indicates if hardware is initialized for new operations.
  * @state:	The state of the current calculations.
  * @config:	The current configuration.
  * @digestsize:	The size of current digest.
  * @device:	Pointer to the device structure.
- * @dma_mode:	Used in special cases (workaround), e.g. need to change to
- *		cpu mode, if not supported/working in dma mode.
  */
 struct hash_ctx {
 	u8			*key;
 	u32			keylen;
-	u8			updated;
-	struct hash_state	state;
 	struct hash_config	config;
 	int			digestsize;
 	struct hash_device_data	*device;
+};
+
+/**
+ * struct hash_ctx - The request context used for hash calculations.
+ * @state:	The state of the current calculations.
+ * @dma_mode:	Used in special cases (workaround), e.g. need to change to
+ *		cpu mode, if not supported/working in dma mode.
+ * @updated:	Indicates if hardware is initialized for new operations.
+ */
+struct hash_req_ctx {
+	struct hash_state	state;
 	bool			dma_mode;
+	u8			updated;
 };
 
 /**
@@ -354,16 +361,17 @@ struct hash_ctx {
  */
 struct hash_device_data {
 	struct hash_register __iomem	*base;
-	struct klist_node		list_node;
-	struct device			*dev;
-	struct spinlock			ctx_lock;
-	struct hash_ctx			*current_ctx;
-	bool				power_state;
-	struct spinlock			power_state_lock;
-	struct ux500_regulator		*regulator;
-	struct clk			*clk;
-	bool				restore_dev_state;
-	struct hash_dma			dma;
+	struct klist_node	list_node;
+	struct device		*dev;
+	struct spinlock		ctx_lock;
+	struct hash_ctx		*current_ctx;
+	bool			power_state;
+	struct spinlock		power_state_lock;
+	struct regulator	*regulator;
+	struct clk		*clk;
+	bool			restore_dev_state;
+	struct hash_state	state; /* Used for saving and resuming state */
+	struct hash_dma		dma;
 };
 
 int hash_check_hw(struct hash_device_data *device_data);

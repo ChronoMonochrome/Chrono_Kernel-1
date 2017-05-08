@@ -91,7 +91,6 @@ obj-$(CONFIG_BT)		+= bluetooth/
 obj-$(CONFIG_ACCESSIBILITY)	+= accessibility/
 obj-$(CONFIG_ISDN)		+= isdn/
 obj-$(CONFIG_EDAC)		+= edac/
-obj-$(CONFIG_MCA)		+= mca/
 obj-$(CONFIG_EISA)		+= eisa/
 obj-y				+= lguest/
 obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
@@ -139,3 +138,8 @@ endif
 
 
 
+obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+obj-$(CONFIG_EXTCON)		+= extcon/
+obj-$(CONFIG_MEMORY)		+= memory/
+obj-$(CONFIG_IIO)		+= iio/
+obj-$(CONFIG_VME_BUS)		+= vme/

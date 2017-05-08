@@ -234,7 +234,7 @@ struct cryp_device_data {
 	struct cryp_register __iomem *base;
 	struct device *dev;
 	struct clk *clk;
-	struct ux500_regulator *pwr_regulator;
+	struct regulator *pwr_regulator;
 	int power_status;
 	struct spinlock ctx_lock;
 	struct cryp_ctx *current_ctx;

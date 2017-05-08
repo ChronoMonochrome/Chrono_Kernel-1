@@ -32,23 +32,21 @@ void cryp_wait_until_done(struct cryp_device_data *device_data)
  */
 int cryp_check(struct cryp_device_data *device_data)
 {
-	int peripheralID2 = 0;
+	int peripheralid2 = 0;
 
 	if (NULL == device_data)
 		return -EINVAL;
 
-	if (cpu_is_u8500() || cpu_is_u9540())
-		peripheralID2 = CRYP_PERIPHERAL_ID2_DB8500;
-	else if (cpu_is_u5500())
-		peripheralID2 = CRYP_PERIPHERAL_ID2_DB5500;
+	peripheralid2 = readl_relaxed(&device_data->base->periphId2);
+
+	if (peripheralid2 != CRYP_PERIPHERAL_ID2_DB8500)
+		return -EPERM;
 
 	/* Check Peripheral and Pcell Id Register for CRYP */
 	if ((CRYP_PERIPHERAL_ID0 ==
 		readl_relaxed(&device_data->base->periphId0))
 	    && (CRYP_PERIPHERAL_ID1 ==
 		    readl_relaxed(&device_data->base->periphId1))
-	    && (peripheralID2 ==
-		    readl_relaxed(&device_data->base->periphId2))
 	    && (CRYP_PERIPHERAL_ID3 ==
 		    readl_relaxed(&device_data->base->periphId3))
 	    && (CRYP_PCELL_ID0 ==
@@ -68,7 +66,7 @@ int cryp_check(struct cryp_device_data *device_data)
 /**
  * cryp_activity - This routine enables/disable the cryptography function.
  * @device_data: Pointer to the device data struct for base address.
- * @cryp_activity: Enable/Disable functionality
+ * @cryp_crypen: Enable/Disable functionality
  */
 void cryp_activity(struct cryp_device_data *device_data,
 		   enum cryp_crypen cryp_crypen)
@@ -220,34 +218,33 @@ int cryp_configure_key_values(struct cryp_device_data *device_data,
 	switch (key_reg_index) {
 	case CRYP_KEY_REG_1:
 		writel_relaxed(key_value.key_value_left,
-		       &device_data->base->key_1_l);
+				&device_data->base->key_1_l);
 		writel_relaxed(key_value.key_value_right,
-		       &device_data->base->key_1_r);
+				&device_data->base->key_1_r);
 		break;
 	case CRYP_KEY_REG_2:
 		writel_relaxed(key_value.key_value_left,
-		       &device_data->base->key_2_l);
+				&device_data->base->key_2_l);
 		writel_relaxed(key_value.key_value_right,
-		       &device_data->base->key_2_r);
+				&device_data->base->key_2_r);
 		break;
 	case CRYP_KEY_REG_3:
 		writel_relaxed(key_value.key_value_left,
-		       &device_data->base->key_3_l);
+				&device_data->base->key_3_l);
 		writel_relaxed(key_value.key_value_right,
-		       &device_data->base->key_3_r);
+				&device_data->base->key_3_r);
 		break;
 	case CRYP_KEY_REG_4:
 		writel_relaxed(key_value.key_value_left,
-		       &device_data->base->key_4_l);
+				&device_data->base->key_4_l);
 		writel_relaxed(key_value.key_value_right,
-		       &device_data->base->key_4_r);
+				&device_data->base->key_4_r);
 		break;
 	default:
 		return -EINVAL;
 	}
 
 	return 0;
-
 }
 
 /**
@@ -389,30 +386,4 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
 		writel_relaxed(ctx->init_vect_1_l, &reg->init_vect_1_l);
 		writel_relaxed(ctx->init_vect_1_r, &reg->init_vect_1_r);
 	}
-}
-
-/**
- * cryp_write_indata - This routine writes 32 bit data into the data input
- *		       register of the cryptography IP.
- * @device_data: Pointer to the device data struct for base address.
- * @write_data: Data word to write
- */
-int cryp_write_indata(struct cryp_device_data *device_data, u32 write_data)
-{
-	writel_relaxed(write_data, &device_data->base->din);
-
-	return 0;
-}
-
-/**
- * cryp_read_outdata - This routine reads the data from the data output
- *		       register of the CRYP logic
- * @device_data: Pointer to the device data struct for base address.
- * @read_data: Read the data from the output FIFO.
- */
-int cryp_read_outdata(struct cryp_device_data *device_data, u32 *read_data)
-{
-	*read_data = readl_relaxed(&device_data->base->dout);
-
-	return 0;
 }

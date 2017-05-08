@@ -7,6 +7,7 @@
  * Author: Joakim Bech <joakim.xx.bech@stericsson.com> for ST-Ericsson
  * Author: Berne Hebark <berne.herbark@stericsson.com> for ST-Ericsson.
  * Author: Niklas Hernaeus <niklas.hernaeus@stericsson.com> for ST-Ericsson.
+ * Author: Andreas Westin <andreas.westin@stericsson.com> for ST-Ericsson.
  * License terms: GNU General Public License (GPL) version 2
  */
 
@@ -21,7 +22,7 @@
 #include <linux/platform_device.h>
 #include <linux/crypto.h>
 
-#include <linux/regulator/dbx500-prcmu.h>
+#include <linux/regulator/consumer.h>
 #include <linux/dmaengine.h>
 #include <linux/bitops.h>
 
@@ -95,7 +96,6 @@ static struct hash_driver_data	driver_data;
  * This function manages the final part of the digest calculation, when less
  * than 512 bits (64 bytes) remain in message. This means index_bytes < 64.
  *
- * Reentrancy: Non Re-entrant.
  */
 static void hash_messagepad(struct hash_device_data *device_data,
 		const u32 *message, u8 index_bytes);
@@ -174,7 +174,7 @@ static int hash_set_dma_transfer(struct hash_ctx *ctx, struct scatterlist *sg,
 			"(TO_DEVICE)", __func__);
 	desc = channel->device->device_prep_slave_sg(channel,
 			ctx->device->dma.sg, ctx->device->dma.sg_len,
-			direction, DMA_CTRL_ACK | DMA_PREP_INTERRUPT);
+			direction, DMA_CTRL_ACK | DMA_PREP_INTERRUPT, NULL);
 	if (!desc) {
 		dev_err(ctx->device->dev,
 			"[%s]: device_prep_slave_sg() failed!", __func__);
@@ -302,14 +302,14 @@ static int hash_disable_power(
 	if (!device_data->power_state)
 		goto out;
 
-	if (save_device_state && device_data->current_ctx) {
+	if (save_device_state) {
 		hash_save_state(device_data,
-				&device_data->current_ctx->state);
+				&device_data->state);
 		device_data->restore_dev_state = true;
 	}
 
 	clk_disable(device_data->clk);
-	ret = ux500_regulator_atomic_disable(device_data->regulator);
+	ret = regulator_disable(device_data->regulator);
 	if (ret)
 		dev_err(dev, "[%s] regulator_disable() failed!", __func__);
 
@@ -338,7 +338,7 @@ static int hash_enable_power(
 
 	spin_lock(&device_data->power_state_lock);
 	if (!device_data->power_state) {
-		ret = ux500_regulator_atomic_enable(device_data->regulator);
+		ret = regulator_enable(device_data->regulator);
 		if (ret) {
 			dev_err(dev, "[%s]: regulator_enable() failed!",
 					__func__);
@@ -348,7 +348,7 @@ static int hash_enable_power(
 		if (ret) {
 			dev_err(dev, "[%s]: clk_enable() failed!",
 					__func__);
-			ret = ux500_regulator_atomic_disable(
+			ret = regulator_disable(
 					device_data->regulator);
 			goto out;
 		}
@@ -359,7 +359,7 @@ static int hash_enable_power(
 		if (restore_device_state) {
 			device_data->restore_dev_state = false;
 			hash_resume_state(device_data,
-				&device_data->current_ctx->state);
+				&device_data->state);
 		}
 	}
 out:
@@ -447,12 +447,9 @@ static void hash_hw_write_key(struct hash_device_data *device_data,
 	HASH_CLEAR_BITS(&device_data->base->str, HASH_STR_NBLW_MASK);
 
 	while (keylen >= 4) {
-		word = ((u32) (key[3] & 0xff) << 24) |
-			((u32) (key[2] & 0xff) << 16) |
-			((u32) (key[1] & 0xff) << 8) |
-			((u32) (key[0] & 0xff));
+		u32 *key_word = (u32 *)key;
 
-		HASH_SET_DIN(&word, nwords);
+		HASH_SET_DIN(key_word, nwords);
 		keylen -= 4;
 		key += 4;
 	}
@@ -512,7 +509,6 @@ static int init_hash_hw(struct hash_device_data *device_data,
  * @size:	Size in bytes.
  * @aligned:	True if sg data aligned to work in DMA mode.
  *
- * Reentrancy: Non Re-entrant
  */
 static int hash_get_nents(struct scatterlist *sg, int size, bool *aligned)
 {
@@ -570,24 +566,16 @@ static int hash_init(struct ahash_request *req)
 {
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 
 	if (!ctx->key)
 		ctx->keylen = 0;
 
-	memset(&ctx->state, 0, sizeof(struct hash_state));
-	ctx->updated = 0;
+	memset(&req_ctx->state, 0, sizeof(struct hash_state));
+	req_ctx->updated = 0;
 	if (hash_mode == HASH_MODE_DMA) {
-		if ((ctx->config.oper_mode == HASH_OPER_MODE_HMAC) &&
-				cpu_is_u5500()) {
-			pr_debug(DEV_DBG_NAME " [%s] HMAC and DMA not working "
-					"on u5500, directing to CPU mode.",
-					__func__);
-			ctx->dma_mode = false; /* Don't use DMA in this case */
-			goto out;
-		}
-
 		if (req->nbytes < HASH_DMA_ALIGN_SIZE) {
-			ctx->dma_mode = false; /* Don't use DMA in this case */
+			req_ctx->dma_mode = false; /* Don't use DMA */
 
 			pr_debug(DEV_DBG_NAME " [%s] DMA mode, but direct "
 					"to CPU mode for data size < %d",
@@ -596,9 +584,9 @@ static int hash_init(struct ahash_request *req)
 			if (req->nbytes >= HASH_DMA_PERFORMANCE_MIN_SIZE &&
 					hash_dma_valid_data(req->src,
 						req->nbytes)) {
-				ctx->dma_mode = true;
+				req_ctx->dma_mode = true;
 			} else {
-				ctx->dma_mode = false;
+				req_ctx->dma_mode = false;
 				pr_debug(DEV_DBG_NAME " [%s] DMA mode, but use"
 						" CPU mode for datalength < %d"
 						" or non-aligned data, except "
@@ -607,7 +595,6 @@ static int hash_init(struct ahash_request *req)
 			}
 		}
 	}
-out:
 	return 0;
 }
 
@@ -618,7 +605,6 @@ out:
  * @message:		Block (512 bits) of message to be written to
  *			the HASH hardware.
  *
- * Reentrancy: Non Re-entrant.
  */
 static void hash_processblock(
 		struct hash_device_data *device_data,
@@ -645,7 +631,6 @@ static void hash_processblock(
  * This function manages the final part of the digest calculation, when less
  * than 512 bits (64 bytes) remain in message. This means index_bytes < 64.
  *
- * Reentrancy: Non Re-entrant.
  */
 static void hash_messagepad(struct hash_device_data *device_data,
 		const u32 *message, u8 index_bytes)
@@ -695,7 +680,7 @@ static void hash_messagepad(struct hash_device_data *device_data,
  * Overflow cannot occur, because conditions for overflow are checked in
  * hash_hw_update.
  */
-static void hash_incrementlength(struct hash_ctx *ctx, u32 incr)
+static void hash_incrementlength(struct hash_req_ctx *ctx, u32 incr)
 {
 	ctx->state.length.low_word += incr;
 
@@ -709,27 +694,6 @@ static void hash_incrementlength(struct hash_ctx *ctx, u32 incr)
  *                         hardware.
  * @device_data:	Structure for the hash device.
  * @config:		Pointer to a configuration structure.
- *
- * Reentrancy: Non Re-entrant
- * Reentrancy issues:
- *              1. Global variable registry(cofiguration register,
- *                 parameter register, divider register) is being modified
- *
- * Comments     1.  : User need to call hash_begin API after calling this
- *                    API i.e. the current configuration is set only when
- *                    bit INIT is set and we set INIT bit in hash_begin.
- *                    Changing the configuration during a computation has
- *                    no effect so we first set configuration by calling
- *                    this API and then set the INIT bit for the HASH
- *                    processor and the curent configuration is taken into
- *                    account. As reading INIT bit (with correct protection
- *                    rights) will always return 0b so we can't make a check
- *                    at software level. So the user has to initialize the
- *                    device for new configuration to take in to effect.
- *              2.    The default value of data format is 00b ie the format
- *                    of data entered in HASH_DIN register is 32-bit data.
- *                    The data written in HASH_DIN is used directly by the
- *                    HASH processing, without re ordering.
  */
 int hash_setconfiguration(struct hash_device_data *device_data,
 		struct hash_config *config)
@@ -798,21 +762,6 @@ int hash_setconfiguration(struct hash_device_data *device_data,
  *              hardware.
  * @device_data:	Structure for the hash device.
  * @ctx:		Hash context.
- *
- * Reentrancy: Non Re-entrant
- *
- * Comments     1.  : User need to call hash_setconfiguration API before
- *                    calling this API i.e. the current configuration is set
- *                    only when bit INIT is set and we set INIT bit in
- *                    hash_begin. Changing the configuration during a
- *                    computation has no effect so we first set
- *                    configuration by calling this API and then set the
- *                    INIT bit for the HASH processor and the current
- *                    configuration is taken into account. As reading INIT
- *                    bit (with correct protection rights) will always
- *                    return 0b so we can't make a check at software level.
- *                    So the user has to initialize the device for new
- *                    configuration to take in to effect.
  */
 void hash_begin(struct hash_device_data *device_data, struct hash_ctx *ctx)
 {
@@ -837,8 +786,8 @@ void hash_begin(struct hash_device_data *device_data, struct hash_ctx *ctx)
 
 int hash_process_data(
 		struct hash_device_data *device_data,
-		struct hash_ctx *ctx, int msg_length, u8 *data_buffer,
-		u8 *buffer, u8 *index)
+		struct hash_ctx *ctx, struct hash_req_ctx *req_ctx,
+		int msg_length, u8 *data_buffer, u8 *buffer, u8 *index)
 {
 	int ret = 0;
 	u32 count;
@@ -852,10 +801,13 @@ int hash_process_data(
 			*index += msg_length;
 			msg_length = 0;
 		} else {
-			if (ctx->updated) {
+			if (req_ctx->updated) {
 
 				ret = hash_resume_state(device_data,
-						&ctx->state);
+						&device_data->state);
+				memmove(req_ctx->state.buffer,
+						device_data->state.buffer,
+						HASH_BLOCK_SIZE / sizeof(u32));
 				if (ret) {
 					dev_err(device_data->dev, "[%s] "
 							"hash_resume_state()"
@@ -870,7 +822,7 @@ int hash_process_data(
 							" failed!", __func__);
 					goto out;
 				}
-				ctx->updated = 1;
+				req_ctx->updated = 1;
 			}
 			/*
 			 * If 'data_buffer' is four byte aligned and
@@ -896,14 +848,18 @@ int hash_process_data(
 						(const u32 *)buffer,
 						HASH_BLOCK_SIZE);
 			}
-			hash_incrementlength(ctx, HASH_BLOCK_SIZE);
+			hash_incrementlength(req_ctx, HASH_BLOCK_SIZE);
 			data_buffer += (HASH_BLOCK_SIZE - *index);
 
 			msg_length -= (HASH_BLOCK_SIZE - *index);
 			*index = 0;
 
 			ret = hash_save_state(device_data,
-					&ctx->state);
+					&device_data->state);
+
+			memmove(device_data->state.buffer,
+					req_ctx->state.buffer,
+					HASH_BLOCK_SIZE / sizeof(u32));
 			if (ret) {
 				dev_err(device_data->dev, "[%s] "
 						"hash_save_state()"
@@ -926,6 +882,7 @@ static int hash_dma_final(struct ahash_request *req)
 	int ret = 0;
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 	struct hash_device_data *device_data;
 	u8 digest[SHA256_DIGEST_SIZE];
 	int bytes_written = 0;
@@ -936,36 +893,28 @@ static int hash_dma_final(struct ahash_request *req)
 
 	dev_dbg(device_data->dev, "[%s] (ctx=0x%x)!", __func__, (u32) ctx);
 
-	/* Enable device power (and clock) */
-	ret = hash_enable_power(device_data, false);
-	if (ret) {
-		dev_err(device_data->dev, "[%s]: "
-				"hash_enable_power() failed!", __func__);
-		goto out;
-	}
-
-	if (ctx->updated) {
-		ret = hash_resume_state(device_data, &ctx->state);
+	if (req_ctx->updated) {
+		ret = hash_resume_state(device_data, &device_data->state);
 
 		if (ret) {
 			dev_err(device_data->dev, "[%s] hash_resume_state() "
 					"failed!", __func__);
-			goto out_power;
+			goto out;
 		}
 
 	}
 
-	if (!ctx->updated) {
+	if (!req_ctx->updated) {
 		ret = hash_setconfiguration(device_data, &ctx->config);
 		if (ret) {
 			dev_err(device_data->dev, "[%s] "
 					"hash_setconfiguration() failed!",
 					__func__);
-			goto out_power;
+			goto out;
 		}
 
 		/* Enable DMA input */
-		if (hash_mode != HASH_MODE_DMA || !ctx->dma_mode) {
+		if (hash_mode != HASH_MODE_DMA || !req_ctx->dma_mode) {
 			HASH_CLEAR_BITS(&device_data->base->cr,
 					HASH_CR_DMAE_MASK);
 		} else {
@@ -982,7 +931,7 @@ static int hash_dma_final(struct ahash_request *req)
 
 		/* Number of bits in last word = (nbytes * 8) % 32 */
 		HASH_SET_NBLW((req->nbytes * 8) % 32);
-		ctx->updated = 1;
+		req_ctx->updated = 1;
 	}
 
 	/* Store the nents in the dma struct. */
@@ -990,14 +939,14 @@ static int hash_dma_final(struct ahash_request *req)
 	if (!ctx->device->dma.nents) {
 		dev_err(device_data->dev, "[%s] "
 				"ctx->device->dma.nents = 0", __func__);
-		goto out_power;
+		goto out;
 	}
 
 	bytes_written = hash_dma_write(ctx, req->src, req->nbytes);
 	if (bytes_written != req->nbytes) {
 		dev_err(device_data->dev, "[%s] "
 				"hash_dma_write() failed!", __func__);
-		goto out_power;
+		goto out;
 	}
 
 	wait_for_completion(&ctx->device->dma.complete);
@@ -1017,12 +966,6 @@ static int hash_dma_final(struct ahash_request *req)
 
 	hash_get_digest(device_data, digest, ctx->config.algorithm);
 	memcpy(req->result, digest, ctx->digestsize);
-
-out_power:
-	/* Disable power (and clock) */
-	if (hash_disable_power(device_data, false))
-		dev_err(device_data->dev, "[%s] hash_disable_power() failed!",
-				__func__);
 
 out:
 	release_hash_device(device_data);
@@ -1044,6 +987,7 @@ int hash_hw_final(struct ahash_request *req)
 	int ret = 0;
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 	struct hash_device_data *device_data;
 	u8 digest[SHA256_DIGEST_SIZE];
 
@@ -1053,21 +997,13 @@ int hash_hw_final(struct ahash_request *req)
 
 	dev_dbg(device_data->dev, "[%s] (ctx=0x%x)!", __func__, (u32) ctx);
 
-	/* Enable device power (and clock) */
-	ret = hash_enable_power(device_data, false);
-	if (ret) {
-		dev_err(device_data->dev, "[%s]: "
-				"hash_enable_power() failed!", __func__);
-		goto out;
-	}
-
-	if (ctx->updated) {
-		ret = hash_resume_state(device_data, &ctx->state);
+	if (req_ctx->updated) {
+		ret = hash_resume_state(device_data, &device_data->state);
 
 		if (ret) {
 			dev_err(device_data->dev, "[%s] hash_resume_state() "
 					"failed!", __func__);
-			goto out_power;
+			goto out;
 		}
 	} else if (req->nbytes == 0 && ctx->keylen == 0) {
 		u8 zero_hash[SHA256_DIGEST_SIZE];
@@ -1082,7 +1018,7 @@ int hash_hw_final(struct ahash_request *req)
 		if (!ret && likely(zero_hash_size == ctx->digestsize) &&
 				zero_digest) {
 			memcpy(req->result, &zero_hash[0], ctx->digestsize);
-			goto out_power;
+			goto out;
 		} else if (!ret && !zero_digest) {
 			dev_dbg(device_data->dev, "[%s] HMAC zero msg with "
 					"key, continue...", __func__);
@@ -1092,26 +1028,26 @@ int hash_hw_final(struct ahash_request *req)
 					(zero_hash_size == ctx->digestsize) ?
 					"true" : "false");
 			/* Return error */
-			goto out_power;
+			goto out;
 		}
 	} else if (req->nbytes == 0 && ctx->keylen > 0) {
 		dev_err(device_data->dev, "[%s] Empty message with "
 				"keylength > 0, NOT supported.", __func__);
-		goto out_power;
+		goto out;
 	}
 
-	if (!ctx->updated) {
+	if (!req_ctx->updated) {
 		ret = init_hash_hw(device_data, ctx);
 		if (ret) {
 			dev_err(device_data->dev, "[%s] init_hash_hw() "
 					"failed!", __func__);
-			goto out_power;
+			goto out;
 		}
 	}
 
-	if (ctx->state.index) {
-		hash_messagepad(device_data, ctx->state.buffer,
-				ctx->state.index);
+	if (req_ctx->state.index) {
+		hash_messagepad(device_data, req_ctx->state.buffer,
+				req_ctx->state.index);
 	} else {
 		HASH_SET_DCAL;
 		while (device_data->base->str & HASH_STR_DCAL_MASK)
@@ -1130,12 +1066,6 @@ int hash_hw_final(struct ahash_request *req)
 	hash_get_digest(device_data, digest, ctx->config.algorithm);
 	memcpy(req->result, digest, ctx->digestsize);
 
-out_power:
-	/* Disable power (and clock) */
-	if (hash_disable_power(device_data, false))
-		dev_err(device_data->dev, "[%s] hash_disable_power() failed!",
-				__func__);
-
 out:
 	release_hash_device(device_data);
 
@@ -1152,8 +1082,6 @@ out:
  *                  the message.
  * @req:	Byte array containing the message to be hashed (caller
  *		allocated).
- *
- * Reentrancy: Non Re-entrant
  */
 int hash_hw_update(struct ahash_request *req)
 {
@@ -1164,6 +1092,7 @@ int hash_hw_update(struct ahash_request *req)
 	u8 *data_buffer;
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 	struct crypto_hash_walk walk;
 	int msg_length = crypto_hash_walk_first(req, &walk);
 
@@ -1171,14 +1100,14 @@ int hash_hw_update(struct ahash_request *req)
 	if (msg_length == 0)
 		return ret;
 
-	index = ctx->state.index;
-	buffer = (u8 *)ctx->state.buffer;
+	index = req_ctx->state.index;
+	buffer = (u8 *)req_ctx->state.buffer;
 
 	/* Check if ctx->state.length + msg_length
 	   overflows */
-	if (msg_length > (ctx->state.length.low_word + msg_length) &&
+	if (msg_length > (req_ctx->state.length.low_word + msg_length) &&
 			HASH_HIGH_WORD_MAX_VAL ==
-			ctx->state.length.high_word) {
+			req_ctx->state.length.high_word) {
 		pr_err(DEV_DBG_NAME " [%s] HASH_MSG_LENGTH_OVERFLOW!",
 				__func__);
 		return -EPERM;
@@ -1188,38 +1117,26 @@ int hash_hw_update(struct ahash_request *req)
 	if (ret)
 		return ret;
 
-	/* Enable device power (and clock) */
-	ret = hash_enable_power(device_data, false);
-	if (ret) {
-		dev_err(device_data->dev, "[%s]: "
-				"hash_enable_power() failed!", __func__);
-		goto out;
-	}
-
 	/* Main loop */
 	while (0 != msg_length) {
 		data_buffer = walk.data;
-		ret = hash_process_data(device_data, ctx,
-				msg_length, data_buffer, buffer, &index);
+		ret = hash_process_data(device_data, ctx, req_ctx, msg_length,
+				data_buffer, buffer, &index);
 
 		if (ret) {
 			dev_err(device_data->dev, "[%s] hash_internal_hw_"
 					"update() failed!", __func__);
-			goto out_power;
+			goto out;
 		}
 
 		msg_length = crypto_hash_walk_done(&walk, 0);
 	}
 
-	ctx->state.index = index;
-	dev_dbg(device_data->dev, "[%s] indata length=%d, "
-		"bin=%d))", __func__, ctx->state.index, ctx->state.bit_index);
+	req_ctx->state.index = index;
+	dev_dbg(device_data->dev, "[%s] indata length=%d, bin=%d))",
+			__func__, req_ctx->state.index,
+			req_ctx->state.bit_index);
 
-out_power:
-	/* Disable power (and clock) */
-	if (hash_disable_power(device_data, false))
-		dev_err(device_data->dev, "[%s]: "
-				"hash_disable_power() failed!", __func__);
 out:
 	release_hash_device(device_data);
 
@@ -1230,8 +1147,6 @@ out:
  * hash_resume_state - Function that resumes the state of an calculation.
  * @device_data:	Pointer to the device structure.
  * @device_state:	The state to be restored in the hash hardware
- *
- * Reentrancy: Non Re-entrant
  */
 int hash_resume_state(struct hash_device_data *device_data,
 		const struct hash_state *device_state)
@@ -1290,8 +1205,6 @@ int hash_resume_state(struct hash_device_data *device_data,
  * hash_save_state - Function that saves the state of hardware.
  * @device_data:	Pointer to the device structure.
  * @device_state:	The strucure where the hardware state should be saved.
- *
- * Reentrancy: Non Re-entrant
  */
 int hash_save_state(struct hash_device_data *device_data,
 		struct hash_state *device_state)
@@ -1303,7 +1216,7 @@ int hash_save_state(struct hash_device_data *device_data,
 	if (NULL == device_state) {
 		dev_err(device_data->dev, "[%s] HASH_INVALID_PARAMETER!",
 				__func__);
-		return -EPERM;
+		return -ENOTSUPP;
 	}
 
 	/* Write dummy value to force digest intermediate calculation. This
@@ -1347,35 +1260,22 @@ int hash_save_state(struct hash_device_data *device_data,
  */
 int hash_check_hw(struct hash_device_data *device_data)
 {
-	int ret = 0;
-
-	if (NULL == device_data) {
-		ret = -EPERM;
-		pr_err(DEV_DBG_NAME " [%s] HASH_INVALID_PARAMETER!",
-			__func__);
-		goto out;
-	}
-
 	/* Checking Peripheral Ids  */
-	if ((HASH_P_ID0 == readl_relaxed(&device_data->base->periphid0))
-		&& (HASH_P_ID1 == readl_relaxed(&device_data->base->periphid1))
-		&& (HASH_P_ID2 == readl_relaxed(&device_data->base->periphid2))
-		&& (HASH_P_ID3 == readl_relaxed(&device_data->base->periphid3))
-		&& (HASH_CELL_ID0 == readl_relaxed(&device_data->base->cellid0))
-		&& (HASH_CELL_ID1 == readl_relaxed(&device_data->base->cellid1))
-		&& (HASH_CELL_ID2 == readl_relaxed(&device_data->base->cellid2))
-		&& (HASH_CELL_ID3 == readl_relaxed(&device_data->base->cellid3))
+	if (HASH_P_ID0 == readl_relaxed(&device_data->base->periphid0)
+		&& HASH_P_ID1 == readl_relaxed(&device_data->base->periphid1)
+		&& HASH_P_ID2 == readl_relaxed(&device_data->base->periphid2)
+		&& HASH_P_ID3 == readl_relaxed(&device_data->base->periphid3)
+		&& HASH_CELL_ID0 == readl_relaxed(&device_data->base->cellid0)
+		&& HASH_CELL_ID1 == readl_relaxed(&device_data->base->cellid1)
+		&& HASH_CELL_ID2 == readl_relaxed(&device_data->base->cellid2)
+		&& HASH_CELL_ID3 == readl_relaxed(&device_data->base->cellid3)
 	   ) {
-		ret = 0;
-		goto out;;
-	} else {
-		ret = -EPERM;
-		dev_err(device_data->dev, "[%s] HASH_UNSUPPORTED_HW!",
-				__func__);
-		goto out;
+		return 0;
 	}
-out:
-	return ret;
+
+	dev_err(device_data->dev, "[%s] HASH_UNSUPPORTED_HW!",
+			__func__);
+	return -ENOTSUPP;
 }
 
 /**
@@ -1383,12 +1283,6 @@ out:
  * @device_data:	Pointer to the device structure.
  * @digest:		User allocated byte array for the calculated digest.
  * @algorithm:		The algorithm in use.
- *
- * Reentrancy: Non Re-entrant, global variable registry (hash control register)
- * is being modified.
- *
- * Note that, if this is called before the final message has been handle it
- * will return the intermediate message digest.
  */
 void hash_get_digest(struct hash_device_data *device_data,
 		u8 *digest, int algorithm)
@@ -1427,10 +1321,9 @@ void hash_get_digest(struct hash_device_data *device_data,
 static int ahash_update(struct ahash_request *req)
 {
 	int ret = 0;
-	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 
-	if (hash_mode != HASH_MODE_DMA || !ctx->dma_mode)
+	if (hash_mode != HASH_MODE_DMA || !req_ctx->dma_mode)
 		ret = hash_hw_update(req);
 	/* Skip update for DMA, all data will be passed to DMA in final */
 
@@ -1449,12 +1342,11 @@ static int ahash_update(struct ahash_request *req)
 static int ahash_final(struct ahash_request *req)
 {
 	int ret = 0;
-	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct hash_req_ctx *req_ctx = ahash_request_ctx(req);
 
 	pr_debug(DEV_DBG_NAME " [%s] data size: %d", __func__, req->nbytes);
 
-	if ((hash_mode == HASH_MODE_DMA) && ctx->dma_mode)
+	if ((hash_mode == HASH_MODE_DMA) && req_ctx->dma_mode)
 		ret = hash_dma_final(req);
 	else
 		ret = hash_hw_final(req);
@@ -1487,7 +1379,7 @@ static int hash_setkey(struct crypto_ahash *tfm,
 	ctx->keylen = keylen;
 
 	return ret;
- }
+}
 
 static int ahash_sha1_init(struct ahash_request *req)
 {
@@ -1613,87 +1505,128 @@ static int hmac_sha256_setkey(struct crypto_ahash *tfm,
 	return hash_setkey(tfm, key, keylen, HASH_ALGO_SHA256);
 }
 
-static struct ahash_alg ahash_sha1_alg = {
-	.init			 = ahash_sha1_init,
-	.update			 = ahash_update,
-	.final			 = ahash_final,
-	.digest			 = ahash_sha1_digest,
-	.halg.digestsize	 = SHA1_DIGEST_SIZE,
-	.halg.statesize		 = sizeof(struct hash_ctx),
-	.halg.base = {
-		.cra_name	 = "sha1",
-		.cra_driver_name = "sha1-ux500",
-		.cra_flags	 = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
-		.cra_blocksize	 = SHA1_BLOCK_SIZE,
-		.cra_ctxsize	 = sizeof(struct hash_ctx),
-		.cra_module	 = THIS_MODULE,
-	}
+struct hash_algo_template {
+	struct hash_config conf;
+	struct ahash_alg hash;
 };
 
-static struct ahash_alg ahash_sha256_alg = {
-	.init			 = ahash_sha256_init,
-	.update			 = ahash_update,
-	.final			 = ahash_final,
-	.digest			 = ahash_sha256_digest,
-	.halg.digestsize	 = SHA256_DIGEST_SIZE,
-	.halg.statesize		 = sizeof(struct hash_ctx),
-	.halg.base = {
-		.cra_name        = "sha256",
-		.cra_driver_name = "sha256-ux500",
-		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
-		.cra_blocksize   = SHA256_BLOCK_SIZE,
-		.cra_ctxsize	 = sizeof(struct hash_ctx),
-		.cra_type	 = &crypto_ahash_type,
-		.cra_module      = THIS_MODULE,
-	}
-};
+static int hash_cra_init(struct crypto_tfm *tfm)
+{
+	struct hash_ctx *ctx = crypto_tfm_ctx(tfm);
+	struct crypto_alg *alg = tfm->__crt_alg;
+	struct hash_algo_template *hash_alg;
 
-static struct ahash_alg hmac_sha1_alg = {
-	.init			 = hmac_sha1_init,
-	.update			 = ahash_update,
-	.final			 = ahash_final,
-	.digest			 = hmac_sha1_digest,
-	.setkey			 = hmac_sha1_setkey,
-	.halg.digestsize	 = SHA1_DIGEST_SIZE,
-	.halg.statesize		 = sizeof(struct hash_ctx),
-	.halg.base = {
-		.cra_name        = "hmac(sha1)",
-		.cra_driver_name = "hmac-sha1-ux500",
-		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
-		.cra_blocksize   = SHA1_BLOCK_SIZE,
-		.cra_ctxsize	 = sizeof(struct hash_ctx),
-		.cra_type	 = &crypto_ahash_type,
-		.cra_module      = THIS_MODULE,
-	}
-};
+	hash_alg = container_of(__crypto_ahash_alg(alg),
+			struct hash_algo_template,
+			hash);
 
-static struct ahash_alg hmac_sha256_alg = {
-	.init			 = hmac_sha256_init,
-	.update			 = ahash_update,
-	.final			 = ahash_final,
-	.digest			 = hmac_sha256_digest,
-	.setkey			 = hmac_sha256_setkey,
-	.halg.digestsize	 = SHA256_DIGEST_SIZE,
-	.halg.statesize		 = sizeof(struct hash_ctx),
-	.halg.base = {
-		.cra_name        = "hmac(sha256)",
-		.cra_driver_name = "hmac-sha256-ux500",
-		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
-		.cra_blocksize   = SHA256_BLOCK_SIZE,
-		.cra_ctxsize	 = sizeof(struct hash_ctx),
-		.cra_type	 = &crypto_ahash_type,
-		.cra_module      = THIS_MODULE,
-	}
-};
+	crypto_ahash_set_reqsize(__crypto_ahash_cast(tfm),
+			sizeof(struct hash_req_ctx));
 
-/**
- * struct hash_alg *ux500_hash_algs[] -
- */
-static struct ahash_alg *ux500_ahash_algs[] = {
-	&ahash_sha1_alg,
-	&ahash_sha256_alg,
-	&hmac_sha1_alg,
-	&hmac_sha256_alg
+	ctx->config.data_format = HASH_DATA_8_BITS;
+	ctx->config.algorithm = hash_alg->conf.algorithm;
+	ctx->config.oper_mode = hash_alg->conf.oper_mode;
+
+	ctx->digestsize = hash_alg->hash.halg.digestsize;
+
+	return 0;
+}
+
+static struct hash_algo_template hash_algs[] = {
+	{
+			.conf.algorithm	= HASH_ALGO_SHA1,
+			.conf.oper_mode	= HASH_OPER_MODE_HASH,
+			.hash = {
+				.init = hash_init,
+				.update = ahash_update,
+				.final = ahash_final,
+				.digest = ahash_sha1_digest,
+				.halg.digestsize = SHA1_DIGEST_SIZE,
+				.halg.statesize = sizeof(struct hash_ctx),
+				.halg.base = {
+					.cra_name = "sha1",
+					.cra_driver_name = "sha1-ux500",
+					.cra_flags = CRYPTO_ALG_TYPE_AHASH |
+							CRYPTO_ALG_ASYNC,
+					.cra_blocksize = SHA1_BLOCK_SIZE,
+					.cra_ctxsize = sizeof(struct hash_ctx),
+					.cra_init = hash_cra_init,
+					.cra_module = THIS_MODULE,
+			}
+		}
+	},
+	{
+			.conf.algorithm		= HASH_ALGO_SHA256,
+			.conf.oper_mode		= HASH_OPER_MODE_HASH,
+			.hash = {
+				.init = hash_init,
+				.update	= ahash_update,
+				.final = ahash_final,
+				.digest = ahash_sha256_digest,
+				.halg.digestsize = SHA256_DIGEST_SIZE,
+				.halg.statesize = sizeof(struct hash_ctx),
+				.halg.base = {
+					.cra_name = "sha256",
+					.cra_driver_name = "sha256-ux500",
+					.cra_flags = CRYPTO_ALG_TYPE_AHASH |
+							CRYPTO_ALG_ASYNC,
+					.cra_blocksize = SHA256_BLOCK_SIZE,
+					.cra_ctxsize = sizeof(struct hash_ctx),
+					.cra_type = &crypto_ahash_type,
+					.cra_init = hash_cra_init,
+					.cra_module = THIS_MODULE,
+				}
+			}
+
+	},
+	{
+			.conf.algorithm		= HASH_ALGO_SHA1,
+			.conf.oper_mode		= HASH_OPER_MODE_HMAC,
+			.hash = {
+				.init = hash_init,
+				.update = ahash_update,
+				.final = ahash_final,
+				.digest = hmac_sha1_digest,
+				.setkey = hmac_sha1_setkey,
+				.halg.digestsize = SHA1_DIGEST_SIZE,
+				.halg.statesize = sizeof(struct hash_ctx),
+				.halg.base = {
+					.cra_name = "hmac(sha1)",
+					.cra_driver_name = "hmac-sha1-ux500",
+					.cra_flags = CRYPTO_ALG_TYPE_AHASH |
+							CRYPTO_ALG_ASYNC,
+					.cra_blocksize = SHA1_BLOCK_SIZE,
+					.cra_ctxsize = sizeof(struct hash_ctx),
+					.cra_type = &crypto_ahash_type,
+					.cra_init = hash_cra_init,
+					.cra_module = THIS_MODULE,
+				}
+			}
+	},
+	{
+			.conf.algorithm		= HASH_ALGO_SHA256,
+			.conf.oper_mode		= HASH_OPER_MODE_HMAC,
+			.hash = {
+				.init = hash_init,
+				.update = ahash_update,
+				.final = ahash_final,
+				.digest = hmac_sha256_digest,
+				.setkey = hmac_sha256_setkey,
+				.halg.digestsize = SHA256_DIGEST_SIZE,
+				.halg.statesize = sizeof(struct hash_ctx),
+				.halg.base = {
+					.cra_name = "hmac(sha256)",
+					.cra_driver_name = "hmac-sha256-ux500",
+					.cra_flags = CRYPTO_ALG_TYPE_AHASH |
+							CRYPTO_ALG_ASYNC,
+					.cra_blocksize = SHA256_BLOCK_SIZE,
+					.cra_ctxsize = sizeof(struct hash_ctx),
+					.cra_type = &crypto_ahash_type,
+					.cra_init = hash_cra_init,
+					.cra_module = THIS_MODULE,
+				}
+			}
+	}
 };
 
 /**
@@ -1705,20 +1638,19 @@ static int ahash_algs_register_all(struct hash_device_data *device_data)
 	int i;
 	int count;
 
-	for (i = 0; i < ARRAY_SIZE(ux500_ahash_algs); i++) {
-		ret = crypto_register_ahash(ux500_ahash_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(hash_algs); i++) {
+		ret = crypto_register_ahash(&hash_algs[i].hash);
 		if (ret) {
 			count = i;
-			dev_err(device_data->dev, "[%s] alg registration"
-					" failed",
-				ux500_ahash_algs[i]->halg.base.cra_driver_name);
+			dev_err(device_data->dev, "[%s] alg registration failed",
+				hash_algs[i].hash.halg.base.cra_driver_name);
 			goto unreg;
 		}
 	}
 	return 0;
 unreg:
 	for (i = 0; i < count; i++)
-		crypto_unregister_ahash(ux500_ahash_algs[i]);
+		crypto_unregister_ahash(&hash_algs[i].hash);
 	return ret;
 }
 
@@ -1729,8 +1661,8 @@ static void ahash_algs_unregister_all(struct hash_device_data *device_data)
 {
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(ux500_ahash_algs); i++)
-		crypto_unregister_ahash(ux500_ahash_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(hash_algs); i++)
+		crypto_unregister_ahash(&hash_algs[i].hash);
 }
 
 /**
@@ -1779,7 +1711,7 @@ static int ux500_hash_probe(struct platform_device *pdev)
 	spin_lock_init(&device_data->power_state_lock);
 
 	/* Enable power for HASH1 hardware block */
-	device_data->regulator = ux500_regulator_get(dev);
+	device_data->regulator = regulator_get(dev, "v-ape");
 	if (IS_ERR(device_data->regulator)) {
 		dev_err(dev, "[%s] regulator_get() failed!", __func__);
 		ret = PTR_ERR(device_data->regulator);
@@ -1825,9 +1757,6 @@ static int ux500_hash_probe(struct platform_device *pdev)
 		goto out_power;
 	}
 
-	if (hash_disable_power(device_data, false))
-		dev_err(dev, "[%s]: hash_disable_power() failed!", __func__);
-
 	dev_info(dev, "[%s] successfully probed\n", __func__);
 	return 0;
 
@@ -1838,7 +1767,7 @@ out_clk:
 	clk_put(device_data->clk);
 
 out_regulator:
-	ux500_regulator_put(device_data->regulator);
+	regulator_put(device_data->regulator);
 
 out_unmap:
 	iounmap(device_data->base);
@@ -1899,7 +1828,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
 			__func__);
 
 	clk_put(device_data->clk);
-	ux500_regulator_put(device_data->regulator);
+	regulator_put(device_data->regulator);
 
 	iounmap(device_data->base);
 
