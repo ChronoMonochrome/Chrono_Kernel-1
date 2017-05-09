@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 5
 SUBLEVEL = 0
-EXTRAVERSION = -rc1
+EXTRAVERSION = -rc4
 NAME = Saber-toothed Squirrel
 
 # *DOCUMENTATION*
@@ -587,6 +587,7 @@ KBUILD_CFLAGS	+= -O2
 endif
 
 LDFLAGS += -O2 --as-needed --sort-common
+include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifdef CONFIG_READABLE_ASM
 # Disable optimizations that make assembler listings hard to read.
@@ -597,8 +598,6 @@ KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
                  $(call cc-option,-fno-ipa-cp-clone,) \
                  $(call cc-option,-fno-partial-inlining)
 endif
-
-include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifneq ($(CONFIG_FRAME_WARN),0)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
