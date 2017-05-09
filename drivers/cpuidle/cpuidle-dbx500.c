@@ -23,6 +23,7 @@
 #include <mach/pm.h>
 #include <mach/pm-timer.h>
 #include <mach/context.h>
+#include <mach/irqs.h>
 #include <mach/id.h>
 
 #include <plat/mtu.h>

@@ -25,6 +25,7 @@
 #include <mach/pm.h>
 #include <mach/pm-timer.h>
 #include <mach/gpio.h>
+#include <mach/irqs.h>
 
 #include <asm/hardware/gic.h>
 
