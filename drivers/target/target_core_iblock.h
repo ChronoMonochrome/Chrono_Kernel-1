@@ -22,6 +22,7 @@ struct iblock_req {
 #define IBDF_HAS_FORCE			0x02
 
 struct iblock_dev {
+	struct se_device dev;
 	unsigned char ibd_udev_path[SE_UDEV_PATH_LEN];
 	int	ibd_force;
 	int	ibd_major;

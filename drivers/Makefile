@@ -143,9 +143,24 @@ obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
 
+
+
+obj-$(CONFIG_NFC)		+= nfc/
+obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
+obj-$(CONFIG_REMOTEPROC)	+= remoteproc/
+obj-$(CONFIG_RPMSG)		+= rpmsg/
+
+# Virtualization drivers
+obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
+obj-$(CONFIG_HYPERV)		+= hv/
+
+obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+obj-$(CONFIG_EXTCON)		+= extcon/
+obj-$(CONFIG_MEMORY)		+= memory/
+obj-$(CONFIG_IIO)		+= iio/
+obj-$(CONFIG_VME_BUS)		+= vme/
+obj-$(CONFIG_IPACK_BUS)		+= ipack/
+
 ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; fi))
 obj-y   += exfat/
 endif
-
-
-

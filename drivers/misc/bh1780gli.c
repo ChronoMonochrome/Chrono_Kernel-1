@@ -167,7 +167,7 @@ static const struct attribute_group bh1780_attr_group = {
 	.attrs = bh1780_attributes,
 };
 
-static int __devinit bh1780_probe(struct i2c_client *client,
+static int bh1780_probe(struct i2c_client *client,
 						const struct i2c_device_id *id)
 {
 	int ret;
@@ -234,7 +234,7 @@ free_ddata:
 	return ret;
 }
 
-static int __devexit bh1780_remove(struct i2c_client *client)
+static int bh1780_remove(struct i2c_client *client)
 {
 	struct bh1780_data *ddata;
 

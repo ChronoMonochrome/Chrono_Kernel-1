@@ -49,7 +49,7 @@ config OF_GPIO
 
 config OF_I2C
 	def_tristate I2C
-	depends on I2C && !SPARC
+	depends on I2C
 	help
 	  OpenFirmware I2C accessors
 

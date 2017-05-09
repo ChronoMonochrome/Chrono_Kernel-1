@@ -52,7 +52,7 @@ static const struct ad_dpot_bus_ops bops = {
 	.write_r8d16	= write_r8d16,
 };
 
-static int __devinit ad_dpot_i2c_probe(struct i2c_client *client,
+static int ad_dpot_i2c_probe(struct i2c_client *client,
 				      const struct i2c_device_id *id)
 {
 	struct ad_dpot_bus_data bdata = {
@@ -74,7 +74,7 @@ static int __devinit ad_dpot_i2c_probe(struct i2c_client *client,
 	return ad_dpot_probe(&client->dev, &bdata, &dpot_id);
 }
 
-static int __devexit ad_dpot_i2c_remove(struct i2c_client *client)
+static int ad_dpot_i2c_remove(struct i2c_client *client)
 {
 	return ad_dpot_remove(&client->dev);
 }
@@ -114,7 +114,7 @@ static struct i2c_driver ad_dpot_i2c_driver = {
 		.owner	= THIS_MODULE,
 	},
 	.probe		= ad_dpot_i2c_probe,
-	.remove		= __devexit_p(ad_dpot_i2c_remove),
+	.remove		= ad_dpot_i2c_remove,
 	.id_table	= ad_dpot_id,
 };
 

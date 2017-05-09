@@ -47,7 +47,6 @@
 #include <asm/xen/hypervisor.h>
 #include <xen/xenbus.h>
 #include "xenbus_comms.h"
-#include <asm/xen/hypervisor.h>
 
 struct xs_stored_msg {
 	struct list_head list;

@@ -143,7 +143,7 @@ static u8 tc86c001_cable_detect(ide_hwif_t *hwif)
 	return (scr1 & 0x2000) ? ATA_CBL_PATA40 : ATA_CBL_PATA80;
 }
 
-static void __devinit init_hwif_tc86c001(ide_hwif_t *hwif)
+static void init_hwif_tc86c001(ide_hwif_t *hwif)
 {
 	struct pci_dev *dev	= to_pci_dev(hwif->dev);
 	unsigned long sc_base	= pci_resource_start(dev, 5);
@@ -191,7 +191,7 @@ static const struct ide_dma_ops tc86c001_dma_ops = {
 	.dma_sff_read_status	= ide_dma_sff_read_status,
 };
 
-static const struct ide_port_info tc86c001_chipset __devinitconst = {
+static const struct ide_port_info tc86c001_chipset = {
 	.name		= DRV_NAME,
 	.init_hwif	= init_hwif_tc86c001,
 	.port_ops	= &tc86c001_port_ops,
@@ -202,8 +202,8 @@ static const struct ide_port_info tc86c001_chipset __devinitconst = {
 	.udma_mask	= ATA_UDMA4,
 };
 
-static int __devinit tc86c001_init_one(struct pci_dev *dev,
-				       const struct pci_device_id *id)
+static int tc86c001_init_one(struct pci_dev *dev,
+			     const struct pci_device_id *id)
 {
 	int rc;
 
@@ -231,7 +231,7 @@ out:
 	return rc;
 }
 
-static void __devexit tc86c001_remove(struct pci_dev *dev)
+static void tc86c001_remove(struct pci_dev *dev)
 {
 	ide_pci_remove(dev);
 	pci_release_region(dev, 5);
@@ -248,7 +248,7 @@ static struct pci_driver tc86c001_pci_driver = {
 	.name		= "TC86C001",
 	.id_table	= tc86c001_pci_tbl,
 	.probe		= tc86c001_init_one,
-	.remove		= __devexit_p(tc86c001_remove),
+	.remove		= tc86c001_remove,
 };
 
 static int __init tc86c001_ide_init(void)

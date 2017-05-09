@@ -1130,7 +1130,8 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 	return rc;
 }
 
-static int __devinit swim3_attach(struct macio_dev *mdev, const struct of_device_id *match)
+static int swim3_attach(struct macio_dev *mdev,
+			const struct of_device_id *match)
 {
 	int i, rc;
 	struct gendisk *disk;

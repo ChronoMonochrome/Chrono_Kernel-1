@@ -114,7 +114,7 @@ static struct pcmcia_low_level shannon_pcmcia_ops = {
 	.socket_suspend		= shannon_pcmcia_socket_suspend,
 };
 
-int __devinit pcmcia_shannon_init(struct device *dev)
+int pcmcia_shannon_init(struct device *dev)
 {
 	int ret = -ENODEV;
 

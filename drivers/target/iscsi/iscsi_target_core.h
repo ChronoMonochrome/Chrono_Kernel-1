@@ -480,7 +480,7 @@ struct iscsi_cmd {
 	struct scatterlist	*first_data_sg;
 	u32			first_data_sg_off;
 	u32			kmapped_nents;
-
+	sense_reason_t		sense_reason;
 }  ____cacheline_aligned;
 
 struct iscsi_tmr_req {

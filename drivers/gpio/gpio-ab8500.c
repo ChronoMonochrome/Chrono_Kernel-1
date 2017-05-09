@@ -453,7 +453,7 @@ static void ab8500_gpio_irq_remove(struct ab8500_gpio *ab8500_gpio)
 	}
 }
 
-static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
+static int ab8500_gpio_probe(struct platform_device *pdev)
 {
 	struct ab8500 *parent = dev_get_drvdata(pdev->dev.parent);
 	struct ab8500_platform_data *ab8500_pdata =
@@ -566,7 +566,7 @@ out_free:
  * ab8500_gpio_remove() - remove Ab8500-gpio driver
  * @pdev :	Platform device registered
  */
-static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
+static int ab8500_gpio_remove(struct platform_device *pdev)
 {
 	struct ab8500_gpio *ab8500_gpio = platform_get_drvdata(pdev);
 	int ret;
@@ -671,7 +671,7 @@ static struct platform_driver ab8500_gpio_driver = {
 		.owner = THIS_MODULE,
 	},
 	.probe = ab8500_gpio_probe,
-	.remove = __devexit_p(ab8500_gpio_remove),
+	.remove = ab8500_gpio_remove,
 };
 
 static int __init ab8500_gpio_init(void)

@@ -126,9 +126,8 @@ const char *ipath_ibcstatus_str[] = {
 	"LTState1C", "LTState1D", "LTState1E", "LTState1F"
 };
 
-static void __devexit ipath_remove_one(struct pci_dev *);
-static int __devinit ipath_init_one(struct pci_dev *,
-				    const struct pci_device_id *);
+static void ipath_remove_one(struct pci_dev *);
+static int ipath_init_one(struct pci_dev *, const struct pci_device_id *);
 
 /* Only needed for registration, nothing else needs this info */
 #define PCI_VENDOR_ID_PATHSCALE 0x1fc1
@@ -147,7 +146,7 @@ MODULE_DEVICE_TABLE(pci, ipath_pci_tbl);
 static struct pci_driver ipath_driver = {
 	.name = IPATH_DRV_NAME,
 	.probe = ipath_init_one,
-	.remove = __devexit_p(ipath_remove_one),
+	.remove = ipath_remove_one,
 	.id_table = ipath_pci_tbl,
 	.driver = {
 		.groups = ipath_driver_attr_groups,
@@ -391,8 +390,7 @@ done:
 
 static void cleanup_device(struct ipath_devdata *dd);
 
-static int __devinit ipath_init_one(struct pci_dev *pdev,
-				    const struct pci_device_id *ent)
+static int ipath_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	int ret, len, j;
 	struct ipath_devdata *dd;
@@ -736,7 +734,7 @@ static void cleanup_device(struct ipath_devdata *dd)
 	kfree(tmp);
 }
 
-static void __devexit ipath_remove_one(struct pci_dev *pdev)
+static void ipath_remove_one(struct pci_dev *pdev)
 {
 	struct ipath_devdata *dd = pci_get_drvdata(pdev);
 

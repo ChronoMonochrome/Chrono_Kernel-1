@@ -122,7 +122,7 @@ err:
 	return err;
 }
 
-static int __devinit probe(struct pci_dev *pdev,
+static int probe(struct pci_dev *pdev,
 			   const struct pci_device_id *id)
 {
 	struct uio_pci_generic_dev *gdev;

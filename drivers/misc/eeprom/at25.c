@@ -446,7 +446,7 @@ fail:
 	return err;
 }
 
-static int __devexit at25_remove(struct spi_device *spi)
+static int at25_remove(struct spi_device *spi)
 {
 	struct at25_data	*at25;
 
@@ -464,7 +464,7 @@ static struct spi_driver at25_driver = {
 		.owner		= THIS_MODULE,
 	},
 	.probe		= at25_probe,
-	.remove		= __devexit_p(at25_remove),
+	.remove		= at25_remove,
 };
 
 static int __init at25_init(void)
