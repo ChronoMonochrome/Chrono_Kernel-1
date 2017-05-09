@@ -458,4 +458,9 @@ int of_platform_populate(struct device_node *root,
 	of_node_put(root);
 	return rc;
 }
+<<<<<<< HEAD
 #endif /* !CONFIG_SPARC */
+=======
+EXPORT_SYMBOL_GPL(of_platform_populate);
+#endif /* CONFIG_OF_ADDRESS */
+>>>>>>> 5eecb9cc9029aef3c308fc94149c4a3065d40d9a
