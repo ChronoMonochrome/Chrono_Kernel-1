@@ -818,7 +818,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 	instance->current_switch = client->dev.platform_data;
 	instance->name = instance->current_switch->name;
 #if defined(FSA_DELAYED_WORK)
-	INIT_DELAYED_WORK_DEFERRABLE(&instance->notifier_queue, usb_switch_notify_clients);
+	INIT_DEFERRABLE_WORK(&instance->notifier_queue, usb_switch_notify_clients);
 #else
 	INIT_WORK(&instance->notifier_queue, usb_switch_notify_clients);
 #endif

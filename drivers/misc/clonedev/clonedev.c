@@ -997,7 +997,7 @@ static int init_clonedev(struct clonedev *cd)
 		mutex_destroy(&cd->cache_ctx.janitor_lock);
 		return -ENOMEM;
 	}
-	INIT_DELAYED_WORK_DEFERRABLE(&cd->cache_ctx.free_buffers_work,
+	INIT_DEFERRABLE_WORK(&cd->cache_ctx.free_buffers_work,
 		compdev_free_cache_context_buffers);
 
 	snprintf(wq_name2, sizeof(wq_name2), "%s_janitor2", cd->name);
@@ -1007,7 +1007,7 @@ static int init_clonedev(struct clonedev *cd)
 		mutex_destroy(&cd->cache_tmp_ctx.janitor_lock);
 		return -ENOMEM;
 	}
-	INIT_DELAYED_WORK_DEFERRABLE(&cd->cache_tmp_ctx.free_buffers_work,
+	INIT_DEFERRABLE_WORK(&cd->cache_tmp_ctx.free_buffers_work,
 		compdev_free_cache_context_buffers);
 #endif
 

@@ -1135,7 +1135,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	/* all: Disable phy when called from set_host and set_peripheral */
 	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&ab->work_usb_workaround,
+	INIT_DEFERRABLE_WORK(&ab->work_usb_workaround,
 							ab8500_usb_load);
 	err = ab8500_usb_regulator_get(ab);
 	if (err)

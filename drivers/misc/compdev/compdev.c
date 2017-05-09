@@ -1374,7 +1374,7 @@ static int init_dss_context(struct dss_context *dss_ctx,
 		return -ENOMEM;
 	}
 
-	INIT_DELAYED_WORK_DEFERRABLE(&dss_ctx->cache_ctx.free_buffers_work,
+	INIT_DEFERRABLE_WORK(&dss_ctx->cache_ctx.free_buffers_work,
 		compdev_free_cache_context_buffers);
 #endif
 

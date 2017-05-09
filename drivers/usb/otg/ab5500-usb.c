@@ -605,7 +605,7 @@ static int __devinit ab5500_usb_probe(struct platform_device *pdev)
 	 */
 	INIT_DELAYED_WORK(&ab->dwork, ab5500_usb_delayed_work);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&ab->work_usb_workaround,
+	INIT_DEFERRABLE_WORK(&ab->work_usb_workaround,
 							ab5500_usb_load);
 
 	err = otg_set_transceiver(&ab->otg);

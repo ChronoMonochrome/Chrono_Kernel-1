@@ -1330,7 +1330,7 @@ void __init ux500_ci_dbg_init(void)
 	uart_clk = clk_get_sys(clkname, NULL);
 	BUG_ON(IS_ERR(uart_clk));
 
-	INIT_DELAYED_WORK_DEFERRABLE(&cpuidle_work, dbg_cpuidle_work_function);
+	INIT_DEFERRABLE_WORK(&cpuidle_work, dbg_cpuidle_work_function);
 }
 
 void ux500_ci_dbg_remove(void)

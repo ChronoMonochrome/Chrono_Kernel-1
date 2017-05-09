@@ -2369,19 +2369,19 @@ static int __devinit ab8500_chg_probe(struct platform_device *pdev)
 	}
 
 	/* Init work for HW failure check */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->check_hw_failure_work,
+	INIT_DEFERRABLE_WORK(&di->check_hw_failure_work,
 		ab8500_chg_check_hw_failure_work);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&di->check_hw_failure_delay_work,
+	INIT_DEFERRABLE_WORK(&di->check_hw_failure_delay_work,
 		ab8500_chg_check_hw_failure_delay_work);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&di->reset_chg_counter_work,
+	INIT_DEFERRABLE_WORK(&di->reset_chg_counter_work,
 		ab8500_chg_reset_chg_counter_work);
 
 	INIT_DELAYED_WORK(&di->chg_attached_work,
 			  ab8500_chg_attached_work);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&di->kick_wd_work,
+	INIT_DEFERRABLE_WORK(&di->kick_wd_work,
 		ab8500_chg_kick_watchdog_work);
 
 	/*

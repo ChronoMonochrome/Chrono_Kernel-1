@@ -627,7 +627,7 @@ static int __devinit abx500_temp_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
-	INIT_DELAYED_WORK_DEFERRABLE(&data->work, gpadc_monitor);
+	INIT_DEFERRABLE_WORK(&data->work, gpadc_monitor);
 	data->gpadc_monitor_delay =  DEFAULT_MONITOR_DELAY;
 
 	platform_set_drvdata(pdev, data);

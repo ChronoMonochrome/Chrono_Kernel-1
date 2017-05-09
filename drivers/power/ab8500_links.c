@@ -661,7 +661,7 @@ static char *ab8500_battery_supplied_to[] = {
 int make_dfms_battery_device (void)
 {
 	charger_extra_sysfs.polling_queue = create_singlethread_workqueue("ab8500_charging_monitor");
-	INIT_DELAYED_WORK_DEFERRABLE(&charger_extra_sysfs.polling_work,ab8500_charger_polling_periodic_work);
+	INIT_DEFERRABLE_WORK(&charger_extra_sysfs.polling_work,ab8500_charger_polling_periodic_work);
 	charger_extra_sysfs.btemp_psy.name = "battery";
 	charger_extra_sysfs.btemp_psy.type = POWER_SUPPLY_TYPE_BATTERY;
 	charger_extra_sysfs.btemp_psy.properties = ab8500_battery_props;

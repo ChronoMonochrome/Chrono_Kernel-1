@@ -1686,9 +1686,9 @@ static int __devinit ab5500_charger_probe(struct platform_device *pdev)
 	}
 
 	/* Init work for HW failure check */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->check_hw_failure_work,
+	INIT_DEFERRABLE_WORK(&di->check_hw_failure_work,
 		ab5500_charger_check_hw_failure_work);
-	INIT_DELAYED_WORK_DEFERRABLE(&di->check_usbchgnotok_work,
+	INIT_DEFERRABLE_WORK(&di->check_usbchgnotok_work,
 		ab5500_charger_check_usbchargernotok_work);
 
 	/* Init work for charger detection */

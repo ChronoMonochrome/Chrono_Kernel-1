@@ -2445,7 +2445,7 @@ static int b2r2_probe(struct platform_device *pdev)
 
 	/* Init power management */
 	mutex_init(&core->domain_lock);
-	INIT_DELAYED_WORK_DEFERRABLE(&core->domain_disable_work,
+	INIT_DEFERRABLE_WORK(&core->domain_disable_work,
 			domain_disable_work_function);
 	core->domain_enabled = false;
 	core->valid = false;

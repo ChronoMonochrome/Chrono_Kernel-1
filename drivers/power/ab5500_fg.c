@@ -1854,19 +1854,19 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	INIT_WORK(&di->fg_work, ab5500_fg_instant_work);
 
 	/* Init work for getting the battery accumulated current */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_acc_cur_work,
+	INIT_DEFERRABLE_WORK(&di->fg_acc_cur_work,
 			ab5500_fg_acc_cur_work);
 
 	/* Init work for reinitialising the fg algorithm */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_reinit_work,
+	INIT_DEFERRABLE_WORK(&di->fg_reinit_work,
 			ab5500_fg_reinit_work);
 
 	/* Work delayed Queue to run the state machine */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_periodic_work,
+	INIT_DEFERRABLE_WORK(&di->fg_periodic_work,
 		ab5500_fg_periodic_work);
 
 	/* Work to check low battery condition */
-	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_low_bat_work,
+	INIT_DEFERRABLE_WORK(&di->fg_low_bat_work,
 		ab5500_fg_low_bat_work);
 
 	list_add_tail(&di->node, &ab5500_fg_list);
