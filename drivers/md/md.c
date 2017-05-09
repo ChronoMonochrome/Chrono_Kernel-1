@@ -5801,8 +5801,7 @@ static int add_new_disk(struct mddev * mddev, mdu_disk_info_t *info)
 			super_types[mddev->major_version].
 				validate_super(mddev, rdev);
 		if ((info->state & (1<<MD_DISK_SYNC)) &&
-		    (!test_bit(In_sync, &rdev->flags) ||
-		     rdev->raid_disk != info->raid_disk)) {
+		     rdev->raid_disk != info->raid_disk) {
 			/* This was a hot-add request, but events doesn't
 			 * match, so reject it.
 			 */
@@ -6768,7 +6767,7 @@ struct md_thread *md_register_thread(void (*run) (struct mddev *), struct mddev 
 	thread->tsk = kthread_run(md_thread, thread,
 				  "%s_%s",
 				  mdname(thread->mddev),
-				  name ?: mddev->pers->name);
+				  name);
 	if (IS_ERR(thread->tsk)) {
 		kfree(thread);
 		return NULL;
@@ -7315,6 +7314,7 @@ void md_do_sync(struct mddev *mddev)
 	int skipped = 0;
 	struct md_rdev *rdev;
 	char *desc;
+	struct blk_plug plug;
 
 	/* just incase thread restarts... */
 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
@@ -7464,6 +7464,7 @@ void md_do_sync(struct mddev *mddev)
 	}
 	mddev->curr_resync_completed = j;
 
+	blk_start_plug(&plug);
 	while (j < max_sectors) {
 		sector_t sectors;
 
@@ -7569,6 +7570,7 @@ void md_do_sync(struct mddev *mddev)
 	 * this also signals 'finished resyncing' to md_stop
 	 */
  out:
+	blk_finish_plug(&plug);
 	wait_event(mddev->recovery_wait, !atomic_read(&mddev->recovery_active));
 
 	/* tell personality that we are finished */
