@@ -19,7 +19,7 @@
 #include <linux/of_gpio.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi_bitbang.h>
-#include <linux/pinctrl/consumer.h>
+#include <linux/pinctrl/pinmux.h>
 
 #define DRIVER_NAME "sirfsoc_spi"
 
@@ -127,7 +127,7 @@ struct sirfsoc_spi {
 	void __iomem *base;
 	u32 ctrl_freq;  /* SPI controller clock speed */
 	struct clk *clk;
-	struct pinctrl *p;
+	struct pinmux *pmx;
 
 	/* rx & tx bufs from the spi_transfer */
 	const void *tx;
@@ -382,7 +382,8 @@ spi_sirfsoc_setup_transfer(struct spi_device *spi, struct spi_transfer *t)
 
 	sspi = spi_master_get_devdata(spi->master);
 
-	bits_per_word = (t) ? t->bits_per_word : spi->bits_per_word;
+	bits_per_word = t && t->bits_per_word ? t->bits_per_word :
+		spi->bits_per_word;
 	hz = t && t->speed_hz ? t->speed_hz : spi->max_speed_hz;
 
 	/* Enable IO mode for RX, TX */
@@ -534,9 +535,10 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
 		}
 	}
 
-	sspi->base = devm_ioremap_resource(&pdev->dev, mem_res);
-	if (IS_ERR(sspi->base)) {
-		ret = PTR_ERR(sspi->base);
+	sspi->base = devm_request_and_ioremap(&pdev->dev, mem_res);
+	if (!sspi->base) {
+		dev_err(&pdev->dev, "IO remap failed!\n");
+		ret = -ENOMEM;
 		goto free_master;
 	}
 
@@ -558,17 +560,19 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
 	master->bus_num = pdev->id;
 	sspi->bitbang.master->dev.of_node = pdev->dev.of_node;
 
-	sspi->p = pinctrl_get_select_default(&pdev->dev);
-	ret = IS_ERR(sspi->p);
+	sspi->pmx = pinmux_get(&pdev->dev, NULL);
+	ret = IS_ERR(sspi->pmx);
 	if (ret)
 		goto free_master;
+
+	pinmux_enable(sspi->pmx);
 
 	sspi->clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(sspi->clk)) {
 		ret = -EINVAL;
-		goto free_pin;
+		goto free_pmx;
 	}
-	clk_prepare_enable(sspi->clk);
+	clk_enable(sspi->clk);
 	sspi->ctrl_freq = clk_get_rate(sspi->clk);
 
 	init_completion(&sspi->done);
@@ -592,10 +596,11 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
 	return 0;
 
 free_clk:
-	clk_disable_unprepare(sspi->clk);
+	clk_disable(sspi->clk);
 	clk_put(sspi->clk);
-free_pin:
-	pinctrl_put(sspi->p);
+free_pmx:
+	pinmux_disable(sspi->pmx);
+	pinmux_put(sspi->pmx);
 free_master:
 	spi_master_put(master);
 err_cs:
@@ -616,9 +621,10 @@ static int  spi_sirfsoc_remove(struct platform_device *pdev)
 		if (sspi->chipselect[i] > 0)
 			gpio_free(sspi->chipselect[i]);
 	}
-	clk_disable_unprepare(sspi->clk);
+	clk_disable(sspi->clk);
 	clk_put(sspi->clk);
-	pinctrl_put(sspi->p);
+	pinmux_disable(sspi->pmx);
+	pinmux_put(sspi->pmx);
 	spi_master_put(master);
 	return 0;
 }
@@ -657,7 +663,6 @@ static const struct dev_pm_ops spi_sirfsoc_pm_ops = {
 
 static const struct of_device_id spi_sirfsoc_of_match[] = {
 	{ .compatible = "sirf,prima2-spi", },
-	{ .compatible = "sirf,marco-spi", },
 	{}
 };
 MODULE_DEVICE_TABLE(of, sirfsoc_spi_of_match);

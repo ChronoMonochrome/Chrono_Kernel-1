@@ -322,7 +322,7 @@ static int hspi_probe(struct platform_device *pdev)
 	ret = spi_register_master(master);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "spi_register_master error.\n");
-		goto error1;
+		goto error2;
 	}
 
 	pm_runtime_enable(&pdev->dev);
@@ -331,6 +331,8 @@ static int hspi_probe(struct platform_device *pdev)
 
 	return 0;
 
+ error2:
+	devm_iounmap(hspi->dev, hspi->addr);
  error1:
 	clk_put(clk);
  error0:
@@ -347,6 +349,7 @@ static int hspi_remove(struct platform_device *pdev)
 
 	clk_put(hspi->clk);
 	spi_unregister_master(hspi->master);
+	devm_iounmap(hspi->dev, hspi->addr);
 
 	return 0;
 }

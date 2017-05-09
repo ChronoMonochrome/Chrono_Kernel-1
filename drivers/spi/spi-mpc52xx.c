@@ -433,6 +433,7 @@ static int mpc52xx_spi_probe(struct platform_device *op)
 		goto err_alloc;
 	}
 
+	master->bus_num = -1;
 	master->setup = mpc52xx_spi_setup;
 	master->transfer = mpc52xx_spi_transfer;
 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
@@ -454,7 +455,7 @@ static int mpc52xx_spi_probe(struct platform_device *op)
 				GFP_KERNEL);
 		if (!ms->gpio_cs) {
 			rc = -ENOMEM;
-			goto err_alloc_gpio;
+			goto err_alloc;
 		}
 
 		for (i = 0; i < ms->gpio_cs_count; i++) {
@@ -478,6 +479,8 @@ static int mpc52xx_spi_probe(struct platform_device *op)
 			gpio_direction_output(gpio_cs, 1);
 			ms->gpio_cs[i] = gpio_cs;
 		}
+	} else {
+		master->num_chipselect = 1;
 	}
 
 	spin_lock_init(&ms->lock);
@@ -514,13 +517,12 @@ static int mpc52xx_spi_probe(struct platform_device *op)
 
  err_register:
 	dev_err(&ms->master->dev, "initialization failed\n");
+	spi_master_put(master);
  err_gpio:
 	while (i-- > 0)
 		gpio_free(ms->gpio_cs[i]);
 
 	kfree(ms->gpio_cs);
- err_alloc_gpio:
-	spi_master_put(master);
  err_alloc:
  err_init:
 	iounmap(regs);
@@ -529,7 +531,7 @@ static int mpc52xx_spi_probe(struct platform_device *op)
 
 static int mpc52xx_spi_remove(struct platform_device *op)
 {
-	struct spi_master *master = spi_master_get(dev_get_drvdata(&op->dev));
+	struct spi_master *master = dev_get_drvdata(&op->dev);
 	struct mpc52xx_spi *ms = spi_master_get_devdata(master);
 	int i;
 
@@ -541,8 +543,8 @@ static int mpc52xx_spi_remove(struct platform_device *op)
 
 	kfree(ms->gpio_cs);
 	spi_unregister_master(master);
-	iounmap(ms->regs);
 	spi_master_put(master);
+	iounmap(ms->regs);
 
 	return 0;
 }

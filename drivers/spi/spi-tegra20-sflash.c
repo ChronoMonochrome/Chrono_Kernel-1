@@ -34,7 +34,7 @@
 #include <linux/of_device.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi-tegra.h>
-#include <linux/clk/tegra.h>
+#include <mach/clk.h>
 
 #define SPI_COMMAND				0x000
 #define SPI_GO					BIT(30)
@@ -269,7 +269,9 @@ static int tegra_sflash_start_transfer_one(struct spi_device *spi,
 	u32 speed;
 	unsigned long command;
 
-	speed = t->speed_hz;
+	speed = t->speed_hz ? t->speed_hz : spi->max_speed_hz;
+	if (!speed)
+		speed = tsd->spi_max_frequency;
 	if (speed != tsd->cur_speed) {
 		clk_set_rate(tsd->clk, speed);
 		tsd->cur_speed = speed;
@@ -315,15 +317,6 @@ static int tegra_sflash_start_transfer_one(struct spi_device *spi,
 	tsd->command_reg = command;
 
 	return  tegra_sflash_start_cpu_based_transfer(tsd, t);
-}
-
-static int tegra_sflash_setup(struct spi_device *spi)
-{
-	struct tegra_sflash_data *tsd = spi_master_get_devdata(spi->master);
-
-	/* Set speed to the spi max fequency if spi device has not set */
-	spi->max_speed_hz = spi->max_speed_hz ? : tsd->spi_max_frequency;
-	return 0;
 }
 
 static int tegra_sflash_transfer_one_message(struct spi_master *master,
@@ -499,7 +492,6 @@ static int tegra_sflash_probe(struct platform_device *pdev)
 
 	/* the spi->mode bits understood by this driver: */
 	master->mode_bits = SPI_CPOL | SPI_CPHA;
-	master->setup = tegra_sflash_setup;
 	master->transfer_one_message = tegra_sflash_transfer_one_message;
 	master->num_chipselect = MAX_CHIP_SELECT;
 	master->bus_num = -1;
@@ -516,9 +508,11 @@ static int tegra_sflash_probe(struct platform_device *pdev)
 		ret = -ENODEV;
 		goto exit_free_master;
 	}
-	tsd->base = devm_ioremap_resource(&pdev->dev, r);
-	if (IS_ERR(tsd->base)) {
-		ret = PTR_ERR(tsd->base);
+	tsd->base = devm_request_and_ioremap(&pdev->dev, r);
+	if (!tsd->base) {
+		dev_err(&pdev->dev,
+			"Cannot request memregion/iomap dma address\n");
+		ret = -EADDRNOTAVAIL;
 		goto exit_free_master;
 	}
 
@@ -531,7 +525,7 @@ static int tegra_sflash_probe(struct platform_device *pdev)
 		goto exit_free_master;
 	}
 
-	tsd->clk = devm_clk_get(&pdev->dev, NULL);
+	tsd->clk = devm_clk_get(&pdev->dev, "spi");
 	if (IS_ERR(tsd->clk)) {
 		dev_err(&pdev->dev, "can not get clock\n");
 		ret = PTR_ERR(tsd->clk);

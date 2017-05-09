@@ -416,7 +416,8 @@ bfin_sport_spi_pump_transfers(unsigned long data)
 	drv_data->cs_change = transfer->cs_change;
 
 	/* Bits per word setup */
-	bits_per_word = transfer->bits_per_word;
+	bits_per_word = transfer->bits_per_word ? :
+		message->spi->bits_per_word ? : 8;
 	if (bits_per_word % 16 == 0)
 		drv_data->ops = &bfin_sport_transfer_ops_u16;
 	else
@@ -466,7 +467,7 @@ bfin_sport_spi_pump_transfers(unsigned long data)
 		dev_dbg(drv_data->dev, "IO write error!\n");
 		drv_data->state = ERROR_STATE;
 	} else {
-		/* Update total byte transferred */
+		/* Update total byte transfered */
 		message->actual_length += transfer->len;
 		/* Move to next transfer of this msg */
 		drv_data->state = bfin_sport_spi_next_transfer(drv_data);
