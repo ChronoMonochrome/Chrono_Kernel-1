@@ -37,6 +37,7 @@
 #else
 #include <linux/mfd/dbx500-prcmu.h>
 #endif
+#include <linux/mfd/ab8500.h>
 
 #define MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT 64
 #define MALI_LOW_TO_HIGH_LEVEL_UTILIZATION_LIMIT 192
