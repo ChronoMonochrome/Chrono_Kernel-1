@@ -314,15 +314,7 @@ int core_emulate_set_target_port_groups(struct se_cmd *cmd)
 		len += 4;
 	}
 
-<<<<<<< HEAD
 	return 0;
-=======
-out:
-	transport_kunmap_data_sg(cmd);
-	if (!rc)
-		target_complete_cmd(cmd, GOOD);
-	return rc;
->>>>>>> e9bcd470d814473c31ffc5d09e249396a2196ad4
 }
 
 static inline int core_alua_state_nonoptimized(

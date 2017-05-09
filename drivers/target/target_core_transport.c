@@ -533,49 +533,6 @@ void transport_register_session(
 }
 EXPORT_SYMBOL(transport_register_session);
 
-<<<<<<< HEAD
-=======
-void target_release_session(struct kref *kref)
-{
-	struct se_session *se_sess = container_of(kref,
-			struct se_session, sess_kref);
-	struct se_portal_group *se_tpg = se_sess->se_tpg;
-
-	se_tpg->se_tpg_tfo->close_session(se_sess);
-}
-
-void target_get_session(struct se_session *se_sess)
-{
-	kref_get(&se_sess->sess_kref);
-}
-EXPORT_SYMBOL(target_get_session);
-
-void target_put_session(struct se_session *se_sess)
-{
-	struct se_portal_group *tpg = se_sess->se_tpg;
-
-	if (tpg->se_tpg_tfo->put_session != NULL) {
-		tpg->se_tpg_tfo->put_session(se_sess);
-		return;
-	}
-	kref_put(&se_sess->sess_kref, target_release_session);
-}
-EXPORT_SYMBOL(target_put_session);
-
-static void target_complete_nacl(struct kref *kref)
-{
-	struct se_node_acl *nacl = container_of(kref,
-				struct se_node_acl, acl_kref);
-
-	complete(&nacl->acl_free_comp);
-}
-
-void target_put_nacl(struct se_node_acl *nacl)
-{
-	kref_put(&nacl->acl_kref, target_complete_nacl);
-}
-
->>>>>>> e9bcd470d814473c31ffc5d09e249396a2196ad4
 void transport_deregister_session_configfs(struct se_session *se_sess)
 {
 	struct se_node_acl *se_nacl;

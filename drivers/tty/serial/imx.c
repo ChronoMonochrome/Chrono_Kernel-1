@@ -132,6 +132,7 @@
 #define  UCR4_OREN  	 (1<<1)  /* Receiver overrun interrupt enable */
 #define  UCR4_DREN  	 (1<<0)  /* Recv data ready interrupt enable */
 #define  UFCR_RXTL_SHF   0       /* Receiver trigger level shift */
+#define  UFCR_DCEDTE	 (1<<6)  /* DCE/DTE mode select */
 #define  UFCR_RFDIV      (7<<7)  /* Reference freq divider mask */
 #define  UFCR_RFDIV_REG(x)	(((x) < 7 ? 6 - (x) : 6) << 7)
 #define  UFCR_TXTL_SHF   10      /* Transmitter trigger level shift */
@@ -169,7 +170,6 @@
 #define SERIAL_IMX_MAJOR        207
 #define MINOR_START	        16
 #define DEV_NAME		"ttymxc"
-#define MAX_INTERNAL_IRQ	MXC_INTERNAL_IRQS
 
 /*
  * This determines how often we check the modem status signals
@@ -668,22 +668,11 @@ static void imx_break_ctl(struct uart_port *port, int break_state)
 static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
 {
 	unsigned int val;
-	unsigned int ufcr_rfdiv;
 
-	/* set receiver / transmitter trigger level.
-	 * RFDIV is set such way to satisfy requested uartclk value
-	 */
-	val = TXTL << 10 | RXTL;
-	ufcr_rfdiv = (clk_get_rate(sport->clk_per) + sport->port.uartclk / 2)
-			/ sport->port.uartclk;
-
-	if(!ufcr_rfdiv)
-		ufcr_rfdiv = 1;
-
-	val |= UFCR_RFDIV_REG(ufcr_rfdiv);
-
+	/* set receiver / transmitter trigger level */
+	val = readl(sport->port.membase + UFCR) & (UFCR_RFDIV | UFCR_DCEDTE);
+	val |= TXTL << UFCR_TXTL_SHF | RXTL;
 	writel(val, sport->port.membase + UFCR);
-
 	return 0;
 }
 
@@ -741,10 +730,7 @@ static int imx_startup(struct uart_port *port)
 
 		/* do not use RTS IRQ on IrDA */
 		if (!USE_IRDA(sport)) {
-			retval = request_irq(sport->rtsirq, imx_rtsint,
-				     (sport->rtsirq < MAX_INTERNAL_IRQ) ? 0 :
-				       IRQF_TRIGGER_FALLING |
-				       IRQF_TRIGGER_RISING,
+			retval = request_irq(sport->rtsirq, imx_rtsint, 0,
 					DRIVER_NAME, sport);
 			if (retval)
 				goto error_out3;

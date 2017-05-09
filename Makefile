@@ -1,8 +1,8 @@
 VERSION = 3
-PATCHLEVEL = 5
+PATCHLEVEL = 6
 SUBLEVEL = 0
 EXTRAVERSION =
-NAME = Saber-toothed Squirrel
+NAME = Terrified Chipmunk
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -560,11 +560,11 @@ PHONY += include/config/auto.conf
 
 include/config/auto.conf:
 	$(Q)test -e include/generated/autoconf.h -a -e $@ || (		\
-	echo;								\
-	echo "  ERROR: Kernel configuration is invalid.";		\
-	echo "         include/generated/autoconf.h or $@ are missing.";\
-	echo "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
-	echo;								\
+	echo >&2;							\
+	echo >&2 "  ERROR: Kernel configuration is invalid.";		\
+	echo >&2 "         include/generated/autoconf.h or $@ are missing.";\
+	echo >&2 "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
+	echo >&2 ;							\
 	/bin/false)
 
 endif # KBUILD_EXTMOD
@@ -587,6 +587,7 @@ KBUILD_CFLAGS	+= -O2
 endif
 
 LDFLAGS += -O2 --as-needed --sort-common
+
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifdef CONFIG_READABLE_ASM
@@ -991,11 +992,11 @@ else # CONFIG_MODULES
 # ---------------------------------------------------------------------------
 
 modules modules_install: FORCE
-	@echo
-	@echo "The present kernel configuration has modules disabled."
-	@echo "Type 'make config' and enable loadable module support."
-	@echo "Then build a kernel with module support enabled."
-	@echo
+	@echo >&2
+	@echo >&2 "The present kernel configuration has modules disabled."
+	@echo >&2 "Type 'make config' and enable loadable module support."
+	@echo >&2 "Then build a kernel with module support enabled."
+	@echo >&2
 	@exit 1
 
 endif # CONFIG_MODULES
