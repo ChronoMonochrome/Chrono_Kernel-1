@@ -111,5 +111,4 @@ static void __init ux500_timer_init(void)
 
 struct sys_timer ux500_timer = {
 	.init		= ux500_timer_init,
-	.resume		= ux500_timer_reset,
 };
