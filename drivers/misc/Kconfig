@@ -68,7 +68,7 @@ config AD525X_DPOT_SPI
 
 config ANDROID_PMEM
 	bool "Android pmem allocator"
-	default y
+	default n
 
 config ATMEL_PWM
 	tristate "Atmel AT32/AT91 PWM support"

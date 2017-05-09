@@ -37,7 +37,7 @@ struct arm_delay_ops arm_delay_ops = {
 static const struct delay_timer *delay_timer;
 static bool delay_calibrated;
 
-int read_current_timer(unsigned long *timer_val)
+int __weak read_current_timer(unsigned long *timer_val)
 {
 	if (!delay_timer)
 		return -ENXIO;

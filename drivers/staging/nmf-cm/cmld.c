@@ -689,7 +689,7 @@ static int cmld_control_mmap(struct file *file, struct vm_area_struct *vma)
 	
 	/* Very, very important to have consistent buffer transition */
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTEXPAND | VM_DONTCOPY;
+	vma->vm_flags |= VM_DONTDUMP | VM_IO | VM_DONTEXPAND | VM_DONTCOPY;
 	
 	if (remap_pfn_range(vma, vma->vm_start, offset>>PAGE_SHIFT,
 			    vma_size, vma->vm_page_prot)) {

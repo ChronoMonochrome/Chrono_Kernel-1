@@ -36,10 +36,12 @@
 #endif
 
 #define IDR_SIZE (1 << IDR_BITS)
+#define ID_MASK ((1 << IDR_BITS)-1)
 #define IDR_MASK ((1 << IDR_BITS)-1)
 
 #define MAX_IDR_SHIFT (sizeof(int)*8 - 1)
 #define MAX_IDR_BIT (1U << MAX_IDR_SHIFT)
+#define MAX_ID_MASK (MAX_IDR_BIT - 1)
 #define MAX_IDR_MASK (MAX_IDR_BIT - 1)
 
 /* Leave the possibility of an incomplete final layer */
