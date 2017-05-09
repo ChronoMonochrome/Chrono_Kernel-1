@@ -36,6 +36,9 @@
 
 #define unk	KEY_UNKNOWN
 
+#define ABS_MT_TOOL_X            0x3c    /* Center X tool position */
+#define ABS_MT_TOOL_Y            0x3d    /* Center Y tool position */
+
 static const unsigned char hid_keyboard[256] = {
 	  0,  0,  0,  0, 30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38,
 	 50, 49, 24, 25, 16, 19, 31, 20, 22, 47, 17, 45, 21, 44,  2,  3,
