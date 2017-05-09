@@ -205,6 +205,7 @@ struct amba_pl011_data {
 	void *dma_tx_param;
         void (*init) (void);
 	void (*exit) (void);
+	void (*reset) (void);
 };
 #endif
 

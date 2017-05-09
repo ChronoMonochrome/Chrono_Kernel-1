@@ -12,6 +12,7 @@
 
 #include <mach/hardware.h>
 #include <linux/gpio.h>
+#include <mach/gpio.h>
 
 /* Shared Peripheral Interrupt (SHPI) */
 #define IRQ_SHPI_START			32
