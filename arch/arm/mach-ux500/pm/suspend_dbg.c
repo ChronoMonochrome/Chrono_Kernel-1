@@ -21,6 +21,7 @@
 
 #include <mach/pm.h>
 #include <mach/pm-timer.h>
+#include <mach/irqs.h>
 
 /* To reach main_wake_lock */
 #include "../../../../kernel/power/power.h"

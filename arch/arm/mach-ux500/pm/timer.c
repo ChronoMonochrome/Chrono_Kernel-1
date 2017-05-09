@@ -28,6 +28,7 @@
 #include <asm/errno.h>
 
 #include <mach/hardware.h>
+#include <mach/irqs.h>
 #include <mach/irqs-db8500.h>
 
 #define RTC_IMSC	0x10

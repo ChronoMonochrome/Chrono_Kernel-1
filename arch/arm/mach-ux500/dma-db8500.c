@@ -13,6 +13,7 @@
 #include <plat/ste_dma40.h>
 
 #include <mach/hsi.h>
+#include <mach/irqs.h>
 #include <mach/setup.h>
 #include <mach/ste-dma40-db8500.h>
 #include <mach/pm.h>

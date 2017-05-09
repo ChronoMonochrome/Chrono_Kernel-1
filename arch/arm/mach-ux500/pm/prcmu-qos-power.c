@@ -21,6 +21,7 @@
 #include <linux/uaccess.h>
 #include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/ab8500.h>
 
 #include <mach/prcmu-debug.h>
 
