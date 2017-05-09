@@ -316,7 +316,18 @@ static struct spi_driver tle62x0_driver = {
 	.remove		= tle62x0_remove,
 };
 
-module_spi_driver(tle62x0_driver);
+static __init int tle62x0_init(void)
+{
+	return spi_register_driver(&tle62x0_driver);
+}
+
+static __exit void tle62x0_exit(void)
+{
+	spi_unregister_driver(&tle62x0_driver);
+}
+
+module_init(tle62x0_init);
+module_exit(tle62x0_exit);
 
 MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
 MODULE_DESCRIPTION("TLE62x0 SPI driver");
