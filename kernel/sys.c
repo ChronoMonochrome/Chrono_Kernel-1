@@ -47,8 +47,6 @@
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
 #include <linux/user_namespace.h>
-#include <linux/kthread.h>
-#include <linux/delay.h>
 
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
@@ -325,7 +323,7 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 	usermodehelper_disable();
 	device_shutdown();
-	disable_nonboot_cpus();
+	syscore_shutdown();
 }
 
 /**
@@ -371,7 +369,6 @@ void kernel_restart(char *cmd)
 {
 	kernel_restart_prepare(cmd);
 	disable_nonboot_cpus();
-	syscore_shutdown();
 	if (!cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
@@ -397,7 +394,6 @@ static void kernel_shutdown_prepare(enum system_states state)
 void kernel_halt(void)
 {
 	kernel_shutdown_prepare(SYSTEM_HALT);
-	disable_nonboot_cpus();
 	syscore_shutdown();
 	printk(KERN_EMERG "System halted.\n");
 	kmsg_dump(KMSG_DUMP_HALT);
@@ -426,42 +422,6 @@ EXPORT_SYMBOL_GPL(kernel_power_off);
 
 static DEFINE_MUTEX(reboot_mutex);
 
-#define REBOOT_TIMEOUT 5
-
-static int reboot_timer_expired(void *data)
-{
-	static DEFINE_MUTEX(lock);
-	unsigned long cmd = (unsigned long) data;
-	msleep(REBOOT_TIMEOUT * 1000);
-
-	mutex_lock(&lock);
-
-	printk(KERN_EMERG "Timer expired forcing power %s.\n",
-	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
-
-	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
-	  machine_power_off();
-	else
-	  machine_restart(NULL);
-
-	mutex_unlock(&lock);
-	return 0;
-}
-
-static int reboot_timer_setup(unsigned long cmd)
-{
-	struct task_struct *task;
-
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue0");
-	kthread_bind(task, 0);
-	wake_up_process(task);
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue1");
-	kthread_bind(task, 1);
-	wake_up_process(task);
-	
-	return 0;
-}
-
 /*
  * Reboot system call: for obvious reasons only root may call it,
  * and even root needs to set up some magic numbers in the registers
@@ -488,6 +448,15 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	                magic2 != LINUX_REBOOT_MAGIC2C))
 		return -EINVAL;
 
+	/*
+	 * If pid namespaces are enabled and the current task is in a child
+	 * pid_namespace, the command is handled by reboot_pid_ns() which will
+	 * call do_exit().
+	 */
+	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
+	if (ret)
+		return ret;
+
 	/* Instead of trying to make the power_off code look like
 	 * halt when pm_power_off is not set do it the easy way.
 	 */
@@ -497,8 +466,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	mutex_lock(&reboot_mutex);
 	switch (cmd) {
 	case LINUX_REBOOT_CMD_RESTART:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_restart(NULL);
 		break;
 
@@ -516,8 +483,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 		panic("cannot halt");
 
 	case LINUX_REBOOT_CMD_POWER_OFF:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_power_off();
 		do_exit(0);
 		break;
@@ -1300,15 +1265,16 @@ DECLARE_RWSEM(uts_sem);
  * Work around broken programs that cannot handle "Linux 3.0".
  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
  */
-static int override_release(char __user *release, int len)
+static int override_release(char __user *release, size_t len)
 {
 	int ret = 0;
-	char buf[65];
 
 	if (current->personality & UNAME26) {
-		char *rest = UTS_RELEASE;
+		const char *rest = UTS_RELEASE;
+		char buf[65] = { 0 };
 		int ndots = 0;
 		unsigned v;
+		size_t copy;
 
 		while (*rest) {
 			if (*rest == '.' && ++ndots >= 3)
@@ -1318,8 +1284,9 @@ static int override_release(char __user *release, int len)
 			rest++;
 		}
 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
-		snprintf(buf, len, "2.6.%u%s", v, rest);
-		ret = copy_to_user(release, buf, len);
+		copy = clamp_t(size_t, len, 1, sizeof(buf));
+		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
+		ret = copy_to_user(release, buf, copy + 1);
 	}
 	return ret;
 }
@@ -1824,15 +1791,15 @@ SYSCALL_DEFINE1(umask, int, mask)
 #ifdef CONFIG_CHECKPOINT_RESTORE
 static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
 {
-	struct file *exe_file;
+	struct fd exe;
 	struct dentry *dentry;
 	int err;
 
-	exe_file = fget(fd);
-	if (!exe_file)
+	exe = fdget(fd);
+	if (!exe.file)
 		return -EBADF;
 
-	dentry = exe_file->f_path.dentry;
+	dentry = exe.file->f_path.dentry;
 
 	/*
 	 * Because the original mm->exe_file points to executable file, make
@@ -1841,7 +1808,7 @@ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
 	 */
 	err = -EACCES;
 	if (!S_ISREG(dentry->d_inode->i_mode)	||
-	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
+	    exe.file->f_path.mnt->mnt_flags & MNT_NOEXEC)
 		goto exit;
 
 	err = inode_permission(dentry->d_inode, MAY_EXEC);
@@ -1875,12 +1842,12 @@ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
 		goto exit_unlock;
 
 	err = 0;
-	set_mm_exe_file(mm, exe_file);
+	set_mm_exe_file(mm, exe.file);	/* this grabs a reference to exe.file */
 exit_unlock:
 	up_write(&mm->mmap_sem);
 
 exit:
-	fput(exe_file);
+	fdput(exe);
 	return err;
 }
 
@@ -2240,7 +2207,7 @@ static int __orderly_poweroff(void)
 		return -ENOMEM;
 	}
 
-	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
+	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_EXEC,
 				      NULL, argv_cleanup, NULL);
 	if (ret == -ENOMEM)
 		argv_free(argv);

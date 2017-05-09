@@ -196,23 +196,8 @@ ENTRY(v4wt_dma_map_area)
 ENDPROC(v4wt_dma_unmap_area)
 ENDPROC(v4wt_dma_map_area)
 
-/*
- *	clean_dcache_all()
- *
- *	Clean the whole D-cache.
- */
-ENTRY(v4wt_clean_dcache_all)
-	mov	pc, lr
-ENDPROC(v4wt_clean_dcache_all)
-
-/*
- *	flush_dcache_all()
- *
- *	Flush the whole D-cache.
- */
-ENTRY(v4wt_flush_dcache_all)
-	mov	pc, lr
-ENDPROC(v4wt_flush_dcache_all)
+	.globl	v4wt_flush_kern_cache_louis
+	.equ	v4wt_flush_kern_cache_louis, v4wt_flush_kern_cache_all
 
 	__INITDATA
 

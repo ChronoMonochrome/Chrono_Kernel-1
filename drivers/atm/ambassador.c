@@ -1965,6 +1965,7 @@ static int __devinit ucode_init (loader_block * lb, amb_dev * dev) {
     res = loader_verify(lb, dev, rec);
     if (res)
       break;
+    rec = ihex_next_binrec(rec);
   }
   release_firmware(fw);
   if (!res)

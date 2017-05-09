@@ -210,7 +210,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 	ret = (void *)vstart;
 
 	if (hwdev && hwdev->coherent_dma_mask)
-		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
+		dma_mask = hwdev->coherent_dma_mask;
 
 	if (ret) {
 		if (xen_create_contiguous_region(vstart, order,

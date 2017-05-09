@@ -449,8 +449,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
 
 	op.host_addr = (unsigned long)area->addr;
 
-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-		BUG();
+	gnttab_batch_map(&op, 1);
 
 	if (op.status != GNTST_okay) {
 		xen_free_vm_area(area);
@@ -493,8 +492,7 @@ int xenbus_map_ring(struct xenbus_device *dev, int gnt_ref,
 		.dom       = dev->otherend_id,
 	};
 
-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-		BUG();
+	gnttab_batch_map(&op, 1);
 
 	if (op.status != GNTST_okay) {
 		xenbus_dev_fatal(dev, op.status,

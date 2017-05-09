@@ -43,7 +43,7 @@ struct sh_tmu_priv {
 	struct clocksource cs;
 };
 
-static DEFINE_RAW_SPINLOCK(sh_tmu_lock);
+static DEFINE_SPINLOCK(sh_tmu_lock);
 
 #define TSTR -1 /* shared register */
 #define TCOR  0 /* channel register */
@@ -93,7 +93,7 @@ static void sh_tmu_start_stop_ch(struct sh_tmu_priv *p, int start)
 	unsigned long flags, value;
 
 	/* start stop register shared by multiple timer channels */
-	raw_spin_lock_irqsave(&sh_tmu_lock, flags);
+	spin_lock_irqsave(&sh_tmu_lock, flags);
 	value = sh_tmu_read(p, TSTR);
 
 	if (start)
@@ -102,7 +102,7 @@ static void sh_tmu_start_stop_ch(struct sh_tmu_priv *p, int start)
 		value &= ~(1 << cfg->timer_bit);
 
 	sh_tmu_write(p, TSTR, value);
-	raw_spin_unlock_irqrestore(&sh_tmu_lock, flags);
+	spin_unlock_irqrestore(&sh_tmu_lock, flags);
 }
 
 static int sh_tmu_enable(struct sh_tmu_priv *p)
@@ -243,7 +243,12 @@ static void sh_tmu_clock_event_start(struct sh_tmu_priv *p, int periodic)
 
 	sh_tmu_enable(p);
 
-	clockevents_config(ced, p->rate);
+	/* TODO: calculate good shift from rate and counter bit width */
+
+	ced->shift = 32;
+	ced->mult = div_sc(p->rate, NSEC_PER_SEC, ced->shift);
+	ced->max_delta_ns = clockevent_delta2ns(0xffffffff, ced);
+	ced->min_delta_ns = 5000;
 
 	if (periodic) {
 		p->periodic = (p->rate + HZ/2) / HZ;
@@ -316,8 +321,7 @@ static void sh_tmu_register_clockevent(struct sh_tmu_priv *p,
 	ced->set_mode = sh_tmu_clock_event_mode;
 
 	dev_info(&p->pdev->dev, "used for clock events\n");
-
-	clockevents_config_and_register(ced, 1, 0x300, 0xffffffff);
+	clockevents_register_device(ced);
 
 	ret = setup_irq(p->irqaction.irq, &p->irqaction);
 	if (ret) {

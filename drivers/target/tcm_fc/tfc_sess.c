@@ -64,8 +64,7 @@ static struct ft_tport *ft_tport_create(struct fc_lport *lport)
 	struct ft_tport *tport;
 	int i;
 
-	tport = rcu_dereference_protected(lport->prov[FC_TYPE_FCP],
-					  lockdep_is_held(&ft_lport_lock));
+	tport = rcu_dereference(lport->prov[FC_TYPE_FCP]);
 	if (tport && tport->tpg)
 		return tport;
 
@@ -493,9 +492,7 @@ static void ft_prlo(struct fc_rport_priv *rdata)
 	struct ft_tport *tport;
 
 	mutex_lock(&ft_lport_lock);
-	tport = rcu_dereference_protected(rdata->local_port->prov[FC_TYPE_FCP],
-					  lockdep_is_held(&ft_lport_lock));
-
+	tport = rcu_dereference(rdata->local_port->prov[FC_TYPE_FCP]);
 	if (!tport) {
 		mutex_unlock(&ft_lport_lock);
 		return;

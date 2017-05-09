@@ -31,3 +31,8 @@ config CLKSRC_DB5500_MTIMER_SCHED_CLOCK
 	select HAVE_SCHED_CLOCK
 	help
 	  Use the always on PRCMU Timer as sched_clock
+
+config CLKSRC_ARM_GENERIC
+	def_bool y if ARM64
+	help
+	  This option enables support for the ARM generic timer.

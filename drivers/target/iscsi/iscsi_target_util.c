@@ -442,14 +442,14 @@ static inline int iscsit_check_received_cmdsn(struct iscsi_session *sess, u32 cm
 int iscsit_sequence_cmd(
 	struct iscsi_conn *conn,
 	struct iscsi_cmd *cmd,
-	u32 cmdsn)
+	__be32 cmdsn)
 {
 	int ret;
 	int cmdsn_ret;
 
 	mutex_lock(&conn->sess->cmdsn_mutex);
 
-	cmdsn_ret = iscsit_check_received_cmdsn(conn->sess, cmdsn);
+	cmdsn_ret = iscsit_check_received_cmdsn(conn->sess, be32_to_cpu(cmdsn));
 	switch (cmdsn_ret) {
 	case CMDSN_NORMAL_OPERATION:
 		ret = iscsit_execute_cmd(cmd, 0);
@@ -457,7 +457,7 @@ int iscsit_sequence_cmd(
 			iscsit_execute_ooo_cmdsns(conn->sess);
 		break;
 	case CMDSN_HIGHER_THAN_EXP:
-		ret = iscsit_handle_ooo_cmdsn(conn->sess, cmd, cmdsn);
+		ret = iscsit_handle_ooo_cmdsn(conn->sess, cmd, be32_to_cpu(cmdsn));
 		break;
 	case CMDSN_LOWER_THAN_EXP:
 		cmd->i_state = ISTATE_REMOVE;
@@ -519,7 +519,7 @@ int iscsit_check_unsolicited_dataout(struct iscsi_cmd *cmd, unsigned char *buf)
 
 struct iscsi_cmd *iscsit_find_cmd_from_itt(
 	struct iscsi_conn *conn,
-	u32 init_task_tag)
+	itt_t init_task_tag)
 {
 	struct iscsi_cmd *cmd;
 
@@ -539,7 +539,7 @@ struct iscsi_cmd *iscsit_find_cmd_from_itt(
 
 struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(
 	struct iscsi_conn *conn,
-	u32 init_task_tag,
+	itt_t init_task_tag,
 	u32 length)
 {
 	struct iscsi_cmd *cmd;
@@ -585,7 +585,7 @@ int iscsit_find_cmd_for_recovery(
 	struct iscsi_session *sess,
 	struct iscsi_cmd **cmd_ptr,
 	struct iscsi_conn_recovery **cr_ptr,
-	u32 init_task_tag)
+	itt_t init_task_tag)
 {
 	struct iscsi_cmd *cmd = NULL;
 	struct iscsi_conn_recovery *cr;
@@ -656,7 +656,7 @@ void iscsit_add_cmd_to_immediate_queue(
 	atomic_set(&conn->check_immediate_queue, 1);
 	spin_unlock_bh(&conn->immed_queue_lock);
 
-	wake_up_process(conn->thread_set->tx_thread);
+	wake_up(&conn->queues_wq);
 }
 
 struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
@@ -730,7 +730,7 @@ void iscsit_add_cmd_to_response_queue(
 	atomic_inc(&cmd->response_queue_count);
 	spin_unlock_bh(&conn->response_queue_lock);
 
-	wake_up_process(conn->thread_set->tx_thread);
+	wake_up(&conn->queues_wq);
 }
 
 struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
@@ -782,6 +782,24 @@ static void iscsit_remove_cmd_from_response_queue(
 			cmd->init_task_tag,
 			atomic_read(&cmd->response_queue_count));
 	}
+}
+
+bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
+{
+	bool empty;
+
+	spin_lock_bh(&conn->immed_queue_lock);
+	empty = list_empty(&conn->immed_queue_list);
+	spin_unlock_bh(&conn->immed_queue_lock);
+
+	if (!empty)
+		return empty;
+
+	spin_lock_bh(&conn->response_queue_lock);
+	empty = list_empty(&conn->response_queue_list);
+	spin_unlock_bh(&conn->response_queue_lock);
+
+	return empty;
 }
 
 void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
@@ -1029,7 +1047,7 @@ static int iscsit_add_nopin(struct iscsi_conn *conn, int want_response)
 	cmd->iscsi_opcode = ISCSI_OP_NOOP_IN;
 	state = (want_response) ? ISTATE_SEND_NOPIN_WANT_RESPONSE :
 				ISTATE_SEND_NOPIN_NO_RESPONSE;
-	cmd->init_task_tag = 0xFFFFFFFF;
+	cmd->init_task_tag = RESERVED_ITT;
 	spin_lock_bh(&conn->sess->ttt_lock);
 	cmd->targ_xfer_tag = (want_response) ? conn->sess->targ_xfer_tag++ :
 			0xFFFFFFFF;
@@ -1396,7 +1414,7 @@ int iscsit_tx_login_rsp(struct iscsi_conn *conn, u8 status_class, u8 status_deta
 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
 	hdr->status_class	= status_class;
 	hdr->status_detail	= status_detail;
-	hdr->itt		= cpu_to_be32(conn->login_itt);
+	hdr->itt		= conn->login_itt;
 
 	iov.iov_base		= &iscsi_hdr;
 	iov.iov_len		= ISCSI_HDR_LEN;

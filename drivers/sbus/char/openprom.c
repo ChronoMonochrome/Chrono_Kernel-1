@@ -223,7 +223,7 @@ static int opromnext(void __user *argp, unsigned int cmd, struct device_node *dp
 		case OPROMSETCUR:
 		default:
 			break;
-		};
+		}
 	} else {
 		/* Sibling of node zero is the root node.  */
 		if (cmd != OPROMNEXT)
@@ -589,7 +589,7 @@ static int openprom_bsd_ioctl(struct file * file,
 	default:
 		err = -EINVAL;
 		break;
-	};
+	}
 	mutex_unlock(&openprom_mutex);
 
 	return err;

@@ -31,6 +31,7 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/rculist.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>
@@ -489,7 +490,7 @@ static struct fw_address_handler *lookup_overlapping_address_handler(
 {
 	struct fw_address_handler *handler;
 
-	list_for_each_entry(handler, list, link) {
+	list_for_each_entry_rcu(handler, list, link) {
 		if (handler->offset < offset + length &&
 		    offset < handler->offset + handler->length)
 			return handler;
@@ -510,7 +511,7 @@ static struct fw_address_handler *lookup_enclosing_address_handler(
 {
 	struct fw_address_handler *handler;
 
-	list_for_each_entry(handler, list, link) {
+	list_for_each_entry_rcu(handler, list, link) {
 		if (is_enclosing_handler(handler, offset, length))
 			return handler;
 	}
@@ -518,7 +519,7 @@ static struct fw_address_handler *lookup_enclosing_address_handler(
 	return NULL;
 }
 
-static DEFINE_SPINLOCK(address_handler_lock);
+static DEFINE_SPINLOCK(address_handler_list_lock);
 static LIST_HEAD(address_handler_list);
 
 const struct fw_address_region fw_high_memory_region =
@@ -555,6 +556,7 @@ static bool is_in_fcp_region(u64 offset, size_t length)
  * the specified callback is invoked.  The parameters passed to the callback
  * give the details of the particular request.
  *
+ * To be called in process context.
  * Return value:  0 on success, non-zero otherwise.
  *
  * The start offset of the handler's address region is determined by
@@ -566,7 +568,6 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
 				const struct fw_address_region *region)
 {
 	struct fw_address_handler *other;
-	unsigned long flags;
 	int ret = -EBUSY;
 
 	if (region->start & 0xffff000000000003ULL ||
@@ -576,7 +577,7 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
 	    handler->length == 0)
 		return -EINVAL;
 
-	spin_lock_irqsave(&address_handler_lock, flags);
+	spin_lock(&address_handler_list_lock);
 
 	handler->offset = region->start;
 	while (handler->offset + handler->length <= region->end) {
@@ -589,13 +590,13 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
 		if (other != NULL) {
 			handler->offset += other->length;
 		} else {
-			list_add_tail(&handler->link, &address_handler_list);
+			list_add_tail_rcu(&handler->link, &address_handler_list);
 			ret = 0;
 			break;
 		}
 	}
 
-	spin_unlock_irqrestore(&address_handler_lock, flags);
+	spin_unlock(&address_handler_list_lock);
 
 	return ret;
 }
@@ -603,14 +604,18 @@ EXPORT_SYMBOL(fw_core_add_address_handler);
 
 /**
  * fw_core_remove_address_handler() - unregister an address handler
+ *
+ * To be called in process context.
+ *
+ * When fw_core_remove_address_handler() returns, @handler->callback() is
+ * guaranteed to not run on any CPU anymore.
  */
 void fw_core_remove_address_handler(struct fw_address_handler *handler)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&address_handler_lock, flags);
-	list_del(&handler->link);
-	spin_unlock_irqrestore(&address_handler_lock, flags);
+	spin_lock(&address_handler_list_lock);
+	list_del_rcu(&handler->link);
+	spin_unlock(&address_handler_list_lock);
+	synchronize_rcu();
 }
 EXPORT_SYMBOL(fw_core_remove_address_handler);
 
@@ -771,7 +776,7 @@ static struct fw_request *allocate_request(struct fw_card *card,
 		break;
 
 	default:
-		fw_error("ERROR - corrupt request received - %08x %08x %08x\n",
+		fw_notice(card, "ERROR - corrupt request received - %08x %08x %08x\n",
 			 p->header[0], p->header[1], p->header[2]);
 		return NULL;
 	}
@@ -836,7 +841,6 @@ static void handle_exclusive_region_request(struct fw_card *card,
 					    unsigned long long offset)
 {
 	struct fw_address_handler *handler;
-	unsigned long flags;
 	int tcode, destination, source;
 
 	destination = HEADER_GET_DESTINATION(p->header[0]);
@@ -845,27 +849,19 @@ static void handle_exclusive_region_request(struct fw_card *card,
 	if (tcode == TCODE_LOCK_REQUEST)
 		tcode = 0x10 + HEADER_GET_EXTENDED_TCODE(p->header[3]);
 
-	spin_lock_irqsave(&address_handler_lock, flags);
+	rcu_read_lock();
 	handler = lookup_enclosing_address_handler(&address_handler_list,
 						   offset, request->length);
-	spin_unlock_irqrestore(&address_handler_lock, flags);
-
-	/*
-	 * FIXME: lookup the fw_node corresponding to the sender of
-	 * this request and pass that to the address handler instead
-	 * of the node ID.  We may also want to move the address
-	 * allocations to fw_node so we only do this callback if the
-	 * upper layers registered it for this node.
-	 */
-
-	if (handler == NULL)
-		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
-	else
+	if (handler)
 		handler->address_callback(card, request,
 					  tcode, destination, source,
 					  p->generation, offset,
 					  request->data, request->length,
 					  handler->callback_data);
+	rcu_read_unlock();
+
+	if (!handler)
+		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
 }
 
 static void handle_fcp_region_request(struct fw_card *card,
@@ -874,7 +870,6 @@ static void handle_fcp_region_request(struct fw_card *card,
 				      unsigned long long offset)
 {
 	struct fw_address_handler *handler;
-	unsigned long flags;
 	int tcode, destination, source;
 
 	if ((offset != (CSR_REGISTER_BASE | CSR_FCP_COMMAND) &&
@@ -896,8 +891,8 @@ static void handle_fcp_region_request(struct fw_card *card,
 		return;
 	}
 
-	spin_lock_irqsave(&address_handler_lock, flags);
-	list_for_each_entry(handler, &address_handler_list, link) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(handler, &address_handler_list, link) {
 		if (is_enclosing_handler(handler, offset, request->length))
 			handler->address_callback(card, NULL, tcode,
 						  destination, source,
@@ -906,7 +901,7 @@ static void handle_fcp_region_request(struct fw_card *card,
 						  request->length,
 						  handler->callback_data);
 	}
-	spin_unlock_irqrestore(&address_handler_lock, flags);
+	rcu_read_unlock();
 
 	fw_send_response(card, request, RCODE_COMPLETE);
 }
@@ -970,7 +965,7 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
 
 	if (&t->link == &card->transaction_list) {
  timed_out:
-		fw_notify("Unsolicited response (source %x, tlabel %x)\n",
+		fw_notice(card, "unsolicited response (source %x, tlabel %x)\n",
 			  source, tlabel);
 		return;
 	}
@@ -1082,8 +1077,8 @@ static void update_split_timeout(struct fw_card *card)
 
 	cycles = card->split_timeout_hi * 8000 + (card->split_timeout_lo >> 19);
 
-	cycles = max(cycles, 800u); /* minimum as per the spec */
-	cycles = min(cycles, 3u * 8000u); /* maximum OHCI timeout */
+	/* minimum per IEEE 1394, maximum which doesn't overflow OHCI */
+	cycles = clamp(cycles, 800u, 3u * 8000u);
 
 	card->split_timeout_cycles = cycles;
 	card->split_timeout_jiffies = DIV_ROUND_UP(cycles * HZ, 8000);
