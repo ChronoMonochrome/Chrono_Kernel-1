@@ -7,6 +7,8 @@
 #include <linux/ktime.h>
 #include <linux/tracepoint.h>
 
+#define DAPM_DIRECT "(direct)"
+
 struct snd_soc_jack;
 struct snd_soc_codec;
 struct snd_soc_platform;
