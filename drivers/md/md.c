@@ -2938,6 +2938,7 @@ offset_store(struct md_rdev *rdev, const char *buf, size_t len)
 		 * can be sane */
 		return -EBUSY;
 	rdev->data_offset = offset;
+	rdev->new_data_offset = offset;
 	return len;
 }
 
