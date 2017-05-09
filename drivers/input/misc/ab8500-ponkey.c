@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/ab8500-ponkey.h>
 

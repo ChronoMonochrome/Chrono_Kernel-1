@@ -18,6 +18,9 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 
+#include <mach/irqs.h>
+#include <mach/db8500-regs.h>
+
 #include <cm/inc/cm_def.h>
 #include <cm/engine/api/cm_engine.h>
 #include <cm/engine/api/control/irq_engine.h>

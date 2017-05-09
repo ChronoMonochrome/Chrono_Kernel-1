@@ -21,6 +21,7 @@
 #include <linux/mfd/abx500.h>
 #include <mach/reboot_reasons.h>
 #include <mach/suspend.h>
+#include <mach/irqs.h>
 #include <mach/prcmu-debug.h>
 #ifdef CONFIG_U8500_SHRM_ENABLE_FEATURE_SIGNATURE_VERIFICATION
 #include <mach/open_modem_shared_memory.h>

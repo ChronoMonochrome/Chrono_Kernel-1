@@ -40,6 +40,8 @@
 #include <linux/wakelock.h>
 #include <linux/usb/ab8500-otg.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
+#include <mach/irqs.h>
+#include <mach/db8500-regs.h>
 
 static struct wake_lock ab8500_musb_wakelock;
 /* For notification to usb switch driver */

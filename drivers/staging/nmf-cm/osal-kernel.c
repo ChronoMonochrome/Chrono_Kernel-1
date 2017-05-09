@@ -20,6 +20,8 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
+#include <mach/db8500-regs.h>
+
 #include <trace/stm.h>
 
 #include <cm/engine/configuration/inc/configuration_status.h>

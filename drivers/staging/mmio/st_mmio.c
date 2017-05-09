@@ -20,6 +20,7 @@
 #include <linux/workqueue.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mmio.h>
+#include <linux/gpio.h>
 #include <linux/ratelimit.h>
 
 #include <mach/board-sec-u8500.h> // Include STE Board Revision
