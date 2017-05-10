@@ -19,7 +19,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_gpio.h>
-#include <linux/pinctrl/pinctrl.h>
 #include <linux/slab.h>
 
 /* Private data structure for of_gpiochip_find_and_xlate */
@@ -68,6 +67,50 @@ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
 	 */
 	struct gg_data gg_data = { .flags = flags, .out_gpio = -EPROBE_DEFER };
 	int ret;
+<<<<<<< HEAD:drivers/of/gpio.c
+	struct device_node *gpio_np;
+	struct gpio_chip *gc;
+	int size;
+	const void *gpio_spec;
+	const __be32 *gpio_cells;
+
+	ret = of_parse_phandles_with_args(np, propname, "#gpio-cells", index,
+					  &gpio_np, &gpio_spec);
+	if (ret) {
+		pr_debug("%s: can't parse gpios property\n", __func__);
+		goto err0;
+	}
+
+	gc = of_node_to_gpiochip(gpio_np);
+	if (!gc) {
+		pr_debug("%s: gpio controller %s isn't registered\n",
+			 np->full_name, gpio_np->full_name);
+		ret = -ENODEV;
+		goto err1;
+	}
+
+	gpio_cells = of_get_property(gpio_np, "#gpio-cells", &size);
+	if (!gpio_cells || size != sizeof(*gpio_cells) ||
+			be32_to_cpup(gpio_cells) != gc->of_gpio_n_cells) {
+		pr_debug("%s: wrong #gpio-cells for %s\n",
+			 np->full_name, gpio_np->full_name);
+		ret = -EINVAL;
+		goto err1;
+	}
+
+	/* .xlate might decide to not fill in the flags, so clear it. */
+	if (flags)
+		*flags = 0;
+
+	ret = gc->of_xlate(gc, np, gpio_spec, flags);
+	if (ret < 0)
+		goto err1;
+
+	ret += gc->base;
+err1:
+	of_node_put(gpio_np);
+err0:
+=======
 
 	/* .of_xlate might decide to not fill in the flags, so clear it. */
 	if (flags)
@@ -83,10 +126,45 @@ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
 	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
 
 	of_node_put(gg_data.gpiospec.np);
-	pr_debug("%s exited with status %d\n", __func__, gg_data.out_gpio);
+>>>>>>> lk-3.5:drivers/gpio/gpiolib-of.c
+	pr_debug("%s exited with status %d\n", __func__, ret);
 	return gg_data.out_gpio;
 }
 EXPORT_SYMBOL(of_get_named_gpio_flags);
+
+/**
+ * of_gpio_count - Count GPIOs for a device
+ * @np:		device node to count GPIOs for
+ *
+ * The function returns the count of GPIOs specified for a node.
+ *
+ * Note that the empty GPIO specifiers counts too. For example,
+ *
+ * gpios = <0
+ *          &pio1 1 2
+ *          0
+ *          &pio2 3 4>;
+ *
+ * defines four GPIOs (so this function will return 4), two of which
+ * are not specified.
+ */
+unsigned int of_gpio_count(struct device_node *np)
+{
+	unsigned int cnt = 0;
+
+	do {
+		int ret;
+
+		ret = of_parse_phandles_with_args(np, "gpios", "#gpio-cells",
+						  cnt, NULL, NULL);
+		/* A hole in the gpios = <> counts anyway. */
+		if (ret < 0 && ret != -EEXIST)
+			break;
+	} while (++cnt);
+
+	return cnt;
+}
+EXPORT_SYMBOL(of_gpio_count);
 
 /**
  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
@@ -99,9 +177,12 @@ EXPORT_SYMBOL(of_get_named_gpio_flags);
  * gpio chips. This function performs only one sanity check: whether gpio
  * is less than ngpios (that is specified in the gpio_chip).
  */
-int of_gpio_simple_xlate(struct gpio_chip *gc,
-			 const struct of_phandle_args *gpiospec, u32 *flags)
+static int of_gpio_simple_xlate(struct gpio_chip *gc, struct device_node *np,
+				const void *gpio_spec, u32 *flags)
 {
+	const __be32 *gpio = gpio_spec;
+	const u32 n = be32_to_cpup(gpio);
+
 	/*
 	 * We're discouraging gpio_cells < 2, since that way you'll have to
 	 * write your own xlate function (that will have to retrive the GPIO
@@ -113,18 +194,14 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
 		return -EINVAL;
 	}
 
-	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-		return -EINVAL;
-
-	if (gpiospec->args[0] >= gc->ngpio)
+	if (n > gc->ngpio)
 		return -EINVAL;
 
 	if (flags)
-		*flags = gpiospec->args[1];
+		*flags = be32_to_cpu(gpio[1]);
 
-	return gpiospec->args[0];
+	return n;
 }
-EXPORT_SYMBOL(of_gpio_simple_xlate);
 
 /**
  * of_mm_gpiochip_add - Add memory mapped GPIO chip (bank)
@@ -170,6 +247,8 @@ int of_mm_gpiochip_add(struct device_node *np,
 	if (ret)
 		goto err2;
 
+	pr_debug("%s: registered as generic GPIO chip, base is %d\n",
+		 np->full_name, gc->base);
 	return 0;
 err2:
 	iounmap(mm_gc->regs);
@@ -181,53 +260,6 @@ err0:
 	return ret;
 }
 EXPORT_SYMBOL(of_mm_gpiochip_add);
-
-#ifdef CONFIG_PINCTRL
-static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
-{
-	struct device_node *np = chip->of_node;
-	struct of_phandle_args pinspec;
-	struct pinctrl_dev *pctldev;
-	int index = 0, ret;
-
-	if (!np)
-		return;
-
-	for (;; index++) {
-		ret = of_parse_phandle_with_args(np, "gpio-ranges",
-				"#gpio-range-cells", index, &pinspec);
-		if (ret)
-			break;
-
-		pctldev = of_pinctrl_get(pinspec.np);
-		if (!pctldev)
-			break;
-
-		/*
-		 * This assumes that the n GPIO pins are consecutive in the
-		 * GPIO number space, and that the pins are also consecutive
-		 * in their local number space. Currently it is not possible
-		 * to add different ranges for one and the same GPIO chip,
-		 * as the code assumes that we have one consecutive range
-		 * on both, mapping 1-to-1.
-		 *
-		 * TODO: make the OF bindings handle multiple sparse ranges
-		 * on the same GPIO chip.
-		 */
-		ret = gpiochip_add_pin_range(chip,
-					     pinctrl_dev_get_devname(pctldev),
-					     0, /* offset in gpiochip */
-					     pinspec.args[0],
-					     pinspec.args[1]);
-
-		if (ret)
-			break;
-	}
-}
-
-#else
-static void of_gpiochip_add_pin_range(struct gpio_chip *chip) {}
-#endif
 
 void of_gpiochip_add(struct gpio_chip *chip)
 {
@@ -242,14 +274,25 @@ void of_gpiochip_add(struct gpio_chip *chip)
 		chip->of_xlate = of_gpio_simple_xlate;
 	}
 
-	of_gpiochip_add_pin_range(chip);
 	of_node_get(chip->of_node);
 }
 
 void of_gpiochip_remove(struct gpio_chip *chip)
 {
-	gpiochip_remove_pin_ranges(chip);
-
 	if (chip->of_node)
 		of_node_put(chip->of_node);
 }
+<<<<<<< HEAD:drivers/of/gpio.c
+
+/* Private function for resolving node pointer to gpio_chip */
+static int of_gpiochip_is_match(struct gpio_chip *chip, void *data)
+{
+	return chip->of_node == data;
+}
+
+struct gpio_chip *of_node_to_gpiochip(struct device_node *np)
+{
+	return gpiochip_find(np, of_gpiochip_is_match);
+}
+=======
+>>>>>>> lk-3.5:drivers/gpio/gpiolib-of.c
