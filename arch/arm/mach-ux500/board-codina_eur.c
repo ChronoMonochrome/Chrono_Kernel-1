@@ -51,7 +51,7 @@
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 
 #include <linux/platform_data/i2c-nomadik.h>
 #include <plat/ste_dma40.h>

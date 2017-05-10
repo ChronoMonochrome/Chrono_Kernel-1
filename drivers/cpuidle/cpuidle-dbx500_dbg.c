@@ -27,7 +27,7 @@
 #include <mach/gpio.h>
 #include <mach/irqs.h>
 
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
