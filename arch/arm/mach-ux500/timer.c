@@ -33,7 +33,7 @@ static struct notifier_block mtu_context_notifier = {
 };
 #endif
 
-static void ux500_timer_reset(void)
+void ux500_timer_reset(void)
 {
 	nmdk_clkevt_reset();
 }
@@ -64,7 +64,7 @@ static void __init ux500_twd_init(void)
 #define ux500_twd_init()	do { } while(0)
 #endif
 
-static void __init ux500_timer_init(void)
+void __init ux500_timer_init(void)
 {
 	void __iomem *prcmu_timer_base;
 
