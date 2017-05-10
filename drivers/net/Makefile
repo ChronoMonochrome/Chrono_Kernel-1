@@ -75,3 +75,4 @@ obj-$(CONFIG_HYPERV_NET) += hyperv/
 ifdef CONFIG_PHONET
 obj-$(CONFIG_U8500_SHRM) += u8500_shrm.o
 endif
+obj-$(CONFIG_NTB_NETDEV) += ntb_netdev.o

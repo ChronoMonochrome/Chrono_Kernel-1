@@ -68,6 +68,32 @@ void __init r8a7740_map_io(void)
 	iotable_init(r8a7740_io_desc, ARRAY_SIZE(r8a7740_io_desc));
 }
 
+/* PFC */
+static struct resource r8a7740_pfc_resources[] = {
+	[0] = {
+		.start	= 0xe6050000,
+		.end	= 0xe6057fff,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= 0xe605800c,
+		.end	= 0xe605802b,
+		.flags	= IORESOURCE_MEM,
+	}
+};
+
+static struct platform_device r8a7740_pfc_device = {
+	.name		= "pfc-r8a7740",
+	.id		= -1,
+	.resource	= r8a7740_pfc_resources,
+	.num_resources	= ARRAY_SIZE(r8a7740_pfc_resources),
+};
+
+void __init r8a7740_pinmux_init(void)
+{
+	platform_device_register(&r8a7740_pfc_device);
+}
+
 /* SCIFA0 */
 static struct plat_sci_port scif0_platform_data = {
 	.mapbase	= 0xe6c40000,
@@ -705,12 +731,6 @@ void __init r8a7740_add_standard_devices(void)
 	rmobile_add_device_to_domain("A3SP",	&i2c1_device);
 }
 
-static void __init r8a7740_earlytimer_init(void)
-{
-	r8a7740_clock_init(0);
-	shmobile_earlytimer_init();
-}
-
 void __init r8a7740_add_early_devices(void)
 {
 	early_platform_add_devices(r8a7740_early_devices,
@@ -718,9 +738,6 @@ void __init r8a7740_add_early_devices(void)
 
 	/* setup early console here as well */
 	shmobile_setup_console();
-
-	/* override timer setup with soc-specific code */
-	shmobile_timer.init = r8a7740_earlytimer_init;
 }
 
 #ifdef CONFIG_USE_OF
@@ -763,7 +780,7 @@ DT_MACHINE_START(R8A7740_DT, "Generic R8A7740 (Flattened Device Tree)")
 	.init_irq	= r8a7740_init_irq,
 	.handle_irq	= shmobile_handle_irq_intc,
 	.init_machine	= r8a7740_add_standard_devices_dt,
-	.timer		= &shmobile_timer,
+	.init_time	= shmobile_timer_init,
 	.dt_compat	= r8a7740_boards_compat_dt,
 MACHINE_END
 

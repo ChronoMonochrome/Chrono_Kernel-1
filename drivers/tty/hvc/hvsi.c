@@ -361,8 +361,7 @@ static void hvsi_recv_query(struct hvsi_struct *hp, uint8_t *packet)
 	}
 }
 
-static void hvsi_insert_chars(struct hvsi_struct *hp, struct tty_struct *tty,
-		const char *buf, int len)
+static void hvsi_insert_chars(struct hvsi_struct *hp, const char *buf, int len)
 {
 	int i;
 
@@ -378,7 +377,7 @@ static void hvsi_insert_chars(struct hvsi_struct *hp, struct tty_struct *tty,
 			continue;
 		}
 #endif /* CONFIG_MAGIC_SYSRQ */
-		tty_insert_flip_char(tty, c, 0);
+		tty_insert_flip_char(&hp->port, c, 0);
 	}
 }
 
@@ -391,8 +390,7 @@ static void hvsi_insert_chars(struct hvsi_struct *hp, struct tty_struct *tty,
  * revisited.
  */
 #define TTY_THRESHOLD_THROTTLE 128
-static bool hvsi_recv_data(struct hvsi_struct *hp, struct tty_struct *tty,
-		const uint8_t *packet)
+static bool hvsi_recv_data(struct hvsi_struct *hp, const uint8_t *packet)
 {
 	const struct hvsi_header *header = (const struct hvsi_header *)packet;
 	const uint8_t *data = packet + sizeof(struct hvsi_header);
@@ -409,7 +407,7 @@ static bool hvsi_recv_data(struct hvsi_struct *hp, struct tty_struct *tty,
 		datalen = TTY_THRESHOLD_THROTTLE;
 	}
 
-	hvsi_insert_chars(hp, tty, data, datalen);
+	hvsi_insert_chars(hp, data, datalen);
 
 	if (overflow > 0) {
 		/*
@@ -470,9 +468,7 @@ static int hvsi_load_chunk(struct hvsi_struct *hp, struct tty_struct *tty,
 			case VS_DATA_PACKET_HEADER:
 				if (!is_open(hp))
 					break;
-				if (tty == NULL)
-					break; /* no tty buffer to put data in */
-				flip = hvsi_recv_data(hp, tty, packet);
+				flip = hvsi_recv_data(hp, packet);
 				break;
 			case VS_CONTROL_PACKET_HEADER:
 				hvsi_recv_control(hp, packet, tty, handshake);
@@ -501,17 +497,17 @@ static int hvsi_load_chunk(struct hvsi_struct *hp, struct tty_struct *tty,
 	compact_inbuf(hp, packet);
 
 	if (flip)
-		tty_flip_buffer_push(tty);
+		tty_flip_buffer_push(&hp->port);
 
 	return 1;
 }
 
-static void hvsi_send_overflow(struct hvsi_struct *hp, struct tty_struct *tty)
+static void hvsi_send_overflow(struct hvsi_struct *hp)
 {
 	pr_debug("%s: delivering %i bytes overflow\n", __func__,
 			hp->n_throttle);
 
-	hvsi_insert_chars(hp, tty, hp->throttle_buf, hp->n_throttle);
+	hvsi_insert_chars(hp, hp->throttle_buf, hp->n_throttle);
 	hp->n_throttle = 0;
 }
 
@@ -546,8 +542,8 @@ static irqreturn_t hvsi_interrupt(int irq, void *arg)
 	if (tty && hp->n_throttle && !test_bit(TTY_THROTTLED, &tty->flags)) {
 		/* we weren't hung up and we weren't throttled, so we can
 		 * deliver the rest now */
-		hvsi_send_overflow(hp, tty);
-		tty_flip_buffer_push(tty);
+		hvsi_send_overflow(hp);
+		tty_flip_buffer_push(&hp->port);
 	}
 	spin_unlock_irqrestore(&hp->lock, flags);
 
@@ -1033,8 +1029,8 @@ static void hvsi_unthrottle(struct tty_struct *tty)
 
 	spin_lock_irqsave(&hp->lock, flags);
 	if (hp->n_throttle) {
-		hvsi_send_overflow(hp, tty);
-		tty_flip_buffer_push(tty);
+		hvsi_send_overflow(hp);
+		tty_flip_buffer_push(&hp->port);
 	}
 	spin_unlock_irqrestore(&hp->lock, flags);
 
@@ -1223,9 +1219,7 @@ static int __init hvsi_console_init(void)
 	hvsi_wait = poll_for_state; /* no irqs yet; must poll */
 
 	/* search device tree for vty nodes */
-	for (vty = of_find_compatible_node(NULL, "serial", "hvterm-protocol");
-			vty != NULL;
-			vty = of_find_compatible_node(vty, "serial", "hvterm-protocol")) {
+	for_each_compatible_node(vty, "serial", "hvterm-protocol") {
 		struct hvsi_struct *hp;
 		const uint32_t *vtermno, *irq;
 

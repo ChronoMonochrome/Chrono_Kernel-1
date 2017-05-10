@@ -1756,7 +1756,7 @@ ioc4_change_speed(struct uart_port *the_port,
 
 	the_port->ignore_status_mask = N_ALL_INPUT;
 
-	state->port.tty->low_latency = 1;
+	state->port.low_latency = 1;
 
 	if (iflag & IGNPAR)
 		the_port->ignore_status_mask &= ~(N_PARITY_ERROR
@@ -2364,7 +2364,6 @@ static inline int do_read(struct uart_port *the_port, unsigned char *buf,
  */
 static void receive_chars(struct uart_port *the_port)
 {
-	struct tty_struct *tty;
 	unsigned char ch[IOC4_MAX_CHARS];
 	int read_count, request_count = IOC4_MAX_CHARS;
 	struct uart_icount *icount;
@@ -2374,26 +2373,23 @@ static void receive_chars(struct uart_port *the_port)
 	/* Make sure all the pointers are "good" ones */
 	if (!state)
 		return;
-	if (!state->port.tty)
-		return;
 
 	spin_lock_irqsave(&the_port->lock, pflags);
-	tty = state->port.tty;
 
-	request_count = tty_buffer_request_room(tty, IOC4_MAX_CHARS);
+	request_count = tty_buffer_request_room(&state->port, IOC4_MAX_CHARS);
 
 	if (request_count > 0) {
 		icount = &the_port->icount;
 		read_count = do_read(the_port, ch, request_count);
 		if (read_count > 0) {
-			tty_insert_flip_string(tty, ch, read_count);
+			tty_insert_flip_string(&state->port, ch, read_count);
 			icount->rx += read_count;
 		}
 	}
 
 	spin_unlock_irqrestore(&the_port->lock, pflags);
 
-	tty_flip_buffer_push(tty);
+	tty_flip_buffer_push(&state->port);
 }
 
 /**
@@ -2931,6 +2927,7 @@ ioc4_serial_attach_one(struct ioc4_driver_data *idd)
 	/* error exits that give back resources */
 out5:
 	ioc4_serial_remove_one(idd);
+	return ret;
 out4:
 	kfree(soft);
 out3:
