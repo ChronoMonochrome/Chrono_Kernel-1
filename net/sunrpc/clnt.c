@@ -33,6 +33,7 @@
 #include <linux/rcupdate.h>
 
 #include <linux/sunrpc/clnt.h>
+#include <linux/sunrpc/addr.h>
 #include <linux/sunrpc/rpc_pipe_fs.h>
 #include <linux/sunrpc/metrics.h>
 #include <linux/sunrpc/bc_xprt.h>
@@ -303,10 +304,8 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
 	err = rpciod_up();
 	if (err)
 		goto out_no_rpciod;
-	err = -EINVAL;
-	if (!xprt)
-		goto out_no_xprt;
 
+	err = -EINVAL;
 	if (args->version >= program->nrvers)
 		goto out_err;
 	version = program->version[args->version];
@@ -381,10 +380,9 @@ out_no_principal:
 out_no_stats:
 	kfree(clnt);
 out_err:
-	xprt_put(xprt);
-out_no_xprt:
 	rpciod_down();
 out_no_rpciod:
+	xprt_put(xprt);
 	return ERR_PTR(err);
 }
 
@@ -511,7 +509,7 @@ static struct rpc_clnt *__rpc_clone_client(struct rpc_create_args *args,
 	new = rpc_new_client(args, xprt);
 	if (IS_ERR(new)) {
 		err = PTR_ERR(new);
-		goto out_put;
+		goto out_err;
 	}
 
 	atomic_inc(&clnt->cl_count);
@@ -524,8 +522,6 @@ static struct rpc_clnt *__rpc_clone_client(struct rpc_create_args *args,
 	new->cl_chatty = clnt->cl_chatty;
 	return new;
 
-out_put:
-	xprt_put(xprt);
 out_err:
 	dprintk("RPC:       %s: returned error %d\n", __func__, err);
 	return ERR_PTR(err);
@@ -1194,6 +1190,21 @@ size_t rpc_max_payload(struct rpc_clnt *clnt)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(rpc_max_payload);
+
+/**
+ * rpc_get_timeout - Get timeout for transport in units of HZ
+ * @clnt: RPC client to query
+ */
+unsigned long rpc_get_timeout(struct rpc_clnt *clnt)
+{
+	unsigned long ret;
+
+	rcu_read_lock();
+	ret = rcu_dereference(clnt->cl_xprt)->timeout->to_initval;
+	rcu_read_unlock();
+	return ret;
+}
+EXPORT_SYMBOL_GPL(rpc_get_timeout);
 
 /**
  * rpc_force_rebind - force transport to check that remote port is unchanged

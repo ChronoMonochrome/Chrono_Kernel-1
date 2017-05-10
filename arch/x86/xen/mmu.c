@@ -1408,7 +1408,6 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
 		xen_mc_callback(set_current_cr3, (void *)cr3);
 	}
 }
-
 static void xen_write_cr3(unsigned long cr3)
 {
 	BUG_ON(preemptible());
@@ -1433,6 +1432,43 @@ static void xen_write_cr3(unsigned long cr3)
 
 	xen_mc_issue(PARAVIRT_LAZY_CPU);  /* interrupts restored */
 }
+
+#ifdef CONFIG_X86_64
+/*
+ * At the start of the day - when Xen launches a guest, it has already
+ * built pagetables for the guest. We diligently look over them
+ * in xen_setup_kernel_pagetable and graft as appropiate them in the
+ * init_level4_pgt and its friends. Then when we are happy we load
+ * the new init_level4_pgt - and continue on.
+ *
+ * The generic code starts (start_kernel) and 'init_mem_mapping' sets
+ * up the rest of the pagetables. When it has completed it loads the cr3.
+ * N.B. that baremetal would start at 'start_kernel' (and the early
+ * #PF handler would create bootstrap pagetables) - so we are running
+ * with the same assumptions as what to do when write_cr3 is executed
+ * at this point.
+ *
+ * Since there are no user-page tables at all, we have two variants
+ * of xen_write_cr3 - the early bootup (this one), and the late one
+ * (xen_write_cr3). The reason we have to do that is that in 64-bit
+ * the Linux kernel and user-space are both in ring 3 while the
+ * hypervisor is in ring 0.
+ */
+static void __init xen_write_cr3_init(unsigned long cr3)
+{
+	BUG_ON(preemptible());
+
+	xen_mc_batch();  /* disables interrupts */
+
+	/* Update while interrupts are disabled, so its atomic with
+	   respect to ipis */
+	this_cpu_write(xen_cr3, cr3);
+
+	__xen_write_cr3(true, cr3);
+
+	xen_mc_issue(PARAVIRT_LAZY_CPU);  /* interrupts restored */
+}
+#endif
 
 static int xen_pgd_alloc(struct mm_struct *mm)
 {
@@ -1712,13 +1748,17 @@ static void *m2v(phys_addr_t maddr)
 }
 
 /* Set the page permissions on an identity-mapped pages */
-static void set_page_prot(void *addr, pgprot_t prot)
+static void set_page_prot_flags(void *addr, pgprot_t prot, unsigned long flags)
 {
 	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
 	pte_t pte = pfn_pte(pfn, prot);
 
-	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
+	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, flags))
 		BUG();
+}
+static void set_page_prot(void *addr, pgprot_t prot)
+{
+	return set_page_prot_flags(addr, prot, UVMF_NONE);
 }
 #ifdef CONFIG_X86_32
 static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
@@ -1803,12 +1843,12 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
 				 unsigned long addr)
 {
 	if (*pt_base == PFN_DOWN(__pa(addr))) {
-		set_page_prot((void *)addr, PAGE_KERNEL);
+		set_page_prot_flags((void *)addr, PAGE_KERNEL, UVMF_INVLPG);
 		clear_page((void *)addr);
 		(*pt_base)++;
 	}
 	if (*pt_end == PFN_DOWN(__pa(addr))) {
-		set_page_prot((void *)addr, PAGE_KERNEL);
+		set_page_prot_flags((void *)addr, PAGE_KERNEL, UVMF_INVLPG);
 		clear_page((void *)addr);
 		(*pt_end)--;
 	}
@@ -2084,6 +2124,7 @@ static void __init xen_post_allocator_init(void)
 #endif
 
 #ifdef CONFIG_X86_64
+	pv_mmu_ops.write_cr3 = &xen_write_cr3;
 	SetPagePinned(virt_to_page(level3_user_vsyscall));
 #endif
 	xen_mark_init_mm_pinned();
@@ -2102,11 +2143,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
 	.write_cr2 = xen_write_cr2,
 
 	.read_cr3 = xen_read_cr3,
-#ifdef CONFIG_X86_32
 	.write_cr3 = xen_write_cr3_init,
-#else
-	.write_cr3 = xen_write_cr3,
-#endif
 
 	.flush_tlb_user = xen_flush_tlb,
 	.flush_tlb_kernel = xen_flush_tlb,
@@ -2163,6 +2200,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
 	.lazy_mode = {
 		.enter = paravirt_enter_lazy_mmu,
 		.leave = xen_leave_lazy_mmu,
+		.flush = paravirt_flush_lazy_mmu,
 	},
 
 	.set_fixmap = xen_set_fixmap,

@@ -149,6 +149,16 @@ struct stedma40_chan_cfg {
  *			   to use SoftLLI.
  * @use_esram_lcla: flag for mapping the lcla into esram region
  * that are for different reasons not available for the driver.
+ * @soft_lli_chans: A vector, that marks physical channels will use LLI by SW
+ * which avoids HW bug that exists in some versions of the controller.
+ * SoftLLI introduces relink overhead that could impact performace for
+ * certain use cases.
+ * @num_of_soft_lli_chans: The number of channels that needs to be configured
+ * to use SoftLLI.
+ * @use_esram_lcla: flag for mapping the lcla into esram region
+ * @num_of_phy_chans: The number of physical channels implemented in HW.
+ * 0 means reading the number of channels from DMA HW but this is only valid
+ * for 'multiple of 4' channels, like 8.
  */
 struct stedma40_platform_data {
 	u32				 dev_len;
@@ -162,6 +172,7 @@ struct stedma40_platform_data {
 	int				*soft_lli_chans;
 	int				 num_of_soft_lli_chans;
 	bool				 use_esram_lcla;
+	int				 num_of_phy_chans;
 };
 
 struct d40_desc;

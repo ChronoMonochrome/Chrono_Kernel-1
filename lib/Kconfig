@@ -417,4 +417,7 @@ config OID_REGISTRY
 	help
 	  Enable fast lookup object identifier registry.
 
+config UCS2_STRING
+        tristate
+
 endmenu

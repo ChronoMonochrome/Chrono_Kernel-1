@@ -375,6 +375,9 @@ static void __kprobes arch_copy_kprobe(struct kprobe *p)
 	else
 		p->ainsn.boostable = -1;
 
+	/* Check whether the instruction modifies Interrupt Flag or not */
+	p->ainsn.if_modifier = is_IF_modifier(p->ainsn.insn);
+
 	/* Also, displacement change doesn't affect the first byte */
 	p->opcode = p->ainsn.insn[0];
 }
@@ -434,7 +437,7 @@ static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
 	__this_cpu_write(current_kprobe, p);
 	kcb->kprobe_saved_flags = kcb->kprobe_old_flags
 		= (regs->flags & (X86_EFLAGS_TF | X86_EFLAGS_IF));
-	if (is_IF_modifier(p->ainsn.insn))
+	if (p->ainsn.if_modifier)
 		kcb->kprobe_saved_flags &= ~X86_EFLAGS_IF;
 }
 
@@ -652,7 +655,7 @@ static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
 {
 	struct kretprobe_instance *ri = NULL;
 	struct hlist_head *head, empty_rp;
-	struct hlist_node *node, *tmp;
+	struct hlist_node *tmp;
 	unsigned long flags, orig_ret_address = 0;
 	unsigned long trampoline_address = (unsigned long)&kretprobe_trampoline;
 	kprobe_opcode_t *correct_ret_addr = NULL;
@@ -682,7 +685,7 @@ static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
 	 *	 will be the real return address, and all the rest will
 	 *	 point to kretprobe_trampoline.
 	 */
-	hlist_for_each_entry_safe(ri, node, tmp, head, hlist) {
+	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
 		if (ri->task != current)
 			/* another task is sharing our hash bucket */
 			continue;
@@ -701,7 +704,7 @@ static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
 	kretprobe_assert(ri, orig_ret_address, trampoline_address);
 
 	correct_ret_addr = ri->ret_addr;
-	hlist_for_each_entry_safe(ri, node, tmp, head, hlist) {
+	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
 		if (ri->task != current)
 			/* another task is sharing our hash bucket */
 			continue;
@@ -728,7 +731,7 @@ static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
 
 	kretprobe_hash_unlock(current, &flags);
 
-	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
+	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
 		hlist_del(&ri->hlist);
 		kfree(ri);
 	}

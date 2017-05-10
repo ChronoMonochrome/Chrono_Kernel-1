@@ -679,7 +679,7 @@ static int fuse_encode_fh(struct inode *inode, u32 *fh, int *max_len,
 
 	if (*max_len < len) {
 		*max_len = len;
-		return  255;
+		return  FILEID_INVALID;
 	}
 
 	nodeid = get_fuse_inode(inode)->nodeid;
@@ -1117,6 +1117,7 @@ static struct file_system_type fuse_fs_type = {
 	.mount		= fuse_mount,
 	.kill_sb	= fuse_kill_sb_anon,
 };
+MODULE_ALIAS_FS("fuse");
 
 #ifdef CONFIG_BLOCK
 static struct dentry *fuse_mount_blk(struct file_system_type *fs_type,
@@ -1146,6 +1147,7 @@ static struct file_system_type fuseblk_fs_type = {
 	.kill_sb	= fuse_kill_sb_blk,
 	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
 };
+MODULE_ALIAS_FS("fuseblk");
 
 static inline int register_fuseblk(void)
 {

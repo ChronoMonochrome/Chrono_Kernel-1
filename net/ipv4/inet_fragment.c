@@ -21,6 +21,7 @@
 #include <linux/rtnetlink.h>
 #include <linux/slab.h>
 
+#include <net/sock.h>
 #include <net/inet_frag.h>
 
 static void inet_frag_secret_rebuild(unsigned long dummy)
@@ -33,9 +34,9 @@ static void inet_frag_secret_rebuild(unsigned long dummy)
 	get_random_bytes(&f->rnd, sizeof(u32));
 	for (i = 0; i < INETFRAGS_HASHSZ; i++) {
 		struct inet_frag_queue *q;
-		struct hlist_node *p, *n;
+		struct hlist_node *n;
 
-		hlist_for_each_entry_safe(q, p, n, &f->hash[i], list) {
+		hlist_for_each_entry_safe(q, n, &f->hash[i], list) {
 			unsigned int hval = f->hashfn(q);
 
 			if (hval != i) {
@@ -203,7 +204,6 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
 {
 	struct inet_frag_queue *qp;
 #ifdef CONFIG_SMP
-	struct hlist_node *n;
 #endif
 	unsigned int hash;
 
@@ -219,7 +219,7 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
 	 * such entry could be created on other cpu, while we
 	 * promoted read lock to write lock.
 	 */
-	hlist_for_each_entry(qp, n, &f->hash[hash], list) {
+	hlist_for_each_entry(qp, &f->hash[hash], list) {
 		if (qp->net == nf && f->match(qp, arg)) {
 			atomic_inc(&qp->refcnt);
 			write_unlock(&f->lock);
@@ -278,17 +278,33 @@ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
 	__releases(&f->lock)
 {
 	struct inet_frag_queue *q;
-	struct hlist_node *n;
+	int depth = 0;
 
-	hlist_for_each_entry(q, n, &f->hash[hash], list) {
+	hlist_for_each_entry(q, &f->hash[hash], list) {
 		if (q->net == nf && f->match(q, key)) {
 			atomic_inc(&q->refcnt);
 			read_unlock(&f->lock);
 			return q;
 		}
+		depth++;
 	}
 	read_unlock(&f->lock);
 
-	return inet_frag_create(nf, f, key);
+	if (depth <= INETFRAGS_MAXDEPTH)
+		return inet_frag_create(nf, f, key);
+	else
+		return ERR_PTR(-ENOBUFS);
 }
 EXPORT_SYMBOL(inet_frag_find);
+
+void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
+				   const char *prefix)
+{
+	static const char msg[] = "inet_frag_find: Fragment hash bucket"
+		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
+		". Dropping fragment.\n";
+
+	if (PTR_ERR(q) == -ENOBUFS)
+		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
+}
+EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);

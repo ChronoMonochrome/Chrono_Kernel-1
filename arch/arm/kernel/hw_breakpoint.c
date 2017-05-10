@@ -989,7 +989,7 @@ static void reset_ctrl_regs(void *unused)
 	}
 
 	if (err) {
-		pr_warning("CPU %d debug is powered down!\n", cpu);
+		pr_warn_once("CPU %d debug is powered down!\n", cpu);
 		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
 		return;
 	}
@@ -1010,7 +1010,7 @@ clear_vcr:
 	isb();
 
 	if (cpumask_intersects(&debug_err_mask, cpumask_of(cpu))) {
-		pr_warning("CPU %d failed to disable vector catch\n", cpu);
+		pr_warn_once("CPU %d failed to disable vector catch\n", cpu);
 		return;
 	}
 
@@ -1030,7 +1030,7 @@ clear_vcr:
 	}
 
 	if (cpumask_intersects(&debug_err_mask, cpumask_of(cpu))) {
-		pr_warning("CPU %d failed to clear debug register pairs\n", cpu);
+		pr_warn_once("CPU %d failed to clear debug register pairs\n", cpu);
 		return;
 	}
 
@@ -1046,7 +1046,7 @@ out_mdbgen:
 static int __cpuinit dbg_reset_notify(struct notifier_block *self,
 				      unsigned long action, void *cpu)
 {
-	if (action == CPU_ONLINE)
+	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE)
 		smp_call_function_single((int)cpu, reset_ctrl_regs, NULL, 1);
 
 	return NOTIFY_OK;
@@ -1066,7 +1066,7 @@ static int dbg_cpu_pm_notify(struct notifier_block *self, unsigned long action,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block __cpuinitdata dbg_cpu_pm_nb = {
+static struct notifier_block dbg_cpu_pm_nb = {
 	.notifier_call = dbg_cpu_pm_notify,
 };
 

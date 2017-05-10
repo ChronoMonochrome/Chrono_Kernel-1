@@ -392,7 +392,6 @@ struct gfs2_revoke_replay {
 };
 
 enum {
-	QDF_USER		= 0,
 	QDF_CHANGE		= 1,
 	QDF_LOCKED		= 2,
 	QDF_REFRESH		= 3,
@@ -404,7 +403,7 @@ struct gfs2_quota_data {
 
 	atomic_t qd_count;
 
-	u32 qd_id;
+	struct kqid qd_id;
 	unsigned long qd_flags;		/* QDF_... */
 
 	s64 qd_change;
@@ -589,6 +588,7 @@ struct lm_lockstruct {
 	struct dlm_lksb ls_control_lksb; /* control_lock */
 	char ls_control_lvb[GDLM_LVB_SIZE]; /* control_lock lvb */
 	struct completion ls_sync_wait; /* {control,mounted}_{lock,unlock} */
+	char *ls_lvb_bits;
 
 	spinlock_t ls_recover_spin; /* protects following fields */
 	unsigned long ls_recover_flags; /* DFL_ */

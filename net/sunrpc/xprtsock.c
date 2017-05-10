@@ -33,6 +33,7 @@
 #include <linux/udp.h>
 #include <linux/tcp.h>
 #include <linux/sunrpc/clnt.h>
+#include <linux/sunrpc/addr.h>
 #include <linux/sunrpc/sched.h>
 #include <linux/sunrpc/svcsock.h>
 #include <linux/sunrpc/xprtsock.h>
@@ -848,6 +849,14 @@ static void xs_tcp_close(struct rpc_xprt *xprt)
 		xs_tcp_shutdown(xprt);
 }
 
+static void xs_local_destroy(struct rpc_xprt *xprt)
+{
+	xs_close(xprt);
+	xs_free_peer_addresses(xprt);
+	xprt_free(xprt);
+	module_put(THIS_MODULE);
+}
+
 /**
  * xs_destroy - prepare to shutdown a transport
  * @xprt: doomed transport
@@ -861,10 +870,7 @@ static void xs_destroy(struct rpc_xprt *xprt)
 
 	cancel_delayed_work_sync(&transport->connect_worker);
 
-	xs_close(xprt);
-	xs_free_peer_addresses(xprt);
-	xprt_free(xprt);
-	module_put(THIS_MODULE);
+	xs_local_destroy(xprt);
 }
 
 static inline struct rpc_xprt *xprt_from_sock(struct sock *sk)
@@ -1867,13 +1873,9 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
  * @xprt: RPC transport to connect
  * @transport: socket transport to connect
  * @create_sock: function to create a socket of the correct type
- *
- * Invoked by a work queue tasklet.
  */
-static void xs_local_setup_socket(struct work_struct *work)
+static int xs_local_setup_socket(struct sock_xprt *transport)
 {
-	struct sock_xprt *transport =
-		container_of(work, struct sock_xprt, connect_worker.work);
 	struct rpc_xprt *xprt = &transport->xprt;
 	struct socket *sock;
 	int status = -EIO;
@@ -1918,6 +1920,30 @@ out:
 	xprt_clear_connecting(xprt);
 	xprt_wake_pending_tasks(xprt, status);
 	current->flags &= ~PF_FSTRANS;
+	return status;
+}
+
+static void xs_local_connect(struct rpc_xprt *xprt, struct rpc_task *task)
+{
+	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+	int ret;
+
+	 if (RPC_IS_ASYNC(task)) {
+		/*
+		 * We want the AF_LOCAL connect to be resolved in the
+		 * filesystem namespace of the process making the rpc
+		 * call.  Thus we connect synchronously.
+		 *
+		 * If we want to support asynchronous AF_LOCAL calls,
+		 * we'll need to figure out how to pass a namespace to
+		 * connect.
+		 */
+		rpc_exit(task, -ENOTCONN);
+		return;
+	}
+	ret = xs_local_setup_socket(transport);
+	if (ret && !RPC_IS_SOFTCONN(task))
+		msleep_interruptible(15000);
 }
 
 #ifdef CONFIG_SUNRPC_SWAP
@@ -2455,13 +2481,13 @@ static struct rpc_xprt_ops xs_local_ops = {
 	.alloc_slot		= xprt_alloc_slot,
 	.rpcbind		= xs_local_rpcbind,
 	.set_port		= xs_local_set_port,
-	.connect		= xs_connect,
+	.connect		= xs_local_connect,
 	.buf_alloc		= rpc_malloc,
 	.buf_free		= rpc_free,
 	.send_request		= xs_local_send_request,
 	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
 	.close			= xs_close,
-	.destroy		= xs_destroy,
+	.destroy		= xs_local_destroy,
 	.print_stats		= xs_local_print_stats,
 };
 
@@ -2628,8 +2654,6 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
 			goto out_err;
 		}
 		xprt_set_bound(xprt);
-		INIT_DELAYED_WORK(&transport->connect_worker,
-					xs_local_setup_socket);
 		xs_format_peer_addresses(xprt, "local", RPCBIND_NETID_LOCAL);
 		break;
 	default:

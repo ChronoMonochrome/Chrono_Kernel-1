@@ -274,13 +274,6 @@ static void tcp_v4_mtu_reduced(struct sock *sk)
 	struct inet_sock *inet = inet_sk(sk);
 	u32 mtu = tcp_sk(sk)->mtu_info;
 
-	/* We are not interested in TCP_LISTEN and open_requests (SYN-ACKs
-	 * send out by Linux are always <576bytes so they should go through
-	 * unfragmented).
-	 */
-	if (sk->sk_state == TCP_LISTEN)
-		return;
-
 	dst = inet_csk_update_pmtu(sk, mtu);
 	if (!dst)
 		return;
@@ -408,6 +401,13 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 			goto out;
 
 		if (code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
+			/* We are not interested in TCP_LISTEN and open_requests
+			 * (SYN-ACKs send out by Linux are always <576bytes so
+			 * they should go through unfragmented).
+			 */
+			if (sk->sk_state == TCP_LISTEN)
+				goto out;
+
 			tp->mtu_info = info;
 			if (!sock_owned_by_user(sk)) {
 				tcp_v4_mtu_reduced(sk);
@@ -954,7 +954,6 @@ struct tcp_md5sig_key *tcp_md5_do_lookup(struct sock *sk,
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct tcp_md5sig_key *key;
-	struct hlist_node *pos;
 	unsigned int size = sizeof(struct in_addr);
 	struct tcp_md5sig_info *md5sig;
 
@@ -968,7 +967,7 @@ struct tcp_md5sig_key *tcp_md5_do_lookup(struct sock *sk,
 	if (family == AF_INET6)
 		size = sizeof(struct in6_addr);
 #endif
-	hlist_for_each_entry_rcu(key, pos, &md5sig->head, node) {
+	hlist_for_each_entry_rcu(key, &md5sig->head, node) {
 		if (key->family != family)
 			continue;
 		if (!memcmp(&key->addr, addr, size))
@@ -1069,14 +1068,14 @@ static void tcp_clear_md5_list(struct sock *sk)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct tcp_md5sig_key *key;
-	struct hlist_node *pos, *n;
+	struct hlist_node *n;
 	struct tcp_md5sig_info *md5sig;
 
 	md5sig = rcu_dereference_protected(tp->md5sig_info, 1);
 
 	if (!hlist_empty(&md5sig->head))
 		tcp_free_md5sig_pool();
-	hlist_for_each_entry_safe(key, pos, n, &md5sig->head, node) {
+	hlist_for_each_entry_safe(key, n, &md5sig->head, node) {
 		hlist_del_rcu(&key->node);
 		atomic_sub(sizeof(*key), &sk->sk_omem_alloc);
 		kfree_rcu(key, rcu);

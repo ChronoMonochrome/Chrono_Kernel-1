@@ -48,7 +48,7 @@ L3_START_KERNEL = pud_index(__START_KERNEL_map)
 	.globl startup_64
 startup_64:
 	/*
-	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
+	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
 	 * and someone has loaded an identity mapped page table
 	 * for us.  These identity mapped page tables map all of the
 	 * kernel pages and possibly all of memory.
@@ -159,7 +159,7 @@ startup_64:
 	jmp 1f
 ENTRY(secondary_startup_64)
 	/*
-	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
+	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
 	 * and someone has loaded a mapped page table.
 	 *
 	 * %rsi holds a physical pointer to real_mode_data.
@@ -336,6 +336,7 @@ early_idt_handlers:
 	i = i + 1
 	.endr
 
+/* This is global to keep gas from relaxing the jumps */
 ENTRY(early_idt_handler)
 	cld
 
@@ -404,6 +405,7 @@ ENTRY(early_idt_handler)
 	addq $16,%rsp		# drop vector number and error code
 	decl early_recursion_flag(%rip)
 	INTERRUPT_RETURN
+ENDPROC(early_idt_handler)
 
 	__INITDATA
 
