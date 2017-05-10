@@ -140,6 +140,12 @@ source "drivers/clocksource/Kconfig"
 
 source "drivers/modem/Kconfig"
 
+source "drivers/mailbox/Kconfig"
+
+source "drivers/iommu/Kconfig"
+
+source "drivers/remoteproc/Kconfig"
+
 source "drivers/samsung/Kconfig"
 
 source "drivers/sensor/Kconfig"

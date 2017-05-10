@@ -69,10 +69,14 @@ static int airo_probe(struct pcmcia_device *p_dev)
 
 	/* Allocate space for private device-specific data */
 	local = kzalloc(sizeof(local_info_t), GFP_KERNEL);
+<<<<<<< HEAD
 	if (!local) {
 ;
+=======
+	if (!local)
+>>>>>>> ec942fb... Merge commit '3278bb748d2437eb1464765f36429e5d6aa91c38' into HEAD (1/4 of lk-3.9)
 		return -ENOMEM;
-	}
+
 	p_dev->priv = local;
 
 	return airo_config(p_dev);

@@ -136,6 +136,7 @@ obj-y				+= clk/
 obj-$(CONFIG_TEE_SUPPORT)	+= tee/
 obj-$(CONFIG_MODEM)		+= modem/
 
+obj-$(CONFIG_MAILBOX)		+= mailbox/
 obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
 obj-y				+= samsung/
 obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/

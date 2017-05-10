@@ -14,6 +14,8 @@ bridge-$(CONFIG_BRIDGE_NETFILTER) += br_netfilter.o
 
 bridge-$(CONFIG_BRIDGE_IGMP_SNOOPING) += br_multicast.o br_mdb.o
 
+bridge-$(CONFIG_BRIDGE_VLAN_FILTERING) += br_vlan.o
+
 obj-$(CONFIG_BRIDGE_NF_EBTABLES) += netfilter/
 AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
 AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)

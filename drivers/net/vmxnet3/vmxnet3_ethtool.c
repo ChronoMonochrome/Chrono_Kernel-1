@@ -207,7 +207,7 @@ vmxnet3_get_drvinfo(struct net_device *netdev, struct ethtool_drvinfo *drvinfo)
 		sizeof(drvinfo->version));
 
 	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
-		ETHTOOL_BUSINFO_LEN);
+		sizeof(drvinfo->bus_info));
 	drvinfo->n_stats = vmxnet3_get_sset_count(netdev, ETH_SS_STATS);
 	drvinfo->testinfo_len = 0;
 	drvinfo->eedump_len   = 0;
@@ -522,24 +522,39 @@ vmxnet3_set_ringparam(struct net_device *netdev,
 		if (err) {
 			/* failed, most likely because of OOM, try default
 			 * size */
+<<<<<<< HEAD
 //			printk(KERN_ERR "%s: failed to apply new sizes, try the"
 ;
+=======
+			netdev_err(netdev, "failed to apply new sizes, "
+				   "try the default ones\n");
+>>>>>>> ec942fb... Merge commit '3278bb748d2437eb1464765f36429e5d6aa91c38' into HEAD (1/4 of lk-3.9)
 			err = vmxnet3_create_queues(adapter,
 						    VMXNET3_DEF_TX_RING_SIZE,
 						    VMXNET3_DEF_RX_RING_SIZE,
 						    VMXNET3_DEF_RX_RING_SIZE);
 			if (err) {
+<<<<<<< HEAD
 //				printk(KERN_ERR "%s: failed to create queues "
 //					"with default sizes. Closing it\n",
 ;
+=======
+				netdev_err(netdev, "failed to create queues "
+					   "with default sizes. Closing it\n");
+>>>>>>> ec942fb... Merge commit '3278bb748d2437eb1464765f36429e5d6aa91c38' into HEAD (1/4 of lk-3.9)
 				goto out;
 			}
 		}
 
 		err = vmxnet3_activate_dev(adapter);
 		if (err)
+<<<<<<< HEAD
 //			printk(KERN_ERR "%s: failed to re-activate, error %d."
 ;
+=======
+			netdev_err(netdev, "failed to re-activate, error %d."
+				   " Closing it\n", err);
+>>>>>>> ec942fb... Merge commit '3278bb748d2437eb1464765f36429e5d6aa91c38' into HEAD (1/4 of lk-3.9)
 	}
 
 out:

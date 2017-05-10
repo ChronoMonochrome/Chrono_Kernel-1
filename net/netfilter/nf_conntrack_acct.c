@@ -106,11 +106,11 @@ static void nf_conntrack_acct_fini_sysctl(struct net *net)
 }
 #endif
 
-int nf_conntrack_acct_init(struct net *net)
+int nf_conntrack_acct_pernet_init(struct net *net)
 {
-	int ret;
-
 	net->ct.sysctl_acct = nf_ct_acct;
+	return nf_conntrack_acct_init_sysctl(net);
+}
 
 	if (net_eq(net, &init_net)) {
 		ret = nf_ct_extend_register(&acct_extend);
@@ -119,23 +119,22 @@ int nf_conntrack_acct_init(struct net *net)
 			goto out_extend_register;
 		}
 	}
+}
 
-	ret = nf_conntrack_acct_init_sysctl(net);
+void nf_conntrack_acct_pernet_fini(struct net *net)
+{
+	nf_conntrack_acct_fini_sysctl(net);
+}
+
+int nf_conntrack_acct_init(void)
+{
+	int ret = nf_ct_extend_register(&acct_extend);
 	if (ret < 0)
-		goto out_sysctl;
-
-	return 0;
-
-out_sysctl:
-	if (net_eq(net, &init_net))
-		nf_ct_extend_unregister(&acct_extend);
-out_extend_register:
+		pr_err("nf_conntrack_acct: Unable to register extension\n");
 	return ret;
 }
 
-void nf_conntrack_acct_fini(struct net *net)
+void nf_conntrack_acct_fini(void)
 {
-	nf_conntrack_acct_fini_sysctl(net);
-	if (net_eq(net, &init_net))
-		nf_ct_extend_unregister(&acct_extend);
+	nf_ct_extend_unregister(&acct_extend);
 }
