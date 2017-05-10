@@ -15,6 +15,7 @@
 #include <linux/clocksource.h>
 #include <linux/clk.h>
 #include <linux/jiffies.h>
+#include <linux/delay.h>
 #include <linux/err.h>
 <<<<<<< HEAD:arch/arm/plat-nomadik/timer.c
 #include <linux/delay.h>
@@ -75,6 +76,7 @@
 static bool clkevt_periodic;
 static u32 clk_prescale;
 static u32 nmdk_cycle;		/* write-once */
+static struct delay_timer mtu_delay_timer;
 
 void __iomem *mtu_base; /* Assigned by machine code */
 
@@ -103,6 +105,11 @@ static void notrace nomadik_update_sched_clock(void)
 	update_sched_clock(&cd, cyc, (u32)~0);
 }
 #endif
+
+static unsigned long nmdk_timer_read_current_timer(void)
+{
+	return ~readl_relaxed(mtu_base + MTU_VAL(0));
+}
 
 /* Clockevent device: use one-shot mode */
 static int nmdk_clkevt_next(unsigned long evt, struct clock_event_device *ev)
@@ -309,5 +316,12 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
 	setup_irq(irq, &nmdk_timer_irq);
 	nmdk_clkevt.cpumask = cpumask_of(0);
 	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
+<<<<<<< HEAD
 >>>>>>> 19f949f:drivers/clocksource/nomadik-mtu.c
+=======
+
+	mtu_delay_timer.read_current_timer = &nmdk_timer_read_current_timer;
+	mtu_delay_timer.freq = rate;
+	register_current_timer_delay(&mtu_delay_timer);
+>>>>>>> a8f3740feb12928be1aad19659bf3527ea8d6d96
 }
