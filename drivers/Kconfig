@@ -156,6 +156,14 @@ source "drivers/interceptor/Kconfig"
 
 source "drivers/gator/Kconfig"
 
+source "drivers/memory/Kconfig"
+
+source "drivers/iio/Kconfig"
+
+source "drivers/ntb/Kconfig"
+
+source "drivers/vme/Kconfig"
+
 source "drivers/pwm/Kconfig"
 
 source "drivers/irqchip/Kconfig"

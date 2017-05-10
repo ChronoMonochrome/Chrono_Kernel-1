@@ -57,6 +57,31 @@ void __init sh73a0_map_io(void)
 	iotable_init(sh73a0_io_desc, ARRAY_SIZE(sh73a0_io_desc));
 }
 
+static struct resource sh73a0_pfc_resources[] = {
+	[0] = {
+		.start	= 0xe6050000,
+		.end	= 0xe6057fff,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= 0xe605801c,
+		.end	= 0xe6058027,
+		.flags	= IORESOURCE_MEM,
+	}
+};
+
+static struct platform_device sh73a0_pfc_device = {
+	.name		= "pfc-sh73a0",
+	.id		= -1,
+	.resource	= sh73a0_pfc_resources,
+	.num_resources	= ARRAY_SIZE(sh73a0_pfc_resources),
+};
+
+void __init sh73a0_pinmux_init(void)
+{
+	platform_device_register(&sh73a0_pfc_device);
+}
+
 static struct plat_sci_port scif0_platform_data = {
 	.mapbase	= 0xe6c40000,
 	.flags		= UPF_BOOT_AUTOCONF,
@@ -796,7 +821,7 @@ void __init sh73a0_add_standard_devices(void)
 /* do nothing for !CONFIG_SMP or !CONFIG_HAVE_TWD */
 void __init __weak sh73a0_register_twd(void) { }
 
-static void __init sh73a0_earlytimer_init(void)
+void __init sh73a0_earlytimer_init(void)
 {
 	sh73a0_clock_init();
 	shmobile_earlytimer_init();
@@ -810,7 +835,4 @@ void __init sh73a0_add_early_devices(void)
 
 	/* setup early console here as well */
 	shmobile_setup_console();
-
-	/* override timer setup with soc-specific code */
-	shmobile_timer.init = sh73a0_earlytimer_init;
 }
