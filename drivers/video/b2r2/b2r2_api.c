@@ -20,6 +20,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/miscdevice.h>
+#include <linux/platform_device.h>
 #include <linux/list.h>
 #ifdef CONFIG_ANDROID_PMEM
 #include <linux/android_pmem.h>
