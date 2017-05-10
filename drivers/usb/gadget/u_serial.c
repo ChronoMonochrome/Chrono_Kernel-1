@@ -536,7 +536,7 @@ static void gs_rx_push(unsigned long _port)
 				size -= n;
 			}
 
-			count = tty_insert_flip_string(tty, packet, size);
+			count = tty_insert_flip_string(tty->port, packet, size);
 			if (count)
 				do_push = true;
 			if (count != size) {
@@ -558,7 +558,7 @@ recycle:
 	 * a workqueue, so we won't get callbacks and can hold port_lock
 	 */
 	if (tty && do_push) {
-		tty_flip_buffer_push(tty);
+		tty_flip_buffer_push(tty->port);
 	}
 
 
