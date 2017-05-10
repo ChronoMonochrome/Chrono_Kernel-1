@@ -196,12 +196,11 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
 static struct tracepoint_entry *get_tracepoint(const char *name)
 {
 	struct hlist_head *head;
-	struct hlist_node *node;
 	struct tracepoint_entry *e;
 	u32 hash = jhash(name, strlen(name), 0);
 
 	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
-	hlist_for_each_entry(e, node, head, hlist) {
+	hlist_for_each_entry(e, head, hlist) {
 		if (!strcmp(name, e->name))
 			return e;
 	}
@@ -215,13 +214,12 @@ static struct tracepoint_entry *get_tracepoint(const char *name)
 static struct tracepoint_entry *add_tracepoint(const char *name)
 {
 	struct hlist_head *head;
-	struct hlist_node *node;
 	struct tracepoint_entry *e;
 	size_t name_len = strlen(name) + 1;
 	u32 hash = jhash(name, name_len-1, 0);
 
 	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
-	hlist_for_each_entry(e, node, head, hlist) {
+	hlist_for_each_entry(e, head, hlist) {
 		if (!strcmp(name, e->name)) {
 #ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE

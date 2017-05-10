@@ -308,6 +308,7 @@ struct pci_dev {
 	unsigned int	irq;
 	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
 
+	bool match_driver;		/* Skip attaching driver */
 	/* These fields are used by common fixups */
 	unsigned int	transparent:1;	/* Transparent PCI bridge */
 	unsigned int	multifunction:1;/* Part of multi-function device */
@@ -399,6 +400,8 @@ struct pci_host_bridge {
 void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
 		     void (*release_fn)(struct pci_host_bridge *),
 		     void *release_data);
+
+int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
 
 /*
  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
@@ -696,6 +699,7 @@ extern struct list_head pci_root_buses;	/* list of all known PCI buses */
 /* Some device drivers need know if pci is initiated */
 extern int no_pci_devices(void);
 
+void pcibios_resource_survey_bus(struct pci_bus *bus);
 void pcibios_fixup_bus(struct pci_bus *);
 int __must_check pcibios_enable_device(struct pci_dev *, int mask);
 /* Architecture specific versions may override this (weak) */
@@ -934,6 +938,7 @@ void pci_disable_rom(struct pci_dev *pdev);
 void __iomem __must_check *pci_map_rom(struct pci_dev *pdev, size_t *size);
 void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom);
 size_t pci_get_rom_size(struct pci_dev *pdev, void __iomem *rom, size_t size);
+void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
 
 /* Power management related routines */
 int pci_save_state(struct pci_dev *dev);
@@ -1722,12 +1727,21 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 }
 
 /**
+ * pcie_caps_reg - get the PCIe Capabilities Register
+ * @dev: PCI device
+ */
+static inline u16 pcie_caps_reg(const struct pci_dev *dev)
+{
+	return dev->pcie_flags_reg;
+}
+
+/**
  * pci_pcie_type - get the PCIe device/port type
  * @dev: PCI device
  */
 static inline int pci_pcie_type(const struct pci_dev *dev)
 {
-	return (dev->pcie_flags_reg & PCI_EXP_FLAGS_TYPE) >> 4;
+	return (pcie_caps_reg(dev) & PCI_EXP_FLAGS_TYPE) >> 4;
 }
 
 void pci_request_acs(void);

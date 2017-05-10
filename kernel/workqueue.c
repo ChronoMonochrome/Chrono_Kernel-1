@@ -251,8 +251,8 @@ EXPORT_SYMBOL_GPL(system_freezable_wq);
 	for ((pool) = &std_worker_pools(cpu)[0];			\
 	     (pool) < &std_worker_pools(cpu)[NR_STD_WORKER_POOLS]; (pool)++)
 
-#define for_each_busy_worker(worker, i, pos, pool)			\
-	hash_for_each(pool->busy_hash, i, pos, worker, hentry)
+#define for_each_busy_worker(worker, i, pool)				\
+	hash_for_each(pool->busy_hash, i, worker, hentry)
 
 static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
 				unsigned int sw)
@@ -457,11 +457,12 @@ static int worker_pool_assign_id(struct worker_pool *pool)
 	int ret;
 
 	mutex_lock(&worker_pool_idr_mutex);
-	idr_pre_get(&worker_pool_idr, GFP_KERNEL);
-	ret = idr_get_new(&worker_pool_idr, pool, &pool->id);
+	ret = idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
+	if (ret >= 0)
+		pool->id = ret;
 	mutex_unlock(&worker_pool_idr_mutex);
 
-	return ret;
+	return ret < 0 ? ret : 0;
 }
 
 /*
@@ -909,9 +910,8 @@ static struct worker *find_worker_executing_work(struct worker_pool *pool,
 						 struct work_struct *work)
 {
 	struct worker *worker;
-	struct hlist_node *tmp;
 
-	hash_for_each_possible(pool->busy_hash, worker, tmp, hentry,
+	hash_for_each_possible(pool->busy_hash, worker, hentry,
 			       (unsigned long)work)
 		if (worker->current_work == work &&
 		    worker->current_func == work->func)
@@ -1626,7 +1626,6 @@ static void busy_worker_rebind_fn(struct work_struct *work)
 static void rebind_workers(struct worker_pool *pool)
 {
 	struct worker *worker, *n;
-	struct hlist_node *pos;
 	int i;
 
 	lockdep_assert_held(&pool->assoc_mutex);
@@ -1648,7 +1647,7 @@ static void rebind_workers(struct worker_pool *pool)
 	}
 
 	/* rebind busy workers */
-	for_each_busy_worker(worker, i, pos, pool) {
+	for_each_busy_worker(worker, i, pool) {
 		struct work_struct *rebind_work = &worker->rebind_work;
 		struct workqueue_struct *wq;
 
@@ -3423,7 +3422,6 @@ static void wq_unbind_fn(struct work_struct *work)
 	int cpu = smp_processor_id();
 	struct worker_pool *pool;
 	struct worker *worker;
-	struct hlist_node *pos;
 	int i;
 
 	for_each_std_worker_pool(pool, cpu) {
@@ -3442,35 +3440,41 @@ static void wq_unbind_fn(struct work_struct *work)
 		list_for_each_entry(worker, &pool->idle_list, entry)
 			worker->flags |= WORKER_UNBOUND;
 
-		for_each_busy_worker(worker, i, pos, pool)
+		for_each_busy_worker(worker, i, pool)
 			worker->flags |= WORKER_UNBOUND;
 
 		pool->flags |= POOL_DISASSOCIATED;
 
 		spin_unlock_irq(&pool->lock);
 		mutex_unlock(&pool->assoc_mutex);
-	}
 
-	/*
-	 * Call schedule() so that we cross rq->lock and thus can guarantee
-	 * sched callbacks see the %WORKER_UNBOUND flag.  This is necessary
-	 * as scheduler callbacks may be invoked from other cpus.
-	 */
-	schedule();
+		/*
+		 * Call schedule() so that we cross rq->lock and thus can
+		 * guarantee sched callbacks see the %WORKER_UNBOUND flag.
+		 * This is necessary as scheduler callbacks may be invoked
+		 * from other cpus.
+		 */
+		schedule();
 
-	/*
-	 * Sched callbacks are disabled now.  Zap nr_running.  After this,
-	 * nr_running stays zero and need_more_worker() and keep_working()
-	 * are always true as long as the worklist is not empty.  Pools on
-	 * @cpu now behave as unbound (in terms of concurrency management)
-	 * pools which are served by workers tied to the CPU.
-	 *
-	 * On return from this function, the current worker would trigger
-	 * unbound chain execution of pending work items if other workers
-	 * didn't already.
-	 */
-	for_each_std_worker_pool(pool, cpu)
+		/*
+		 * Sched callbacks are disabled now.  Zap nr_running.
+		 * After this, nr_running stays zero and need_more_worker()
+		 * and keep_working() are always true as long as the
+		 * worklist is not empty.  This pool now behaves as an
+		 * unbound (in terms of concurrency management) pool which
+		 * are served by workers tied to the pool.
+		 */
 		atomic_set(&pool->nr_running, 0);
+
+		/*
+		 * With concurrency management just turned off, a busy
+		 * worker blocking could lead to lengthy stalls.  Kick off
+		 * unbound chain execution of currently pending work items.
+		 */
+		spin_lock_irq(&pool->lock);
+		wake_up_worker(pool);
+		spin_unlock_irq(&pool->lock);
+	}
 }
 
 /*

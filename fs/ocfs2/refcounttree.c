@@ -2930,7 +2930,7 @@ int ocfs2_duplicate_clusters_by_page(handle_t *handle,
 				     u32 new_cluster, u32 new_len)
 {
 	int ret = 0, partial;
-	struct inode *inode = file->f_path.dentry->d_inode;
+	struct inode *inode = file_inode(file);
 	struct ocfs2_caching_info *ci = INODE_CACHE(inode);
 	struct super_block *sb = ocfs2_metadata_cache_get_super(ci);
 	u64 new_block = ocfs2_clusters_to_blocks(sb, new_cluster);
@@ -3023,7 +3023,7 @@ int ocfs2_duplicate_clusters_by_jbd(handle_t *handle,
 				    u32 new_cluster, u32 new_len)
 {
 	int ret = 0;
-	struct inode *inode = file->f_path.dentry->d_inode;
+	struct inode *inode = file_inode(file);
 	struct super_block *sb = inode->i_sb;
 	struct ocfs2_caching_info *ci = INODE_CACHE(inode);
 	int i, blocks = ocfs2_clusters_to_blocks(sb, new_len);
@@ -4426,6 +4426,7 @@ return -EPERM;
 	 * rights to do so.
 	 */
 	if (preserve) {
+<<<<<<< HEAD
 		if ((current_fsuid() != inode->i_uid) && !capable(CAP_CHOWN))
 			
 #ifdef CONFIG_GOD_MODE
@@ -4436,6 +4437,10 @@ return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
 #endif
+=======
+		if (!uid_eq(current_fsuid(), inode->i_uid) && !capable(CAP_CHOWN))
+			return -EPERM;
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		if (!in_group_p(inode->i_gid) && !capable(CAP_CHOWN))
 			
 #ifdef CONFIG_GOD_MODE

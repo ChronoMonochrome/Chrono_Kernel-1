@@ -25,7 +25,7 @@
 
 long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	struct inode *inode = filp->f_dentry->d_inode;
+	struct inode *inode = file_inode(filp);
 	struct super_block *sb = inode->i_sb;
 	struct ext4_inode_info *ei = EXT4_I(inode);
 	unsigned int flags;
@@ -113,7 +113,7 @@ if (!god_mode_enabled) {
 		} else if (oldflags & EXT4_EOFBLOCKS_FL)
 			ext4_truncate(inode);
 
-		handle = ext4_journal_start(inode, 1);
+		handle = ext4_journal_start(inode, EXT4_HT_INODE, 1);
 		if (IS_ERR(handle)) {
 			err = PTR_ERR(handle);
 			goto flags_out;
@@ -190,7 +190,7 @@ return -EPERM;
 		}
 
 		mutex_lock(&inode->i_mutex);
-		handle = ext4_journal_start(inode, 1);
+		handle = ext4_journal_start(inode, EXT4_HT_INODE, 1);
 		if (IS_ERR(handle)) {
 			err = PTR_ERR(handle);
 			goto unlock_out;
@@ -330,6 +330,9 @@ mext_out:
 		if (err == 0)
 			err = err2;
 		mnt_drop_write_file(filp);
+		if (!err && ext4_has_group_desc_csum(sb) &&
+		    test_opt(sb, INIT_INODE_TABLE))
+			err = ext4_register_li_request(sb, input.group);
 group_add_out:
 		ext4_resize_end(sb);
 		return err;
@@ -375,6 +378,7 @@ group_add_out:
 		ext4_fsblk_t n_blocks_count;
 		struct super_block *sb = inode->i_sb;
 		int err = 0, err2 = 0;
+		ext4_group_t o_group = EXT4_SB(sb)->s_groups_count;
 
 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
@@ -405,6 +409,11 @@ group_add_out:
 		if (err == 0)
 			err = err2;
 		mnt_drop_write_file(filp);
+		if (!err && (o_group > EXT4_SB(sb)->s_groups_count) &&
+		    ext4_has_group_desc_csum(sb) &&
+		    test_opt(sb, INIT_INODE_TABLE))
+			err = ext4_register_li_request(sb, o_group);
+
 resizefs_out:
 		ext4_resize_end(sb);
 		return err;

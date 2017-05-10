@@ -658,11 +658,10 @@ __setup("netdev=", netdev_boot_setup);
 
 struct net_device *__dev_get_by_name(struct net *net, const char *name)
 {
-	struct hlist_node *p;
 	struct net_device *dev;
 	struct hlist_head *head = dev_name_hash(net, name);
 
-	hlist_for_each_entry(dev, p, head, name_hlist)
+	hlist_for_each_entry(dev, head, name_hlist)
 		if (!strncmp(dev->name, name, IFNAMSIZ))
 			return dev;
 
@@ -684,11 +683,10 @@ EXPORT_SYMBOL(__dev_get_by_name);
 
 struct net_device *dev_get_by_name_rcu(struct net *net, const char *name)
 {
-	struct hlist_node *p;
 	struct net_device *dev;
 	struct hlist_head *head = dev_name_hash(net, name);
 
-	hlist_for_each_entry_rcu(dev, p, head, name_hlist)
+	hlist_for_each_entry_rcu(dev, head, name_hlist)
 		if (!strncmp(dev->name, name, IFNAMSIZ))
 			return dev;
 
@@ -735,11 +733,10 @@ EXPORT_SYMBOL(dev_get_by_name);
 
 struct net_device *__dev_get_by_index(struct net *net, int ifindex)
 {
-	struct hlist_node *p;
 	struct net_device *dev;
 	struct hlist_head *head = dev_index_hash(net, ifindex);
 
-	hlist_for_each_entry(dev, p, head, index_hlist)
+	hlist_for_each_entry(dev, head, index_hlist)
 		if (dev->ifindex == ifindex)
 			return dev;
 
@@ -760,11 +757,10 @@ EXPORT_SYMBOL(__dev_get_by_index);
 
 struct net_device *dev_get_by_index_rcu(struct net *net, int ifindex)
 {
-	struct hlist_node *p;
 	struct net_device *dev;
 	struct hlist_head *head = dev_index_hash(net, ifindex);
 
-	hlist_for_each_entry_rcu(dev, p, head, index_hlist)
+	hlist_for_each_entry_rcu(dev, head, index_hlist)
 		if (dev->ifindex == ifindex)
 			return dev;
 
@@ -1549,7 +1545,6 @@ void net_enable_timestamp(void)
 		return;
 	}
 #endif
-	WARN_ON(in_interrupt());
 	static_key_slow_inc(&netstamp_needed);
 }
 EXPORT_SYMBOL(net_enable_timestamp);
@@ -1629,7 +1624,6 @@ int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
 	}
 
 	skb_orphan(skb);
-	nf_reset(skb);
 
 	if (unlikely(!is_skb_forwardable(dev, skb))) {
 		atomic_long_inc(&dev->rx_dropped);
@@ -1645,6 +1639,7 @@ int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
 	skb->mark = 0;
 	secpath_reset(skb);
 	nf_reset(skb);
+	nf_reset_trace(skb);
 	return netif_rx(skb);
 }
 EXPORT_SYMBOL_GPL(dev_forward_skb);
@@ -1882,8 +1877,10 @@ int netif_set_xps_queue(struct net_device *dev, struct cpumask *mask, u16 index)
 
 		if (!new_dev_maps)
 			new_dev_maps = kzalloc(maps_sz, GFP_KERNEL);
-		if (!new_dev_maps)
+		if (!new_dev_maps) {
+			mutex_unlock(&xps_map_mutex);
 			return -ENOMEM;
+		}
 
 		map = dev_maps ? xmap_dereference(dev_maps->cpu_map[cpu]) :
 				 NULL;
@@ -2151,6 +2148,9 @@ static void skb_warn_bad_offload(const struct sk_buff *skb)
 	struct net_device *dev = skb->dev;
 	const char *driver = "";
 
+	if (!net_ratelimit())
+		return;
+
 	if (dev && dev->dev.parent)
 		driver = dev_driver_string(dev->dev.parent);
 
@@ -2221,9 +2221,9 @@ struct sk_buff *skb_mac_gso_segment(struct sk_buff *skb,
 	struct sk_buff *segs = ERR_PTR(-EPROTONOSUPPORT);
 	struct packet_offload *ptype;
 	__be16 type = skb->protocol;
+	int vlan_depth = ETH_HLEN;
 
 	while (type == htons(ETH_P_8021Q)) {
-		int vlan_depth = ETH_HLEN;
 		struct vlan_hdr *vh;
 
 		if (unlikely(!pskb_may_pull(skb, vlan_depth + VLAN_HLEN)))
@@ -3317,6 +3317,7 @@ int netdev_rx_handler_register(struct net_device *dev,
 	if (dev->rx_handler)
 		return -EBUSY;
 
+	/* Note: rx_handler_data must be set before rx_handler */
 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
 	rcu_assign_pointer(dev->rx_handler, rx_handler);
 
@@ -3337,6 +3338,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
 
 	ASSERT_RTNL();
 	RCU_INIT_POINTER(dev->rx_handler, NULL);
+	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
+	 * section has a guarantee to see a non NULL rx_handler_data
+	 * as well.
+	 */
+	synchronize_net();
 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
 }
 EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
@@ -3446,6 +3452,7 @@ ncls:
 		}
 		switch (rx_handler(&skb)) {
 		case RX_HANDLER_CONSUMED:
+			ret = NET_RX_SUCCESS;
 			goto unlock;
 		case RX_HANDLER_ANOTHER:
 			goto another_round;
@@ -4105,7 +4112,7 @@ static void net_rx_action(struct softirq_action *h)
 		 * Allow this to run for 2 jiffies since which will allow
 		 * an average latency of 1.5/HZ.
 		 */
-		if (unlikely(budget <= 0 || time_after(jiffies, time_limit)))
+		if (unlikely(budget <= 0 || time_after_eq(jiffies, time_limit)))
 			goto softnet_break;
 
 		local_irq_enable();
@@ -4782,7 +4789,7 @@ EXPORT_SYMBOL(dev_set_mac_address);
 /**
  *	dev_change_carrier - Change device carrier
  *	@dev: device
- *	@new_carries: new value
+ *	@new_carrier: new value
  *
  *	Change device carrier
  */

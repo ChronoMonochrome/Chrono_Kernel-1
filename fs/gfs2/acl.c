@@ -240,6 +240,7 @@ static int gfs2_xattr_system_set(struct dentry *dentry, const char *name,
 		return -EINVAL;
 	if (type == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
 		return value ? -EACCES : 0;
+<<<<<<< HEAD
 	if ((current_fsuid() != inode->i_uid) && !capable(CAP_FOWNER))
 		
 #ifdef CONFIG_GOD_MODE
@@ -250,6 +251,10 @@ return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
 #endif
+=======
+	if (!uid_eq(current_fsuid(), inode->i_uid) && !capable(CAP_FOWNER))
+		return -EPERM;
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	if (S_ISLNK(inode->i_mode))
 		return -EOPNOTSUPP;
 

@@ -2243,6 +2243,18 @@ bool hid_ignore(struct hid_device *hdev)
 		     hdev->product <= USB_DEVICE_ID_VELLEMAN_K8061_LAST))
 			return true;
 		break;
+	case USB_VENDOR_ID_ATMEL_V_USB:
+		/* Masterkit MA901 usb radio based on Atmel tiny85 chip and
+		 * it has the same USB ID as many Atmel V-USB devices. This
+		 * usb radio is handled by radio-ma901.c driver so we want
+		 * ignore the hid. Check the name, bus, product and ignore
+		 * if we have MA901 usb radio.
+		 */
+		if (hdev->product == USB_DEVICE_ID_ATMEL_V_USB &&
+			hdev->bus == BUS_USB &&
+			strncmp(hdev->name, "www.masterkit.ru MA901", 22) == 0)
+			return true;
+		break;
 	}
 
 	if (hdev->type == HID_TYPE_USBMOUSE &&

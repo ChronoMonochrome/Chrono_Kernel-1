@@ -79,7 +79,7 @@ static unsigned long past_skip;
 
 static struct pci_dev *fbd_dev;
 
-static spinlock_t i7300_idle_lock;
+static raw_spinlock_t i7300_idle_lock;
 static int i7300_idle_active;
 
 static u8 i7300_idle_thrtctl_saved;
@@ -481,7 +481,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
 		idle_begin_time = ktime_get();
 	}
 
-	spin_lock_irqsave(&i7300_idle_lock, flags);
+	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
 	if (val == IDLE_START) {
 
 		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
@@ -530,7 +530,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
 		}
 	}
 end:
-	spin_unlock_irqrestore(&i7300_idle_lock, flags);
+	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
 	return 0;
 }
 
@@ -572,7 +572,7 @@ struct debugfs_file_info {
 
 static int __init i7300_idle_init(void)
 {
-	spin_lock_init(&i7300_idle_lock);
+	raw_spin_lock_init(&i7300_idle_lock);
 	total_us = 0;
 
 	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))

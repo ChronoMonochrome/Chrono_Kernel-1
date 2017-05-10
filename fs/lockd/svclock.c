@@ -405,6 +405,7 @@ nlmsvc_lock(struct svc_rqst *rqstp, struct nlm_file *file,
 	int			error;
 	__be32			ret;
 
+<<<<<<< HEAD
 //	dprintk("lockd: nlmsvc_lock(%s/%ld, ty=%d, pi=%d, %Ld-%Ld, bl=%d)\n",
 //				file->f_file->f_path.dentry->d_inode->i_sb->s_id,
 //				file->f_file->f_path.dentry->d_inode->i_ino,
@@ -412,6 +413,15 @@ nlmsvc_lock(struct svc_rqst *rqstp, struct nlm_file *file,
 //				(long long)lock->fl.fl_start,
 //				(long long)lock->fl.fl_end,
 ;
+=======
+	dprintk("lockd: nlmsvc_lock(%s/%ld, ty=%d, pi=%d, %Ld-%Ld, bl=%d)\n",
+				file_inode(file->f_file)->i_sb->s_id,
+				file_inode(file->f_file)->i_ino,
+				lock->fl.fl_type, lock->fl.fl_pid,
+				(long long)lock->fl.fl_start,
+				(long long)lock->fl.fl_end,
+				wait);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	/* Lock file against concurrent access */
 	mutex_lock(&file->f_mutex);
@@ -512,12 +522,21 @@ nlmsvc_testlock(struct svc_rqst *rqstp, struct nlm_file *file,
 	int			error;
 	__be32			ret;
 
+<<<<<<< HEAD
 //	dprintk("lockd: nlmsvc_testlock(%s/%ld, ty=%d, %Ld-%Ld)\n",
 //				file->f_file->f_path.dentry->d_inode->i_sb->s_id,
 //				file->f_file->f_path.dentry->d_inode->i_ino,
 //				lock->fl.fl_type,
 //				(long long)lock->fl.fl_start,
 ;
+=======
+	dprintk("lockd: nlmsvc_testlock(%s/%ld, ty=%d, %Ld-%Ld)\n",
+				file_inode(file->f_file)->i_sb->s_id,
+				file_inode(file->f_file)->i_ino,
+				lock->fl.fl_type,
+				(long long)lock->fl.fl_start,
+				(long long)lock->fl.fl_end);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	/* Get existing block (in case client is busy-waiting) */
 	block = nlmsvc_lookup_block(file, lock);
@@ -605,12 +624,21 @@ nlmsvc_unlock(struct net *net, struct nlm_file *file, struct nlm_lock *lock)
 {
 	int	error;
 
+<<<<<<< HEAD
 //	dprintk("lockd: nlmsvc_unlock(%s/%ld, pi=%d, %Ld-%Ld)\n",
 //				file->f_file->f_path.dentry->d_inode->i_sb->s_id,
 //				file->f_file->f_path.dentry->d_inode->i_ino,
 //				lock->fl.fl_pid,
 //				(long long)lock->fl.fl_start,
 ;
+=======
+	dprintk("lockd: nlmsvc_unlock(%s/%ld, pi=%d, %Ld-%Ld)\n",
+				file_inode(file->f_file)->i_sb->s_id,
+				file_inode(file->f_file)->i_ino,
+				lock->fl.fl_pid,
+				(long long)lock->fl.fl_start,
+				(long long)lock->fl.fl_end);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	/* First, cancel any lock that might be there */
 	nlmsvc_cancel_blocked(net, file, lock);
@@ -634,12 +662,21 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
 	struct nlm_block	*block;
 	int status = 0;
 
+<<<<<<< HEAD
 //	dprintk("lockd: nlmsvc_cancel(%s/%ld, pi=%d, %Ld-%Ld)\n",
 //				file->f_file->f_path.dentry->d_inode->i_sb->s_id,
 //				file->f_file->f_path.dentry->d_inode->i_ino,
 //				lock->fl.fl_pid,
 //				(long long)lock->fl.fl_start,
 ;
+=======
+	dprintk("lockd: nlmsvc_cancel(%s/%ld, pi=%d, %Ld-%Ld)\n",
+				file_inode(file->f_file)->i_sb->s_id,
+				file_inode(file->f_file)->i_ino,
+				lock->fl.fl_pid,
+				(long long)lock->fl.fl_start,
+				(long long)lock->fl.fl_end);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	if (locks_in_grace(net))
 		return nlm_lck_denied_grace_period;

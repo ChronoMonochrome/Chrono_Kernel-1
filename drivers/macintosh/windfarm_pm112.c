@@ -741,7 +741,7 @@ static int __init wf_pm112_init(void)
 
 	/* Count the number of CPU cores */
 	nr_cores = 0;
-	for (cpu = NULL; (cpu = of_find_node_by_type(cpu, "cpu")) != NULL; )
+	for_each_node_by_type(cpu, "cpu")
 		++nr_cores;
 
 #ifdef CONFIG_DEBUG_PRINTK

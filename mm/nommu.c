@@ -144,10 +144,10 @@ unsigned int kobjsize(const void *objp)
 	return PAGE_SIZE << compound_order(page);
 }
 
-int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-		     unsigned long start, int nr_pages, unsigned int foll_flags,
-		     struct page **pages, struct vm_area_struct **vmas,
-		     int *retry)
+long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+		      unsigned long start, unsigned long nr_pages,
+		      unsigned int foll_flags, struct page **pages,
+		      struct vm_area_struct **vmas, int *nonblocking)
 {
 	struct vm_area_struct *vma;
 	unsigned long vm_flags;
@@ -194,9 +194,10 @@ finish_or_fault:
  *   slab page or a secondary page from a compound page
  * - don't permit access to VMAs that don't support it, such as I/O mappings
  */
-int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-	unsigned long start, int nr_pages, int write, int force,
-	struct page **pages, struct vm_area_struct **vmas)
+long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+		    unsigned long start, unsigned long nr_pages,
+		    int write, int force, struct page **pages,
+		    struct vm_area_struct **vmas)
 {
 	int flags = 0;
 
@@ -824,7 +825,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 	struct vm_area_struct *vma;
 
 	/* check the cache first */
-	vma = mm->mmap_cache;
+	vma = ACCESS_ONCE(mm->mmap_cache);
 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
 		return vma;
 
@@ -950,7 +951,7 @@ static int validate_mmap_request(struct file *file,
 		 */
 		mapping = file->f_mapping;
 		if (!mapping)
-			mapping = file->f_path.dentry->d_inode->i_mapping;
+			mapping = file_inode(file)->i_mapping;
 
 		capabilities = 0;
 		if (mapping && mapping->backing_dev_info)
@@ -959,7 +960,7 @@ static int validate_mmap_request(struct file *file,
 		if (!capabilities) {
 			/* no explicit capabilities set, so assume some
 			 * defaults */
-			switch (file->f_path.dentry->d_inode->i_mode & S_IFMT) {
+			switch (file_inode(file)->i_mode & S_IFMT) {
 			case S_IFREG:
 			case S_IFBLK:
 				capabilities = BDI_CAP_MAP_COPY;
@@ -994,11 +995,11 @@ static int validate_mmap_request(struct file *file,
 			    !(file->f_mode & FMODE_WRITE))
 				return -EACCES;
 
-			if (IS_APPEND(file->f_path.dentry->d_inode) &&
+			if (IS_APPEND(file_inode(file)) &&
 			    (file->f_mode & FMODE_WRITE))
 				return -EACCES;
 
-			if (locks_verify_locked(file->f_path.dentry->d_inode))
+			if (locks_verify_locked(file_inode(file)))
 				return -EAGAIN;
 
 			if (!(capabilities & BDI_CAP_MAP_DIRECT))
@@ -1266,7 +1267,8 @@ unsigned long do_mmap_pgoff(struct file *file,
 			    unsigned long len,
 			    unsigned long prot,
 			    unsigned long flags,
-			    unsigned long pgoff)
+			    unsigned long pgoff,
+			    unsigned long *populate)
 {
 	struct vm_area_struct *vma;
 	struct vm_region *region;
@@ -1275,6 +1277,8 @@ unsigned long do_mmap_pgoff(struct file *file,
 	int ret;
 
 	kenter(",%lx,%lx,%lx,%lx,%lx", addr, len, prot, flags, pgoff);
+
+	*populate = 0;
 
 	/* decide whether we should attempt the mapping, and if so what sort of
 	 * mapping */
@@ -1339,8 +1343,8 @@ unsigned long do_mmap_pgoff(struct file *file,
 				continue;
 
 			/* search for overlapping mappings on the same file */
-			if (pregion->vm_file->f_path.dentry->d_inode !=
-			    file->f_path.dentry->d_inode)
+			if (file_inode(pregion->vm_file) !=
+			    file_inode(file))
 				continue;
 
 			if (pregion->vm_pgoff >= pgend)
@@ -1847,9 +1851,11 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
 	return ret;
 }
 
-struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
-			unsigned int foll_flags)
+struct page *follow_page_mask(struct vm_area_struct *vma,
+			      unsigned long address, unsigned int flags,
+			      unsigned int *page_mask)
 {
+	*page_mask = 0;
 	return NULL;
 }
 
@@ -1863,6 +1869,16 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
 	return 0;
 }
 EXPORT_SYMBOL(remap_pfn_range);
+
+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
+{
+	unsigned long pfn = start >> PAGE_SHIFT;
+	unsigned long vm_len = vma->vm_end - vma->vm_start;
+
+	pfn += vma->vm_pgoff;
+	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
+}
+EXPORT_SYMBOL(vm_iomap_memory);
 
 int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
 			unsigned long pgoff)
@@ -1936,7 +1952,7 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
 		 */
 		free -= global_page_state(NR_SHMEM);
 
-		free += nr_swap_pages;
+		free += get_nr_swap_pages();
 
 		/*
 		 * Any slabs which are created with the

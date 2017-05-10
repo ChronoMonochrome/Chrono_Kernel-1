@@ -908,8 +908,8 @@ static int elf_fdpic_map_file(struct elf_fdpic_params *params,
 	return 0;
 
 dynamic_error:
-//	printk("ELF FDPIC %s with invalid DYNAMIC section (inode=%lu)\n",
-;
+	printk("ELF FDPIC %s with invalid DYNAMIC section (inode=%lu)\n",
+	       what, file_inode(file)->i_ino);
 	return -ELIBBAD;
 }
 
@@ -1219,7 +1219,7 @@ static int maydump(struct vm_area_struct *vma, unsigned long mm_flags)
 
 	/* By default, dump shared memory if mapped from an anonymous file. */
 	if (vma->vm_flags & VM_SHARED) {
-		if (vma->vm_file->f_path.dentry->d_inode->i_nlink == 0) {
+		if (file_inode(vma->vm_file)->i_nlink == 0) {
 			dump_ok = test_bit(MMF_DUMP_ANON_SHARED, &mm_flags);
 			kdcore("%08lx: %08lx: %s (share)", vma->vm_start,
 			       vma->vm_flags, dump_ok ? "yes" : "no");

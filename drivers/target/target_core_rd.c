@@ -4,10 +4,7 @@
  * This file contains the Storage Engine <-> Ramdisk transport
  * specific functions.
  *
- * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
- * Copyright (c) 2005, 2006, 2007 SBE, Inc.
- * Copyright (c) 2007-2010 Rising Tide Systems
- * Copyright (c) 2008-2010 Linux-iSCSI.org
+ * (c) Copyright 2003-2012 RisingTide Systems LLC.
  *
  * Nicholas A. Bellinger <nab@kernel.org>
  *
@@ -27,7 +24,6 @@
  *
  ******************************************************************************/
 
-#include <linux/version.h>
 #include <linux/string.h>
 #include <linux/parser.h>
 #include <linux/timer.h>
@@ -38,17 +34,14 @@
 #include <scsi/scsi_host.h>
 
 #include <target/target_core_base.h>
-#include <target/target_core_device.h>
-#include <target/target_core_transport.h>
-#include <target/target_core_fabric_ops.h>
+#include <target/target_core_backend.h>
 
 #include "target_core_rd.h"
 
-static struct se_subsystem_api rd_dr_template;
-static struct se_subsystem_api rd_mcp_template;
-
-/* #define DEBUG_RAMDISK_MCP */
-/* #define DEBUG_RAMDISK_DR */
+static inline struct rd_dev *RD_DEV(struct se_device *dev)
+{
+	return container_of(dev, struct rd_dev, dev);
+}
 
 /*	rd_attach_hba(): (Part of se_subsystem_api_t template)
  *
@@ -59,17 +52,16 @@ static int rd_attach_hba(struct se_hba *hba, u32 host_id)
 	struct rd_host *rd_host;
 
 	rd_host = kzalloc(sizeof(struct rd_host), GFP_KERNEL);
-	if (!(rd_host)) {
-		printk(KERN_ERR "Unable to allocate memory for struct rd_host\n");
+	if (!rd_host) {
+		pr_err("Unable to allocate memory for struct rd_host\n");
 		return -ENOMEM;
 	}
 
 	rd_host->rd_host_id = host_id;
 
-	atomic_set(&hba->left_queue_depth, RD_HBA_QUEUE_DEPTH);
-	atomic_set(&hba->max_queue_depth, RD_HBA_QUEUE_DEPTH);
-	hba->hba_ptr = (void *) rd_host;
+	hba->hba_ptr = rd_host;
 
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - TCM Ramdisk HBA Driver %s on"
 		" Generic Target Core Stack %s\n", hba->hba_id,
@@ -85,6 +77,11 @@ static int rd_attach_hba(struct se_hba *hba, u32 host_id)
 #else
 	;
 #endif
+=======
+	pr_debug("CORE_HBA[%d] - TCM Ramdisk HBA Driver %s on"
+		" Generic Target Core Stack %s\n", hba->hba_id,
+		RD_HBA_VERSION, TARGET_CORE_MOD_VERSION);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return 0;
 }
@@ -93,8 +90,12 @@ static void rd_detach_hba(struct se_hba *hba)
 {
 	struct rd_host *rd_host = hba->hba_ptr;
 
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_HBA[%d] - Detached Ramdisk HBA: %u from"
+=======
+	pr_debug("CORE_HBA[%d] - Detached Ramdisk HBA: %u from"
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" Generic Target Core\n", hba->hba_id, rd_host->rd_host_id);
 #else
 	;
@@ -126,7 +127,7 @@ static void rd_release_device_space(struct rd_dev *rd_dev)
 
 		for (j = 0; j < sg_per_table; j++) {
 			pg = sg_page(&sg[j]);
-			if ((pg)) {
+			if (pg) {
 				__free_page(pg);
 				page_count++;
 			}
@@ -135,8 +136,12 @@ static void rd_release_device_space(struct rd_dev *rd_dev)
 		kfree(sg);
 	}
 
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_RD[%u] - Released device space for Ramdisk"
+=======
+	pr_debug("CORE_RD[%u] - Released device space for Ramdisk"
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" Device ID: %u, pages %u in %u tables total bytes %lu\n",
 		rd_dev->rd_host->rd_host_id, rd_dev->rd_dev_id, page_count,
 		rd_dev->sg_table_count, (unsigned long)page_count * PAGE_SIZE);
@@ -164,7 +169,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 	struct scatterlist *sg;
 
 	if (rd_dev->rd_page_count <= 0) {
-		printk(KERN_ERR "Illegal page count: %u for Ramdisk device\n",
+		pr_err("Illegal page count: %u for Ramdisk device\n",
 			rd_dev->rd_page_count);
 		return -EINVAL;
 	}
@@ -173,8 +178,8 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 	sg_tables = (total_sg_needed / max_sg_per_table) + 1;
 
 	sg_table = kzalloc(sg_tables * sizeof(struct rd_dev_sg_table), GFP_KERNEL);
-	if (!(sg_table)) {
-		printk(KERN_ERR "Unable to allocate memory for Ramdisk"
+	if (!sg_table) {
+		pr_err("Unable to allocate memory for Ramdisk"
 			" scatterlist tables\n");
 		return -ENOMEM;
 	}
@@ -188,13 +193,13 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 
 		sg = kzalloc(sg_per_table * sizeof(struct scatterlist),
 				GFP_KERNEL);
-		if (!(sg)) {
-			printk(KERN_ERR "Unable to allocate scatterlist array"
+		if (!sg) {
+			pr_err("Unable to allocate scatterlist array"
 				" for struct rd_dev\n");
 			return -ENOMEM;
 		}
 
-		sg_init_table((struct scatterlist *)&sg[0], sg_per_table);
+		sg_init_table(sg, sg_per_table);
 
 		sg_table[i].sg_table = sg;
 		sg_table[i].rd_sg_count = sg_per_table;
@@ -204,8 +209,8 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 
 		for (j = 0; j < sg_per_table; j++) {
 			pg = alloc_pages(GFP_KERNEL, 0);
-			if (!(pg)) {
-				printk(KERN_ERR "Unable to allocate scatterlist"
+			if (!pg) {
+				pr_err("Unable to allocate scatterlist"
 					" pages for struct rd_dev_sg_table\n");
 				return -ENOMEM;
 			}
@@ -217,8 +222,12 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 		total_sg_needed -= sg_per_table;
 	}
 
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_RD[%u] - Built Ramdisk Device ID: %u space of"
+=======
+	pr_debug("CORE_RD[%u] - Built Ramdisk Device ID: %u space of"
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" %u pages in %u tables\n", rd_dev->rd_host->rd_host_id,
 		rd_dev->rd_dev_id, rd_dev->rd_page_count,
 		rd_dev->sg_table_count);
@@ -229,176 +238,102 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
 	return 0;
 }
 
-static void *rd_allocate_virtdevice(
-	struct se_hba *hba,
-	const char *name,
-	int rd_direct)
+static struct se_device *rd_alloc_device(struct se_hba *hba, const char *name)
 {
 	struct rd_dev *rd_dev;
 	struct rd_host *rd_host = hba->hba_ptr;
 
 	rd_dev = kzalloc(sizeof(struct rd_dev), GFP_KERNEL);
-	if (!(rd_dev)) {
-		printk(KERN_ERR "Unable to allocate memory for struct rd_dev\n");
+	if (!rd_dev) {
+		pr_err("Unable to allocate memory for struct rd_dev\n");
 		return NULL;
 	}
 
 	rd_dev->rd_host = rd_host;
-	rd_dev->rd_direct = rd_direct;
 
-	return rd_dev;
+	return &rd_dev->dev;
 }
 
-static void *rd_DIRECT_allocate_virtdevice(struct se_hba *hba, const char *name)
+static int rd_configure_device(struct se_device *dev)
 {
-	return rd_allocate_virtdevice(hba, name, 1);
-}
+	struct rd_dev *rd_dev = RD_DEV(dev);
+	struct rd_host *rd_host = dev->se_hba->hba_ptr;
+	int ret;
 
-static void *rd_MEMCPY_allocate_virtdevice(struct se_hba *hba, const char *name)
-{
-	return rd_allocate_virtdevice(hba, name, 0);
-}
-
-/*	rd_create_virtdevice():
- *
- *
- */
-static struct se_device *rd_create_virtdevice(
-	struct se_hba *hba,
-	struct se_subsystem_dev *se_dev,
-	void *p,
-	int rd_direct)
-{
-	struct se_device *dev;
-	struct se_dev_limits dev_limits;
-	struct rd_dev *rd_dev = p;
-	struct rd_host *rd_host = hba->hba_ptr;
-	int dev_flags = 0, ret;
-	char prod[16], rev[4];
-
-	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
+	if (!(rd_dev->rd_flags & RDF_HAS_PAGE_COUNT)) {
+		pr_debug("Missing rd_pages= parameter\n");
+		return -EINVAL;
+	}
 
 	ret = rd_build_device_space(rd_dev);
 	if (ret < 0)
 		goto fail;
 
-	snprintf(prod, 16, "RAMDISK-%s", (rd_dev->rd_direct) ? "DR" : "MCP");
-	snprintf(rev, 4, "%s", (rd_dev->rd_direct) ? RD_DR_VERSION :
-						RD_MCP_VERSION);
-
-	dev_limits.limits.logical_block_size = RD_BLOCKSIZE;
-	dev_limits.limits.max_hw_sectors = RD_MAX_SECTORS;
-	dev_limits.limits.max_sectors = RD_MAX_SECTORS;
-	dev_limits.hw_queue_depth = RD_MAX_DEVICE_QUEUE_DEPTH;
-	dev_limits.queue_depth = RD_DEVICE_QUEUE_DEPTH;
-
-	dev = transport_add_device_to_core_hba(hba,
-			(rd_dev->rd_direct) ? &rd_dr_template :
-			&rd_mcp_template, se_dev, dev_flags, (void *)rd_dev,
-			&dev_limits, prod, rev);
-	if (!(dev))
-		goto fail;
+	dev->dev_attrib.hw_block_size = RD_BLOCKSIZE;
+	dev->dev_attrib.hw_max_sectors = UINT_MAX;
+	dev->dev_attrib.hw_queue_depth = RD_MAX_DEVICE_QUEUE_DEPTH;
 
 	rd_dev->rd_dev_id = rd_host->rd_host_dev_id_count++;
-	rd_dev->rd_queue_depth = dev->queue_depth;
 
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CORE_RD[%u] - Added TCM %s Ramdisk Device ID: %u of"
+=======
+	pr_debug("CORE_RD[%u] - Added TCM MEMCPY Ramdisk Device ID: %u of"
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" %u pages in %u tables, %lu total bytes\n",
-		rd_host->rd_host_id, (!rd_dev->rd_direct) ? "MEMCPY" :
-		"DIRECT", rd_dev->rd_dev_id, rd_dev->rd_page_count,
+		rd_host->rd_host_id, rd_dev->rd_dev_id, rd_dev->rd_page_count,
 		rd_dev->sg_table_count,
 		(unsigned long)(rd_dev->rd_page_count * PAGE_SIZE));
 #else
 	;
 #endif
 
-	return dev;
+	return 0;
 
 fail:
 	rd_release_device_space(rd_dev);
-	return ERR_PTR(ret);
+	return ret;
 }
 
-static struct se_device *rd_DIRECT_create_virtdevice(
-	struct se_hba *hba,
-	struct se_subsystem_dev *se_dev,
-	void *p)
+static void rd_free_device(struct se_device *dev)
 {
-	return rd_create_virtdevice(hba, se_dev, p, 1);
-}
-
-static struct se_device *rd_MEMCPY_create_virtdevice(
-	struct se_hba *hba,
-	struct se_subsystem_dev *se_dev,
-	void *p)
-{
-	return rd_create_virtdevice(hba, se_dev, p, 0);
-}
-
-/*	rd_free_device(): (Part of se_subsystem_api_t template)
- *
- *
- */
-static void rd_free_device(void *p)
-{
-	struct rd_dev *rd_dev = p;
+	struct rd_dev *rd_dev = RD_DEV(dev);
 
 	rd_release_device_space(rd_dev);
 	kfree(rd_dev);
 }
 
-static inline struct rd_request *RD_REQ(struct se_task *task)
-{
-	return container_of(task, struct rd_request, rd_task);
-}
-
-static struct se_task *
-rd_alloc_task(struct se_cmd *cmd)
-{
-	struct rd_request *rd_req;
-
-	rd_req = kzalloc(sizeof(struct rd_request), GFP_KERNEL);
-	if (!rd_req) {
-		printk(KERN_ERR "Unable to allocate struct rd_request\n");
-		return NULL;
-	}
-	rd_req->rd_dev = SE_DEV(cmd)->dev_ptr;
-
-	return &rd_req->rd_task;
-}
-
-/*	rd_get_sg_table():
- *
- *
- */
 static struct rd_dev_sg_table *rd_get_sg_table(struct rd_dev *rd_dev, u32 page)
 {
-	u32 i;
 	struct rd_dev_sg_table *sg_table;
+	u32 i, sg_per_table = (RD_MAX_ALLOCATION_SIZE /
+				sizeof(struct scatterlist));
 
-	for (i = 0; i < rd_dev->sg_table_count; i++) {
+	i = page / sg_per_table;
+	if (i < rd_dev->sg_table_count) {
 		sg_table = &rd_dev->sg_table_array[i];
 		if ((sg_table->page_start_offset <= page) &&
 		    (sg_table->page_end_offset >= page))
 			return sg_table;
 	}
 
-	printk(KERN_ERR "Unable to locate struct rd_dev_sg_table for page: %u\n",
+	pr_err("Unable to locate struct rd_dev_sg_table for page: %u\n",
 			page);
 
 	return NULL;
 }
 
-/*	rd_MEMCPY_read():
- *
- *
- */
-static int rd_MEMCPY_read(struct rd_request *req)
+static sense_reason_t
+rd_execute_rw(struct se_cmd *cmd)
 {
-	struct se_task *task = &req->rd_task;
-	struct rd_dev *dev = req->rd_dev;
+	struct scatterlist *sgl = cmd->t_data_sg;
+	u32 sgl_nents = cmd->t_data_nents;
+	enum dma_data_direction data_direction = cmd->data_direction;
+	struct se_device *se_dev = cmd->se_dev;
+	struct rd_dev *dev = RD_DEV(se_dev);
 	struct rd_dev_sg_table *table;
+<<<<<<< HEAD
 	struct scatterlist *sg_d, *sg_s;
 	void *dst, *src;
 	u32 i = 0, j = 0, dst_offset = 0, src_offset = 0;
@@ -652,9 +587,64 @@ static int rd_MEMCPY_write(struct rd_request *req)
 			dst_offset = 0;
 			page_end = 1;
 		}
+=======
+	struct scatterlist *rd_sg;
+	struct sg_mapping_iter m;
+	u32 rd_offset;
+	u32 rd_size;
+	u32 rd_page;
+	u32 src_len;
+	u64 tmp;
 
-		memcpy(dst, src, length);
+	tmp = cmd->t_task_lba * se_dev->dev_attrib.block_size;
+	rd_offset = do_div(tmp, PAGE_SIZE);
+	rd_page = tmp;
+	rd_size = cmd->data_length;
 
+	table = rd_get_sg_table(dev, rd_page);
+	if (!table)
+		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+
+	rd_sg = &table->sg_table[rd_page - table->page_start_offset];
+
+	pr_debug("RD[%u]: %s LBA: %llu, Size: %u Page: %u, Offset: %u\n",
+			dev->rd_dev_id,
+			data_direction == DMA_FROM_DEVICE ? "Read" : "Write",
+			cmd->t_task_lba, rd_size, rd_page, rd_offset);
+
+	src_len = PAGE_SIZE - rd_offset;
+	sg_miter_start(&m, sgl, sgl_nents,
+			data_direction == DMA_FROM_DEVICE ?
+				SG_MITER_TO_SG : SG_MITER_FROM_SG);
+	while (rd_size) {
+		u32 len;
+		void *rd_addr;
+
+		sg_miter_next(&m);
+		if (!(u32)m.length) {
+			pr_debug("RD[%u]: invalid sgl %p len %zu\n",
+				 dev->rd_dev_id, m.addr, m.length);
+			sg_miter_stop(&m);
+			return TCM_INCORRECT_AMOUNT_OF_DATA;
+		}
+		len = min((u32)m.length, src_len);
+		if (len > rd_size) {
+			pr_debug("RD[%u]: size underrun page %d offset %d "
+				 "size %d\n", dev->rd_dev_id,
+				 rd_page, rd_offset, rd_size);
+			len = rd_size;
+		}
+		m.consumed = len;
+
+		rd_addr = sg_virt(rd_sg) + rd_offset;
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
+
+		if (data_direction == DMA_FROM_DEVICE)
+			memcpy(m.addr, rd_addr, len);
+		else
+			memcpy(rd_addr, m.addr, len);
+
+<<<<<<< HEAD
 #ifdef DEBUG_RAMDISK_MCP
 #ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "page: %u, remaining size: %u, length: %u,"
@@ -1005,48 +995,40 @@ static int rd_DIRECT_do_se_mem_map(
 		printk(KERN_ERR "DMA_TO_DEVICE not supported for"
 				" RAMDISK_DR with task_sg_chaining=1\n");
 		return -1;
+=======
+		rd_size -= len;
+		if (!rd_size)
+			continue;
+
+		src_len -= len;
+		if (src_len) {
+			rd_offset += len;
+			continue;
+		}
+
+		/* rd page completed, next one please */
+		rd_page++;
+		rd_offset = 0;
+		src_len = PAGE_SIZE;
+		if (rd_page <= table->page_end_offset) {
+			rd_sg++;
+			continue;
+		}
+
+		table = rd_get_sg_table(dev, rd_page);
+		if (!table) {
+			sg_miter_stop(&m);
+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+		}
+
+		/* since we increment, the first sg entry is correct */
+		rd_sg = table->sg_table;
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	}
-	/*
-	 * Special case for if task_sg_chaining is enabled, then
-	 * we setup struct se_task->task_sg[], as it will be used by
-	 * transport_do_task_sg_chain() for creating chainged SGLs
-	 * across multiple struct se_task->task_sg[].
-	 */
-	if (!(transport_calc_sg_num(task,
-			list_entry(T_TASK(cmd)->t_mem_list->next,
-				   struct se_mem, se_list),
-			task_offset)))
-		return -1;
+	sg_miter_stop(&m);
 
-	return transport_map_mem_to_sg(task, se_mem_list, task->task_sg,
-			list_entry(T_TASK(cmd)->t_mem_list->next,
-				   struct se_mem, se_list),
-			out_se_mem, se_mem_cnt, task_offset_in);
-}
-
-/*	rd_DIRECT_do_task(): (Part of se_subsystem_api_t template)
- *
- *
- */
-static int rd_DIRECT_do_task(struct se_task *task)
-{
-	/*
-	 * At this point the locally allocated RD tables have been mapped
-	 * to struct se_mem elements in rd_DIRECT_do_se_mem_map().
-	 */
-	task->task_scsi_status = GOOD;
-	transport_complete_task(task, 1);
-
-	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
-}
-
-/*	rd_free_task(): (Part of se_subsystem_api_t template)
- *
- *
- */
-static void rd_free_task(struct se_task *task)
-{
-	kfree(RD_REQ(task));
+	target_complete_cmd(cmd, SAM_STAT_GOOD);
+	return 0;
 }
 
 enum {
@@ -1058,13 +1040,10 @@ static match_table_t tokens = {
 	{Opt_err, NULL}
 };
 
-static ssize_t rd_set_configfs_dev_params(
-	struct se_hba *hba,
-	struct se_subsystem_dev *se_dev,
-	const char *page,
-	ssize_t count)
+static ssize_t rd_set_configfs_dev_params(struct se_device *dev,
+		const char *page, ssize_t count)
 {
-	struct rd_dev *rd_dev = se_dev->se_dev_su_ptr;
+	struct rd_dev *rd_dev = RD_DEV(dev);
 	char *orig, *ptr, *opts;
 	substring_t args[MAX_OPT_ARGS];
 	int ret = 0, arg, token;
@@ -1075,7 +1054,7 @@ static ssize_t rd_set_configfs_dev_params(
 
 	orig = opts;
 
-	while ((ptr = strsep(&opts, ",")) != NULL) {
+	while ((ptr = strsep(&opts, ",\n")) != NULL) {
 		if (!*ptr)
 			continue;
 
@@ -1084,8 +1063,12 @@ static ssize_t rd_set_configfs_dev_params(
 		case Opt_rd_pages:
 			match_int(args, &arg);
 			rd_dev->rd_page_count = arg;
+<<<<<<< HEAD
 #ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "RAMDISK: Referencing Page"
+=======
+			pr_debug("RAMDISK: Referencing Page"
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" Count: %u\n", rd_dev->rd_page_count);
 #else
 			;
@@ -1101,8 +1084,9 @@ static ssize_t rd_set_configfs_dev_params(
 	return (!ret) ? count : ret;
 }
 
-static ssize_t rd_check_configfs_dev_params(struct se_hba *hba, struct se_subsystem_dev *se_dev)
+static ssize_t rd_show_configfs_dev_params(struct se_device *dev, char *b)
 {
+<<<<<<< HEAD
 	struct rd_dev *rd_dev = se_dev->se_dev_su_ptr;
 
 	if (!(rd_dev->rd_flags & RDF_HAS_PAGE_COUNT)) {
@@ -1113,93 +1097,52 @@ static ssize_t rd_check_configfs_dev_params(struct se_hba *hba, struct se_subsys
 #endif
 		return -1;
 	}
+=======
+	struct rd_dev *rd_dev = RD_DEV(dev);
+>>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
-	return 0;
-}
-
-static ssize_t rd_show_configfs_dev_params(
-	struct se_hba *hba,
-	struct se_subsystem_dev *se_dev,
-	char *b)
-{
-	struct rd_dev *rd_dev = se_dev->se_dev_su_ptr;
-	ssize_t bl = sprintf(b, "TCM RamDisk ID: %u  RamDisk Makeup: %s\n",
-			rd_dev->rd_dev_id, (rd_dev->rd_direct) ?
-			"rd_direct" : "rd_mcp");
+	ssize_t bl = sprintf(b, "TCM RamDisk ID: %u  RamDisk Makeup: rd_mcp\n",
+			rd_dev->rd_dev_id);
 	bl += sprintf(b + bl, "        PAGES/PAGE_SIZE: %u*%lu"
 			"  SG_table_count: %u\n", rd_dev->rd_page_count,
 			PAGE_SIZE, rd_dev->sg_table_count);
 	return bl;
 }
 
-/*	rd_get_cdb(): (Part of se_subsystem_api_t template)
- *
- *
- */
-static unsigned char *rd_get_cdb(struct se_task *task)
-{
-	struct rd_request *req = RD_REQ(task);
-
-	return req->rd_scsi_cdb;
-}
-
-static u32 rd_get_device_rev(struct se_device *dev)
-{
-	return SCSI_SPC_2; /* Returns SPC-3 in Initiator Data */
-}
-
-static u32 rd_get_device_type(struct se_device *dev)
-{
-	return TYPE_DISK;
-}
-
 static sector_t rd_get_blocks(struct se_device *dev)
 {
-	struct rd_dev *rd_dev = dev->dev_ptr;
+	struct rd_dev *rd_dev = RD_DEV(dev);
+
 	unsigned long long blocks_long = ((rd_dev->rd_page_count * PAGE_SIZE) /
-			DEV_ATTRIB(dev)->block_size) - 1;
+			dev->dev_attrib.block_size) - 1;
 
 	return blocks_long;
 }
 
-static struct se_subsystem_api rd_dr_template = {
-	.name			= "rd_dr",
-	.transport_type		= TRANSPORT_PLUGIN_VHBA_VDEV,
-	.attach_hba		= rd_attach_hba,
-	.detach_hba		= rd_detach_hba,
-	.allocate_virtdevice	= rd_DIRECT_allocate_virtdevice,
-	.create_virtdevice	= rd_DIRECT_create_virtdevice,
-	.free_device		= rd_free_device,
-	.alloc_task		= rd_alloc_task,
-	.do_task		= rd_DIRECT_do_task,
-	.free_task		= rd_free_task,
-	.check_configfs_dev_params = rd_check_configfs_dev_params,
-	.set_configfs_dev_params = rd_set_configfs_dev_params,
-	.show_configfs_dev_params = rd_show_configfs_dev_params,
-	.get_cdb		= rd_get_cdb,
-	.get_device_rev		= rd_get_device_rev,
-	.get_device_type	= rd_get_device_type,
-	.get_blocks		= rd_get_blocks,
-	.do_se_mem_map		= rd_DIRECT_do_se_mem_map,
+static struct sbc_ops rd_sbc_ops = {
+	.execute_rw		= rd_execute_rw,
 };
+
+static sense_reason_t
+rd_parse_cdb(struct se_cmd *cmd)
+{
+	return sbc_parse_cdb(cmd, &rd_sbc_ops);
+}
 
 static struct se_subsystem_api rd_mcp_template = {
 	.name			= "rd_mcp",
+	.inquiry_prod		= "RAMDISK-MCP",
+	.inquiry_rev		= RD_MCP_VERSION,
 	.transport_type		= TRANSPORT_PLUGIN_VHBA_VDEV,
 	.attach_hba		= rd_attach_hba,
 	.detach_hba		= rd_detach_hba,
-	.allocate_virtdevice	= rd_MEMCPY_allocate_virtdevice,
-	.create_virtdevice	= rd_MEMCPY_create_virtdevice,
+	.alloc_device		= rd_alloc_device,
+	.configure_device	= rd_configure_device,
 	.free_device		= rd_free_device,
-	.alloc_task		= rd_alloc_task,
-	.do_task		= rd_MEMCPY_do_task,
-	.free_task		= rd_free_task,
-	.check_configfs_dev_params = rd_check_configfs_dev_params,
+	.parse_cdb		= rd_parse_cdb,
 	.set_configfs_dev_params = rd_set_configfs_dev_params,
 	.show_configfs_dev_params = rd_show_configfs_dev_params,
-	.get_cdb		= rd_get_cdb,
-	.get_device_rev		= rd_get_device_rev,
-	.get_device_type	= rd_get_device_type,
+	.get_device_type	= sbc_get_device_type,
 	.get_blocks		= rd_get_blocks,
 };
 
@@ -1207,13 +1150,8 @@ int __init rd_module_init(void)
 {
 	int ret;
 
-	ret = transport_subsystem_register(&rd_dr_template);
-	if (ret < 0)
-		return ret;
-
 	ret = transport_subsystem_register(&rd_mcp_template);
 	if (ret < 0) {
-		transport_subsystem_release(&rd_dr_template);
 		return ret;
 	}
 
@@ -1222,6 +1160,5 @@ int __init rd_module_init(void)
 
 void rd_module_exit(void)
 {
-	transport_subsystem_release(&rd_dr_template);
 	transport_subsystem_release(&rd_mcp_template);
 }
