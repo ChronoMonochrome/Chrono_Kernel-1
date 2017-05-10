@@ -15,7 +15,7 @@
 
 #include <plat/gpio-nomadik.h>
 
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <asm/processor.h>
 
 #include <mach/hardware.h>

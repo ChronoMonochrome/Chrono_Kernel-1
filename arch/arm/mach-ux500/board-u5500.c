@@ -24,7 +24,7 @@
 
 #include <video/av8100.h>
 
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
 

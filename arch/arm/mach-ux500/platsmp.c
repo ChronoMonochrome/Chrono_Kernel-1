@@ -18,7 +18,7 @@
 #include <linux/io.h>
 
 #include <asm/cacheflush.h>
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <asm/smp_plat.h>
 #include <asm/smp_scu.h>
 #include <mach/hardware.h>

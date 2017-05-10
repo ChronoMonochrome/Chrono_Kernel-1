@@ -7,6 +7,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/irqchip/arm-gic.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/stat.h>
@@ -20,7 +21,6 @@
 #include <asm/system_misc.h>
 #include <asm/cacheflush.h>
 #include <asm/hardware/cache-l2x0.h>
-#include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
 
 #include <mach/hardware.h>

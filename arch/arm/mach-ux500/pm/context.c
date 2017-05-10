@@ -26,7 +26,7 @@
 #include <mach/pm.h>
 #include <mach/context.h>
 
-#include <asm/hardware/gic.h>
+#include <linux/irqchip/arm-gic.h>
 #include <asm/smp_twd.h>
 
 #include "scu.h"
