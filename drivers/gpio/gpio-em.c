@@ -35,6 +35,7 @@
 struct em_gio_priv {
 	void __iomem *base0;
 	void __iomem *base1;
+	unsigned int irq_base;
 	spinlock_t sense_lock;
 	struct platform_device *pdev;
 	struct gpio_chip gpio_chip;
@@ -84,16 +85,22 @@ static inline void em_gio_write(struct em_gio_priv *p, int offs,
 		iowrite32(value, p->base1 + (offs - GIO_IDT0));
 }
 
+static inline struct em_gio_priv *irq_to_priv(struct irq_data *d)
+{
+	struct irq_chip *chip = irq_data_get_irq_chip(d);
+	return container_of(chip, struct em_gio_priv, irq_chip);
+}
+
 static void em_gio_irq_disable(struct irq_data *d)
 {
-	struct em_gio_priv *p = irq_data_get_irq_chip_data(d);
+	struct em_gio_priv *p = irq_to_priv(d);
 
 	em_gio_write(p, GIO_IDS, BIT(irqd_to_hwirq(d)));
 }
 
 static void em_gio_irq_enable(struct irq_data *d)
 {
-	struct em_gio_priv *p = irq_data_get_irq_chip_data(d);
+	struct em_gio_priv *p = irq_to_priv(d);
 
 	em_gio_write(p, GIO_IEN, BIT(irqd_to_hwirq(d)));
 }
@@ -111,7 +118,7 @@ static unsigned char em_gio_sense_table[IRQ_TYPE_SENSE_MASK + 1] = {
 static int em_gio_irq_set_type(struct irq_data *d, unsigned int type)
 {
 	unsigned char value = em_gio_sense_table[type & IRQ_TYPE_SENSE_MASK];
-	struct em_gio_priv *p = irq_data_get_irq_chip_data(d);
+	struct em_gio_priv *p = irq_to_priv(d);
 	unsigned int reg, offset, shift;
 	unsigned long flags;
 	unsigned long tmp;
@@ -213,7 +220,7 @@ static int em_gio_direction_output(struct gpio_chip *chip, unsigned offset,
 
 static int em_gio_to_irq(struct gpio_chip *chip, unsigned offset)
 {
-	return irq_create_mapping(gpio_to_priv(chip)->irq_domain, offset);
+	return irq_find_mapping(gpio_to_priv(chip)->irq_domain, offset);
 }
 
 static int em_gio_irq_domain_map(struct irq_domain *h, unsigned int virq,
@@ -233,7 +240,41 @@ static struct irq_domain_ops em_gio_irq_domain_ops = {
 	.map	= em_gio_irq_domain_map,
 };
 
-static int em_gio_probe(struct platform_device *pdev)
+static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
+{
+	struct platform_device *pdev = p->pdev;
+	struct gpio_em_config *pdata = pdev->dev.platform_data;
+
+	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
+				      pdata->number_of_pins, numa_node_id());
+	if (p->irq_base < 0) {
+		dev_err(&pdev->dev, "cannot get irq_desc\n");
+		return p->irq_base;
+	}
+	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
+		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
+
+	p->irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
+					      pdata->number_of_pins,
+					      p->irq_base, 0,
+					      &em_gio_irq_domain_ops, p);
+	if (!p->irq_domain) {
+		irq_free_descs(p->irq_base, pdata->number_of_pins);
+		return -ENXIO;
+	}
+
+	return 0;
+}
+
+static void em_gio_irq_domain_cleanup(struct em_gio_priv *p)
+{
+	struct gpio_em_config *pdata = p->pdev->dev.platform_data;
+
+	irq_free_descs(p->irq_base, pdata->number_of_pins);
+	/* FIXME: irq domain wants to be freed! */
+}
+
+static int __devinit em_gio_probe(struct platform_device *pdev)
 {
 	struct gpio_em_config *pdata = pdev->dev.platform_data;
 	struct em_gio_priv *p;
@@ -299,12 +340,8 @@ static int em_gio_probe(struct platform_device *pdev)
 	irq_chip->irq_set_type = em_gio_irq_set_type;
 	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
 
-	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
-					      pdata->number_of_pins,
-					      pdata->irq_base,
-					      &em_gio_irq_domain_ops, p);
-	if (!p->irq_domain) {
-		ret = -ENXIO;
+	ret = em_gio_irq_domain_init(p);
+	if (ret) {
 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
 		goto err3;
 	}
@@ -333,7 +370,7 @@ err6:
 err5:
 	free_irq(irq[0]->start, pdev);
 err4:
-	irq_domain_remove(p->irq_domain);
+	em_gio_irq_domain_cleanup(p);
 err3:
 	iounmap(p->base1);
 err2:
@@ -344,7 +381,7 @@ err0:
 	return ret;
 }
 
-static int em_gio_remove(struct platform_device *pdev)
+static int __devexit em_gio_remove(struct platform_device *pdev)
 {
 	struct em_gio_priv *p = platform_get_drvdata(pdev);
 	struct resource *irq[2];
@@ -359,7 +396,7 @@ static int em_gio_remove(struct platform_device *pdev)
 
 	free_irq(irq[1]->start, pdev);
 	free_irq(irq[0]->start, pdev);
-	irq_domain_remove(p->irq_domain);
+	em_gio_irq_domain_cleanup(p);
 	iounmap(p->base1);
 	iounmap(p->base0);
 	kfree(p);
@@ -368,7 +405,7 @@ static int em_gio_remove(struct platform_device *pdev)
 
 static struct platform_driver em_gio_device_driver = {
 	.probe		= em_gio_probe,
-	.remove		= em_gio_remove,
+	.remove		= __devexit_p(em_gio_remove),
 	.driver		= {
 		.name	= "em_gio",
 	}
