@@ -153,7 +153,6 @@ endif
 
 # Machine directory name.  This list is sorted alphanumerically
 # by CONFIG_* macro name.
-
 machine-$(CONFIG_ARCH_U8500)		:= ux500
 
 # Platform directory name.  This list is sorted alphanumerically
