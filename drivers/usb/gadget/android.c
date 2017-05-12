@@ -1529,11 +1529,6 @@ static void android_disconnect(struct usb_gadget *gadget)
 	unsigned long flags;
 
 	composite_disconnect(gadget);
-	/* accessory HID support can be active while the
-	   accessory function is not actually enabled,
-	   so we need to inform it when we are disconnected.
-	 */
-	acc_disconnect();
 
 	spin_lock_irqsave(&cdev->lock, flags);
 	dev->connected = 0;
@@ -1607,7 +1602,7 @@ static int __init init(void)
 
 	return usb_composite_probe(&android_usb_driver, android_bind);
 }
-late_initcall(init);
+module_init(init);
 
 static void __exit cleanup(void)
 {
