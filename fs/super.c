@@ -801,7 +801,10 @@ static void do_emergency_remount(struct work_struct *work)
 			/*
 			 * What lock protects sb->s_flags??
 			 */
-			do_remount_sb(sb, MS_RDONLY, NULL, 1);
+			if (strcmp(sb->s_id, "mmcblk0p1") != 0)
+				do_remount_sb(sb, MS_RDONLY, NULL, 1);
+			else
+				printk("Skipping read-only remount of mmcblk0p1\n");
 		}
 		up_write(&sb->s_umount);
 		spin_lock(&sb_lock);
