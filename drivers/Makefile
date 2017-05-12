@@ -166,11 +166,8 @@ obj-$(CONFIG_IIO)		+= iio/
 obj-$(CONFIG_VME_BUS)		+= vme/
 obj-$(CONFIG_IPACK_BUS)		+= ipack/
 obj-$(CONFIG_NTB)		+= ntb/
-<<<<<<< HEAD
+obj-$(CONFIG_ANDROID)		+= android/
 
 ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; fi))
 obj-y   += exfat/
 endif
-=======
-obj-$(CONFIG_ANDROID)		+= android/
->>>>>>> a8363b4... staging: android: binder: move to the "real" part of the kernel
