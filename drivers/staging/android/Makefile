@@ -11,3 +11,4 @@ obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+= lowmemorykiller.o
 obj-$(CONFIG_ANDROID_STE_TIMED_VIBRA)	+= ste_timed_vibra.o
 obj-$(CONFIG_ANDROID_INTF_ALARM_DEV)   += alarm-dev.o
 obj-$(CONFIG_ASHMEM)			+= ashmem.o
+obj-$(CONFIG_ANDROID_BINDER_IPC)        += binder.o
