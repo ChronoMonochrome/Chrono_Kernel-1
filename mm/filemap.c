@@ -776,6 +776,7 @@ out:
 
 	return page;
 }
+EXPORT_SYMBOL(find_get_page_flags);
 EXPORT_SYMBOL(find_get_page);
 
 /**
