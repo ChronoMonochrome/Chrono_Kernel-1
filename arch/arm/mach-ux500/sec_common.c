@@ -30,13 +30,14 @@
  */
 #include <linux/init.h>
 #include <linux/platform_device.h>
+#include <linux/fs.h>
+#include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/kallsyms.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/reboot.h>
-#include <linux/err.h>
 #include <linux/device.h>
 #include <mach/hardware.h>
 #include <mach/id.h>
@@ -387,7 +388,10 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 		printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
 			__func__, temp_mode);
 	}
-	
+
+	emergency_remount();
+	mdelay(100);
+
 	return NOTIFY_DONE;
 }				/* end fn __sec_common_reboot_call */
 
@@ -853,6 +857,8 @@ struct sec_reboot_mode {
 	char mode;
 };
 
+
+
 static __inline char __sec_common_convert_reboot_mode(char mode,
 						      const char *cmd)
 {
@@ -866,6 +872,7 @@ static __inline char __sec_common_convert_reboot_mode(char mode,
 		{"Checkin scheduled forced", 'c'} /* Note - c means REBOOTMODE_NORMAL */
 	};
 	size_t i, n;
+
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
 	if (mode == 'L' || mode == 'U' || mode == 'K') {
 		new_mode = mode;
