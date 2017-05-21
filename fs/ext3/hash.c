@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext3/hash.c
  *
@@ -12,9 +9,7 @@
  * License.
  */
 
-#include <linux/fs.h>
-#include <linux/jbd.h>
-#include <linux/ext3_fs.h>
+#include "ext3.h"
 #include <linux/cryptohash.h>
 
 #define DELTA 0x9E3779B9

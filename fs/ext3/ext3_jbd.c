@@ -1,11 +1,8 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Interface between ext3 and JBD
  */
 
-#include <linux/ext3_jbd.h>
+#include "ext3.h"
 
 int __ext3_journal_get_undo_access(const char *where, handle_t *handle,
 				struct buffer_head *bh)

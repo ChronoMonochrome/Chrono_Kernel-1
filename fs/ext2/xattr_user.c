@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext2/xattr_user.c
  * Handler for extended user attributes.
@@ -9,7 +6,6 @@
  */
 
 #include <linux/init.h>
-#include <linux/module.h>
 #include <linux/string.h>
 #include "ext2.h"
 #include "xattr.h"
