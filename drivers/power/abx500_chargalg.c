@@ -849,6 +849,10 @@ static void handle_maxim_chg_curr(struct abx500_chargalg *di)
 	}
 }
 
+unsigned int is_charger_present = false;
+EXPORT_SYMBOL(is_charger_present);
+module_param(is_charger_present, uint, 0644);
+
 static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 {
 	struct power_supply *psy;
@@ -918,6 +922,7 @@ static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 					di->chg_info.prev_conn_chg =
 						di->chg_info.conn_chg;
 					di->chg_info.conn_chg &= ~USB_CHG;
+                                        is_charger_present = false;
 				}
 				/* USB connected */
 				else if (ret.intval &&
@@ -925,6 +930,7 @@ static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 					di->chg_info.prev_conn_chg =
 						di->chg_info.conn_chg;
 					di->chg_info.conn_chg |= USB_CHG;
+                                        is_charger_present = true;
 				}
 				break;
 			default:
@@ -1801,7 +1807,7 @@ static int __devexit abx500_chargalg_remove(struct platform_device *pdev)
 
 static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
 {
-	struct abx500_bm_plat_data *plat_data;
+	struct ab8500_platform_data *plat;
 	int ret = 0;
 
 	struct abx500_chargalg *di =
@@ -1809,12 +1815,29 @@ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
 	if (!di)
 		return -ENOMEM;
 
-	/* get device struct */
+	/* get parent data */
 	di->dev = &pdev->dev;
+	di->parent = dev_get_drvdata(pdev->dev.parent);
 
-	plat_data = pdev->dev.platform_data;
-	di->pdata = plat_data->chargalg;
-	di->bat = plat_data->battery;
+	plat = dev_get_platdata(di->parent->dev);
+
+	/* get chargalg specific platform data */
+	if (!plat->chargalg) {
+		dev_err(di->dev, "no chargalg platform data supplied\n");
+		ret = -EINVAL;
+		goto free_device_info;
+	}
+	di->pdata = plat->chargalg;
+
+	/* get battery specific platform data */
+	if (!plat->battery) {
+		dev_err(di->dev, "no battery platform data supplied\n");
+		ret = -EINVAL;
+		goto free_device_info;
+	}
+	di->bat = plat->battery;
+
+	//battery_type = di->bat->batt_id;
 
 	/* chargalg supply */
 	di->chargalg_psy.name = "abx500_chargalg";

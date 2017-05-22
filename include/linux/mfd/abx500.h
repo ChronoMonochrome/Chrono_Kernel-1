@@ -15,8 +15,9 @@
  * Author: Rickard Andersson <rickard.andersson@stericsson.com>
  */
 
-#include <linux/device.h>
 #include <linux/regulator/machine.h>
+
+struct device;
 
 #ifndef MFD_ABX500_H
 #define MFD_ABX500_H
@@ -299,6 +300,15 @@ struct abx500_fg;
  * @high_curr_threshold:	High current threshold, in mA
  * @lowbat_threshold:		Low battery threshold, in mV
  * @overbat_threshold:		Over battery threshold, in mV
+ * @battok_falling_th_sel0	Threshold in mV for battOk signal sel0
+ *				Resolution in 50 mV step.
+ * @battok_raising_th_sel1	Threshold in mV for battOk signal sel1
+ *				Resolution in 50 mV step.
+ * @user_cap_limit		Capacity reported from user must be within this
+ *				limit to be considered as sane, in percentage
+ *				points.
+ * @maint_thres			This is the threshold where we stop reporting
+ *				battery full while in maintenance, in per cent
  */
 struct abx500_fg_parameters {
 	int recovery_sleep_timer;
@@ -312,6 +322,10 @@ struct abx500_fg_parameters {
 	int high_curr_threshold;
 	int lowbat_threshold;
 	int overbat_threshold;
+	int battok_falling_th_sel0;
+	int battok_raising_th_sel1;
+	int user_cap_limit;
+	int maint_thres;
 };
 
 /**
@@ -355,6 +369,8 @@ struct abx500_maxim_parameters {
  * @r_to_t_tbl:			table containing resistance to temp points
  * @n_v_cap_tbl_elements:	number of elements in v_to_cap_tbl
  * @v_to_cap_tbl:		Voltage to capacity (in %) table
+ * @n_batres_tbl_elements	number of elements in the batres_tbl
+ * @batres_tbl			battery internal resistance vs temperature table
  */
 struct abx500_battery_type {
 	int name;
@@ -380,6 +396,8 @@ struct abx500_battery_type {
 	struct abx500_res_to_temp *r_to_t_tbl;
 	int n_v_cap_tbl_elements;
 	struct abx500_v_to_cap *v_to_cap_tbl;
+	int n_batres_tbl_elements;
+	struct batres_vs_temp *batres_tbl;
 };
 
 /**
@@ -418,6 +436,9 @@ struct abx500_bm_charger_parameters {
  * @temp_low		between this temp and temp_under charging is reduced
  * @temp_high		between this temp and temp_over charging is reduced
  * @temp_over		over this temp, charging is stopped
+ * @temp_now		present battery temperature
+ * @temp_interval_chg	temperature measurement interval in s when charging
+ * @temp_interval_nochg	temperature measurement interval in s when not charging
  * @main_safety_tmr_h	safety timer for main charger
  * @usb_safety_tmr_h	safety timer for usb charger
  * @bkup_bat_v		voltage which we charge the backup battery with
@@ -433,6 +454,7 @@ struct abx500_bm_charger_parameters {
  * @interval_charging	charge alg cycle period time when charging (sec)
  * @interval_not_charging charge alg cycle period time when not charging (sec)
  * @temp_hysteresis	temperature hysteresis
+ * @gnd_lift_resistance	Battery ground to phone ground resistance (mOhm)
  * @maxi:		maximization parameters
  * @cap_levels		capacity in percent for the different capacity levels
  * @bat_type		table of supported battery types
@@ -445,6 +467,8 @@ struct abx500_bm_data {
 	int temp_high;
 	int temp_over;
 	int temp_now;
+	int temp_interval_chg;
+	int temp_interval_nochg;
 	int main_safety_tmr_h;
 	int usb_safety_tmr_h;
 	int bkup_bat_v;
@@ -460,6 +484,7 @@ struct abx500_bm_data {
 	int interval_charging;
 	int interval_not_charging;
 	int temp_hysteresis;
+	int gnd_lift_resistance;
 	const struct abx500_maxim_parameters *maxi;
 	const struct abx500_bm_capacity_levels *cap_levels;
 	const struct abx500_battery_type *bat_type;
@@ -475,6 +500,7 @@ struct abx500_chargalg_platform_data {
 struct abx500_charger_platform_data {
 	char **supplied_to;
 	size_t num_supplicants;
+	bool autopower_cfg;
 };
 
 struct abx500_btemp_platform_data {
