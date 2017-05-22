@@ -614,7 +614,7 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
 	case USB_STAT_STD_HOST_C_S:
 		pr_err("[ABB-Charger] USB Type - Standard host is "
 			"detected through USB driver\n");
-		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P09;
+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
 		break;
 	case USB_STAT_HOST_CHG_HS_CHIRP:
 		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
@@ -1016,16 +1016,18 @@ static int ab8500_charger_set_current(struct ab8500_charger *di,
 	int ret, i;
 	int curr_index, prev_curr_index, shift_value;
 	u8 reg_value;
-
 	switch (reg) {
 	case AB8500_MCH_IPT_CURLVL_REG:
 		shift_value = MAIN_CH_INPUT_CURR_SHIFT;
+		curr_index = ab8500_current_to_regval(ich);
 		break;
 	case AB8500_USBCH_IPT_CRNTLVL_REG:
 		shift_value = VBUS_IN_CURR_LIM_SHIFT;
+		curr_index = ab8500_vbus_in_curr_to_regval(ich);
 		break;
 	case AB8500_CH_OPT_CRNTLVL_REG:
 		shift_value = 0;
+		curr_index = ab8500_current_to_regval(ich);
 		break;
 	default:
 		pr_err("[ABB-Charger] %s current register not valid\n", __func__);
@@ -1033,11 +1035,8 @@ static int ab8500_charger_set_current(struct ab8500_charger *di,
 	}
 
 	/* cocafe: Skip the loweset current limit */
-	if(!bCurrentControl) {
-		curr_index = ab8500_current_to_regval(ich);
-	} else {
+	if (bCurrentControl)
 		curr_index = ab8500_current_to_regval(vChargeCurrent);
-	}
 
 	if (curr_index < 0) {
 		pr_err("[ABB-Charger] MAIN input current limit too high, %d\n",
