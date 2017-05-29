@@ -671,8 +671,13 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
 		break;
 	};
 
-	pr_err("[ABB-Charger]USB Type - 0x%02x MaxCurr: %d",
-		link_status, di->max_usb_in_curr);
+	if (!bCurrentControl) {
+		pr_err("[ABB-Charger]USB Type - 0x%02x MaxCurr: %d\n",
+			link_status, di->max_usb_in_curr);
+	} else {
+		pr_err("[ABB-Charger]USB Type - 0x%02x forcing MaxCurr: %d because ChargerControl is ON\n",
+			link_status, vChargeCurrent);
+	}
 
 	return ret;
 }
@@ -1226,6 +1231,9 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 			return -ENXIO;
 		}
 
+		if (bCurrentControl)
+			iset = vChargeCurrent;
+
 		/* Enable AC charging */
 		pr_err("[ABB-Charger]Enable AC: %dmV %dmA\n", vset, iset);
 
@@ -1248,8 +1256,13 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 		volt_index = ab8500_voltage_to_regval(vset);
 		curr_index = ab8500_current_to_regval(iset);
 
-		input_curr_index = ab8500_current_to_regval(
-			di->bat->chg_params->ac_curr_max);
+		if (!bCurrentControl)
+			input_curr_index = ab8500_current_to_regval(
+				di->bat->chg_params->ac_curr_max);
+		else
+			input_curr_index = ab8500_current_to_regval(
+				vChargeCurrent);
+
 		if (volt_index < 0 || curr_index < 0 || input_curr_index < 0) {
 			dev_err(di->dev,
 				"Charger voltage or current too high, "
@@ -1265,7 +1278,6 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 			return ret;
 		}
 
-
 		if (!bCurrentControl) {
 			/* MainChInputCurr: current that can be drawn from the charger*/
 			ret = ab8500_charger_set_main_in_curr(di,
@@ -1280,10 +1292,11 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 				__func__);
 			return ret;
 		}
+
 		/* ChOutputCurentLevel: protected output current */
 		ret = ab8500_charger_set_output_curr(di, iset);
 		if (ret) {
-			pr_err("[ABB-Charger] %s write failed\n", __func__);
+			pr_err("[ABB-Charger] %s write ab8500_charger_set_output_curr(di, iset) failed\n", __func__);
 			return ret;
 		}
 
