@@ -507,15 +507,6 @@ static struct attribute * g[] = {
 	&wake_lock_attr.attr,
 	&wake_unlock_attr.attr,
 #endif
-#ifdef CONFIG_USER_SCENELOCK
-	&scene_lock_attr.attr,
-	&scene_unlock_attr.attr,
-	&scene_state_attr.attr,
-	&wakeup_src_attr.attr,
-#if (defined CONFIG_AW_AXP)
-	&sys_pwr_dm_mask_attr.attr,
-#endif
-#endif
 #ifdef CONFIG_PM_DEBUG
 	&pm_test_attr.attr,
 #endif
