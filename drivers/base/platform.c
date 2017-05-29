@@ -696,25 +696,6 @@ static int platform_legacy_resume(struct device *dev)
 	return ret;
 }
 
-int platform_pm_prepare(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (drv && drv->pm && drv->pm->prepare)
-		ret = drv->pm->prepare(dev);
-
-	return ret;
-}
-
-void platform_pm_complete(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-
-	if (drv && drv->pm && drv->pm->complete)
-		drv->pm->complete(dev);
-}
-
 #endif /* CONFIG_PM_SLEEP */
 
 #ifdef CONFIG_SUSPEND
@@ -737,22 +718,6 @@ int platform_pm_suspend(struct device *dev)
 	return ret;
 }
 
-int platform_pm_suspend_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->suspend_noirq)
-			ret = drv->pm->suspend_noirq(dev);
-	}
-
-	return ret;
-}
-
 int platform_pm_resume(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
@@ -766,22 +731,6 @@ int platform_pm_resume(struct device *dev)
 			ret = drv->pm->resume(dev);
 	} else {
 		ret = platform_legacy_resume(dev);
-	}
-
-	return ret;
-}
-
-int platform_pm_resume_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->resume_noirq)
-			ret = drv->pm->resume_noirq(dev);
 	}
 
 	return ret;
@@ -809,22 +758,6 @@ int platform_pm_freeze(struct device *dev)
 	return ret;
 }
 
-int platform_pm_freeze_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->freeze_noirq)
-			ret = drv->pm->freeze_noirq(dev);
-	}
-
-	return ret;
-}
-
 int platform_pm_thaw(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
@@ -838,22 +771,6 @@ int platform_pm_thaw(struct device *dev)
 			ret = drv->pm->thaw(dev);
 	} else {
 		ret = platform_legacy_resume(dev);
-	}
-
-	return ret;
-}
-
-int platform_pm_thaw_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->thaw_noirq)
-			ret = drv->pm->thaw_noirq(dev);
 	}
 
 	return ret;
@@ -877,22 +794,6 @@ int platform_pm_poweroff(struct device *dev)
 	return ret;
 }
 
-int platform_pm_poweroff_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->poweroff_noirq)
-			ret = drv->pm->poweroff_noirq(dev);
-	}
-
-	return ret;
-}
-
 int platform_pm_restore(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
@@ -906,22 +807,6 @@ int platform_pm_restore(struct device *dev)
 			ret = drv->pm->restore(dev);
 	} else {
 		ret = platform_legacy_resume(dev);
-	}
-
-	return ret;
-}
-
-int platform_pm_restore_noirq(struct device *dev)
-{
-	struct device_driver *drv = dev->driver;
-	int ret = 0;
-
-	if (!drv)
-		return 0;
-
-	if (drv->pm) {
-		if (drv->pm->restore_noirq)
-			ret = drv->pm->restore_noirq(dev);
 	}
 
 	return ret;
