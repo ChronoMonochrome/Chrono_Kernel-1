@@ -4473,28 +4473,6 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
 	  .patch = patch_conexant_auto },
 	{ .id = 0x14f150b9, .name = "CX20665",
 	  .patch = patch_conexant_auto },
-	{ .id = 0x14f150f1, .name = "CX20721",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f150f2, .name = "CX20722",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f150f3, .name = "CX20723",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f150f4, .name = "CX20724",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f1510f, .name = "CX20751/2",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f15110, .name = "CX20751/2",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f15111, .name = "CX20753/4",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f15113, .name = "CX20755",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f15114, .name = "CX20756",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f15115, .name = "CX20757",
-	  .patch = patch_conexant_auto },
-	{ .id = 0x14f151d7, .name = "CX20952",
-	  .patch = patch_conexant_auto },
 	{} /* terminator */
 };
 
@@ -4515,17 +4493,6 @@ MODULE_ALIAS("snd-hda-codec-id:14f150ab");
 MODULE_ALIAS("snd-hda-codec-id:14f150ac");
 MODULE_ALIAS("snd-hda-codec-id:14f150b8");
 MODULE_ALIAS("snd-hda-codec-id:14f150b9");
-MODULE_ALIAS("snd-hda-codec-id:14f150f1");
-MODULE_ALIAS("snd-hda-codec-id:14f150f2");
-MODULE_ALIAS("snd-hda-codec-id:14f150f3");
-MODULE_ALIAS("snd-hda-codec-id:14f150f4");
-MODULE_ALIAS("snd-hda-codec-id:14f1510f");
-MODULE_ALIAS("snd-hda-codec-id:14f15110");
-MODULE_ALIAS("snd-hda-codec-id:14f15111");
-MODULE_ALIAS("snd-hda-codec-id:14f15113");
-MODULE_ALIAS("snd-hda-codec-id:14f15114");
-MODULE_ALIAS("snd-hda-codec-id:14f15115");
-MODULE_ALIAS("snd-hda-codec-id:14f151d7");
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Conexant HD-audio codec");
