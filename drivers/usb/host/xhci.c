@@ -136,8 +136,7 @@ static int xhci_start(struct xhci_hcd *xhci)
 				"waited %u microseconds.\n",
 				XHCI_MAX_HALT_USEC);
 	if (!ret)
-		xhci->xhc_state &= ~(XHCI_STATE_HALTED | XHCI_STATE_DYING);
-
+		xhci->xhc_state &= ~XHCI_STATE_HALTED;
 	return ret;
 }
 
@@ -291,9 +290,6 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
 {
 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
-
-	if (xhci->quirks & XHCI_PLAT)
-		return;
 
 	xhci_free_irq(xhci);
 
@@ -766,7 +762,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
  */
 int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 {
-	u32			command, temp = 0, status;
+	u32			command, temp = 0;
 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
 	struct usb_hcd		*secondary_hcd;
 	int			retval = 0;
@@ -880,12 +876,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 
  done:
 	if (retval == 0) {
-		/* Resume root hubs only when have pending events. */
-		status = readl(&xhci->op_regs->status);
-		if (status & STS_EINT) {
-			usb_hcd_resume_root_hub(hcd);
-			usb_hcd_resume_root_hub(xhci->shared_hcd);
-		}
+		usb_hcd_resume_root_hub(hcd);
+		usb_hcd_resume_root_hub(xhci->shared_hcd);
 	}
 	return retval;
 }
@@ -2071,31 +2063,61 @@ void xhci_cleanup_stalled_ring(struct xhci_hcd *xhci,
 	}
 }
 
-/* Called when clearing halted device. The core should have sent the control
- * message to clear the device halt condition. The host side of the halt should
- * already be cleared with a reset endpoint command issued when the STALL tx
- * event was received.
- *
+/* Deal with stalled endpoints.  The core should have sent the control message
+ * to clear the halt condition.  However, we need to make the xHCI hardware
+ * reset its sequence number, since a device will expect a sequence number of
+ * zero after the halt condition is cleared.
  * Context: in_interrupt
  */
-
 void xhci_endpoint_reset(struct usb_hcd *hcd,
 		struct usb_host_endpoint *ep)
 {
 	struct xhci_hcd *xhci;
+	struct usb_device *udev;
+	unsigned int ep_index;
+	unsigned long flags;
+	int ret;
+	struct xhci_virt_ep *virt_ep;
 
 	xhci = hcd_to_xhci(hcd);
-	/*
-	 * We might need to implement the config ep cmd in xhci 4.8.1 note:
-	 * The Reset Endpoint Command may only be issued to endpoints in the
-	 * Halted state. If software wishes reset the Data Toggle or Sequence
-	 * Number of an endpoint that isn't in the Halted state, then software
-	 * may issue a Configure Endpoint Command with the Drop and Add bits set
-	 * for the target endpoint. that is in the Stopped state.
+	udev = (struct usb_device *) ep->hcpriv;
+	/* Called with a root hub endpoint (or an endpoint that wasn't added
+	 * with xhci_add_endpoint()
 	 */
-	/* For now just print debug to follow the situation */
-	xhci_dbg(xhci, "Endpoint 0x%x ep reset callback called\n",
-		 ep->desc.bEndpointAddress);
+	if (!ep->hcpriv)
+		return;
+	ep_index = xhci_get_endpoint_index(&ep->desc);
+	virt_ep = &xhci->devs[udev->slot_id]->eps[ep_index];
+	if (!virt_ep->stopped_td) {
+		xhci_dbg(xhci, "Endpoint 0x%x not halted, refusing to reset.\n",
+				ep->desc.bEndpointAddress);
+		return;
+	}
+	if (usb_endpoint_xfer_control(&ep->desc)) {
+		xhci_dbg(xhci, "Control endpoint stall already handled.\n");
+		return;
+	}
+
+	xhci_dbg(xhci, "Queueing reset endpoint command\n");
+	spin_lock_irqsave(&xhci->lock, flags);
+	ret = xhci_queue_reset_ep(xhci, udev->slot_id, ep_index);
+	/*
+	 * Can't change the ring dequeue pointer until it's transitioned to the
+	 * stopped state, which is only upon a successful reset endpoint
+	 * command.  Better hope that last command worked!
+	 */
+	if (!ret) {
+		xhci_cleanup_stalled_ring(xhci, udev, ep_index);
+		kfree(virt_ep->stopped_td);
+		xhci_ring_cmd_db(xhci);
+	}
+	virt_ep->stopped_td = NULL;
+	virt_ep->stopped_trb = NULL;
+	virt_ep->stopped_stream = 0;
+	spin_unlock_irqrestore(&xhci->lock, flags);
+
+	if (ret)
+		xhci_warn(xhci, "FIXME allocate a new ring segment\n");
 }
 
 static int xhci_check_streams_endpoint(struct xhci_hcd *xhci,
@@ -2546,9 +2568,6 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
 		else
 			return -EINVAL;
 	}
-
-	if (virt_dev->tt_info)
-		old_active_eps = virt_dev->tt_info->active_eps;
 
 	if (virt_dev->udev != udev) {
 		/* If the virt_dev and the udev does not match, this virt_dev
@@ -3034,16 +3053,8 @@ int xhci_update_hub_device(struct usb_hcd *hcd, struct usb_device *hdev,
 	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
 	slot_ctx = xhci_get_slot_ctx(xhci, config_cmd->in_ctx);
 	slot_ctx->dev_info |= cpu_to_le32(DEV_HUB);
-	/*
-	 * refer to section 6.2.2: MTT should be 0 for full speed hub,
-	 * but it may be already set to 1 when setup an xHCI virtual
-	 * device, so clear it anyway.
-	 */
 	if (tt->multi)
 		slot_ctx->dev_info |= cpu_to_le32(DEV_MTT);
-	else if (hdev->speed == USB_SPEED_FULL)
-		slot_ctx->dev_info &= cpu_to_le32(~DEV_MTT);
-
 	if (xhci->hci_version > 0x95) {
 		xhci_dbg(xhci, "xHCI version %x needs hub "
 				"TT think time and number of ports\n",
