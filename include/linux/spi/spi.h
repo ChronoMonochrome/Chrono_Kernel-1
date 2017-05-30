@@ -20,7 +20,6 @@
 #define __LINUX_SPI_H
 
 #include <linux/device.h>
-#include <linux/export.h>
 #include <linux/mod_devicetable.h>
 #include <linux/slab.h>
 #include <linux/kthread.h>
