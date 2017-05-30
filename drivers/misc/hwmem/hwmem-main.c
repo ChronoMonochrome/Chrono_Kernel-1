@@ -192,7 +192,7 @@ static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 
 	do {
 		vaddr = dma_alloc_func(alloc->private_data,
-					alloc->size, &handle, GFP_KERNEL);
+					alloc->size, &handle, GFP_KERNEL | __GFP_NOWARN);
 		retry++;
 	} while (!vaddr && retry < DMA_ALLOC_RETRY);
 
