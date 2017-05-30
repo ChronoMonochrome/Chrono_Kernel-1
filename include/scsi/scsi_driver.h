@@ -1,7 +1,6 @@
 #ifndef _SCSI_SCSI_DRIVER_H
 #define _SCSI_SCSI_DRIVER_H
 
-#include <linux/export.h>
 #include <linux/device.h>
 
 struct module;
@@ -17,6 +16,7 @@ struct scsi_driver {
 
 	void (*rescan)(struct device *);
 	int (*done)(struct scsi_cmnd *);
+	int (*eh_action)(struct scsi_cmnd *, unsigned char *, int, int);
 };
 #define to_scsi_driver(drv) \
 	container_of((drv), struct scsi_driver, gendrv)
