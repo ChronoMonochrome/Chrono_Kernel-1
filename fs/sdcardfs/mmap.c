@@ -49,7 +49,7 @@ static int sdcardfs_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 }
 
 static ssize_t sdcardfs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
-                        loff_t offset)
+			      loff_t offset)
 {
 	/*
      * This function returns zero on purpose in order to support direct IO.
