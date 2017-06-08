@@ -341,6 +341,17 @@ static bool is_last_cpu_running(void)
 	return atomic_read(&idle_cpus_counter) == num_online_cpus();
 }
 
+static atomic_t max_depth_actual_1[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_t max_depth_actual_2[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_t max_depth_actual_3[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+
+module_param_named(max_depth_cpu0_1, max_depth_actual_1[0].counter, int, 0444);
+module_param_named(max_depth_cpu0_2, max_depth_actual_2[0].counter, int, 0444);
+module_param_named(max_depth_cpu0_3, max_depth_actual_3[0].counter, int, 0444);
+module_param_named(max_depth_cpu1_1, max_depth_actual_1[1].counter, int, 0444);
+module_param_named(max_depth_cpu1_2, max_depth_actual_2[1].counter, int, 0444);
+module_param_named(max_depth_cpu1_3, max_depth_actual_3[1].counter, int, 0444);
+
 static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
 				 ktime_t *est_wake_time)
@@ -405,12 +416,22 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	 * possible from a scheduled wake up point of view
 	 */
 	max_depth = ux500_ci_dbg_deepest_state();
+	//int max_depth_per_cpu[2];
+	//max_depth_per_cpu[0] = -1;
+	//max_depth_per_cpu[1] = -1;
 
 	for_each_online_cpu(cpu) {
+		//max_depth_per_cpu[cpu] = per_cpu(cpu_state, cpu)->gov_cstate;
 		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
 			max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
 	}
 
+/*
+	if ((max_depth_per_cpu[0] == 3 && max_depth_per_cpu[1] == 2) ||
+	    (max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 3)) {
+		max_depth = 3;
+	}
+*/
 	uart = ux500_ci_dbg_force_ape_on();
 	ape = power_state_active_is_enabled();
 	modem = prcmu_is_ac_wake_requested();
@@ -454,15 +475,21 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	return max(CI_WFI, i);
 }
 
-static atomic_t deepsleep_state = ATOMIC_INIT(0);
-static atomic_t last_target = ATOMIC_INIT(0);
-static atomic_t last_returned_state = ATOMIC_INIT(0);
+static atomic_t deepsleep_state_1 = ATOMIC_INIT(0);
+static atomic_t deepsleep_state_2 = ATOMIC_INIT(0);
+static atomic_t deepsleep_state_3 = ATOMIC_INIT(0);
+static atomic_t last_target_1 = ATOMIC_INIT(0);
+static atomic_t last_target_2 = ATOMIC_INIT(0);
+static atomic_t last_target_3 = ATOMIC_INIT(0);
 static atomic_t pending_gic_irq = ATOMIC_INIT(0);
 static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
 
-module_param_named(deepsleep_state, deepsleep_state.counter, uint, 0444);
-module_param_named(last_target, last_target.counter, uint, 0444);
-module_param_named(last_returned_state, last_returned_state.counter, uint, 0444);
+module_param_named(deepsleep_state_1, deepsleep_state_1.counter, uint, 0444);
+module_param_named(deepsleep_state_2, deepsleep_state_2.counter, uint, 0444);
+module_param_named(deepsleep_state_3, deepsleep_state_3.counter, uint, 0444);
+module_param_named(last_target_1, last_target_1.counter, uint, 0444);
+module_param_named(last_target_2, last_target_2.counter, uint, 0444);
+module_param_named(last_target_3, last_target_3.counter, uint, 0444);
 module_param_named(pending_gic_irq, pending_gic_irq.counter, uint, 0444);
 module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
 
@@ -476,6 +503,7 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int ret;
 	int rtcrtt_program_time = NO_SLEEP_PROGRAMMED;
 	int target, new_target;
+	int i, cpu;
 	struct cpu_state *state;
 	bool slept_well = false;
 	int this_cpu = smp_processor_id();
@@ -520,7 +548,35 @@ static int enter_sleep(struct cpuidle_device *dev,
 	target = determine_sleep_state(&sleep_time, loc_idle_counter, false,
 				       time_enter, &est_wake_time);
 
-	atomic_set(&last_target, target);
+	for_each_online_cpu(cpu) {
+		switch (per_cpu(cpu_state, cpu)->gov_cstate) {
+			case 1:
+				atomic_inc(&max_depth_actual_1[cpu]);
+				break;
+			case 2:
+				atomic_inc(&max_depth_actual_2[cpu]);
+				break;
+			case 3:
+				atomic_inc(&max_depth_actual_3[cpu]);
+				break;
+			default:
+				break;
+		}
+	}
+
+	switch (target) {
+		case 1:
+			atomic_inc(&last_target_1);
+			break;
+		case 2:
+			atomic_inc(&last_target_2);
+			break;
+		case 3:
+			atomic_inc(&last_target_3);
+			break;
+		default:
+			break;
+	}
 
 	//pr_err("[CPUidle: target state: %d\n", target);
 
@@ -694,7 +750,20 @@ static int enter_sleep(struct cpuidle_device *dev,
 				      /* Is actually the AP PLL */
 				      cstates[target].UL_PLL);
 
-		atomic_set(&deepsleep_state, target);
+		switch (target) {
+			case 1:
+				atomic_inc(&deepsleep_state_1);
+				break;
+			case 2:
+				atomic_inc(&deepsleep_state_2);
+				break;
+			case 3:
+				atomic_inc(&deepsleep_state_3);
+				break;
+			default:
+				break;
+		}
+
 	}
 
 	if (master)
