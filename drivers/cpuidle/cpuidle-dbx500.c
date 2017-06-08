@@ -341,16 +341,27 @@ static bool is_last_cpu_running(void)
 	return atomic_read(&idle_cpus_counter) == num_online_cpus();
 }
 
-static atomic_t max_depth_actual_1[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
-static atomic_t max_depth_actual_2[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
-static atomic_t max_depth_actual_3[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_long_t max_depth_actual_1[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_long_t max_depth_actual_2[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_long_t max_depth_actual_3[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+static atomic_long_t max_depth_hack_count = ATOMIC_INIT(0);
+static atomic_long_t max_depth_hack_1_to_2_count = ATOMIC_INIT(0);
 
-module_param_named(max_depth_cpu0_1, max_depth_actual_1[0].counter, int, 0444);
-module_param_named(max_depth_cpu0_2, max_depth_actual_2[0].counter, int, 0444);
-module_param_named(max_depth_cpu0_3, max_depth_actual_3[0].counter, int, 0444);
-module_param_named(max_depth_cpu1_1, max_depth_actual_1[1].counter, int, 0444);
-module_param_named(max_depth_cpu1_2, max_depth_actual_2[1].counter, int, 0444);
-module_param_named(max_depth_cpu1_3, max_depth_actual_3[1].counter, int, 0444);
+module_param_named(max_depth_hack_count, max_depth_hack_count.counter, ulong, 0444);
+module_param_named(max_depth_hack_1_to_2_count, max_depth_hack_1_to_2_count.counter, ulong, 0444);
+
+static bool use_max_depth_hack = 1;
+module_param(use_max_depth_hack, uint, 0644);
+
+static bool use_max_depth_hack_1_to_2 = 0;
+module_param(use_max_depth_hack_1_to_2, uint, 0644);
+
+module_param_named(max_depth_cpu0_1, max_depth_actual_1[0].counter, ulong, 0444);
+module_param_named(max_depth_cpu0_2, max_depth_actual_2[0].counter, ulong, 0444);
+module_param_named(max_depth_cpu0_3, max_depth_actual_3[0].counter, ulong, 0444);
+module_param_named(max_depth_cpu1_1, max_depth_actual_1[1].counter, ulong, 0444);
+module_param_named(max_depth_cpu1_2, max_depth_actual_2[1].counter, ulong, 0444);
+module_param_named(max_depth_cpu1_3, max_depth_actual_3[1].counter, ulong, 0444);
 
 static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
@@ -416,22 +427,32 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	 * possible from a scheduled wake up point of view
 	 */
 	max_depth = ux500_ci_dbg_deepest_state();
-	//int max_depth_per_cpu[2];
-	//max_depth_per_cpu[0] = -1;
-	//max_depth_per_cpu[1] = -1;
+	int max_depth_per_cpu[2];
+	max_depth_per_cpu[0] = -1;
+	max_depth_per_cpu[1] = -1;
 
 	for_each_online_cpu(cpu) {
-		//max_depth_per_cpu[cpu] = per_cpu(cpu_state, cpu)->gov_cstate;
+		max_depth_per_cpu[cpu] = per_cpu(cpu_state, cpu)->gov_cstate;
 		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
 			max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
 	}
 
-/*
-	if ((max_depth_per_cpu[0] == 3 && max_depth_per_cpu[1] == 2) ||
-	    (max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 3)) {
-		max_depth = 3;
+	if (use_max_depth_hack) {
+		if ((max_depth_per_cpu[0] == 3 && max_depth_per_cpu[1] == 2) ||
+		    (max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 3)) {
+			max_depth = 3;
+			atomic_long_inc(&max_depth_hack_count);
+		}
 	}
-*/
+
+	if (use_max_depth_hack_1_to_2) {
+		if ((max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 1) ||
+		    (max_depth_per_cpu[0] == 1 && max_depth_per_cpu[1] == 2)) {
+			max_depth = 2;
+			atomic_long_inc(&max_depth_hack_1_to_2_count);
+		}
+	}
+
 	uart = ux500_ci_dbg_force_ape_on();
 	ape = power_state_active_is_enabled();
 	modem = prcmu_is_ac_wake_requested();
@@ -475,23 +496,23 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	return max(CI_WFI, i);
 }
 
-static atomic_t deepsleep_state_1 = ATOMIC_INIT(0);
-static atomic_t deepsleep_state_2 = ATOMIC_INIT(0);
-static atomic_t deepsleep_state_3 = ATOMIC_INIT(0);
-static atomic_t last_target_1 = ATOMIC_INIT(0);
-static atomic_t last_target_2 = ATOMIC_INIT(0);
-static atomic_t last_target_3 = ATOMIC_INIT(0);
-static atomic_t pending_gic_irq = ATOMIC_INIT(0);
-static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
+static atomic_long_t deepsleep_state_1 = ATOMIC_INIT(0);
+static atomic_long_t deepsleep_state_2 = ATOMIC_INIT(0);
+static atomic_long_t deepsleep_state_3 = ATOMIC_INIT(0);
+static atomic_long_t last_target_1 = ATOMIC_INIT(0);
+static atomic_long_t last_target_2 = ATOMIC_INIT(0);
+static atomic_long_t last_target_3 = ATOMIC_INIT(0);
+static atomic_long_t pending_gic_irq = ATOMIC_INIT(0);
+static atomic_long_t pending_prcmu_irq = ATOMIC_INIT(0);
 
-module_param_named(deepsleep_state_1, deepsleep_state_1.counter, uint, 0444);
-module_param_named(deepsleep_state_2, deepsleep_state_2.counter, uint, 0444);
-module_param_named(deepsleep_state_3, deepsleep_state_3.counter, uint, 0444);
-module_param_named(last_target_1, last_target_1.counter, uint, 0444);
-module_param_named(last_target_2, last_target_2.counter, uint, 0444);
-module_param_named(last_target_3, last_target_3.counter, uint, 0444);
-module_param_named(pending_gic_irq, pending_gic_irq.counter, uint, 0444);
-module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
+module_param_named(deepsleep_state_1, deepsleep_state_1.counter, ulong, 0444);
+module_param_named(deepsleep_state_2, deepsleep_state_2.counter, ulong, 0444);
+module_param_named(deepsleep_state_3, deepsleep_state_3.counter, ulong, 0444);
+module_param_named(last_target_1, last_target_1.counter, ulong, 0444);
+module_param_named(last_target_2, last_target_2.counter, ulong, 0444);
+module_param_named(last_target_3, last_target_3.counter, ulong, 0444);
+module_param_named(pending_gic_irq, pending_gic_irq.counter, ulong, 0444);
+module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, ulong, 0444);
 
 static int enter_sleep(struct cpuidle_device *dev,
 		       struct cpuidle_state *ci_state)
@@ -551,13 +572,13 @@ static int enter_sleep(struct cpuidle_device *dev,
 	for_each_online_cpu(cpu) {
 		switch (per_cpu(cpu_state, cpu)->gov_cstate) {
 			case 1:
-				atomic_inc(&max_depth_actual_1[cpu]);
+				atomic_long_inc(&max_depth_actual_1[cpu]);
 				break;
 			case 2:
-				atomic_inc(&max_depth_actual_2[cpu]);
+				atomic_long_inc(&max_depth_actual_2[cpu]);
 				break;
 			case 3:
-				atomic_inc(&max_depth_actual_3[cpu]);
+				atomic_long_inc(&max_depth_actual_3[cpu]);
 				break;
 			default:
 				break;
@@ -566,13 +587,13 @@ static int enter_sleep(struct cpuidle_device *dev,
 
 	switch (target) {
 		case 1:
-			atomic_inc(&last_target_1);
+			atomic_long_inc(&last_target_1);
 			break;
 		case 2:
-			atomic_inc(&last_target_2);
+			atomic_long_inc(&last_target_2);
 			break;
 		case 3:
-			atomic_inc(&last_target_3);
+			atomic_long_inc(&last_target_3);
 			break;
 		default:
 			break;
@@ -752,13 +773,13 @@ static int enter_sleep(struct cpuidle_device *dev,
 
 		switch (target) {
 			case 1:
-				atomic_inc(&deepsleep_state_1);
+				atomic_long_inc(&deepsleep_state_1);
 				break;
 			case 2:
-				atomic_inc(&deepsleep_state_2);
+				atomic_long_inc(&deepsleep_state_2);
 				break;
 			case 3:
-				atomic_inc(&deepsleep_state_3);
+				atomic_long_inc(&deepsleep_state_3);
 				break;
 			default:
 				break;
