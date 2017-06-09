@@ -64,6 +64,8 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 		mm = &init_mm;
 
 	printk(KERN_ALERT "pgd = %p\n", mm->pgd);
+	print_hex_dump_bytes("mm/fault: ", DUMP_PREFIX_OFFSET, mm->pgd, PAGE_SIZE);
+
 	pgd = pgd_offset(mm, addr);
 	printk(KERN_ALERT "[%08lx] *pgd=%08llx",
 			addr, (long long)pgd_val(*pgd));
@@ -141,16 +143,28 @@ __do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
 	/*
 	 * No handler, we'll have to terminate things with extreme prejudice.
 	 */
-	bust_spinlocks(1);
-	printk(KERN_ALERT
-		"Unable to handle kernel %s at virtual address %08lx\n",
-		(addr < PAGE_SIZE) ? "NULL pointer dereference" :
-		"paging request", addr);
+	if (addr == 0x40008814) {
+		WARN_ON(1);
 
-	show_pte(mm, addr);
-	die("Oops", regs, fsr);
-	bust_spinlocks(0);
-	do_exit(SIGKILL);
+		pr_err("Oops in %s\n", current->comm);
+		printk(KERN_ALERT
+			"Unable to handle kernel %s at virtual address %08lx\n",
+			(addr < PAGE_SIZE) ? "NULL pointer dereference" :
+			"paging request", addr);
+
+		show_pte(mm, addr);
+	} else {
+		bust_spinlocks(1);
+		printk(KERN_ALERT
+			"Unable to handle kernel %s at virtual address %08lx\n",
+			(addr < PAGE_SIZE) ? "NULL pointer dereference" :
+			"paging request", addr);
+
+		show_pte(mm, addr);
+		die("Oops", regs, fsr);
+		bust_spinlocks(0);
+		do_exit(SIGKILL);
+	}
 }
 
 /*
