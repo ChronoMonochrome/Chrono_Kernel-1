@@ -4,7 +4,7 @@ SUBLEVEL = 113
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE ?= /home/chrono/root/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 #CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
 
 # *DOCUMENTATION*
@@ -18,6 +18,8 @@ CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 #    (this increases performance and avoids hard-to-debug behaviour);
 # o  print "Entering directory ...";
 MAKEFLAGS += -rR --no-print-directory
+
+CROSS_COMPILE ?= /home/chrono/root/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 
 # Avoid funny character set dependencies
 unexport LC_ALL

@@ -110,6 +110,7 @@ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
 obj-$(CONFIG_JUMP_LABEL) += jump_label.o
 
 obj-$(CONFIG_GOD_MODE) += god_mode.o
+obj-y			 += pm_qos_params.o
 
 $(obj)/configs.o: $(obj)/config_data.h
 
