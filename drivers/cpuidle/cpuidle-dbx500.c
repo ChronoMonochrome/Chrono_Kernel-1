@@ -350,7 +350,7 @@ static atomic_long_t max_depth_hack_1_to_2_count = ATOMIC_INIT(0);
 module_param_named(max_depth_hack_count, max_depth_hack_count.counter, ulong, 0444);
 module_param_named(max_depth_hack_1_to_2_count, max_depth_hack_1_to_2_count.counter, ulong, 0444);
 
-static bool use_max_depth_hack = 1;
+static bool use_max_depth_hack = 0;
 module_param(use_max_depth_hack, uint, 0644);
 
 static bool use_max_depth_hack_1_to_2 = 0;
