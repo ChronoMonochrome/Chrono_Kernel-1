@@ -263,6 +263,7 @@ STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
 STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtoul);
 STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
 STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
+STANDARD_PARAM_DEF(llong, long long, "%lld", long long, strict_strtoull);
 
 int param_set_charp(const char *val, const struct kernel_param *kp)
 {

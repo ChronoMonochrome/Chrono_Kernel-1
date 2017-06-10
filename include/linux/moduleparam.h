@@ -95,7 +95,7 @@ struct kparam_array
  * you can create your own by defining those variables.
  *
  * Standard types are:
- *	byte, short, ushort, int, uint, long, ulong
+ *	byte, short, ushort, int, uint, long, ulong, llong
  *	charp: a character pointer
  *	bool: a bool, values 0/1, y/n, Y/N.
  *	invbool: the above, only sense-reversed (N = true).
@@ -372,6 +372,11 @@ extern struct kernel_param_ops param_ops_ulong;
 extern int param_set_ulong(const char *val, const struct kernel_param *kp);
 extern int param_get_ulong(char *buffer, const struct kernel_param *kp);
 #define param_check_ulong(name, p) __param_check(name, p, unsigned long)
+
+extern struct kernel_param_ops param_ops_llong;
+extern int param_set_llong(const char *val, const struct kernel_param *kp);
+extern int param_get_llong(char *buffer, const struct kernel_param *kp);
+#define param_check_llong(name, p) __param_check(name, p, long long)
 
 extern struct kernel_param_ops param_ops_charp;
 extern int param_set_charp(const char *val, const struct kernel_param *kp);
