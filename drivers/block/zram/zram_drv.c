@@ -716,6 +716,8 @@ compress_again:
 
 	memset(page_chunk, 0, PAGE_SIZE);
 	memcpy(page_chunk, uncmem, PAGE_SIZE * 3 / 32);
+
+	zstrm = zcomp_stream_get(zram->comp);
 	ret = zcomp_compress(zstrm, page_chunk, &chunk_clen);
 
 	approx_clen = chunk_clen * 32 / 3;
