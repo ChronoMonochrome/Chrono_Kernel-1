@@ -1,4 +1,3 @@
-#include <linux/export.h>
 /*
  * drivers/base/power/domain_governor.c - Governors for device PM domains.
  *
