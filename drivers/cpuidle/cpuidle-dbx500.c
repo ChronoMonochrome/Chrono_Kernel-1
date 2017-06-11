@@ -148,7 +148,7 @@ static struct cstate cstates[] = {
 	},
 	{
 		.enter_latency = 410,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200) + 600 - 400,
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 200) + 600 - 400,
 		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200) + 600 - 400,
 		.power_usage = 1,
 		.APE = APE_OFF,
