@@ -38,8 +38,11 @@
 }
 EXPORT_SYMBOL(breakpoint_iora_init);
 
+extern bool pm_is_running;
  void breakpoint_iora_suspend()
 {
+	pm_is_running = false;
+
 	pr_info("breakpoint_iora_suspend...!!!");
 }
 EXPORT_SYMBOL(breakpoint_iora_suspend);
