@@ -81,7 +81,7 @@ int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t exp
 #define DEEP_SLEEP_WAKE_UP_LATENCY 8500
 /* Wake latency from ApSleep is measured to be around 1.0 to 1.5 ms */
 #define MIN_SLEEP_WAKE_UP_LATENCY 1000
-#define MAX_SLEEP_WAKE_UP_LATENCY 1500
+#define MAX_SLEEP_WAKE_UP_LATENCY 1250
 
 #define UL_PLL_START_UP_LATENCY 8000 /* us */
 
@@ -147,47 +147,17 @@ static struct cstate cstates[] = {
 		.desc = "ApSleep                ",
 	},
 	{
-		.enter_latency = 350,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200),
-		.power_usage = 2,
-		.APE = APE_OFF,
-		.ARM = ARM_RET,
-		.UL_PLL = UL_PLL_OFF,
-		.ESRAM = ESRAM_RET,
-		.pwrst = PRCMU_AP_SLEEP,
-		.state = CI_SLEEP,
-		.desc = "ApSleep, UL PLL off    ",
-	},
-#ifdef CONFIG_UX500_CPUIDLE_APDEEPIDLE
-	{
-		.enter_latency = 400,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 400,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 400 + 400,
-		.power_usage = 2,
-		.APE = APE_ON,
-		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_ON,
-		.ESRAM = ESRAM_RET,
-		.pwrst = PRCMU_AP_DEEP_IDLE,
-		.state = CI_DEEP_IDLE,
-		.desc = "ApDeepIdle, UL PLL off ",
-	},
-#endif
-	{
 		.enter_latency = 410,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 420,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 410 + 420,
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200) + 600 - 400,
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200) + 600 - 400,
 		.power_usage = 1,
 		.APE = APE_OFF,
 		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_OFF,
+		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_DEEP_SLEEP,
 		.state = CI_DEEP_SLEEP,
-		.desc = "ApDeepsleep, UL PLL off",
+		.desc = "ApDeepsleep, UL PLL on",
 	},
 };
 
