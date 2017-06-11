@@ -74,8 +74,6 @@ bool ux500_suspend_deepsleep_enabled(void)
 	return deepsleep_enabled != 0;
 }
 
-bool pm_is_running = false;
-
 void ux500_suspend_dbg_sleep_status(bool is_deepsleep)
 {
 	enum prcmu_power_status prcmu_status;
@@ -100,8 +98,6 @@ void ux500_suspend_dbg_sleep_status(bool is_deepsleep)
 		else
 			sleeps_failed++;
 	}
-
-	pm_is_running = true;
 }
 
 int ux500_suspend_dbg_begin(suspend_state_t state)
