@@ -383,28 +383,6 @@ extern bool pm_is_running;
 
 static atomic_t last_cstate = ATOMIC_INIT(0);
 
-static atomic_t max_depth_hack_4_to_5_count = ATOMIC_INIT(0);
-static atomic_t max_depth_hack_3_to_4_count = ATOMIC_INIT(0);
-static atomic_t max_depth_hack_2_to_3_count = ATOMIC_INIT(0);
-static atomic_t max_depth_hack_1_to_2_count = ATOMIC_INIT(0);
-
-module_param_named(max_depth_hack_4_to_5_count, max_depth_hack_4_to_5_count.counter, uint, 0444);
-module_param_named(max_depth_hack_3_to_4_count, max_depth_hack_3_to_4_count.counter, uint, 0444);
-module_param_named(max_depth_hack_2_to_3_count, max_depth_hack_2_to_3_count.counter, uint, 0444);
-module_param_named(max_depth_hack_1_to_2_count, max_depth_hack_1_to_2_count.counter, uint, 0444);
-
-static bool use_max_depth_hack_4_to_5 = 0;
-module_param(use_max_depth_hack_4_to_5, bool, 0644);
-
-static bool use_max_depth_hack_3_to_4 = 0;
-module_param(use_max_depth_hack_3_to_4, bool, 0644);
-
-static bool use_max_depth_hack_2_to_3 = 1;
-module_param(use_max_depth_hack_2_to_3, bool, 0644);
-
-static bool use_max_depth_hack_1_to_2 = 0;
-module_param(use_max_depth_hack_1_to_2, bool, 0644);
-
 module_param_named(max_depth_cpu1_0, max_depth_actual[1][0].counter, uint, 0444);
 module_param_named(max_depth_cpu2_0, max_depth_actual[2][0].counter, uint, 0444);
 module_param_named(max_depth_cpu3_0, max_depth_actual[3][0].counter, uint, 0444);
@@ -518,44 +496,6 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 		max_depth_per_cpu[cpu] = per_cpu(cpu_state, cpu)->gov_cstate;
 		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
 			max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
-	}
-
-	if (use_max_depth_hack_4_to_5) {
-		if ((max_depth_per_cpu[0] == 5 && max_depth_per_cpu[1] == 4) ||
-		    (max_depth_per_cpu[0] == 4 && max_depth_per_cpu[1] == 5)) {
-			max_depth = 5;
-			if (atomic_read(&last_cstate) > 1)
-				atomic_inc(&max_depth_hack_4_to_5_count);
-		}
-	}
-
-	if (use_max_depth_hack_3_to_4) {
-		if ((max_depth_per_cpu[0] == 4 && max_depth_per_cpu[1] == 3) ||
-		    (max_depth_per_cpu[0] == 3 && max_depth_per_cpu[1] == 4)) {
-			max_depth = 4;
-			if (atomic_read(&last_cstate) > 1)
-				atomic_inc(&max_depth_hack_3_to_4_count);
-		}
-	}
-
-
-	if (use_max_depth_hack_2_to_3) {
-		if ((max_depth_per_cpu[0] == 3 && max_depth_per_cpu[1] == 2) ||
-		    (max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 3)) {
-			max_depth = 3;
-			if (atomic_read(&last_cstate) > 1)
-				atomic_inc(&max_depth_hack_2_to_3_count);
-		}
-	}
-
-	if (use_max_depth_hack_1_to_2) {
-		if (!pm_is_running) {
-			if ((max_depth_per_cpu[0] == 2 && max_depth_per_cpu[1] == 1) ||
-			    (max_depth_per_cpu[0] == 1 && max_depth_per_cpu[1] == 2)) {
-				max_depth = 2;
-				atomic_inc(&max_depth_hack_1_to_2_count);
-			}
-		}
 	}
 
 	uart = ux500_ci_dbg_force_ape_on();
