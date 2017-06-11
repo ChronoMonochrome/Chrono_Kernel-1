@@ -14,14 +14,6 @@
 
 #include "cpuidle.h"
 
-static unsigned int sysfs_switch;
-static int __init cpuidle_sysfs_setup(char *unused)
-{
-	sysfs_switch = 1;
-	return 1;
-}
-__setup("cpuidle_sysfs_switch", cpuidle_sysfs_setup);
-
 static ssize_t show_available_governors(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
@@ -139,8 +131,7 @@ static struct attribute_group cpuidle_attr_group = {
  */
 int cpuidle_add_interface(struct device *dev)
 {
-	if (sysfs_switch)
-		cpuidle_attr_group.attrs = cpuidle_switch_attrs;
+	cpuidle_attr_group.attrs = cpuidle_switch_attrs;
 
 	return sysfs_create_group(&dev->kobj, &cpuidle_attr_group);
 }
