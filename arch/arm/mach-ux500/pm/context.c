@@ -632,7 +632,12 @@ void context_vape_save(void)
 	atomic_notifier_call_chain(&context_ape_notifier_list,
 				   CONTEXT_APE_SAVE, NULL);
 
-	u8500_context_save_icn();
+	if (cpu_is_u5500())
+		u5500_context_save_icn();
+	if (cpu_is_u8500())
+		u8500_context_save_icn();
+	if (cpu_is_u9540())
+		u9540_context_save_icn();
 
 	save_stm_ape();
 
@@ -652,7 +657,12 @@ void context_vape_restore(void)
 
 	restore_stm_ape();
 
-	u8500_context_restore_icn();
+	if (cpu_is_u5500())
+		u5500_context_restore_icn();
+	if (cpu_is_u8500())
+		u8500_context_restore_icn();
+	if (cpu_is_u9540())
+		u9540_context_restore_icn();
 
 	atomic_notifier_call_chain(&context_ape_notifier_list,
 				   CONTEXT_APE_RESTORE, NULL);
@@ -1039,7 +1049,16 @@ static int __init context_init(void)
 		BUG_ON(IS_ERR(context_prcc[i].clk));
 	}
 
-	u8500_context_init();
+	if (cpu_is_u8500()) {
+		u8500_context_init();
+	} else if (cpu_is_u5500()) {
+		u5500_context_init();
+	} else if (cpu_is_u9540()) {
+		u9540_context_init();
+	} else {
+		printk(KERN_ERR "context: unknown hardware!\n");
+		return -EINVAL;
+	}
 
 	return 0;
 }
