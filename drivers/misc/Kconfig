@@ -666,7 +666,7 @@ config GENERIC_BLN_EMULATE_BUTTONS_LED
 config GENERIC_BLN_USE_WAKELOCK
 	bool "Use a kernel wakelock to retain the leds enabled in suspend."
 	depends on GENERIC_BLN
-	default n
+	default y
 	help
 		Say Y here use the wakelock implementation of the bln driver
 
