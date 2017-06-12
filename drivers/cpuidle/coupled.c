@@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready(struct cpuidle_coupled *coupled)
 	int all;
 	int ret;
 
-	all = coupled->online_count || (coupled->online_count << WAITING_BITS);
+	all = coupled->online_count | (coupled->online_count << WAITING_BITS);
 	ret = atomic_add_unless(&coupled->ready_waiting_counts,
 		-MAX_WAITING_CPUS, all);
 
@@ -654,7 +654,7 @@ static void cpuidle_coupled_allow_idle(struct cpuidle_coupled *coupled)
 
 	/*
 	 * Write barrier ensures readers see the new online_count when they
-	 * see prevent == false.
+	 * see prevent == 0.
 	 */
 	smp_wmb();
 	coupled->prevent--;
@@ -693,7 +693,7 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
 	mutex_lock(&cpuidle_lock);
 
 	dev = per_cpu(cpuidle_devices, cpu);
-	if (!dev->coupled)
+	if (!dev || !dev->coupled)
 		goto out;
 
 	switch (action & ~CPU_TASKS_FROZEN) {
