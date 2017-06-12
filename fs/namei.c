@@ -3219,9 +3219,6 @@ return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
 #endif
-	if ((S_ISCHR(mode) || S_ISBLK(mode)) &&
-	    !ns_capable(inode_userns(dir), CAP_MKNOD))
-
 	if (!dir->i_op->mknod)
 #ifdef CONFIG_GOD_MODE
 {
