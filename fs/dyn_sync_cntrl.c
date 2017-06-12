@@ -109,20 +109,20 @@ static ssize_t dyn_fsync_earlysuspend_show(struct kobject *kobj,
 	return sprintf(buf, "early suspend active: %u\n", early_suspend_active);
 }
 
-static struct kobj_attribute dyn_fsync_active_attribute = 
+static struct kobj_attribute dyn_fsync_active_attribute =
 	__ATTR(Dyn_fsync_active, 0666,
 		dyn_fsync_active_show,
 		dyn_fsync_active_store);
-	
-static struct kobj_attribute dyn_fdatasync_active_attribute = 
+
+static struct kobj_attribute dyn_fdatasync_active_attribute =
 	__ATTR(Dyn_fdatasync_active, 0644,
 		dyn_fdatasync_active_show,
 		dyn_fdatasync_active_store);
 
-static struct kobj_attribute dyn_fsync_version_attribute = 
+static struct kobj_attribute dyn_fsync_version_attribute =
 	__ATTR(Dyn_fsync_version, 0444, dyn_fsync_version_show, NULL);
 
-static struct kobj_attribute dyn_fsync_earlysuspend_attribute = 
+static struct kobj_attribute dyn_fsync_earlysuspend_attribute =
 	__ATTR(Dyn_fsync_earlysuspend, 0444, dyn_fsync_earlysuspend_show, NULL);
 
 static struct attribute *dyn_fsync_active_attrs[] =
@@ -178,7 +178,7 @@ static int dyn_fsync_panic_event(struct notifier_block *this,
 {
 	early_suspend_active = true;
 	dyn_fsync_force_flush();
-	//pr_warn("dyn fsync: panic: force flush!\n");
+	pr_err("dyn fsync: panic: force flush!\n");
 
 	return NOTIFY_DONE;
 }
@@ -194,7 +194,7 @@ static int dyn_fsync_notify_sys(struct notifier_block *this, unsigned long code,
 	if (code == SYS_DOWN || code == SYS_HALT) {
 		early_suspend_active = true;
 		dyn_fsync_force_flush();
-		//pr_warn("dyn fsync: reboot: force flush!\n");
+		pr_err("dyn fsync: reboot: force flush!\n");
 	}
 	return NOTIFY_DONE;
 }
