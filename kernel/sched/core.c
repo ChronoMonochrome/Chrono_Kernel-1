@@ -1984,6 +1984,7 @@ unsigned long nr_running(void)
 
 	return sum;
 }
+EXPORT_SYMBOL_GPL(nr_running);
 
 unsigned long nr_uninterruptible(void)
 {
@@ -3689,6 +3690,7 @@ int task_prio(const struct task_struct *p)
 {
 	return p->prio - MAX_RT_PRIO;
 }
+EXPORT_SYMBOL(task_prio);
 
 /**
  * task_nice - return the nice value of a given task.
