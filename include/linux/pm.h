@@ -28,19 +28,6 @@
 #include <linux/timer.h>
 #include <linux/completion.h>
 
-typedef enum{
-	NON_STANDBY = 0,
-	NORMAL_STANDBY = 1,
-	SUPER_STANDBY = 3
-}standby_type_e;
-extern standby_type_e standby_type; 
-
-typedef enum{
-	STANDBY_INITIAL = 0,
-	STANDBY_WITH_POWER = 1,
-	STANDBY_WITH_POWER_OFF = 2
-}standby_level_e;
-
 /*
  * Callbacks for platform drivers to implement.
  */
@@ -523,6 +510,7 @@ struct dev_pm_info {
 	bool			is_prepared:1;	/* Owned by the PM core */
 	bool			is_suspended:1;	/* Ditto */
 	bool			ignore_children:1;
+	bool			early_init:1;	/* Owned by the PM core */
 	spinlock_t		lock;
 #ifdef CONFIG_PM_SLEEP
 	struct list_head	entry;
@@ -558,10 +546,9 @@ struct dev_pm_info {
 	unsigned long		active_jiffies;
 	unsigned long		suspended_jiffies;
 	unsigned long		accounting_timestamp;
-	struct dev_pm_qos_request *pq_req;
 #endif
 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
-	struct pm_qos_constraints *constraints;
+	struct dev_pm_qos	*qos;
 };
 
 extern void update_pm_runtime_accounting(struct device *dev);
