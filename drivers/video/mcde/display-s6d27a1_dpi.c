@@ -38,7 +38,6 @@
 #endif
 
 #include <linux/mfd/dbx500-prcmu.h>
-#include <mach/irqs.h>
 
 #include <video/mcde_display.h>
 #include <video/mcde_display-dpi.h>
