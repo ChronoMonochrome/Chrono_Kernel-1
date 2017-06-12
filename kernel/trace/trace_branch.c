@@ -193,12 +193,8 @@ __init static int init_branch_tracer(void)
 
 	ret = register_ftrace_event(&trace_branch_event);
 	if (!ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: could not register "
 				    "branch events\n");
-#else
-		;
-#endif
 		return 1;
 	}
 	return register_tracer(&branch_trace);
@@ -349,12 +345,8 @@ __init static int init_annotated_branch_stats(void)
 
 	ret = register_stat_tracer(&annotated_branch_stats);
 	if (!ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: could not register "
 				    "annotated branches stats\n");
-#else
-		;
-#endif
 		return 1;
 	}
 	return 0;
@@ -409,12 +401,8 @@ __init static int all_annotated_branch_stats(void)
 
 	ret = register_stat_tracer(&all_branch_stats);
 	if (!ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: could not register "
 				    "all branches stats\n");
-#else
-		;
-#endif
 		return 1;
 	}
 	return 0;
