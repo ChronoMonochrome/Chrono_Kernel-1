@@ -1732,12 +1732,11 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	 * With swappiness at 100, anonymous and file have the same priority.
 	 * This scanning priority is essentially the inverse of IO cost.
 	 */
-	anon_prio = vmscan_swappiness(mz, sc);
-	file_prio = 200 - vmscan_swappiness(mz, sc);
+	anon_prio = vmscan_swappiness(sc);
 #ifdef CONFIG_ZSWAP
-	file_prio = max_swappiness - vmscan_swappiness(mz, sc);
+	file_prio = max_swappiness - vmscan_swappiness(sc);
 #else
-	file_prio = 200 - vmscan_swappiness(mz, sc);
+	file_prio = 200 - vmscan_swappiness(sc);
 #endif
 
 	/*
