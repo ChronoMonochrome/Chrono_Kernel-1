@@ -115,13 +115,13 @@ static void fdatawait_one_bdev(struct block_device *bdev, void *arg)
 void sync_filesystems(int wait)
 {
 	if (wait) {
-		iterate_supers(writeback_inodes_one_sb, NULL);
+		iterate_supers(sync_inodes_one_sb, &wait);
 		iterate_supers(sync_fs_one_sb, &wait);
-		iterate_supers(sync_blkdev_one_sb, &wait);
+		iterate_bdevs(fdatawrite_one_bdev, NULL);
 	} else {
-		iterate_supers(sync_inodes_one_sb, NULL);
+		iterate_supers(sync_inodes_one_sb, &wait);
 		iterate_supers(sync_fs_one_sb, &wait);
-		iterate_supers(sync_blkdev_one_sb, &wait);
+		iterate_bdevs(fdatawrite_one_bdev, NULL);
 	}
 }
 #endif
