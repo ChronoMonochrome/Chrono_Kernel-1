@@ -3335,7 +3335,9 @@ static bool read_mailbox_0(void)
                         if(ev == 0x00800000) {
                                 pr_info("Wakeup Status: UART\n");
                                 wake_lock_timeout(&prcmu_uart_wake_lock, 20*HZ);
+#ifdef CONFIG_DBX500_CPUIDLE_DEBUG
                                 ux500_ci_dbg_console();
+#endif
                         } 			
 		}
 //- WAKEUP CHECK
