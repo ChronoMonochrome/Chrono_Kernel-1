@@ -708,6 +708,7 @@ config ARCH_SHMOBILE
 	select NEED_MACH_MEMORY_H
 	select NO_IOPORT
 	select PM_GENERIC_DOMAINS if PM
+	select PM_GENERIC_DOMAINS_SLEEP if PM
 	select SPARSE_IRQ
 	help
 	  Support for Renesas's SH-Mobile and R-Mobile ARM platforms.
