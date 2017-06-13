@@ -63,6 +63,10 @@
 #include "atags.h"
 #include "tcm.h"
 
+#ifdef CONFIG_ARCH_U8500
+#include <mach/setup-machine.h>
+#endif
+
 #ifndef MEM_SIZE
 #define MEM_SIZE	(16*1024*1024)
 #endif
@@ -737,6 +741,10 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 #else
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
+#endif
+
+#ifdef CONFIG_ARCH_U8500
+	PARSE_CMDLINE_MACHINE_EXT
 #endif
 	return 0;
 }
