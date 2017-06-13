@@ -5,6 +5,8 @@
 # VERSION&DATE	: Version 1.00	2009/02
 ##############################################################################
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 MOD_NAME = j4fs
 
 ifneq ($(KERNELRELEASE), )
