@@ -2291,7 +2291,7 @@ static void toggle_rearcam_flash(bool on)
 		}
 
 		assistive_mode = 1;
-		mmio_cam_flash_on_off(info, 3, rearcam_lux_val);
+		mmio_cam_flash_on_off(info, 3, rearcam_flash_mode + rearcam_lux_val);
 	}
 }
 
