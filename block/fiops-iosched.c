@@ -467,11 +467,11 @@ static void fiops_init_prio_data(struct fiops_ioc *cic)
 		cic->wl_type = fiops_wl_type(task_nice_ioclass(tsk));
 		break;
 	case IOPRIO_CLASS_RT:
-		cic->ioprio = IOPRIO_PRIO_DATA(ioc->ioprio);
+		cic->ioprio = task_ioprio(ioc);
 		cic->wl_type = fiops_wl_type(IOPRIO_CLASS_RT);
 		break;
 	case IOPRIO_CLASS_BE:
-		cic->ioprio = IOPRIO_PRIO_DATA(ioc->ioprio);
+		cic->ioprio = task_ioprio(ioc);
 		cic->wl_type = fiops_wl_type(IOPRIO_CLASS_BE);
 		break;
 	case IOPRIO_CLASS_IDLE:
