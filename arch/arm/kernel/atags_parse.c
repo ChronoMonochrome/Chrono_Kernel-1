@@ -28,6 +28,10 @@
 #include <asm/page.h>
 #include <asm/mach/arch.h>
 
+#ifdef CONFIG_ARCH_U8500
+#include <mach/setup-machine.h>
+#endif
+
 #include "atags.h"
 
 static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
@@ -134,10 +138,16 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
+
+#ifdef CONFIG_ARCH_U8500
+	PARSE_CMDLINE_MACHINE_EXT
+#endif
+
 	return 0;
 }
 
 __tagtable(ATAG_CMDLINE, parse_tag_cmdline);
+
 
 /*
  * Scan the tag table for this tag, and call its parse function.
