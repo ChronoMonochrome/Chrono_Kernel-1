@@ -7,7 +7,6 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/io.h>
-#include <linux/irq.h>
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
 #include <asm/mmu_context.h>
@@ -64,29 +63,6 @@ void machine_crash_nonpanic_core(void *unused)
 		cpu_relax();
 }
 
-static void machine_kexec_mask_interrupts(void)
-{
-	unsigned int i;
-	struct irq_desc *desc;
-
-	for_each_irq_desc(i, desc) {
-		struct irq_chip *chip;
-
-		chip = irq_desc_get_chip(desc);
-		if (!chip)
-			continue;
-
-		if (chip->irq_eoi && irqd_irq_inprogress(&desc->irq_data))
-			chip->irq_eoi(&desc->irq_data);
-
-		if (chip->irq_mask)
-			chip->irq_mask(&desc->irq_data);
-
-		if (chip->irq_disable && !irqd_irq_disabled(&desc->irq_data))
-			chip->irq_disable(&desc->irq_data);
-	}
-}
-
 void machine_crash_shutdown(struct pt_regs *regs)
 {
 	unsigned long msecs;
@@ -110,7 +86,6 @@ void machine_crash_shutdown(struct pt_regs *regs)
 #endif
 
 	crash_save_cpu(regs, smp_processor_id());
-	machine_kexec_mask_interrupts();
 
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Loading crashdump kernel...\n");
@@ -165,28 +140,13 @@ void machine_kexec(struct kimage *image)
 	local_irq_disable();
 	local_fiq_disable();
 	setup_mm_for_reboot(0); /* mode is not used, so just pass 0*/
-
-/* Munjeni: kexec not working by now using kexec_hardboot_hook function! */
-//#ifdef CONFIG_KEXEC_HARDBOOT
-//	/* Run any final machine-specific shutdown code. */
-//	if (image->hardboot)
-//		kexec_hardboot_hook();
-//#endif
-
 	flush_cache_all();
 	outer_flush_all();
 	outer_disable();
 	cpu_proc_fin();
-
-	// Freezes Xperia
-/*	outer_inv_all();
+	outer_inv_all();
 	flush_cache_all();
 	cpu_reset(reboot_code_buffer_phys);
-*/
-	/* Must call cpu_reset via physical address since ARMv7 (& v6) stalls the
-	 * pipeline after disabling the MMU.
-	 */
-	((typeof(cpu_reset) *)virt_to_phys(cpu_reset))(reboot_code_buffer_phys);
 }
 
 void machine_crash_swreset(void)

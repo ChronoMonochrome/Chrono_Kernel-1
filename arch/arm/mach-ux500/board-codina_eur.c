@@ -43,7 +43,6 @@
 #include <linux/leds.h>
 #include <linux/leds-regulator.h>
 #include <linux/mfd/abx500/ux500_sysctrl.h>
-#include <linux/memblock.h>
 #include <video/ktd259x_bl.h>
 #include <../drivers/staging/android/timed_gpio.h>
 
@@ -114,11 +113,6 @@
 #define USB_SERIAL_NUMBER_LEN 31
 #endif
 
-#ifdef CONFIG_KEXEC_HARDBOOT
-#define KEXEC_HARDBOOT_SIZE (PAGE_SIZE)
-#define KEXEC_HARDBOOT_START 0x2FE00000
-#endif
-
 #ifndef SSG_CAMERA_ENABLE
 #define SSG_CAMERA_ENABLE
 #endif
@@ -167,53 +161,6 @@ static int __init ram_console_setup(char *p)
 __setup("mem_ram_console=", ram_console_setup);
 
 #endif /* CONFIG_ANDROID_RAM_CONSOLE */
-
-#if 0
-static struct resource kexec_hardboot_resources[] = {
-	[0] = {
-		.start  = KEXEC_HARDBOOT_START,
-		.end    = KEXEC_HARDBOOT_START +
-			KEXEC_HARDBOOT_SIZE - 1,
-		.flags  = IORESOURCE_MEM,
-	},
-};
-
-static struct platform_device kexec_hardboot_device = {
-	.name           = "kexec_hardboot",
-	.num_resources  =  1,
-	.id             = -1,
-	.resource = kexec_hardboot_resources,
-};
-
-static void kexec_hardboot_reserve(void)
-{
-	if (memblock_reserve(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE)) {
-		printk(KERN_ERR "Failed to reserve memory for KEXEC_HARDBOOT: "
-		       "%dM@0x%.8X\n",
-		       KEXEC_HARDBOOT_SIZE / SZ_1M, KEXEC_HARDBOOT_START);
-		return;
-	}
-	memblock_free(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
-	memblock_remove(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
-
-	kexec_hardboot_device.num_resources  = ARRAY_SIZE(kexec_hardboot_resources);
-	kexec_hardboot_device.resource       = kexec_hardboot_resources;
-}
-#endif
-
-#define CMA_BASE 0x0
-#define CMA_SIZE 8 * SZ_1M
-#define CMA_LIMIT 0x0
-#define CMA_FIXED false
-struct cma *codina_cma;
-
-static void __init codina_dma_reserve(void) {
-       int res = 0;
-
-	res = dma_contiguous_reserve_area(CMA_SIZE, CMA_BASE, CMA_LIMIT, &codina_cma, true);
-	if (!res)
-		pr_err("[codina] failed to reserve cma area of %d size\n", CMA_SIZE);
-}
 
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
@@ -2289,9 +2236,6 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_MODEM_U8500
 	&u8500_modem_dev,
 #endif
-#if 0
-	&kexec_hardboot_device,
-#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2444,13 +2388,6 @@ static void __init codina_init_machine(void)
 	sec_common_init();
 
 	sec_common_init_early();
-
-#if 0
-#if defined(CONFIG_KEXEC_HARDBOOT)
-	kexec_hardboot_reserve();
-#endif
-#endif
-	codina_dma_reserve();
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	if (ram_console_device.num_resources == 1)
