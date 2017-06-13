@@ -144,7 +144,7 @@ loc_5184:
 	MOVW	R0, #0x65B0
 	SUB	R4, R4, #1
 	MOVT	R0, #0x666
-	BL	__loop_const_udelay
+	BL	__const_udelay
 	CMN	R4, #1
 	BNE	loc_5184
 
