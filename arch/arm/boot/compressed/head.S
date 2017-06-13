@@ -138,7 +138,31 @@ start:
 		.word	_edata			@ zImage end address
  THUMB(		.thumb			)
 1:		mov	r7, r1			@ save architecture ID
-		mov	r8, r2			@ save atags pointer
+		teq  r0, #0			@ Check for kexec_boot_atags.
+		movne  r8, r0		@ Save kexec_boot_tags.
+		moveq  r8, r2		@ save atags pointer
+
+#ifdef CONFIG_KEXEC_HARDBOOT
+		/* Check hardboot page for a kexec kernel. */
+		ldr	r3, =KEXEC_HB_PAGE_ADDR
+		ldr	r0, [r3]
+		ldr	r1, =KEXEC_HB_PAGE_MAGIC
+		teq	r0, r1
+		bne	not_booting_other
+
+		/* Clear hardboot page magic to avoid boot loop. */
+		mov	r0, #0
+		str	r0, [r3]
+
+		/* Load boot arguments and jump to kexec kernel. */
+		ldr	r0, [r3, #12]	@ kexec_boot_atags (r2: boot_atags)
+		ldr	r1, [r3, #8]	@ kexec_mach_type
+		ldr	pc, [r3, #4]	@ kexec_start_address
+
+		.ltorg
+
+not_booting_other:
+#endif
 
 #ifdef CONFIG_KEXEC_HARDBOOT
 		/* Check hardboot page for a kexec kernel. */

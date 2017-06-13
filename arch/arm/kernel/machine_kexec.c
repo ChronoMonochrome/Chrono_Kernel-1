@@ -140,25 +140,26 @@ void machine_kexec(struct kimage *image)
 	local_irq_disable();
 	local_fiq_disable();
 	setup_mm_for_reboot(0); /* mode is not used, so just pass 0*/
+
+/* Munjeni: kexec not working by now using kexec_hardboot_hook function! */
+//#ifdef CONFIG_KEXEC_HARDBOOT
+//	/* Run any final machine-specific shutdown code. */
+//	if (image->hardboot)
+//		kexec_hardboot_hook();
+//#endif
+
 	flush_cache_all();
 	outer_flush_all();
 	outer_disable();
 	cpu_proc_fin();
-	outer_inv_all();
+
+	// Freezes Xperia
+/*	outer_inv_all();
 	flush_cache_all();
 	cpu_reset(reboot_code_buffer_phys);
-}
-
-void machine_crash_swreset(void)
-{
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "Software reset on panic!\n");
-#else
-	;
-#endif
-
-	flush_cache_all();
-	outer_flush_all();
-	outer_disable();
-	arm_pm_restart(0, NULL);
+*/
+	/* Must call cpu_reset via physical address since ARMv7 (& v6) stalls the
+	 * pipeline after disabling the MMU.
+	 */
+	((typeof(cpu_reset) *)virt_to_phys(cpu_reset))(reboot_code_buffer_phys);
 }
