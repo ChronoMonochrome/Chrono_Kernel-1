@@ -801,7 +801,7 @@ struct ab_family_id {
 	char	*name;
 };
 
-static const struct ab_family_id ids[] __devinitdata = {
+static const struct ab_family_id ids[] __devinitconst = {
 	/* AB3100 */
 	{
 		.id = 0xc0,
@@ -930,9 +930,6 @@ static int __devinit ab3100_probe(struct i2c_client *client,
 
 	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
 				IRQF_ONESHOT, "ab3100-core", ab3100);
-	/* This real unpredictable IRQ is of course sampled for entropy */
-	rand_initialize_irq(client->irq);
-
 	if (err)
 		goto exit_no_irq;
 

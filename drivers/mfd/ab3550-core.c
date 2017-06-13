@@ -1212,7 +1212,7 @@ struct ab_family_id {
 	char	*name;
 };
 
-static const struct ab_family_id ids[] __initdata = {
+static const struct ab_family_id ids[] __initconst = {
 	/* AB3550 */
 	{
 		.id = AB3550_P1A,
@@ -1309,8 +1309,6 @@ static int __init ab3550_probe(struct i2c_client *client,
 
 	err = request_threaded_irq(client->irq, NULL, ab3550_irq_handler,
 		IRQF_ONESHOT, "ab3550-core", ab);
-	/* This real unpredictable IRQ is of course sampled for entropy */
-	rand_initialize_irq(client->irq);
 
 	if (err)
 		goto exit_no_irq;
