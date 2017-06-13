@@ -17,12 +17,8 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
-#include <linux/syscalls.h> /* sys_sync */
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#ifdef CONFIG_ZRAM_FOR_ANDROID
-#include <asm/atomic.h>
-#endif /* CONFIG_ZRAM_FOR_ANDROID */
 
 #include "power.h"
 #include <linux/delay.h>
@@ -37,11 +33,6 @@ enum {
 	DEBUG_VERBOSE = 1U << 3,
 };
 static int debug_mask = DEBUG_USER_STATE;
-#ifdef CONFIG_ZRAM_FOR_ANDROID
-atomic_t optimize_comp_on = ATOMIC_INIT(0);
-EXPORT_SYMBOL(optimize_comp_on);
-#endif /* CONFIG_ZRAM_FOR_ANDROID */
-
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 static int debug_mask_delay_ms = 0;
 module_param_named(debug_mask_delay_ms, debug_mask_delay_ms, int, S_IRUGO | S_IWUSR | S_IWGRP);
@@ -68,13 +59,6 @@ static struct hrtimer earlysuspend_timer;
 static void (*earlysuspend_func)(struct early_suspend *h);
 static void (*stallfunc)(struct early_suspend *h);
 static int earlysuspend_timeout_ms = 7000; //7s
-
-#ifdef CONFIG_SPEEDUP_KEYRESUME
-	struct sched_param earlysuspend_s = { .sched_priority = 66 };
-	struct sched_param earlysuspend_v = { .sched_priority = 0 };
-	int earlysuspend_old_prio = 0;
-	int earlysuspend_old_policy = 0;
-#endif
 
 void register_early_suspend(struct early_suspend *handler)
 {
@@ -114,9 +98,6 @@ static void early_suspend(struct work_struct *work)
 
 	mutex_lock(&early_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
-#ifdef CONFIG_ZRAM_FOR_ANDROID
-	atomic_set(&optimize_comp_on, 1);
-#endif /* CONFIG_ZRAM_FOR_ANDROID */
 	if (state == SUSPEND_REQUESTED)
 		state |= SUSPENDED;
 	else
@@ -188,22 +169,8 @@ static void late_resume(struct work_struct *work)
 	int usecs;
 	ktime_t starttime;
 
- 	#ifdef CONFIG_SPEEDUP_KEYRESUME
- 		earlysuspend_old_prio = current->rt_priority;
- 		earlysuspend_old_policy = current->policy;
-
-		/* just for this write, set us real-time */
-		if (!(unlikely(earlysuspend_old_policy == SCHED_FIFO) || unlikely(earlysuspend_old_policy == SCHED_RR))) {
-			if ((sched_setscheduler(current, SCHED_RR, &earlysuspend_s)) < 0)
-				printk(KERN_ERR "late_resume: up late_resume failed\n");
-		}
-	#endif
-
 	mutex_lock(&early_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
-#ifdef CONFIG_ZRAM_FOR_ANDROID
-	atomic_set(&optimize_comp_on, 0);
-#endif /* CONFIG_ZRAM_FOR_ANDROID */
 	if (state == SUSPENDED)
 		state &= ~SUSPENDED;
 	else
@@ -261,13 +228,6 @@ static void late_resume(struct work_struct *work)
 	standby_level = STANDBY_INITIAL;
 abort:
 	mutex_unlock(&early_suspend_lock);
-	#ifdef CONFIG_SPEEDUP_KEYRESUME
-	if (!(unlikely(earlysuspend_old_policy == SCHED_FIFO) || unlikely(earlysuspend_old_policy == SCHED_RR))) {
-		earlysuspend_v.sched_priority = earlysuspend_old_prio;
-		if ((sched_setscheduler(current, earlysuspend_old_policy, &earlysuspend_v)) < 0)
-			printk(KERN_ERR "late_resume: down late_resume failed\n");
-	}
-	#endif
 }
 
 void request_suspend_state(suspend_state_t new_state)
