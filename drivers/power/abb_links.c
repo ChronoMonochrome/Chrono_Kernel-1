@@ -661,6 +661,7 @@ static char *ab8500_battery_supplied_to[] = {
 };
 
 extern unsigned int bootmode;
+extern unsigned int is_lpm;
 
 /*
 	To create a bunch of /sys entries for DFMS application. We need a dummy power supply so we can have an entry /sys/class/power_supply 
@@ -670,7 +671,7 @@ extern unsigned int bootmode;
 */
 int make_dfms_battery_device (void)
 {
-	if (bootmode != 2)
+	if ((bootmode != 2) && (!is_lpm))
 		return 0;
 
 	charger_extra_sysfs.polling_queue = create_singlethread_workqueue("ab8500_charging_monitor");
