@@ -7,16 +7,16 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/io.h>
-#include <linux/irq.h>
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
 #include <asm/mmu_context.h>
 #include <asm/cacheflush.h>
 #include <asm/mach-types.h>
-#include <asm/system_misc.h>
 
 extern const unsigned char relocate_new_kernel[];
 extern const unsigned int relocate_new_kernel_size;
+
+extern void setup_mm_for_reboot(char mode);
 
 extern unsigned long kexec_start_address;
 extern unsigned long kexec_indirection_page;
@@ -44,8 +44,12 @@ void machine_crash_nonpanic_core(void *unused)
 	struct pt_regs regs;
 
 	crash_setup_regs(&regs, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "CPU %u will stop doing anything useful since another CPU has crashed\n",
 	       smp_processor_id());
+#else
+	;
+#endif
 	crash_save_cpu(&regs, smp_processor_id());
 	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
@@ -53,29 +57,6 @@ void machine_crash_nonpanic_core(void *unused)
 	atomic_dec(&waiting_for_crash_ipi);
 	while (1)
 		cpu_relax();
-}
-
-static void machine_kexec_mask_interrupts(void)
-{
-	unsigned int i;
-	struct irq_desc *desc;
-
-	for_each_irq_desc(i, desc) {
-		struct irq_chip *chip;
-
-		chip = irq_desc_get_chip(desc);
-		if (!chip)
-			continue;
-
-		if (chip->irq_eoi && irqd_irq_inprogress(&desc->irq_data))
-			chip->irq_eoi(&desc->irq_data);
-
-		if (chip->irq_mask)
-			chip->irq_mask(&desc->irq_data);
-
-		if (chip->irq_disable && !irqd_irq_disabled(&desc->irq_data))
-			chip->irq_disable(&desc->irq_data);
-	}
 }
 
 void machine_crash_shutdown(struct pt_regs *regs)
@@ -94,12 +75,19 @@ void machine_crash_shutdown(struct pt_regs *regs)
 		msecs--;
 	}
 	if (atomic_read(&waiting_for_crash_ipi) > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Non-crashing CPUs did not react to IPI\n");
+#else
+		;
+#endif
 
 	crash_save_cpu(regs, smp_processor_id());
-	machine_kexec_mask_interrupts();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Loading crashdump kernel...\n");
+#else
+	;
+#endif
 }
 
 /*
@@ -134,17 +122,33 @@ void machine_kexec(struct kimage *image)
 
 	flush_icache_range((unsigned long) reboot_code_buffer,
 			   (unsigned long) reboot_code_buffer + KEXEC_CONTROL_PAGE_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Bye!\n");
+#else
+	;
+#endif
 
 	if (kexec_reinit)
 		kexec_reinit();
-
-	soft_restart(reboot_code_buffer_phys);
+	local_irq_disable();
+	local_fiq_disable();
+	setup_mm_for_reboot(0); /* mode is not used, so just pass 0*/
+	flush_cache_all();
+	outer_flush_all();
+	outer_disable();
+	cpu_proc_fin();
+	outer_inv_all();
+	flush_cache_all();
+	cpu_reset(reboot_code_buffer_phys);
 }
 
 void machine_crash_swreset(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Software reset on panic!\n");
+#else
+	;
+#endif
 
 	flush_cache_all();
 	outer_flush_all();
@@ -152,9 +156,16 @@ void machine_crash_swreset(void)
 	arm_pm_restart(0, NULL);
 }
 
-void arch_crash_save_vmcoreinfo(void)
+void machine_crash_swreset(void)
 {
-#ifdef CONFIG_ARM_LPAE
-	VMCOREINFO_CONFIG(ARM_LPAE);
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(KERN_INFO "Software reset on panic!\n");
+#else
+	;
 #endif
+
+	flush_cache_all();
+	outer_flush_all();
+	outer_disable();
+	arm_pm_restart(0, NULL);
 }

@@ -57,8 +57,7 @@ relocate_new_kernel:
 	mov r0,#0
 	ldr r1,kexec_mach_type
 	ldr r2,kexec_boot_atags
- ARM(	mov pc, lr	)
- THUMB(	bx lr		)
+	mov pc,lr
 
 	.align
 

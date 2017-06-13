@@ -47,7 +47,7 @@ static int setprop_cell(void *fdt, const char *node_path,
 int atags_to_fdt(void *atag_list, void *fdt, int total_space)
 {
 	struct tag *atag = atag_list;
-	uint32_t mem_reg_property[2 * NR_BANKS];
+	uint32_t mem_reg_property[16];
 	int memcount = 0;
 	int ret;
 
@@ -57,7 +57,7 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
 
 	/* if we get a DTB here we're done already */
 	if (*(u32 *)atag_list == fdt32_to_cpu(FDT_MAGIC))
-	       return 0;
+	       return 0;	
 
 	/* validate the ATAG */
 	if (atag->hdr.tag != ATAG_CORE ||
@@ -75,9 +75,7 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
 			setprop_string(fdt, "/chosen", "bootargs",
 					atag->u.cmdline.cmdline);
 		} else if (atag->hdr.tag == ATAG_MEM) {
-			if (memcount >= sizeof(mem_reg_property)/4)
-				continue;
-			if (!atag->u.mem.size)
+			if (memcount >= sizeof(mem_reg_property)/sizeof(uint32_t))
 				continue;
 			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.start);
 			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.size);

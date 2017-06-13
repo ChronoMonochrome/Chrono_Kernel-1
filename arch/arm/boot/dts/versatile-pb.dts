@@ -41,10 +41,8 @@
 			mmc@b000 {
 				compatible = "arm,primecell";
 				reg = <0xb000 0x1000>;
-				interrupts = <23 34>;
+				interrupts = <23>;
 			};
 		};
 	};
 };
-
-/include/ "testcases/tests.dtsi"
