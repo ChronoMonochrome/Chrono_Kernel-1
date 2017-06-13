@@ -42,6 +42,7 @@
 #include <linux/leds.h>
 #include <linux/leds-regulator.h>
 #include <linux/mfd/abx500/ux500_sysctrl.h>
+#include <linux/memblock.h>
 #include <video/ktd259x_bl.h>
 #include <../drivers/staging/android/timed_gpio.h>
 
@@ -112,6 +113,11 @@
 #define USB_SERIAL_NUMBER_LEN 31
 #endif
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+#define KEXEC_HARDBOOT_SIZE (PAGE_SIZE)
+#define KEXEC_HARDBOOT_START 0x2FE00000
+#endif
+
 #ifndef SSG_CAMERA_ENABLE
 #define SSG_CAMERA_ENABLE
 #endif
@@ -161,6 +167,38 @@ __setup("mem_ram_console=", ram_console_setup);
 
 #endif /* CONFIG_ANDROID_RAM_CONSOLE */
 
+#if 0
+static struct resource kexec_hardboot_resources[] = {
+	[0] = {
+		.start  = KEXEC_HARDBOOT_START,
+		.end    = KEXEC_HARDBOOT_START +
+			KEXEC_HARDBOOT_SIZE - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device kexec_hardboot_device = {
+	.name           = "kexec_hardboot",
+	.num_resources  =  1,
+	.id             = -1,
+	.resource = kexec_hardboot_resources,
+};
+
+static void kexec_hardboot_reserve(void)
+{
+	if (memblock_reserve(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE)) {
+		printk(KERN_ERR "Failed to reserve memory for KEXEC_HARDBOOT: "
+		       "%dM@0x%.8X\n",
+		       KEXEC_HARDBOOT_SIZE / SZ_1M, KEXEC_HARDBOOT_START);
+		return;
+	}
+	memblock_free(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
+	memblock_remove(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
+
+	kexec_hardboot_device.num_resources  = ARRAY_SIZE(kexec_hardboot_resources);
+	kexec_hardboot_device.resource       = kexec_hardboot_resources;
+}
+#endif
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
 struct yas_platform_data yas_data = {
@@ -826,7 +864,11 @@ static int __init bt404_ts_init(void)
 	bt404_ts_pdata.panel_type = (board_id >= 12) ?
 						GFF_PANEL : EX_CLEAR_PANEL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "bt404: initialize pins\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -2229,6 +2271,9 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_MODEM_U8500
 	&u8500_modem_dev,
 #endif
+#if 0
+	&kexec_hardboot_device,
+#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2312,7 +2357,7 @@ static void __init codina_i2c_init(void)
 	i2c_register_board_info(7,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c7_devices));
 	if	(system_rev >= CODINA_TMO_R0_1)	{
-#ifndef CONFIG_NFC_PN544
+#if 0
 		platform_device_register(&codina_gpio_i2c8_pdata);
 	i2c_register_board_info(8,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c8_devices));
@@ -2381,6 +2426,12 @@ static void __init codina_init_machine(void)
 	sec_common_init();
 
 	sec_common_init_early();
+
+#if 0
+#if defined(CONFIG_KEXEC_HARDBOOT)
+	kexec_hardboot_reserve();
+#endif
+#endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	if (ram_console_device.num_resources == 1)
@@ -2496,59 +2547,115 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_0;
 		break;
 	case 8:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_1;
 		break;
 	case 9:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_2;
 		break;
 	case 10:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.3\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_3;
 		break;
 	case 11:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_4;
 		break;
 	case 12:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.5\n");
+#else
+		;
+#endif
 		system_rev = CODINA_R0_5;
 		break;
 	case 0x101:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board pre-Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_0;
 		break;
 	case 0x102:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_0_A;
 		break;
 	case 0x103:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_1;
 		break;
 	case 0x104:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_2;
 		break;
 	case 0x105:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_4;
 		break;
 	case 0x106:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.6\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_6;
 		break;
 	case 0x107:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SGH-T599 Board Rev 0.7\n");
+#else
+		;
+#endif
 		system_rev = CODINA_TMO_R0_7;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		break;
 	};
 
