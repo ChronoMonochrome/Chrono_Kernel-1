@@ -822,7 +822,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			}
 
 			mutex_init(&j_dbs_info->timer_mutex);
-			INIT_DELAYED_WORK_DEFERRABLE(&per_cpu(ondemandq_work, j),
+			INIT_DEFERRABLE_WORK(&per_cpu(ondemandq_work, j),
 						     do_dbs_timer);
 
 			j_dbs_info->rate_mult = 1;

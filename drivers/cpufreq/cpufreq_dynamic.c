@@ -966,7 +966,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 
 	dbs_info->enable = 1;
 	dbs_info->down_skip = 0;
-	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
+	INIT_DEFERRABLE_WORK(&dbs_info->work, do_dbs_timer);
 
 	/* We want all CPUs to do sampling nearly on same jiffy */
 	schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work, delay - jiffies % delay);

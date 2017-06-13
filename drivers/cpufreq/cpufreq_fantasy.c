@@ -522,7 +522,7 @@ static void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
     /* calcualte timer cycle time by sampling rate */
     int delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate);
     /* init workqueue for process cpu frequency */
-    INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
+    INIT_DEFERRABLE_WORK(&dbs_info->work, do_dbs_timer);
     queue_delayed_work(kfantasy_wq, &dbs_info->work, delay);
 }
 

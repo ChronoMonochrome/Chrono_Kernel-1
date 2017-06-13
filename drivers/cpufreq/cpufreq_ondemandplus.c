@@ -39,6 +39,7 @@
  * 	published by the Free Software Foundation.
  */
 
+#include <linux/module.h>
 #include <linux/cpu.h>
 #include <linux/cpumask.h>
 #include <linux/cpufreq.h>
