@@ -103,17 +103,29 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define v1printk(a...) do { \
 	if (verbose) \
 		printk(KERN_INFO a); \
+#else
+#define v1;
+#endif
 	} while (0)
+#ifdef CONFIG_DEBUG_PRINTK
 #define v2printk(a...) do { \
 	if (verbose > 1) \
 		printk(KERN_INFO a); \
+#else
+#define v2;
+#endif
 		touch_nmi_watchdog();	\
 	} while (0)
+#ifdef CONFIG_DEBUG_PRINTK
 #define eprintk(a...) do { \
 		printk(KERN_ERR a); \
+#else
+#define e;
+#endif
 		WARN_ON(1); \
 	} while (0)
 #define MAX_CONFIG_LEN		40
@@ -205,7 +217,11 @@ static int kgdbts_unreg_thread(void *ptr)
  */
 static noinline void kgdbts_break_test(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	v2printk("kgdbts: breakpoint complete\n");
+#else
+	v2;
+#endif
 }
 
 /* Lookup symbol info in the kernel */
@@ -308,7 +324,11 @@ static int check_and_rewind_pc(char *put_str, char *arg)
 		 NUMREGBYTES);
 	gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
 	ip = instruction_pointer(&kgdbts_regs);
+#ifdef CONFIG_DEBUG_PRINTK
 	v2printk("Stopped at IP: %lx\n", ip);
+#else
+	v2;
+#endif
 #ifdef GDB_ADJUSTS_BREAK_OFFSET
 	/* On some arches, a breakpoint stop requires it to be decremented */
 	if (addr + BREAK_INSTR_SIZE == ip)
@@ -319,11 +339,19 @@ static int check_and_rewind_pc(char *put_str, char *arg)
 	    ip + offset == sstep_addr &&
 	    ((!strcmp(arg, "sys_open") || !strcmp(arg, "do_fork")))) {
 		/* This is special case for emulated single step */
+#ifdef CONFIG_DEBUG_PRINTK
 		v2printk("Emul: rewind hit single step bp\n");
+#else
+		v2;
+#endif
 		restart_from_top_after_write = 1;
 	} else if (strcmp(arg, "silent") && ip + offset != addr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: BP mismatch %lx expected %lx\n",
 			   ip + offset, addr);
+#else
+		e;
+#endif
 		return 1;
 	}
 	/* Readjust the instruction pointer if needed */
@@ -347,8 +375,12 @@ static int check_single_step(char *put_str, char *arg)
 	kgdb_hex2mem(&put_str[1], (char *)kgdbts_gdb_regs,
 		 NUMREGBYTES);
 	gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
+#ifdef CONFIG_DEBUG_PRINTK
 	v2printk("Singlestep stopped at IP: %lx\n",
 		   instruction_pointer(&kgdbts_regs));
+#else
+	v2;
+#endif
 
 	if (sstep_thread_id != cont_thread_id) {
 		/*
@@ -356,7 +388,11 @@ static int check_single_step(char *put_str, char *arg)
 		 * debugger should continue until the original thread that was
 		 * single stepped is scheduled again, emulating gdb's behavior.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		v2printk("ThrID does not match: %lx\n", cont_thread_id);
+#else
+		v2;
+#endif
 		if (arch_needs_sstep_emulation) {
 			if (matched_id &&
 			    instruction_pointer(&kgdbts_regs) != addr)
@@ -373,8 +409,12 @@ static int check_single_step(char *put_str, char *arg)
 continue_test:
 	matched_id = 0;
 	if (instruction_pointer(&kgdbts_regs) == addr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: SingleStep failed at %lx\n",
 			   instruction_pointer(&kgdbts_regs));
+#else
+		e;
+#endif
 		return 1;
 	}
 
@@ -422,7 +462,11 @@ static void get_cont_catch(char *arg)
 static int put_cont_catch(char *put_str, char *arg)
 {
 	/* This is at the end of the test and we catch any and all input */
+#ifdef CONFIG_DEBUG_PRINTK
 	v2printk("kgdbts: cleanup task: %lx\n", sstep_thread_id);
+#else
+	v2;
+#endif
 	ts.idx--;
 	return 0;
 }
@@ -451,7 +495,11 @@ static void emul_sstep_get(char *arg)
 	}
 	switch (sstep_state) {
 	case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 		v2printk("Emulate single step\n");
+#else
+		v2;
+#endif
 		/* Start by looking at the current PC */
 		fill_get_buf("g");
 		break;
@@ -468,7 +516,11 @@ static void emul_sstep_get(char *arg)
 		break_helper("z0", NULL, sstep_addr);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: ERROR failed sstep get emulation\n");
+#else
+		e;
+#endif
 	}
 	sstep_state++;
 }
@@ -488,20 +540,32 @@ static int emul_sstep_put(char *put_str, char *arg)
 		kgdb_hex2mem(&put_str[1], (char *)kgdbts_gdb_regs,
 			 NUMREGBYTES);
 		gdb_regs_to_pt_regs(kgdbts_gdb_regs, &kgdbts_regs);
+#ifdef CONFIG_DEBUG_PRINTK
 		v2printk("Stopped at IP: %lx\n",
 			 instruction_pointer(&kgdbts_regs));
+#else
+		v2;
+#endif
 		/* Want to stop at IP + break instruction size by default */
 		sstep_addr = cont_addr + BREAK_INSTR_SIZE;
 		break;
 	case 2:
 		if (strncmp(put_str, "$OK", 3)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: failed sstep break set\n");
+#else
+			e;
+#endif
 			return 1;
 		}
 		break;
 	case 3:
 		if (strncmp(put_str, "$T0", 3)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: failed continue sstep\n");
+#else
+			e;
+#endif
 			return 1;
 		} else {
 			char *ptr = &put_str[11];
@@ -510,14 +574,22 @@ static int emul_sstep_put(char *put_str, char *arg)
 		break;
 	case 4:
 		if (strncmp(put_str, "$OK", 3)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: failed sstep break unset\n");
+#else
+			e;
+#endif
 			return 1;
 		}
 		/* Single step is complete so continue on! */
 		sstep_state = 0;
 		return 0;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: ERROR failed sstep put emulation\n");
+#else
+		e;
+#endif
 	}
 
 	/* Continue on the same test line until emulation is complete */
@@ -707,7 +779,11 @@ static void fill_get_buf(char *buf)
 	get_buf[count + 2] = hex_asc_hi(checksum);
 	get_buf[count + 3] = hex_asc_lo(checksum);
 	get_buf[count + 4] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 	v2printk("get%i: %s\n", ts.idx, get_buf);
+#else
+	v2;
+#endif
 }
 
 static int validate_simple_test(char *put_str)
@@ -762,8 +838,12 @@ static int run_simple_test(int is_get_char, int chr)
 		}
 
 		if (get_buf[get_buf_cnt] == '\0') {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: ERROR GET: EOB on '%s' at %i\n",
 			   ts.name, ts.idx);
+#else
+			e;
+#endif
 			get_buf_cnt = 0;
 			fill_get_buf("D");
 		}
@@ -777,14 +857,22 @@ static int run_simple_test(int is_get_char, int chr)
 	 */
 	if (ts.tst[ts.idx].get[0] == '\0' && ts.tst[ts.idx].put[0] == '\0' &&
 	    !ts.tst[ts.idx].get_handler) {
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: ERROR: beyond end of test on"
 			   " '%s' line %i\n", ts.name, ts.idx);
+#else
+		e;
+#endif
 		return 0;
 	}
 
 	if (put_buf_cnt >= BUFMAX) {
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: ERROR: put buffer overflow on"
 			   " '%s' line %i\n", ts.name, ts.idx);
+#else
+		e;
+#endif
 		put_buf_cnt = 0;
 		return 0;
 	}
@@ -798,18 +886,30 @@ static int run_simple_test(int is_get_char, int chr)
 	/* End of packet == #XX so look for the '#' */
 	if (put_buf_cnt > 3 && put_buf[put_buf_cnt - 3] == '#') {
 		if (put_buf_cnt >= BUFMAX) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: ERROR: put buffer overflow on"
 				" '%s' line %i\n", ts.name, ts.idx);
+#else
+			e;
+#endif
 			put_buf_cnt = 0;
 			return 0;
 		}
 		put_buf[put_buf_cnt] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 		v2printk("put%i: %s\n", ts.idx, put_buf);
+#else
+		v2;
+#endif
 		/* Trigger check here */
 		if (ts.validate_put && ts.validate_put(put_buf)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: ERROR PUT: end of test "
 			   "buffer on '%s' line %i expected %s got %s\n",
 			   ts.name, ts.idx, ts.tst[ts.idx].put, put_buf);
+#else
+			e;
+#endif
 		}
 		ts.idx++;
 		put_buf_cnt = 0;
@@ -842,7 +942,11 @@ static void run_plant_and_detach_test(int is_early)
 	probe_kernel_read(after, (char *)kgdbts_break_test,
 	  BREAK_INSTR_SIZE);
 	if (memcmp(before, after, BREAK_INSTR_SIZE)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "kgdbts: ERROR kgdb corrupted memory\n");
+#else
+		;
+#endif
 		panic("kgdb memory corruption");
 	}
 
@@ -871,7 +975,11 @@ static void run_breakpoint_test(int is_hw_breakpoint)
 	if (test_complete)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	eprintk("kgdbts: ERROR %s test failed\n", ts.name);
+#else
+	e;
+#endif
 	if (is_hw_breakpoint)
 		hwbreaks_ok = 0;
 }
@@ -892,8 +1000,12 @@ static void run_hw_break_test(int is_write_test)
 	hw_break_val_access();
 	if (is_write_test) {
 		if (test_complete == 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			eprintk("kgdbts: ERROR %s broke on access\n",
 				ts.name);
+#else
+			e;
+#endif
 			hwbreaks_ok = 0;
 		}
 		hw_break_val_write();
@@ -903,7 +1015,11 @@ static void run_hw_break_test(int is_write_test)
 	if (test_complete == 1)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	eprintk("kgdbts: ERROR %s test failed\n", ts.name);
+#else
+	e;
+#endif
 	hwbreaks_ok = 0;
 }
 
@@ -921,12 +1037,20 @@ static void run_nmi_sleep_test(int nmi_sleep)
 	touch_nmi_watchdog();
 	local_irq_restore(flags);
 	if (test_complete != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		eprintk("kgdbts: ERROR nmi_test did not hit nmi\n");
+#else
+		e;
+#endif
 	kgdb_breakpoint();
 	if (test_complete == 1)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	eprintk("kgdbts: ERROR %s test failed\n", ts.name);
+#else
+	e;
+#endif
 }
 
 static void run_bad_read_test(void)
@@ -992,33 +1116,69 @@ static void kgdbts_run_tests(void)
 	/* All HW break point tests */
 	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT) {
 		hwbreaks_ok = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		v1printk("kgdbts:RUN hw breakpoint test\n");
+#else
+		v1;
+#endif
 		run_breakpoint_test(1);
+#ifdef CONFIG_DEBUG_PRINTK
 		v1printk("kgdbts:RUN hw write breakpoint test\n");
+#else
+		v1;
+#endif
 		run_hw_break_test(1);
+#ifdef CONFIG_DEBUG_PRINTK
 		v1printk("kgdbts:RUN access write breakpoint test\n");
+#else
+		v1;
+#endif
 		run_hw_break_test(0);
 	}
 
 	/* required internal KGDB tests */
+#ifdef CONFIG_DEBUG_PRINTK
 	v1printk("kgdbts:RUN plant and detach test\n");
+#else
+	v1;
+#endif
 	run_plant_and_detach_test(0);
+#ifdef CONFIG_DEBUG_PRINTK
 	v1printk("kgdbts:RUN sw breakpoint test\n");
+#else
+	v1;
+#endif
 	run_breakpoint_test(0);
+#ifdef CONFIG_DEBUG_PRINTK
 	v1printk("kgdbts:RUN bad memory access test\n");
+#else
+	v1;
+#endif
 	run_bad_read_test();
+#ifdef CONFIG_DEBUG_PRINTK
 	v1printk("kgdbts:RUN singlestep test %i iterations\n", sstep_test);
+#else
+	v1;
+#endif
 	for (i = 0; i < sstep_test; i++) {
 		run_singlestep_break_test();
 		if (i % 100 == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			v1printk("kgdbts:RUN singlestep [%i/%i]\n",
 				 i, sstep_test);
+#else
+			v1;
+#endif
 	}
 
 	/* ===Optional tests=== */
 
 	if (nmi_sleep) {
+#ifdef CONFIG_DEBUG_PRINTK
 		v1printk("kgdbts:RUN NMI sleep %i seconds test\n", nmi_sleep);
+#else
+		v1;
+#endif
 		run_nmi_sleep_test(nmi_sleep);
 	}
 
@@ -1028,8 +1188,12 @@ static void kgdbts_run_tests(void)
 	 */
 	if (fork_test) {
 		repeat_test = fork_test;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kgdbts:RUN do_fork for %i breakpoints\n",
 			repeat_test);
+#else
+		;
+#endif
 		kthread_run(kgdbts_unreg_thread, NULL, "kgdbts_unreg");
 		run_do_fork_test();
 		return;
@@ -1041,8 +1205,12 @@ static void kgdbts_run_tests(void)
 	 */
 	if (do_sys_open_test) {
 		repeat_test = do_sys_open_test;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "kgdbts:RUN sys_open for %i breakpoints\n",
 			repeat_test);
+#else
+		;
+#endif
 		kthread_run(kgdbts_unreg_thread, NULL, "kgdbts_unreg");
 		run_sys_open_test();
 		return;

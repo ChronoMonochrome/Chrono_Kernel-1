@@ -105,7 +105,7 @@ static int uid_stat_show(struct seq_file *m, void *v)
 		 * time and power. */
 		if (task->cpu_power == ULLONG_MAX)
 			continue;
-		task_times(task, &utime, &stime);
+		task_cputime_adjusted(task, &utime, &stime);
 		uid_entry->active_utime += utime;
 		uid_entry->active_stime += stime;
 		uid_entry->active_power += task->cpu_power;
@@ -216,7 +216,7 @@ static int process_notifier(struct notifier_block *self,
 		goto exit;
 	}
 
-	task_times(task, &utime, &stime);
+	task_cputime_adjusted(task, &utime, &stime);
 	uid_entry->utime += utime;
 	uid_entry->stime += stime;
 	uid_entry->power += task->cpu_power;
