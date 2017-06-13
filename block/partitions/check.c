@@ -22,7 +22,6 @@
 #include "acorn.h"
 #include "amiga.h"
 #include "atari.h"
-#include "blkdev_parts.h"
 #include "ldm.h"
 #include "mac.h"
 #include "msdos.h"
@@ -42,9 +41,6 @@ static int (*check_part[])(struct parsed_partitions *) = {
 	 * Probe partition formats with tables at disk address 0
 	 * that also have an ADFS boot block at 0xdc0.
 	 */
-#ifdef CONFIG_BLKDEV_PARTITION
-	blkdev_partition,
-#endif
 #ifdef CONFIG_ACORN_PARTITION_ICS
 	adfspart_check_ICS,
 #endif
@@ -147,7 +143,11 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 
 	}
 	if (res > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s", state->pp_buf);
+#else
+		;
+#endif
 
 		free_page((unsigned long)state->pp_buf);
 		return state;
@@ -162,7 +162,11 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 	else if (warn_no_part)
 		strlcat(state->pp_buf, " unable to read partition table\n", PAGE_SIZE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", state->pp_buf);
+#else
+	;
+#endif
 
 	free_page((unsigned long)state->pp_buf);
 	kfree(state);

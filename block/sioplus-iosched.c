@@ -85,16 +85,6 @@ sio_add_request(struct request_queue *q, struct request *rq)
 	list_add_tail(&rq->queuelist, &sd->fifo_list[sync][data_dir]);
 }
 
-static int
-sio_queue_empty(struct request_queue *q)
-{
-	struct sio_data *sd = q->elevator->elevator_data;
-
-	/* Check if fifo lists are empty */
-	return list_empty(&sd->fifo_list[SYNC][READ]) && list_empty(&sd->fifo_list[SYNC][WRITE]) &&
-	       list_empty(&sd->fifo_list[ASYNC][READ]) && list_empty(&sd->fifo_list[ASYNC][WRITE]);
-}
-
 static struct request *
 sio_expired_request(struct sio_data *sd, int sync, int data_dir)
 {
@@ -250,7 +240,7 @@ sio_latter_request(struct request_queue *q, struct request *rq)
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
 
-static void *
+static int
 sio_init_queue(struct request_queue *q)
 {
 	struct sio_data *sd;
@@ -258,7 +248,7 @@ sio_init_queue(struct request_queue *q)
 	/* Allocate structure */
 	sd = kmalloc_node(sizeof(*sd), GFP_KERNEL, q->node);
 	if (!sd)
-		return NULL;
+		return -ENOMEM;
 
 	/* Initialize fifo lists */
 	INIT_LIST_HEAD(&sd->fifo_list[SYNC][READ]);
@@ -275,7 +265,7 @@ sio_init_queue(struct request_queue *q)
 	sd->fifo_batch = fifo_batch;
 	sd->writes_starved = writes_starved;
 
-	return sd;
+	return 0;
 }
 
 static void
@@ -371,7 +361,6 @@ static struct elevator_type iosched_sioplus = {
 		.elevator_merge_req_fn		= sio_merged_requests,
 		.elevator_dispatch_fn		= sio_dispatch_requests,
 		.elevator_add_req_fn		= sio_add_request,
-		.elevator_queue_empty_fn	= sio_queue_empty,
 		.elevator_former_req_fn		= sio_former_request,
 		.elevator_latter_req_fn		= sio_latter_request,
 		.elevator_init_fn		= sio_init_queue,

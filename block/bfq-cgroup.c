@@ -74,8 +74,12 @@ static inline void bfq_group_init_entity(struct bfqio_cgroup *bgrp,
 	} else {
 		if (bgrp->weight < BFQ_MIN_WEIGHT ||
 		    bgrp->weight > BFQ_MAX_WEIGHT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "bfq_group_init_entity: "
 					 "bgrp->weight %d\n", bgrp->weight);
+#else
+			;
+#endif
 			BUG();
 		}
 		entity->new_weight = bgrp->weight;

