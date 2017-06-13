@@ -600,6 +600,8 @@ call_kernel:
 
 		.ltorg
 
+		.ltorg
+
 		.align	2
 		.type	LC0, #object
 LC0:		.word	LC0			@ r1
