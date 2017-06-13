@@ -27,7 +27,6 @@
 #include <video/nova_dsilink.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/hsi.h>
-#include <mach/irqs.h>
 #include <mach/ste-dma40-db8500.h>
 #include <video/b2r2_blt.h>
 
