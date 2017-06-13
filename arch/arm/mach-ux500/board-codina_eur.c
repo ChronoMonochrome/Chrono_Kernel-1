@@ -201,22 +201,6 @@ static void kexec_hardboot_reserve(void)
 }
 #endif
 
-#if 0
-#define CMA_BASE 0x0
-#define CMA_SIZE 8 * SZ_1M
-#define CMA_LIMIT 0x0
-#define CMA_FIXED false
-struct cma *codina_cma;
-
-static void __init codina_dma_reserve(void) {
-       int res = 0;
-
-	res = dma_contiguous_reserve_area(CMA_SIZE, CMA_BASE, CMA_LIMIT, &codina_cma, true);
-	if (!res)
-		pr_err("[codina] failed to reserve cma area of %d size\n", CMA_SIZE);
-}
-#endif
-
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
 struct yas_platform_data yas_data = {
 	.hw_rev = 0,	/* hw gpio value */
@@ -2448,9 +2432,6 @@ static void __init codina_init_machine(void)
 #if defined(CONFIG_KEXEC_HARDBOOT)
 	kexec_hardboot_reserve();
 #endif
-#endif
-#if 0
-	codina_dma_reserve();
 #endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
