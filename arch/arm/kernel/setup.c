@@ -62,6 +62,10 @@
 #include "atags.h"
 #include "tcm.h"
 
+#ifdef CONFIG_ARCH_U8500
+#include <mach/setup-machine.h>
+#endif
+
 #ifndef MEM_SIZE
 #define MEM_SIZE	(16*1024*1024)
 #endif
@@ -742,18 +746,6 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
-unsigned int bootmode = 0;
-EXPORT_SYMBOL(bootmode);
-
-unsigned int is_lpm = 0;
-EXPORT_SYMBOL(is_lpm);
-static unsigned int setup_debug = 0;
-module_param_named(is_lpm, is_lpm, uint, 0444);
-module_param_named(setup_debug, setup_debug, uint, 0644);
-
-int lcdtype = 0;
-EXPORT_SYMBOL(lcdtype);
-
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 #if defined(CONFIG_CMDLINE_EXTEND)
@@ -767,38 +759,9 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		COMMAND_LINE_SIZE);
 #endif
 
-       pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
-       strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
-
-       if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
-               pr_err("LPM boot from bootloader\n");
-
-		is_lpm = 1;
-               strlcat(default_command_line, "lpm_boot=1 ", COMMAND_LINE_SIZE);
-       } else {
-               strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);
-       }
-
-       if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
-               pr_err("Recovery boot from bootloader\n");
-               strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
-       }
-
-	 strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
-
-	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
-               pr_err("LCD type WS2401 from bootloader\n");
-	       lcdtype = 4;
-               strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
-	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
-               pr_err("LCD type S6D from bootloader\n");
-               lcdtype = 8;
-               strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
-        } else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
-               pr_err("LCD type S6D from bootloader\n");
-               lcdtype = 13;
-               strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
-        }
+#ifdef CONFIG_ARCH_U8500
+	PARSE_CMDLINE_MACHINE_EXT
+#endif
 
 	return 0;
 }
