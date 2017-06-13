@@ -31,7 +31,6 @@
 #include <linux/lcd.h>
 #include <linux/backlight.h>
 #include <linux/mutex.h>
-#include <linux/kthread.h>
 #include <linux/workqueue.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -86,8 +85,6 @@
 #define DCS_CMD_SEQ_END		0xFF
 
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
-
-static signed char apeopp_requirement = 0, ddropp_requirement = 0;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
@@ -376,7 +373,6 @@ static void s6d27a1_release_opp(struct s6d27a1_dpi *lcd)
 	}
 }
 
-#if 0
 /* Reverse order of power on and channel update as compared with MCDE default display update */
 static int s6d27a1_display_update(struct mcde_display_device *ddev,
 							bool tripple_buffer)
@@ -416,7 +412,6 @@ static int s6d27a1_display_update(struct mcde_display_device *ddev,
 		
 	return 0;
 }
-#endif
 
 static int s6d27a1_set_rotation(struct mcde_display_device *ddev,
 	enum mcde_display_rotation rotation)
@@ -611,7 +606,7 @@ static int s6d27a1_dpi_ldi_enable(struct s6d27a1_dpi *lcd)
 
 static int s6d27a1_dpi_ldi_disable(struct s6d27a1_dpi *lcd)
 {
-	int ret = 0;
+	int ret;
 
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_disable\n");
 	
@@ -893,60 +888,6 @@ static const struct backlight_ops s6d27a1_dpi_backlight_ops  = {
 	.update_status = s6d27a1_dpi_set_brightness,
 };
 
-static ssize_t s6d_sysfs_show_opp(struct device *dev,
-				      struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "apeopp=%d\n"
-			    "ddropp=%d\n",
-			    apeopp_requirement,
-			    ddropp_requirement);
-}
-
-static ssize_t s6d_sysfs_store_opp(struct device *dev,
-				       struct device_attribute *attr,
-				       const char *buf, size_t len)
-{
-	int val;
-  
-  	if (!strncmp(&buf[0], "apeopp=", 7))
-	{
-		sscanf(&buf[7], "%d", &val);
-		
-		if ((val != 25) && (val != 50) && (val != 100))
-			goto out;
-		
-		apeopp_requirement = val;
-		
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", apeopp_requirement ?
-			apeopp_requirement : 50);
-
-		return len;
-	}
-	
-	if (!strncmp(&buf[0], "ddropp=", 7))
-	{
-		sscanf(&buf[7], "%d", &val);
-		
-		if ((val != 25) && (val != 50) && (val != 100))
-			goto out;
-		
-		ddropp_requirement = val;
-		
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-			"codina_lcd_dpi", ddropp_requirement ?
-			ddropp_requirement : 50);
-
-		return len;
-	}
-	
-out:
-	return -EINVAL;
-}
-static DEVICE_ATTR(mcde_screenon_opp, 0644,
-		s6d_sysfs_show_opp, s6d_sysfs_store_opp);
-
-
 static ssize_t s6d27a1_dpi_sysfs_store_lcd_power(struct device *dev,
 						struct device_attribute *attr,
 						const char *buf, size_t len)
@@ -1187,10 +1128,6 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 	if (ret < 0)
 		dev_err(&(ddev->dev),
 			"failed to add lcd_power sysfs entries\n");
-		
-	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);	
-	if (ret < 0)
-		dev_err(&(ddev->dev), "failed to add mcde_screeon_opp sysfs entries\n");
 
 	lcd->spi_drv.driver.name	= "pri_lcd_spi";
 	lcd->spi_drv.driver.bus		= &spi_bus_type;
@@ -1208,12 +1145,7 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 	lcd->earlysuspend.resume  = s6d27a1_dpi_mcde_late_resume;
 	register_early_suspend(&lcd->earlysuspend);
 #endif
-	//when screen is on, APE_OPP 25 sometimes messes it up
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-				"codina_lcd_dpi", 50)) {
-			pr_info("pcrm_qos_add APE failed\n");
-		}
-	
+
 	dev_dbg(&ddev->dev, "DPI display probed\n");
 
 	goto out;
@@ -1305,21 +1237,6 @@ static int s6d27a1_dpi_mcde_suspend(
 	return ret;
 }
 
-static void requirements_add_thread(struct work_struct *requirements_add_work)
-{
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
-}
-static DECLARE_WORK(requirements_add_work, requirements_add_thread);
-
-static void requirements_remove_thread(struct work_struct *requirements_remove_work)
-{
-	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "codina_lcd_dpi");
-}
-static DECLARE_WORK(requirements_remove_work, requirements_remove_thread);
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void s6d27a1_dpi_mcde_early_suspend(
 		struct early_suspend *earlysuspend)
@@ -1328,10 +1245,6 @@ static void s6d27a1_dpi_mcde_early_suspend(
 						struct s6d27a1_dpi,
 						earlysuspend);
 	pm_message_t dummy;
-	
-	#ifdef CONFIG_DB8500_LIVEOPP
-	schedule_work(&requirements_remove_work);
-	#endif
 
 	s6d27a1_dpi_mcde_suspend(lcd->mdd, dummy);
 
@@ -1343,10 +1256,7 @@ static void s6d27a1_dpi_mcde_late_resume(
 	struct s6d27a1_dpi *lcd = container_of(earlysuspend,
 						struct s6d27a1_dpi,
 						earlysuspend);
-	
-	#ifdef CONFIG_DB8500_LIVEOPP
-	schedule_work(&requirements_add_work);
-	#endif
+
 
 	s6d27a1_dpi_mcde_resume(lcd->mdd);
 
