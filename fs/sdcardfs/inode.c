@@ -48,14 +48,14 @@ void revert_fsids(const struct cred * old_cred)
 	put_cred(cur_cred);
 }
 
+
 static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
-			 umode_t mode, struct nameidata *nd)
+				umode_t mode, bool excl)
 {
 	int err = 0;
 	struct dentry *lower_dentry;
 	struct dentry *lower_parent_dentry = NULL;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	/* save current_cred and override it */
@@ -70,8 +70,9 @@ static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 		goto out_unlock;
 
 	/* set last 16bytes of mode field to 0664 */
-	mode = (mode & S_IFMT) | 00664;
-	err = vfs_create(lower_parent_dentry->d_inode, lower_dentry, mode, nd);
+	mode = (mode & S_IFMT) | 00664; 
+	err = vfs_create(lower_parent_dentry->d_inode, lower_dentry, mode, true);
+
 	if (err)
 		goto out;
 
@@ -87,6 +88,7 @@ out_unlock:
 	unlock_dir(lower_parent_dentry);
 	sdcardfs_put_lower_path(dentry, &lower_path);
 	REVERT_CRED(saved_cred);
+out_eacces:
 	return err;
 }
 
@@ -145,7 +147,6 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 	struct inode *lower_dir_inode = sdcardfs_lower_inode(dir);
 	struct dentry *lower_dir_dentry;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	/* save current_cred and override it */
@@ -369,7 +370,6 @@ static int sdcardfs_rmdir(struct inode *dir, struct dentry *dentry)
 	struct dentry *lower_dir_dentry;
 	int err;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 	//char *path_s = NULL;
 
@@ -459,7 +459,6 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct dentry *trap = NULL;
 	struct dentry *new_parent = NULL;
 	struct path lower_old_path, lower_new_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(old_dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	/* save current_cred and override it */
@@ -647,8 +646,6 @@ static int sdcardfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
 	struct inode *inode;
 	struct inode *lower_inode;
 	struct path lower_path;
-	struct dentry *parent;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 
 	inode = dentry->d_inode;
 
@@ -677,9 +674,6 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct iattr lower_ia;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
-	struct dentry *parent;
-	int has_rw;
 
 	inode = dentry->d_inode;
 

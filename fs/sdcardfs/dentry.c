@@ -26,7 +26,7 @@
  *          0: tell VFS to invalidate dentry
  *          1: dentry is valid
  */
-static int sdcardfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+static int sdcardfs_d_revalidate(struct dentry *dentry, unsigned int flags)
 {
 	int err = 1;
 	struct path parent_lower_path, lower_path;
@@ -35,7 +35,7 @@ static int sdcardfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	struct dentry *lower_cur_parent_dentry = NULL;
 	struct dentry *lower_dentry = NULL;
 
-	if (nd && nd->flags & LOOKUP_RCU)
+	if (flags & LOOKUP_RCU)
 		return -ECHILD;
 
 	spin_lock(&dentry->d_lock);
@@ -45,7 +45,7 @@ static int sdcardfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	}
 	spin_unlock(&dentry->d_lock);
 
-	/* check uninitialized obb_dentry and
+	/* check uninitialized obb_dentry and  
 	 * whether the base obbpath has been changed or not */
 	if (is_obbpath_invalid(dentry)) {
 		d_drop(dentry);
@@ -71,6 +71,12 @@ static int sdcardfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	if (parent_lower_dentry != lower_cur_parent_dentry) {
 		d_drop(dentry);
 		err = 0;
+		goto out;
+	}
+
+	if (dentry == lower_dentry) {
+		err = 0;
+		panic("sdcardfs: dentry is equal to lower_dentry\n");
 		goto out;
 	}
 

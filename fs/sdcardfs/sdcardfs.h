@@ -130,6 +130,11 @@ typedef enum {
 	DERIVE_UNIFIED,
 } derive_t;
 
+typedef enum {
+	LOWER_FS_EXT4,
+	LOWER_FS_FAT,
+} lower_fs_t;
+
 struct sdcardfs_sb_info;
 struct sdcardfs_mount_options;
 
@@ -156,7 +161,7 @@ extern void sdcardfs_destroy_dentry_cache(void);
 extern int new_dentry_private_data(struct dentry *dentry);
 extern void free_dentry_private_data(struct dentry *dentry);
 extern struct dentry *sdcardfs_lookup(struct inode *dir, struct dentry *dentry,
-				    struct nameidata *nd);
+				    unsigned int flags);
 extern struct inode *sdcardfs_iget(struct super_block *sb,
 				 struct inode *lower_inode);
 extern int sdcardfs_interpose(struct dentry *dentry, struct super_block *sb,
@@ -196,6 +201,7 @@ struct sdcardfs_mount_options {
 	gid_t write_gid;
 	int split_perms;
 	derive_t derive;
+	lower_fs_t lower_fs;
 	unsigned int reserved_mb;
 };
 
@@ -241,6 +247,19 @@ static inline struct file *sdcardfs_lower_file(const struct file *f)
 static inline void sdcardfs_set_lower_file(struct file *f, struct file *val)
 {
 	SDCARDFS_F(f)->lower_file = val;
+}
+
+/* copy the inode attrs from src to dest except uid and gid */
+static inline void sdcardfs_copy_inode_attr(struct inode *dest, const struct inode *src)
+{
+	dest->i_mode = src->i_mode;
+	dest->i_rdev = src->i_rdev;
+	dest->i_atime = src->i_atime;
+	dest->i_mtime = src->i_mtime;
+	dest->i_ctime = src->i_ctime;
+	dest->i_blkbits = src->i_blkbits;
+	dest->i_flags = src->i_flags;
+	set_nlink(dest, src->i_nlink);
 }
 
 /* inode to lower inode. */
@@ -326,6 +345,15 @@ static inline void sdcardfs_put_reset_##pname(const struct dentry *dent) \
 
 SDCARDFS_DENT_FUNC(lower_path)
 SDCARDFS_DENT_FUNC(orig_path)
+
+static inline void sdcardfs_copy_lower_path(const struct dentry *dent,
+					struct path *lower_path)
+{
+	spin_lock(&SDCARDFS_D(dent)->lock);
+	pathcpy(lower_path, &SDCARDFS_D(dent)->lower_path);
+	spin_unlock(&SDCARDFS_D(dent)->lock);
+	return;
+}
 
 static inline int has_graft_path(const struct dentry *dent)
 {
