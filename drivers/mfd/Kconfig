@@ -719,6 +719,12 @@ config LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX
 	int "LiveOPP bootup max freq"
 	default 800000
 
+config DB8500_PLLDDR_OC
+	tristate "PLLDDR overclock driver for DB8500 PRCMU Firmware"
+	depends on MFD_DB8500_PRCMU
+	help
+	  Select this option to enable support for PLLDDR overclock driver which
+	  supports OC/UC in userspace.
 
 config MFD_CS5535
 	tristate "Support for CS5535 and CS5536 southbridge core functions"
