@@ -812,7 +812,6 @@ __armv7_mmu_cache_on:
 		orrne	r0, r0, #1		@ MMU enabled
 		movne	r1, #-1
 		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
-		mcrne	p15, 0, r0, c8, c7, 0	@ flush I,D TLBs
 		mcrne	p15, 0, r1, c3, c0, 0	@ load domain access control
 #endif
 		mcr	p15, 0, r0, c7, c5, 4	@ ISB
