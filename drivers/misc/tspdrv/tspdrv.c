@@ -7,7 +7,6 @@
 **     TouchSense Kernel Module main entry-point.
 **
 ** Portions Copyright (c) 2008-2010 Immersion Corporation. All Rights Reserved.
-**          Copyright (c) 2014 Davide Pianca <kingbabasula@gmail.com>
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -75,8 +74,6 @@ static struct vibrator {
 	bool running;
 } vibdata;
 
-unsigned long pwm_val = 10;
-
 /* Uncomment the next line to enable debug prints */
 /* #define	IMMVIBE_DEBUG */
 
@@ -86,7 +83,6 @@ unsigned long pwm_val = 10;
 
 #ifdef IMMVIBE_DEBUG
 #define	vibdbg(_fmt, ...)	\
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IMMVIBE DEBUG: " _fmt "\n", ## __VA_ARGS__)
 #else
 #define	vibdbg(_fmt, ...)
@@ -107,9 +103,6 @@ unsigned long pwm_val = 10;
 #define VERSION_STR_LEN 16                          /* account extra space for future extra digits in version number */
 static char g_szDeviceName[(VIBE_MAX_DEVICE_NAME_LENGTH
 				+ VERSION_STR_LEN) * NUM_ACTUATORS];       /* initialized in init_module */
-#else
-	;
-#endif
 static size_t g_cchDeviceName;                      /* initialized in init_module */
 
 /* Flag indicating whether the driver is in use */
@@ -258,7 +251,7 @@ static void janice_vibrator_enable(struct timed_output_dev *dev, int value)
 			/* PWM generation mode */
 			immvibe_i2c_write(isa_data->client, HCTRL0, 0x91);
 			/* Duty 0x64 == nForce 90 */
-			immvibe_i2c_write(isa_data->client, HCTRL5, pwm_val);
+			immvibe_i2c_write(isa_data->client, HCTRL5, 0x64);
 
 			vibdata.running = true;
 		} else
@@ -320,7 +313,7 @@ int init_tspdrv_module(void)
 	DbgRecorderInit(());
 
 	ImmVibeSPI_ForceOut_Initialize();
-       VibeOSKernelLinuxInitTimer();
+    VibeOSKernelLinuxInitTimer();
 
 	/* Get and concatenate device name and initialize data buffer */
 	g_cchDeviceName = 0;
@@ -494,11 +487,7 @@ static ssize_t write(struct file *file, const char *buf, size_t count, loff_t *p
 	g_nForceLog[g_nForceLogIndex++] = g_cSPIBuffer[0];
 	if (g_nForceLogIndex >= FORCE_LOG_BUFFER_SIZE) {
 		for (i = 0; i < FORCE_LOG_BUFFER_SIZE; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%d\t%d\n", g_nTime, g_nForceLog[i]);
-#else
-			;
-#endif
 			g_nTime += TIME_INCREMENT;
 		}
 		g_nForceLogIndex = 0;
@@ -535,11 +524,7 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #ifdef QA_TEST
 		if (g_nForceLogIndex) {
 			for (i = 0; i < g_nForceLogIndex; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%d\t%d\n", g_nTime, g_nForceLog[i]);
-#else
-				;
-#endif
 				g_nTime += TIME_INCREMENT;
 			}
 		}
@@ -729,12 +714,6 @@ static int __devinit immvibe_i2c_probe(struct i2c_client* client, const struct i
 		goto out_tspdrv_init_failed;
 	}
 
-	ret = create_sysfs();
-	if (ret) {
-		pr_err("Failed to create sysfs interface", ret);
-		goto out_tspdrv_init_failed;
-	}
-
 #if REQUEST_APE_DDR_OPP
 	/* add qos APE OPP */
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
@@ -816,11 +795,7 @@ err_to_dev_reg:
 
 static void __exit immvibe_exit(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s\n", __func__);
-#else
-	;
-#endif
 	i2c_del_driver(&immvibe_i2c_driver);
 	timed_output_dev_unregister(&to_dev);
 	cleanup_tspdrv_module();

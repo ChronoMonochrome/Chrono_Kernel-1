@@ -6,6 +6,7 @@
  * License Terms: GNU General Public License v2
  */
 
+#include <linux/module.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
