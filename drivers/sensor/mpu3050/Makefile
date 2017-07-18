@@ -29,6 +29,10 @@ ifdef CONFIG_MPU_SENSORS_BMA222
 mpu3050-objs += $(MLLITE_DIR)accel/bma222.o
 endif
 
+ifdef CONFIG_MPU_SENSORS_BMA222E
+mpu3050-objs += $(MLLITE_DIR)accel/bma222e.o
+endif
+
 ifdef CONFIG_SENSORS_MMC328X
 mpu3050-objs += $(MLLITE_DIR)compass/mmc328x.o
 mpu3050-objs += $(MLLITE_DIR)compass/mmc328x_ivs.o
