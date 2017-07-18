@@ -49,10 +49,11 @@
 #include <asm/mach/map.h>
 #include <asm/mach-types.h>
 
+#include <asm/hardware/gic.h>
+
 #include <plat/pincfg.h>
 #include <plat/i2c.h>
 #include <plat/ste_dma40.h>
-#include <plat/gpio-nomadik.h>
 
 #include <mach/devices.h>
 #if defined(CONFIG_LIGHT_PROX_GP2A)
@@ -69,9 +70,6 @@
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
 
-#if defined(CONFIG_NFC_PN544)
-#include <linux/pn544.h>
-#endif
 
 #include <video/mcde_display.h>
 
@@ -311,7 +309,7 @@ struct regulator *gp2a_vio_reg;
 static int __init gp2a_setup( struct device * dev);
 static void gp2a_pwr(bool on);
 
-static struct gp2a_platform_data gp2a_plat_data __initdata = {
+static struct gp2a_platform_data gp2a_plat_data = {
 	.ps_vout_gpio = PS_VOUT_JANICE_R0_0,
 	.hw_setup = gp2a_setup,
 	.hw_pwr = gp2a_pwr,
@@ -393,7 +391,7 @@ static void gp2a_pwr(bool on)
 
 static int __init immvibe_setup( void );
 
-static struct isa1200_platform_data isa1200_plat_data __refdata = {
+static struct isa1200_platform_data isa1200_plat_data = {
 	.mot_hen_gpio = MOT_HEN_JANICE_R0_0,
 	.mot_len_gpio = MOT_LEN_JANICE_R0_0,
 	.mot_clk = NULL,
@@ -487,11 +485,8 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_JANICE_R0_0, 0);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "[TSP] GPIO output (%s)\n", (on) ? "on" : "off");
-#else
-	;
-#endif
+	printk(KERN_INFO "%s is finished.(%s)\n",
+						__func__, (on) ? "on" : "off");
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -514,11 +509,7 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxt224_register_callback\n");
-#else
-	;
-#endif
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -582,22 +573,19 @@ static const u8 *mxt224_config[] = {
 /*
 	Configuration for MXT224-E
 */
-#define MXT224E_THRESHOLD_BATT			15	/* Default: 22 */
-#define MXT224E_THRESHOLD_CHRG			20	/* Default: 25 */
-#define MXT224E_CALCFG_BATT			0x72 	//114
-#define MXT224E_CALCFG_CHRG			0x72 
+#define MXT224E_THRESHOLD_BATT		22
+#define MXT224E_THRESHOLD_CHRG		25
+#define MXT224E_CALCFG_BATT		0x72 //114
+#define MXT224E_CALCFG_CHRG		0x72 
 #define MXT224E_ATCHFRCCALTHR_NORMAL		40
 #define MXT224E_ATCHFRCCALRATIO_NORMAL		55
 
-/* Power config settings */
 static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
 				48, 255, 25};
 
-/* Acquisition config */
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
 				22, 0, 5, 1, 0, 0, 4, 35, MXT224E_ATCHFRCCALTHR_NORMAL, MXT224E_ATCHFRCCALRATIO_NORMAL};
 
-/* Multitouch screen config */
 #if defined(CONFIG_MACH_T1_CHN)
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				139, 0, 0, 19, 11, 0, 32, MXT224E_THRESHOLD_BATT, 2, 1, 10, 15, 1,
@@ -611,7 +599,6 @@ static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				143, 80, 18, 15, 50, 50, 0};
 #endif
 
-/* Key array config */
 static u8 t15_config_e[] = {TOUCH_KEYARRAY_T15,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -641,7 +628,6 @@ static u8 t46_config_e[] = {SPT_CTECONFIG_T46,
 static u8 t47_config_e[] = {PROCI_STYLUS_T47,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-/* Noise suppression config */
 static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
 				3, 132, MXT224E_CALCFG_BATT, 24, 0, 0, 0, 0, 1, 2, 0, 0, 0,
 				6,	6, 0, 0, 48, 4, 48, 10, 0, 100, 5, 0, 100, 0, 5,
@@ -891,28 +877,12 @@ static struct platform_device janice_gpio_i2c7_pdata = {
 	},
 };
 
-#if defined(CONFIG_NFC_PN544)
-static struct pn544_i2c_platform_data pn544_pdata __initdata = {
-	.irq_gpio = NFC_IRQ_JANICE_R0_0,
-	.ven_gpio = NFC_EN_JANICE_R0_0,
-	.firm_gpio = NFC_FIRM_JANICE_R0_0,
-};
-#endif
-
 static struct i2c_board_info __initdata janice_r0_0_gpio_i2c7_devices[] = {
-#if defined(CONFIG_NFC_PN544)
-	{
-		I2C_BOARD_INFO("pn544", 0x2b),
-		.irq = GPIO_TO_IRQ(NFC_IRQ_JANICE_R0_0),
-		.platform_data = &pn544_pdata,
-	},
-#else
-	// TBD - NFC
-	#if 0
+// TBD - NFC
+#if 0
 	{
 		I2C_BOARD_INFO("", 0x30),
 	},
-	#endif
 #endif
 };
 
@@ -1535,6 +1505,7 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.config_pullups		= {0xE0, 0x1F, 0x00, 0x00, 0x80, 0x00},
 };
 
+
 static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
 	/*
 	 * SysClkReq1RfClkBuf - SysClkReq8RfClkBuf
@@ -1630,26 +1601,26 @@ static void sec_jack_mach_init(struct platform_device *pdev)
 	/* initialise threshold for ACCDETECT1 comparator
 	 * and the debounce for all ACCDETECT comparators */
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-		0x80, 0x31);
+						0x80, 0x31);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n",__func__);
+		pr_err("%s: ab8500 write failed\n", __func__);
 
 	/* initialise threshold for ACCDETECT2 comparator1 and comparator2 */
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-		0x81, 0xB3);
+						0x81, 0xB3);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n",__func__);
+		pr_err("%s: ab8500 write failed\n", __func__);
 
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-		0x82, 0x33);
-
+						0x82, 0x33); //KSND
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n",__func__);
+		pr_err("%s: ab8500 write failed\n", __func__);
 
 	/* set output polarity to Gnd when VAMIC1 is disabled */
-	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_REGU_CTRL1, 0x84, 0x1);
+	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_REGU_CTRL1,
+						0x84, 0x1);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n",__func__);
+		pr_err("%s: ab8500 write failed\n", __func__);
 }
 
 int sec_jack_get_det_level(struct platform_device *pdev)
@@ -1657,8 +1628,11 @@ int sec_jack_get_det_level(struct platform_device *pdev)
 	u8 value = 0;
 	int ret = 0;
 
-	abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
+	ret = abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
 		&value);
+	if (ret < 0)
+		return ret;
+
 	ret = (value & 0x04) >> 2;
 	pr_info("%s: ret=%x\n", __func__, ret);
 
@@ -1677,7 +1651,10 @@ struct sec_jack_platform_data sec_jack_pdata = {
 	.det_f = "ACC_DETECT_1DB_F",
 	.buttons_r = "ACC_DETECT_21DB_R",
 	.buttons_f = "ACC_DETECT_21DB_F",
-	.regulator_mic_source = "v-amic1"
+	.regulator_mic_source = "v-amic1",
+#ifdef CONFIG_SAMSUNG_JACK_SW_WATERPROOF
+	.ear_reselector_zone    = 1650,
+#endif
 };
 #endif
 
@@ -1807,11 +1784,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
-#else
-	;
-#endif
 	return;
 }
 
@@ -1997,11 +1970,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev == JANICE_R0_2) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
-#else
-		;
-#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2020,11 +1989,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev >= JANICE_R0_3) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
-#else
-		;
-#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2125,7 +2090,7 @@ static void __init janice_init_machine(void)
 #endif
 
 	platform_device_register(&db8500_prcmu_device);
-	platform_device_register(&u8500_usecase_gov_device);
+	//platform_device_register(&u8500_usecase_gov_device);
 
 	u8500_init_devices();
 
@@ -2195,67 +2160,35 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.0\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_0;
 		break;
 	case 8:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.1\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_1;
 		break;
 	case 9:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.2\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_2;
 		break;
 	case 10:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.3\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_3;
 		break;
 	case 11:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.4\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_4;
 		break;
 	case 12:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.5\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_5;
 		break;
 	case 13:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "JANICE Board Rev 0.6\n");
-#else
-		;
-#endif
 		system_rev = JANICE_R0_6;
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
-#else
-		;
-#endif
 		break;
 	};
 
@@ -2265,10 +2198,12 @@ __setup("board_id=", board_id_setup);
 
 MACHINE_START(JANICE, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
-	.boot_params	= 0x00000100,
+	.atag_offset	= 0x00000100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
+	.handle_irq     = gic_handle_irq,
 	.init_machine	= janice_init_machine,
 	.restart	= ux500_restart,
-MACHINE_END 
+MACHINE_END
+
