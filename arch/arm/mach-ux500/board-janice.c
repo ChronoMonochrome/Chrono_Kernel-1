@@ -49,6 +49,8 @@
 #include <asm/mach/map.h>
 #include <asm/mach-types.h>
 
+#include <asm/hardware/gic.h>
+
 #include <plat/pincfg.h>
 #include <plat/i2c.h>
 #include <plat/ste_dma40.h>
@@ -2105,7 +2107,7 @@ static void __init janice_init_machine(void)
 #endif
 
 	platform_device_register(&db8500_prcmu_device);
-	platform_device_register(&u8500_usecase_gov_device);
+	//platform_device_register(&u8500_usecase_gov_device);
 
 	u8500_init_devices();
 
@@ -2213,10 +2215,12 @@ __setup("board_id=", board_id_setup);
 
 MACHINE_START(JANICE, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
-	.boot_params	= 0x00000100,
+	.atag_offset	= 0x00000100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
+	.handle_irq     = gic_handle_irq,
 	.init_machine	= janice_init_machine,
 	.restart	= ux500_restart,
-MACHINE_END 
+MACHINE_END
+
