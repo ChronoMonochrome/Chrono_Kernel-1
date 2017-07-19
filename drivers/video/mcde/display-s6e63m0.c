@@ -1260,11 +1260,11 @@ unsigned short *Gen_gamma_table(struct s6e63m0 *lcd)
 
 	/* for debug */
 	#if 0
-;
+		printk("%s lcd->bl : %d ",__func__,lcd->bl);
 		for(i=3;i<((gen_table_max*2)+3);i+=2) {
-;
+			printk("0x%x ",s6e63m0_22_gamma_table[i]);
 		}
-;
+		printk("\n");
 	#endif
 
 	if (R_req) {
@@ -1660,8 +1660,8 @@ static void s6e63mo_read_mtp_info(struct s6e63m0 *lcd)
 				(u8 *)(&(lcd->smart.MTP)), LDI_MTP_LENGTH);
 
 	for(i=0;i<LDI_MTP_LENGTH;i++) {
-//		printk("[S6E63M0] MainMTPData [%d] : %02x\n", i,
-;
+		printk("[S6E63M0] MainMTPData [%d] : %02x\n", i,
+				((char*)&(lcd->smart.MTP))[i]);
 	}
 
 	Smart_dimming_init(&(lcd->smart));
@@ -1675,8 +1675,8 @@ static void s6e63mo_mtp_from_boot(struct s6e63m0 *lcd, char *mtp)
 	memcpy(&(lcd->smart.MTP), mtp, LDI_MTP_LENGTH);
 
 	for (i = 0; i < LDI_MTP_LENGTH; i++) {
-//		printk("[S6E63M0] MainMTPData [%d] %02x\n", i,
-;
+		printk("[S6E63M0] MainMTPData [%d] %02x\n", i,
+				((char *)&(lcd->smart.MTP))[i]);
 	}
 	Smart_dimming_init(&(lcd->smart));
 }
@@ -1702,7 +1702,7 @@ static int update_brightness(struct s6e63m0 *lcd, u8 force)
 	if ((force) || ((lcd->ldi_state) &&
 				(lcd->current_brightness != lcd->bl))) {
 
-;
+	printk("[S6E63M0] Brightness: %d BL: %d\n", bl, lcd->bl);
 
 		ret = s6e63m0_set_elvss(lcd);
 		if (ret) {
@@ -2090,7 +2090,7 @@ static ssize_t s6e63m0_sysfs_store_gamma_mode(struct device *dev,
 	if (lcd->ldi_state)
 	{
 		if((lcd->current_brightness == lcd->bl) && (lcd->current_gamma_mode == lcd->gamma_mode))
-;
+			printk("there is no gamma_mode & brightness changed\n");
 		else
 			s6e63m0_gamma_ctl(lcd);
 	}
@@ -2211,6 +2211,12 @@ err:
 	
 }
 
+static bool s6d = 0;
+bool is_s6d(void)
+{
+	return s6d;
+}
+
 static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
@@ -2260,7 +2266,6 @@ static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 	pr_info("[S6E63M0] LCD ID [%#04X]\n", lcd_id[1]);
 //	pr_info("[S6E63M0] smart dimming lcd id: %#04X\n", SMART_MTP_PANEL_ID);
 //	if (lcd_id[1] >= SMART_MTP_PANEL_ID) {
-#ifdef CONFIG_RAM_CONSOLE
 		if (!is_load_mtp_offset) {
 		#if 0
 			s6e63mo_read_mtp_info(lcd);
@@ -2269,7 +2274,6 @@ static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 		#endif
 			is_load_mtp_offset =  1;
 		}
-#endif
 //	}
 	#endif
 
