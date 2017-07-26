@@ -25,7 +25,6 @@
 /*
  * Wait for CSM_RUNNING, all data sent for display
  */
-static bool Ispba_status = false;
 static void wait_while_running(u8 *io, struct device *dev)
 {
 	u8 counter = DSI_READ_TIMEOUT_MS;
@@ -223,10 +222,6 @@ static int read(u8 *io, struct device *dev, u8 cmd, u32 *data, int *len)
 	bool ack_with_err = false;
 	u8 nbr_of_retries = DSI_READ_NBR_OF_RETRIES;
 
-	if (Ispba_status == true) {
-		dev_info(dev,"mipi read is pba test! \n");
-		return ret;
-	}
 	dsi_wfld(io, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(io, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
 	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(READ) |
@@ -309,9 +304,6 @@ static int enable(u8 *io, struct device *dev, const struct dsilink_port *port,
 				struct dsilink_dsi_vid_registers *vid_regs)
 {
 	int i = 0;
-
-	if (port->phy.check_pba)
-		Ispba_status = true;
 
 	dsi_wfld(io, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
 	dsi_wfld(io, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
