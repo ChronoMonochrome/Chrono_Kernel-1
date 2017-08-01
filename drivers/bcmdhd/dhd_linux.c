@@ -6378,7 +6378,17 @@ dhd_net_bus_devreset(struct net_device *dev, uint8 flag)
 {
 	int ret;
 
+	if (unlikely(IS_ERR_OR_NULL(dev))) {
+		pr_err("%s: dev is NULL\n", __func__);
+		return -EFAULT;
+	}
+
 	dhd_info_t *dhd = *(dhd_info_t **)netdev_priv(dev);
+
+	if (unlikely(IS_ERR_OR_NULL(dhd))) {
+		pr_err("%s: dhd is NULL\n", __func__);
+		return -EFAULT;
+	}
 
 	if (flag == TRUE) {
 		/* Issue wl down command before resetting the chip */

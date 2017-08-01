@@ -299,7 +299,17 @@ done:
 void
 dhd_prot_pending(dhd_pub_t * dhd, bool flag)
 {
+	if (unlikely(IS_ERR_OR_NULL(dhd))) {
+		pr_err("%s: dhd is NULL\n", __func__);
+		return;
+	}
+
 	dhd_prot_t *prot = dhd->prot;
+
+	if (unlikely(IS_ERR_OR_NULL(dhd->prot))) {
+		pr_err("%s: dhd->prot is NULL\n", __func__);
+		return;
+	}
 
 	prot->pending = flag;
 }
