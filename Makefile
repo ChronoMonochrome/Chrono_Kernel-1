@@ -340,9 +340,9 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 
-#ifneq ("$(USE_CCACHE)", "")
-# CCACHE=ccache
-#endif
+ifneq ("$(USE_CCACHE)", "")
+ CCACHE=ccache
+endif
 
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
