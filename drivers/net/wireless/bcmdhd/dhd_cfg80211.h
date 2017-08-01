@@ -1,7 +1,5 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
+ * Linux cfg80211 driver - Dongle Host Driver (DHD) related
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
@@ -23,37 +21,30 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * $Id: wl_cfg80211.c,v 1.1.4.1.2.14 2011/02/09 01:40:07 Exp $
  */
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+#ifndef __DHD_CFG80211__
+#define __DHD_CFG80211__
 
-typedef enum pkt_frag
+#include <wl_cfg80211.h>
+#include <wl_cfgp2p.h>
+
+s32 dhd_cfg80211_init(struct bcm_cfg80211 *cfg);
+s32 dhd_cfg80211_deinit(struct bcm_cfg80211 *cfg);
+s32 dhd_cfg80211_down(struct bcm_cfg80211 *cfg);
+s32 dhd_cfg80211_set_p2p_info(struct bcm_cfg80211 *cfg, int val);
+s32 dhd_cfg80211_clean_p2p_info(struct bcm_cfg80211 *cfg);
+s32 dhd_config_dongle(struct bcm_cfg80211 *cfg);
+
+#ifdef CONFIG_NL80211_TESTMODE
+int dhd_cfg80211_testmode_cmd(struct wiphy *wiphy, void *data, int len);
+#else
+static inline int dhd_cfg80211_testmode_cmd(struct wiphy *wiphy, void *data, int len)
 {
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
+	return 0;
+}
+#endif
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
-
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
-
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+#endif /* __DHD_CFG80211__ */

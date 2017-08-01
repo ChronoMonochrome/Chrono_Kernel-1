@@ -1,7 +1,5 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
+ * Definitions for nl80211 testmode access to host driver
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
@@ -23,37 +21,36 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * $Id: brcm_nl80211.h 454792 2014-02-11 20:40:19Z $
+ *
  */
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
+#ifndef _brcm_nl80211_h_
+#define _brcm_nl80211_h_
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+struct bcm_nlmsg_hdr {
+	uint cmd;	/* common ioctl definition */
+	uint len;	/* attached buffer length */
+	uint offset;	/* user buffer offset */
+	uint set;	/* get or set request optional */
+	uint magic;	/* magic number for verification */
+};
 
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
+enum bcmnl_attrs {
+	BCM_NLATTR_UNSPEC,
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
+	BCM_NLATTR_LEN,
+	BCM_NLATTR_DATA,
 
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
+	__BCM_NLATTR_AFTER_LAST,
+	BCM_NLATTR_MAX = __BCM_NLATTR_AFTER_LAST - 1
+};
 
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
+struct nl_prv_data {
+	int err;			/* return result */
+	void *data;			/* ioctl return buffer pointer */
+	uint len;			/* ioctl return buffer length */
+	struct bcm_nlmsg_hdr *nlioc;	/* bcm_nlmsg_hdr header pointer */
+};
 
-#endif /* _dhd_ip_h_ */
+#endif /* _brcm_nl80211_h_ */

@@ -1,8 +1,4 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
- *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
@@ -23,37 +19,34 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * Fundamental constants relating to 802.3
+ *
+ * $Id: 802.3.h 417943 2013-08-13 07:54:04Z $
  */
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
+#ifndef _802_3_h_
+#define _802_3_h_
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+/* This marks the start of a packed structure section. */
+#include <packed_section_start.h>
 
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
+#define SNAP_HDR_LEN	6	/* 802.3 SNAP header length */
+#define DOT3_OUI_LEN	3	/* 802.3 oui length */
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
+BWL_PRE_PACKED_STRUCT struct dot3_mac_llc_snap_header {
+	uint8	ether_dhost[ETHER_ADDR_LEN];	/* dest mac */
+	uint8	ether_shost[ETHER_ADDR_LEN];	/* src mac */
+	uint16	length;				/* frame length incl header */
+	uint8	dsap;				/* always 0xAA */
+	uint8	ssap;				/* always 0xAA */
+	uint8	ctl;				/* always 0x03 */
+	uint8	oui[DOT3_OUI_LEN];		/* RFC1042: 0x00 0x00 0x00
+						 * Bridge-Tunnel: 0x00 0x00 0xF8
+						 */
+	uint16	type;				/* ethertype */
+} BWL_POST_PACKED_STRUCT;
 
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
+/* This marks the end of a packed structure section. */
+#include <packed_section_end.h>
 
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+#endif	/* #ifndef _802_3_h_ */

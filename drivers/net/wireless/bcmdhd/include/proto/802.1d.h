@@ -1,8 +1,4 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
- *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
@@ -23,37 +19,32 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * Fundamental types and constants relating to 802.1D
+ *
+ * $Id: 802.1d.h 382882 2013-02-04 23:24:31Z $
  */
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
+#ifndef _802_1_D_
+#define _802_1_D_
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+/* 802.1D priority defines */
+#define	PRIO_8021D_NONE		2	/* None = - */
+#define	PRIO_8021D_BK		1	/* BK - Background */
+#define	PRIO_8021D_BE		0	/* BE - Best-effort */
+#define	PRIO_8021D_EE		3	/* EE - Excellent-effort */
+#define	PRIO_8021D_CL		4	/* CL - Controlled Load */
+#define	PRIO_8021D_VI		5	/* Vi - Video */
+#define	PRIO_8021D_VO		6	/* Vo - Voice */
+#define	PRIO_8021D_NC		7	/* NC - Network Control */
+#define	MAXPRIO			7	/* 0-7 */
+#define NUMPRIO			(MAXPRIO + 1)
 
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
+#define ALLPRIO		-1	/* All prioirty */
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
+/* Converts prio to precedence since the numerical value of
+ * PRIO_8021D_BE and PRIO_8021D_NONE are swapped.
+ */
+#define PRIO2PREC(prio) \
+	(((prio) == PRIO_8021D_NONE || (prio) == PRIO_8021D_BE) ? ((prio^2)) : (prio))
 
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
-
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+#endif /* _802_1_D__ */
