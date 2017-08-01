@@ -1,7 +1,19 @@
 /*
- * Header file describing the common ip parser function.
+ * Declare directives for structure packing. No padding will be provided
+ * between the members of packed structures, and therefore, there is no
+ * guarantee that structure members will be aligned.
  *
- * Provides type definitions and function prototypes used to parse ip packet.
+ * Declaring packed structures is compiler specific. In order to handle all
+ * cases, packed structures should be delared as:
+ *
+ * #include <packed_section_start.h>
+ *
+ * typedef BWL_PRE_PACKED_STRUCT struct foobar_t {
+ *    some_struct_members;
+ * } BWL_POST_PACKED_STRUCT foobar_t;
+ *
+ * #include <packed_section_end.h>
+ *
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
@@ -22,38 +34,26 @@
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
- *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * $Id: packed_section_end.h 241182 2011-02-17 21:50:03Z $
  */
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+/* Error check - BWL_PACKED_SECTION is defined in packed_section_start.h
+ * and undefined in packed_section_end.h. If it is NOT defined at this
+ * point, then there is a missing include of packed_section_start.h.
+ */
+#ifdef BWL_PACKED_SECTION
+	#undef BWL_PACKED_SECTION
+#else
+	#error "BWL_PACKED_SECTION is NOT defined!"
+#endif
 
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
 
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
 
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+/* Compiler-specific directives for structure packing are declared in
+ * packed_section_start.h. This marks the end of the structure packing section,
+ * so, undef them here.
+ */
+#undef	BWL_PRE_PACKED_STRUCT
+#undef	BWL_POST_PACKED_STRUCT

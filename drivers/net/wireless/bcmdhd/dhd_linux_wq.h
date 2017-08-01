@@ -1,7 +1,6 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
+ * Broadcom Dongle Host Driver (DHD), Generic work queue framework
+ * Generic interface to handle dhd deferred work events
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
@@ -23,37 +22,43 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * $Id: dhd_linux_wq.h 408802 2013-06-20 19:08:47Z $
  */
+#ifndef _dhd_linux_wq_h_
+#define _dhd_linux_wq_h_
+/*
+ *	Work event definitions
+ */
+enum _wq_event {
+	DHD_WQ_WORK_IF_ADD = 1,
+	DHD_WQ_WORK_IF_DEL,
+	DHD_WQ_WORK_SET_MAC,
+	DHD_WQ_WORK_SET_MCAST_LIST,
+	DHD_WQ_WORK_IPV6_NDO,
+	DHD_WQ_WORK_HANG_MSG,
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
+	DHD_MAX_WQ_EVENTS
+};
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
+/*
+ *	Work event priority
+ */
+#define DHD_WORK_PRIORITY_LOW	0
+#define DHD_WORK_PRIORITY_HIGH	1
 
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
+/*
+ *	Error definitions
+ */
+#define DHD_WQ_STS_OK			 0
+#define DHD_WQ_STS_FAILED		-1	/* General failure */
+#define DHD_WQ_STS_UNINITIALIZED	-2
+#define DHD_WQ_STS_SCHED_FAILED		-3
+#define DHD_WQ_STS_UNKNOWN_EVENT	-4
 
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
+typedef void (*event_handler_t)(void *handle, void *event_data, u8 event);
 
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
-
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+void *dhd_deferred_work_init(void *dhd);
+void dhd_deferred_work_deinit(void *work);
+int dhd_deferred_schedule_work(void *event_data, u8 event,
+	event_handler_t evt_handler, u8 priority);
+#endif /* _dhd_linux_wq_h_ */

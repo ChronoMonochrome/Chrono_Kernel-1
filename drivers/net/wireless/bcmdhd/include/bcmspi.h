@@ -1,7 +1,5 @@
 /*
- * Header file describing the common ip parser function.
- *
- * Provides type definitions and function prototypes used to parse ip packet.
+ * Broadcom SPI Low-Level Hardware Driver API
  *
  * Copyright (C) 1999-2014, Broadcom Corporation
  * 
@@ -23,37 +21,20 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_ip.h 434656 2013-11-07 01:11:33Z $
+ * $Id: bcmspi.h 241182 2011-02-17 21:50:03Z $
  */
+#ifndef	_BCM_SPI_H
+#define	_BCM_SPI_H
 
-#ifndef _dhd_ip_h_
-#define _dhd_ip_h_
+extern void spi_devintr_off(sdioh_info_t *sd);
+extern void spi_devintr_on(sdioh_info_t *sd);
+extern bool spi_start_clock(sdioh_info_t *sd, uint16 new_sd_divisor);
+extern bool spi_controller_highspeed_mode(sdioh_info_t *sd, bool hsmode);
+extern bool spi_check_client_intr(sdioh_info_t *sd, int *is_dev_intr);
+extern bool spi_hw_attach(sdioh_info_t *sd);
+extern bool spi_hw_detach(sdioh_info_t *sd);
+extern void spi_sendrecv(sdioh_info_t *sd, uint8 *msg_out, uint8 *msg_in, int msglen);
+extern void spi_spinbits(sdioh_info_t *sd);
+extern void spi_waitbits(sdioh_info_t *sd, bool yield);
 
-#ifdef DHDTCPACK_SUPPRESS
-#include <dngl_stats.h>
-#include <bcmutils.h>
-#include <dhd.h>
-#endif /* DHDTCPACK_SUPPRESS */
-
-typedef enum pkt_frag
-{
-	DHD_PKT_FRAG_NONE = 0,
-	DHD_PKT_FRAG_FIRST,
-	DHD_PKT_FRAG_CONT,
-	DHD_PKT_FRAG_LAST
-} pkt_frag_t;
-
-extern pkt_frag_t pkt_frag_info(osl_t *osh, void *p);
-
-#ifdef DHDTCPACK_SUPPRESS
-#define	TCPACKSZMIN	(ETHER_HDR_LEN + IPV4_MIN_HEADER_LEN + TCP_MIN_HEADER_LEN)
-/* Size of MAX possible TCP ACK packet. Extra bytes for IP/TCP option fields */
-#define	TCPACKSZMAX	(TCPACKSZMIN + 100)
-
-extern void dhd_tcpack_suppress_set(dhd_pub_t *dhdp, bool on);
-extern void dhd_tcpack_info_tbl_clean(dhd_pub_t *dhdp);
-extern int dhd_tcpack_check_xmit(dhd_pub_t *dhdp, void *pkt);
-extern bool dhd_tcpack_suppress(dhd_pub_t *dhdp, void *pkt);
-#endif /* DHDTCPACK_SUPPRESS */
-
-#endif /* _dhd_ip_h_ */
+#endif /* _BCM_SPI_H */
