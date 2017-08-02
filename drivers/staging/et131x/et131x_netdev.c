@@ -131,7 +131,7 @@ struct net_device *et131x_device_alloc(void)
 	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
 
 	if (netdev == NULL) {
-		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
+;
 		return NULL;
 	}
 
@@ -663,8 +663,8 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
 
 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
 
-	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
-			netdev->name, netdev->dev_addr);
+//	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
+;
 
 	/* Free Rx DMA memory */
 	et131x_adapter_memory_free(adapter);

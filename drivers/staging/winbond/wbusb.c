@@ -78,18 +78,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
 static void wbsoft_remove_interface(struct ieee80211_hw *dev,
 				    struct ieee80211_vif *vif)
 {
-	printk("wbsoft_remove interface called\n");
+;
 }
 
 static void wbsoft_stop(struct ieee80211_hw *hw)
 {
-	printk(KERN_INFO "%s called\n", __func__);
+;
 }
 
 static int wbsoft_get_stats(struct ieee80211_hw *hw,
 			    struct ieee80211_low_level_stats *stats)
 {
-	printk(KERN_INFO "%s called\n", __func__);
+;
 	return 0;
 }
 
@@ -176,7 +176,7 @@ static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info
 	if (pHwData->SurpriseRemove)
 		return;
 
-	printk("Going to channel: %d/%d\n", channel.band, channel.ChanNo);
+;
 
 	RFSynthesizer_SwitchingChannel(pHwData, channel); /* Switch channel */
 	pHwData->Channel = channel.ChanNo;
@@ -261,7 +261,7 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
 	struct wbsoft_priv *priv = dev->priv;
 	struct chan_info ch;
 
-	printk("wbsoft_config called\n");
+;
 
 	/* Should use channel_num, or something, as that is already pre-translated */
 	ch.band = 1;
@@ -279,7 +279,7 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
 
 static u64 wbsoft_get_tsf(struct ieee80211_hw *dev)
 {
-	printk("wbsoft_get_tsf called\n");
+;
 	return 0;
 }
 
@@ -782,7 +782,7 @@ static int wb35_probe(struct usb_interface *intf,
 	endpoint = &interface->endpoint[0].desc;
 
 	if (endpoint[2].wMaxPacketSize == 512)
-		printk("[w35und] Working on USB 2.0\n");
+;
 
 	err = wb35_hw_init(dev);
 	if (err)

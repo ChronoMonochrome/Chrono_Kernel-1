@@ -70,7 +70,7 @@ int wifi_get_irq_number(unsigned long *irq_flags_ptr)
 
 int wifi_set_carddetect(int on)
 {
-	printk(KERN_ERR "%s = %d\n", __func__, on);
+;
 	if (wifi_control_data && wifi_control_data->set_carddetect)
 		wifi_control_data->set_carddetect(on);
 	return 0;
@@ -78,7 +78,7 @@ int wifi_set_carddetect(int on)
 
 int wifi_set_power(int on, unsigned long msec)
 {
-	printk(KERN_ERR "%s = %d\n", __func__, on);
+;
 	if (wifi_control_data && wifi_control_data->set_power)
 		wifi_control_data->set_power(on);
 	if (msec)
@@ -88,7 +88,7 @@ int wifi_set_power(int on, unsigned long msec)
 
 int wifi_set_reset(int on, unsigned long msec)
 {
-	printk(KERN_ERR "%s = %d\n", __func__, on);
+;
 	if (wifi_control_data && wifi_control_data->set_reset)
 		wifi_control_data->set_reset(on);
 	if (msec)
@@ -101,7 +101,7 @@ static int wifi_probe(struct platform_device *pdev)
 	struct wifi_platform_data *wifi_ctrl =
 	    (struct wifi_platform_data *)(pdev->dev.platform_data);
 
-	printk(KERN_ERR "## %s\n", __func__);
+;
 	wifi_irqres =
 	    platform_get_resource_byname(pdev, IORESOURCE_IRQ,
 					 "bcm4329_wlan_irq");
@@ -119,7 +119,7 @@ static int wifi_remove(struct platform_device *pdev)
 	struct wifi_platform_data *wifi_ctrl =
 	    (struct wifi_platform_data *)(pdev->dev.platform_data);
 
-	printk(KERN_ERR "## %s\n", __func__);
+;
 	wifi_control_data = wifi_ctrl;
 
 	wifi_set_carddetect(0);	/* CardDetect (1->0) */
@@ -1966,8 +1966,8 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		dhd->watchdog_tsk = kthread_run(dhd_watchdog_thread, dhd,
 						"dhd_watchdog");
 		if (IS_ERR(dhd->watchdog_tsk)) {
-			printk(KERN_WARNING
-				"dhd_watchdog thread failed to start\n");
+//			printk(KERN_WARNING
+;
 			dhd->watchdog_tsk = NULL;
 		}
 	} else {
@@ -1980,8 +1980,8 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		sema_init(&dhd->dpc_sem, 0);
 		dhd->dpc_tsk = kthread_run(dhd_dpc_thread, dhd, "dhd_dpc");
 		if (IS_ERR(dhd->dpc_tsk)) {
-			printk(KERN_WARNING
-				"dhd_dpc thread failed to start\n");
+//			printk(KERN_WARNING
+;
 			dhd->dpc_tsk = NULL;
 		}
 	} else {
@@ -1994,8 +1994,8 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		dhd->sysioc_tsk = kthread_run(_dhd_sysioc_thread, dhd,
 						"_dhd_sysioc");
 		if (IS_ERR(dhd->sysioc_tsk)) {
-			printk(KERN_WARNING
-				"_dhd_sysioc thread failed to start\n");
+//			printk(KERN_WARNING
+;
 			dhd->sysioc_tsk = NULL;
 		}
 	} else
@@ -2364,8 +2364,8 @@ static int __init dhd_module_init(void)
 	/* Waiting callback after platform_driver_register is done or
 		 exit with error */
 	if (down_timeout(&wifi_control_sem, msecs_to_jiffies(1000)) != 0) {
-		printk(KERN_ERR "%s: platform_driver_register timeout\n",
-			__func__);
+//		printk(KERN_ERR "%s: platform_driver_register timeout\n",
+;
 		/* remove device */
 		wifi_del_dev();
 		goto failed;

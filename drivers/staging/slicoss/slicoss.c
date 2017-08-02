@@ -153,15 +153,15 @@ static void slic_assert_fail(void)
 	cpuid = smp_processor_id();
 	curr_pid = current->pid;
 
-	printk(KERN_ERR "%s CPU # %d ---- PID # %d\n",
-	       __func__, cpuid, curr_pid);
+//	printk(KERN_ERR "%s CPU # %d ---- PID # %d\n",
+;
 }
 
 #ifndef ASSERT
 #define ASSERT(a) do {							\
 	if (!(a)) {							\
-		printk(KERN_ERR "slicoss ASSERT() Failure: function %s"	\
-			"line %d\n", __func__, __LINE__);		\
+//		printk(KERN_ERR "slicoss ASSERT() Failure: function %s"	\
+;
 		slic_assert_fail();					\
 	}								\
 } while (0)
@@ -3856,8 +3856,8 @@ static int __devinit slic_entry_probe(struct pci_dev *pcidev,
 		return err;
 
 	if (slic_debug > 0 && did_version++ == 0) {
-		printk(KERN_DEBUG "%s\n", slic_banner);
-		printk(KERN_DEBUG "%s\n", slic_proc_version);
+;
+;
 	}
 
 	if (!pci_set_dma_mask(pcidev, DMA_BIT_MASK(64))) {
@@ -3983,8 +3983,8 @@ static int __init slic_module_init(void)
 	slic_init_driver();
 
 	if (debug >= 0 && slic_debug != debug)
-		printk(KERN_DEBUG KBUILD_MODNAME ": debug level is %d.\n",
-		       debug);
+//		printk(KERN_DEBUG KBUILD_MODNAME ": debug level is %d.\n",
+;
 	if (debug >= 0)
 		slic_debug = debug;
 
