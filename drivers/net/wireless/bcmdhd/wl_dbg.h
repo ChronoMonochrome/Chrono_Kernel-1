@@ -2,9 +2,9 @@
  * Minimal debug/trace/assert driver definitions for
  * Broadcom 802.11 Networking Adapter.
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2011, Broadcom Corporation
  * 
- *      Unless you and Broadcom execute a separate written software license
+ *         Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
@@ -22,46 +22,28 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_dbg.h 430628 2013-10-19 04:07:25Z $
+ * $Id: wl_dbg.h,v 1.115.6.3 2010-12-15 21:42:23 Exp $
  */
+
 
 
 #ifndef _wl_dbg_h_
 #define _wl_dbg_h_
 
-/* wl_msg_level is a bit vector with defs in wlioctl.h */
+
 extern uint32 wl_msg_level;
 extern uint32 wl_msg_level2;
 
-#define WL_TIMESTAMP()
-
-#define WL_PRINT(args)		do { WL_TIMESTAMP(); printf args; } while (0)
-
-#if defined(EVENT_LOG_COMPILE) && defined(WLMSG_SRSCAN)
-#define _WL_SRSCAN(fmt, ...)	EVENT_LOG(EVENT_LOG_TAG_SRSCAN, fmt, ##__VA_ARGS__)
-#define WL_SRSCAN(args)		_WL_SRSCAN args
-#else
-#define WL_SRSCAN(args)
-#endif
+#define WL_PRINT(args)      printf args
 
 
-/* To disable a message completely ... until you need it again */
+
 #define WL_NONE(args)
 
-#define	WL_ERROR(args)
-#define	WL_TRACE(args)
-#define WL_APSTA_UPDN(args)
-#define WL_APSTA_RX(args)
-#ifdef WLMSG_WSEC
-#define WL_WSEC(args)		WL_PRINT(args)
-#define WL_WSEC_DUMP(args)	WL_PRINT(args)
-#else
-#define WL_WSEC(args)
-#define WL_WSEC_DUMP(args)
-#endif
-#define WL_PCIE(args)		do {if (wl_msg_level2 & WL_PCIE_VAL) WL_PRINT(args);} while (0)
-#define WL_PCIE_ON()		(wl_msg_level2 & WL_PCIE_VAL)
+#define WL_ERROR(args)
+#define WL_TRACE(args)
+
 
 extern uint32 wl_msg_level;
 extern uint32 wl_msg_level2;
-#endif /* _wl_dbg_h_ */
+#endif 

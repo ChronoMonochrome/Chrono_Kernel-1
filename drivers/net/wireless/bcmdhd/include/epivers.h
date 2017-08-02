@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2011, Broadcom Corporation
  * 
- *      Unless you and Broadcom execute a separate written software license
+ *         Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
@@ -19,30 +19,31 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: epivers.h.in,v 13.33 2010-09-08 22:08:53 $
+ * $Id: epivers.h.in 277737 2011-08-16 17:54:59Z $
  *
 */
+
 
 #ifndef _epivers_h_
 #define _epivers_h_
 
-#define	EPI_MAJOR_VERSION	1
+#define	EPI_MAJOR_VERSION	5
 
-#define	EPI_MINOR_VERSION	141
+#define	EPI_MINOR_VERSION	90
 
-#define	EPI_RC_NUMBER		44
+#define	EPI_RC_NUMBER		195
 
-#define	EPI_INCREMENTAL_NUMBER	4
+#define	EPI_INCREMENTAL_NUMBER	114
 
 #define	EPI_BUILD_NUMBER	0
 
-#define	EPI_VERSION		1, 141, 44, 4
+#define	EPI_VERSION		5, 90, 195, 114
 
-#define	EPI_VERSION_NUM		0x018d2c04
+#define	EPI_VERSION_NUM		0x055ac372
 
-#define EPI_VERSION_DEV		1.141.44
+#define EPI_VERSION_DEV		5.90.195
 
-/* Driver Version String, ASCII, 32 chars max */
-#define	EPI_VERSION_STR		"1.141.44.4 (r)"
 
-#endif /* _epivers_h_ */
+#define	EPI_VERSION_STR		"5.90.195.114"
+
+#endif 
