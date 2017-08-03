@@ -81,7 +81,7 @@ int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t exp
 #define DEEP_SLEEP_WAKE_UP_LATENCY 8500
 /* Wake latency from ApSleep is measured to be around 1.0 to 1.5 ms */
 #define MIN_SLEEP_WAKE_UP_LATENCY 1000
-#define MAX_SLEEP_WAKE_UP_LATENCY 1500
+#define MAX_SLEEP_WAKE_UP_LATENCY 1000
 
 #define UL_PLL_START_UP_LATENCY 8000 /* us */
 
@@ -150,14 +150,12 @@ static struct cstate cstates[] = {
 	},
 	{
 		.enter_latency = 350,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200),
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 200),
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200),
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
-		.UL_PLL = UL_PLL_OFF,
+		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
