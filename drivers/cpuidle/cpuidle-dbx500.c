@@ -182,8 +182,10 @@ static struct cstate cstates[] = {
 #endif
 	{
 		.enter_latency = 410,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 420,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 410 + 420,
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
+				 UL_PLL_START_UP_LATENCY + 200) + 600 - 400,
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
+			      UL_PLL_START_UP_LATENCY + 350 + 200) + 600 - 400,
 		.power_usage = 1,
 		.APE = APE_OFF,
 		.ARM = ARM_OFF,
