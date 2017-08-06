@@ -31,18 +31,9 @@
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
 
-#define CSTATES_NUM 5
-#define BUF_SIZE 500000
-
-typedef struct {
-	u64 timestamp;
-	int current_inst;
-	int current_avg;
-} cstate_power_usage_t;
-
 static u64 last_timestamp = 0;
-static cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
-static int pwr_usg_idx[] = {0, 0, 0, 0, 0};
+cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
+int pwr_usg_idx[CSTATES_NUM] = {0, 0, 0, 0, 0};
 
 extern struct ab8500_fg *ab8500_di_;
 
@@ -1040,143 +1031,6 @@ out:
 	return ret;
 }
 
-static ssize_t cstate1_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, tmp, cstate = 0;
-
-	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return tmp;
-}
-
-static struct kobj_attribute cstate1_attribute =
-	__ATTR(cstate1, 0444, cstate1_show, NULL);
-
-static ssize_t cstate2_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, tmp, cstate = 1;
-
-	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return tmp;
-}
-
-static struct kobj_attribute cstate2_attribute =
-	__ATTR(cstate2, 0444, cstate2_show, NULL);
-
-
-
-static ssize_t cstate3_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, tmp, cstate = 2;
-
-	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return tmp;
-}
-
-static struct kobj_attribute cstate3_attribute =
-	__ATTR(cstate3, 0444, cstate3_show, NULL);
-
-
-static ssize_t cstate4_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, tmp, cstate = 3;
-
-	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return tmp;
-}
-
-static struct kobj_attribute cstate4_attribute =
-	__ATTR(cstate4, 0444, cstate4_show, NULL);
-
-
-static ssize_t cstate5_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, tmp, cstate = 4;
-
-	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return tmp;
-}
-
-static struct kobj_attribute cstate5_attribute =
-	__ATTR(cstate5, 0444, cstate5_show, NULL);
-
-
-static struct attribute *cpuidle_debug_attrs[] =
-{
-	&cstate1_attribute.attr,
-	&cstate2_attribute.attr,
-	&cstate3_attribute.attr,
-	&cstate4_attribute.attr,
-	&cstate5_attribute.attr,
-	NULL,
-};
-
-static struct attribute_group cpuidle_debug_attrs_group =
-{
-	.attrs = cpuidle_debug_attrs,
-};
-
-static struct kobject *cpuidle_debug_kobj;
-
 static void __exit dbx500_cpuidle_exit(void)
 {
 	int cpu;
@@ -1201,25 +1055,6 @@ static struct platform_driver dbx500_cpuidle_plat_driver = {
 
 static int __init dbx500_cpuidle_init(void)
 {
-
-	int sysfs_result;
-
-        cpuidle_debug_kobj = kobject_create_and_add("cpuidle_debug",
-				kernel_kobj);
-
-        if (!cpuidle_debug_kobj) {
-                pr_err("%s kobject create failed!\n", __func__);
-        } else {
-
-	        sysfs_result = sysfs_create_group(cpuidle_debug_kobj,
-				&cpuidle_debug_attrs_group);
-
-	        if (sysfs_result) {
-	                pr_info("%s group create failed!\n", __func__);
-	                kobject_put(cpuidle_debug_kobj);
-	        }
-	}
-
 	return platform_driver_probe(&dbx500_cpuidle_plat_driver,
 				     dbx500_cpuidle_probe);
 }
