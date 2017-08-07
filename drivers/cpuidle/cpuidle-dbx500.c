@@ -410,8 +410,6 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
 				 ktime_t *est_wake_time)
 {
-	cstate_power_usage_t *pwr_usage_now;
-	u64 now;
 	int i, return_state;
 
 	int cpu;
@@ -528,31 +526,14 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 	return_state = max(CI_WFI, i);
 out:
-
-	pwr_usage_now = &cstate_power_usage[return_state - 1][pwr_usg_idx[return_state - 1]];
-
-	now = ktime_to_us(ktime_get());
-	if (likely(pwr_usg_idx[return_state - 1] != 0)) {
-		if (return_state <= 2 && now - last_timestamp < 1ULL * ONE_SEC)
-			return return_state;
-	}
-
-	pwr_usage_now->timestamp    = now;
-	pwr_usage_now->current_inst = ab8500_di_->inst_curr;
-	pwr_usage_now->current_avg  = ab8500_di_->avg_curr;
-	last_timestamp = now;
-
-	//pr_err("[cpuidle] state: %d; time: %llu; curr_inst: %d; cuur_avg: %d;\n",
-	//		return_state, pwr_usage_now->timestamp, pwr_usage_now->current_inst, pwr_usage_now->current_avg);
-
-	pwr_usg_idx[return_state - 1]++;
-
 	return return_state;
 }
 
 static int enter_sleep(struct cpuidle_device *dev,
 		       struct cpuidle_state *ci_state)
 {
+	cstate_power_usage_t *pwr_usage_now;
+	u64 now;
 	ktime_t time_enter, time_exit, time_wake;
 	ktime_t wake_up;
 	int sleep_time = 0;
@@ -560,6 +541,7 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int ret;
 	int rtcrtt_program_time = NO_SLEEP_PROGRAMMED;
 	int target;
+	int cpu, cstate;
 	struct cpu_state *state;
 	bool slept_well = false;
 	int this_cpu = smp_processor_id();
@@ -823,11 +805,42 @@ exit_fast:
 	ret = (int)diff;
 
 	ux500_ci_dbg_console_check_uart();
-	if (slept_well)
+	if (slept_well) {
 		ux500_ci_dbg_exit_latency(target,
 					  time_exit, /* now */
 					  time_wake, /* exit from wfi */
 					  time_enter); /* enter cpuidle */
+
+		atomic_inc(&deepsleep_state[target]);
+
+		if (target >= CI_WFI) {
+			pwr_usage_now = &cstate_power_usage[target - 1][pwr_usg_idx[target - 1]];
+
+			now = ktime_to_us(time_exit);
+
+			// always log c-state power usage if it's first time
+			if (likely(pwr_usg_idx[target - 1] != 0)) {
+				// rate-limit c-states logging
+				if (now - last_timestamp < 5ULL * ONE_SEC)
+					goto out;
+			}
+
+			pwr_usage_now->timestamp    = now;
+			pwr_usage_now->current_inst = ab8500_di_->inst_curr;
+			pwr_usage_now->current_avg  = ab8500_di_->avg_curr;
+			last_timestamp = now;
+
+			//pr_err("[cpuidle] state: %d; time: %llu; curr_inst: %d; cuur_avg: %d;\n",
+			//		target, pwr_usage_now->timestamp, pwr_usage_now->current_inst, pwr_usage_now->current_avg);
+
+			pwr_usg_idx[target - 1]++;
+			if (unlikely(pwr_usg_idx[target - 1] > BUF_SIZE)) {
+				pr_err("%s: buffer cstate_power_usage (%d) overflow\n", __func__, target - 1);
+				pwr_usg_idx[target - 1] = 0;
+			}
+		}
+	}
+out:
 
 	ux500_ci_dbg_log(CI_RUNNING, time_exit);
 
