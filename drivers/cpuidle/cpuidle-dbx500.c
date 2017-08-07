@@ -379,6 +379,21 @@ static bool is_last_cpu_running(void)
 	return atomic_read(&idle_cpus_counter) == num_online_cpus();
 }
 
+extern bool pm_is_running;
+static atomic_t last_cstate = ATOMIC_INIT(0);
+
+/*
+ * Sometimes get_remaining_sleep_time function might return
+ * a bogus (e.g. negative) values.
+ */
+
+static atomic_t sleep_time_bogus_count = ATOMIC_INIT(0);
+module_param_named(sleep_time_bogus_count, sleep_time_bogus_count.counter, uint, 0444);
+
+/*
+ * max_depth_actual[i][j]: cstate i was suggested for CPU j by generic cpuidle driver this amount of times
+ */
+
 static atomic_t max_depth_actual[6][2] = {
 	{ATOMIC_INIT(0), ATOMIC_INIT(0)},
 	{ATOMIC_INIT(0), ATOMIC_INIT(0)},
@@ -387,13 +402,6 @@ static atomic_t max_depth_actual[6][2] = {
 	{ATOMIC_INIT(0), ATOMIC_INIT(0)},
 	{ATOMIC_INIT(0), ATOMIC_INIT(0)},
 };
-
-static atomic_t sleep_time_bogus_count = ATOMIC_INIT(0);
-module_param_named(sleep_time_bogus_count, sleep_time_bogus_count.counter, uint, 0444);
-
-extern bool pm_is_running;
-
-static atomic_t last_cstate = ATOMIC_INIT(0);
 
 module_param_named(max_depth_cpu1_0, max_depth_actual[1][0].counter, uint, 0444);
 module_param_named(max_depth_cpu2_0, max_depth_actual[2][0].counter, uint, 0444);
@@ -406,21 +414,36 @@ module_param_named(max_depth_cpu3_1, max_depth_actual[3][1].counter, uint, 0444)
 module_param_named(max_depth_cpu4_1, max_depth_actual[4][1].counter, uint, 0444);
 module_param_named(max_depth_cpu5_1, max_depth_actual[5][1].counter, uint, 0444);
 
+/*
+ * This amount of times a sleep time was too small to enter c-state i.
+ */
 static unsigned int sleep_time_too_small_count[6] = {0, 0, 0, 0, 0, 0};
-static unsigned int ape_enabled_count[6] = {0, 0, 0, 0, 0, 0};
-static unsigned int modem_enabled_count[6] = {0, 0, 0, 0, 0, 0};
-static unsigned int uart_enabled_count[6] = {0, 0, 0, 0, 0, 0};
-static unsigned int vbus_enabled_count = 0;
+
 module_param_named(sleep_time_too_small_count_1, sleep_time_too_small_count[1], uint, 0444);
 module_param_named(sleep_time_too_small_count_2, sleep_time_too_small_count[2], uint, 0444);
 module_param_named(sleep_time_too_small_count_3, sleep_time_too_small_count[3], uint, 0444);
 module_param_named(sleep_time_too_small_count_4, sleep_time_too_small_count[4], uint, 0444);
 module_param_named(sleep_time_too_small_count_5, sleep_time_too_small_count[5], uint, 0444);
+
+/*
+ * Represents a count of times when APE was enabled when c-state i
+ * was attempted to be entered and therefore was chosen a lower c-state instead.
+ */
+static unsigned int ape_enabled_count[6] = {0, 0, 0, 0, 0, 0};
+
+/*
+ * Same for modem, uard and vbus
+ */
+static unsigned int modem_enabled_count[6] = {0, 0, 0, 0, 0, 0};
+static unsigned int uart_enabled_count[6] = {0, 0, 0, 0, 0, 0};
+static unsigned int vbus_enabled_count = 0;
+
 module_param_named(ape_enabled_count_1, ape_enabled_count[1], uint, 0444);
 module_param_named(ape_enabled_count_2, ape_enabled_count[2], uint, 0444);
 module_param_named(ape_enabled_count_3, ape_enabled_count[3], uint, 0444);
 module_param_named(ape_enabled_count_4, ape_enabled_count[4], uint, 0444);
 module_param_named(ape_enabled_count_5, ape_enabled_count[5], uint, 0444);
+
 module_param_named(modem_enabled_count_1, modem_enabled_count[1], uint, 0444);
 module_param_named(modem_enabled_count_2, modem_enabled_count[2], uint, 0444);
 module_param_named(modem_enabled_count_3, modem_enabled_count[3], uint, 0444);
@@ -575,32 +598,43 @@ out:
 	return return_state;
 }
 
-static atomic_t deepsleep_state[6]  = {
-	ATOMIC_INIT(0), ATOMIC_INIT(0),
-	ATOMIC_INIT(0), ATOMIC_INIT(0),
-	ATOMIC_INIT(0), ATOMIC_INIT(0)
-};
 
-
+/*
+ * last_target[i]: c-state i was targeted by this driver this amount of times
+ */
 static atomic_t last_target[6] = {
 	ATOMIC_INIT(0), ATOMIC_INIT(0),
 	ATOMIC_INIT(0), ATOMIC_INIT(0),
 	ATOMIC_INIT(0), ATOMIC_INIT(0)
 };
 
-static atomic_t pending_gic_irq = ATOMIC_INIT(0);
-static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
+module_param_named(last_target_1, last_target[1].counter, uint, 0444);
+module_param_named(last_target_2, last_target[2].counter, uint, 0444);
+module_param_named(last_target_3, last_target[3].counter, uint, 0444);
+module_param_named(last_target_4, last_target[4].counter, uint, 0444);
+module_param_named(last_target_5, last_target[5].counter, uint, 0444);
+
+/*
+ * deepsleep_state[i]: c-state i was entered by this driver this amount of times
+ */
+static atomic_t deepsleep_state[6]  = {
+	ATOMIC_INIT(0), ATOMIC_INIT(0),
+	ATOMIC_INIT(0), ATOMIC_INIT(0),
+	ATOMIC_INIT(0), ATOMIC_INIT(0)
+};
 
 module_param_named(deepsleep_state_1, deepsleep_state[1].counter, uint, 0444);
 module_param_named(deepsleep_state_2, deepsleep_state[2].counter, uint, 0444);
 module_param_named(deepsleep_state_3, deepsleep_state[3].counter, uint, 0444);
 module_param_named(deepsleep_state_4, deepsleep_state[4].counter, uint, 0444);
 module_param_named(deepsleep_state_5, deepsleep_state[5].counter, uint, 0444);
-module_param_named(last_target_1, last_target[1].counter, uint, 0444);
-module_param_named(last_target_2, last_target[2].counter, uint, 0444);
-module_param_named(last_target_3, last_target[3].counter, uint, 0444);
-module_param_named(last_target_4, last_target[4].counter, uint, 0444);
-module_param_named(last_target_5, last_target[5].counter, uint, 0444);
+
+/*
+ * Pending interrupts (GIC and PRCMU)
+ */
+static atomic_t pending_gic_irq = ATOMIC_INIT(0);
+static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
+
 module_param_named(pending_gic_irq, pending_gic_irq.counter, uint, 0444);
 module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
 
