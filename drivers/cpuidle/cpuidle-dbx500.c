@@ -948,8 +948,8 @@ exit_fast:
 
 			// always log c-state power usage if it's first time
 			if (likely(pwr_usg_idx[target - 1] != 0)) {
-				// rate-limit c-states logging
-				if (now - last_timestamp < 5ULL * ONE_SEC)
+				// rate-limit c-states logging for targeted c-state <= CI_IDLE (2)
+				if (target <= CI_IDLE && now - last_timestamp < 1ULL * ONE_SEC)
 					goto out;
 			}
 
