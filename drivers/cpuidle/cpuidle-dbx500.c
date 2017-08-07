@@ -31,11 +31,14 @@
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
 
+// #define DEBUG 1
+
+#ifdef DEBUG
 static u64 last_timestamp = 0;
 cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
 int pwr_usg_idx[CSTATES_NUM] = {0, 0, 0, 0, 0};
-
 extern struct ab8500_fg *ab8500_di_;
+#endif
 
 int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t expires,
                              ktime_t now)
@@ -641,8 +644,10 @@ module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
 static int enter_sleep(struct cpuidle_device *dev,
 		       struct cpuidle_state *ci_state)
 {
+#ifdef DEBUG
 	cstate_power_usage_t *pwr_usage_now;
 	u64 now;
+#endif
 	ktime_t time_enter, time_exit, time_wake;
 	ktime_t wake_up;
 	int sleep_time = 0;
@@ -940,7 +945,7 @@ exit_fast:
 					  time_enter); /* enter cpuidle */
 
 		atomic_inc(&deepsleep_state[target]);
-
+#ifdef DEBUG
 		if (target >= CI_WFI) {
 			pwr_usage_now = &cstate_power_usage[target - 1][pwr_usg_idx[target - 1]];
 
@@ -967,9 +972,11 @@ exit_fast:
 				pwr_usg_idx[target - 1] = 0;
 			}
 		}
+#endif
 	}
+#ifdef DEBUG
 out:
-
+#endif
 	ux500_ci_dbg_log(CI_RUNNING, time_exit);
 
 	local_irq_enable();

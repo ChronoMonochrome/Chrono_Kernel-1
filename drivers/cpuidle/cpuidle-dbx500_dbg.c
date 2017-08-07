@@ -128,8 +128,10 @@ volatile struct {
 static DEFINE_SPINLOCK(cpuidle_post_mortem_lock);
 #endif
 
+#ifdef DEBUG
 extern cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
 extern int pwr_usg_idx[CSTATES_NUM];
+#endif
 
 bool ux500_ci_dbg_force_ape_on(void)
 {
@@ -703,6 +705,7 @@ static ssize_t wake_latency_write(struct file *file,
 	return count;
 }
 
+#ifdef DEBUG
 static ssize_t cstate1_read(struct seq_file *s, void *p)
 {
 	cstate_power_usage_t *pwr_usage;
@@ -792,6 +795,7 @@ static ssize_t cstate5_read(struct seq_file *s, void *p)
 
 	return 0;
 }
+#endif
 
 static int verbose_read(struct seq_file *s, void *p)
 {
@@ -1236,6 +1240,7 @@ static int verbose_open_file(struct inode *inode, struct file *file)
 	return single_open(file, verbose_read, inode->i_private);
 }
 
+#ifdef DEBUG
 static int cstate1_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, cstate1_read, inode->i_private);
@@ -1260,6 +1265,7 @@ static int cstate5_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, cstate5_read, inode->i_private);
 }
+#endif
 
 static int stats_open_file(struct inode *inode, struct file *file)
 {
@@ -1296,6 +1302,7 @@ static const struct file_operations verbose_state_fops = {
 	.owner = THIS_MODULE,
 };
 
+#ifdef DEBUG
 static const struct file_operations cstate1_fops = {
 	.open = cstate1_open_file,
 	.read = seq_read,
@@ -1335,6 +1342,7 @@ static const struct file_operations cstate5_fops = {
 	.release = single_release,
 	.owner = THIS_MODULE,
 };
+#endif
 
 static const struct file_operations stats_fops = {
 	.open = stats_open_file,
@@ -1380,6 +1388,7 @@ static void __init setup_debugfs(void)
 					       NULL, &verbose_state_fops)))
 		goto fail;
 
+#ifdef DEBUG
 	if (IS_ERR_OR_NULL(debugfs_create_file("cstate1",
 					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
 					       NULL, &cstate1_fops)))
@@ -1404,6 +1413,7 @@ static void __init setup_debugfs(void)
 					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
 					       NULL, &cstate5_fops)))
 		goto fail;
+#endif
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("stats",
 					       S_IRUGO, cpuidle_dir, NULL,
