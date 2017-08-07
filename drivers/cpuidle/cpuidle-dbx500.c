@@ -119,8 +119,8 @@ static struct cstate cstates[] = {
 		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_NO_CHANGE,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_WFI,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "Wait for interrupt     ",
 	},
 	{
@@ -133,8 +133,8 @@ static struct cstate cstates[] = {
 		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_IDLE,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_IDLE,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApIdle                 ",
 	},
 	{
@@ -151,8 +151,8 @@ static struct cstate cstates[] = {
 		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_SLEEP,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_SLEEP,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApSleep                ",
 	},
 	{
@@ -167,8 +167,8 @@ static struct cstate cstates[] = {
 		.UL_PLL = UL_PLL_OFF,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_SLEEP,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_SLEEP,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApSleep, UL PLL off    ",
 	},
 #ifdef CONFIG_UX500_CPUIDLE_APDEEPIDLE
@@ -182,26 +182,57 @@ static struct cstate cstates[] = {
 		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_DEEP_IDLE,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_DEEP_IDLE,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApDeepIdle, UL PLL off ",
 	},
 #endif
 	{
 		.enter_latency = 410,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 420,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 410 + 420,
+
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
+				 UL_PLL_START_UP_LATENCY + 200) + 600,
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
+			      UL_PLL_START_UP_LATENCY + 350 + 200) + 600 - 400,
+
 		.power_usage = 1,
 		.APE = APE_OFF,
 		.ARM = ARM_OFF,
 		.UL_PLL = UL_PLL_OFF,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_DEEP_SLEEP,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.state = CI_DEEP_SLEEP,
+		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApDeepsleep, UL PLL off",
 	},
 };
+
+static unsigned int cstate_threshold[6] = {
+	0 /* CI_RUNNING */, 0 /* CI_WFI */, 260 /* CI_IDLE */,
+	MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200 /* CI_SLEEP */,
+	((MAX_SLEEP_WAKE_UP_LATENCY +
+			UL_PLL_START_UP_LATENCY + 350 + 200)), /* CI_SLEEP, UL off */
+	((MAX_SLEEP_WAKE_UP_LATENCY +
+			UL_PLL_START_UP_LATENCY + 350 + 200) + 600) - 400 /* CI_DEEPSLEEP, ARM off */
+};
+
+// CI_RUNNING
+module_param_named(sleep_time_threshold_0, cstate_threshold[0], uint, 0644);
+
+// CI_WFI
+module_param_named(sleep_time_threshold_1, cstate_threshold[1], uint, 0644);
+
+// CI_IDLE
+module_param_named(sleep_time_threshold_2, cstate_threshold[2], uint, 0644);
+
+// CI_SLEEP
+module_param_named(sleep_time_threshold_3, cstate_threshold[3], uint, 0644);
+
+// CI_SLEEP, UL PLL off
+module_param_named(sleep_time_threshold_4, cstate_threshold[4], uint, 0644);
+
+// CI_DEEP_SLEEP, UL PLL off, ARM off
+module_param_named(sleep_time_threshold_5, cstate_threshold[5], uint, 0644);
 
 struct cpu_state {
 	int gov_cstate;
@@ -436,6 +467,7 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 	int cpu;
 	int max_depth;
+	int max_depth_per_cpu[2];
 	bool uart, modem, ape;
 	s64 delta_us;
 
@@ -476,7 +508,7 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 		}
 
 		delta_us = ktime_us_delta(ktime_get(), entry_time);
-		if (delta_us > MAX_STATE_DETERMINE_LOOP_TIME) {
+		if (unlikely(delta_us > MAX_STATE_DETERMINE_LOOP_TIME)) {
 			start_critical_timings();
 			pr_warning("%s: CPU=%d stuck in loop for %lld usec\n",
 				__func__, smp_processor_id(), delta_us);
@@ -499,8 +531,11 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	 * possible from a scheduled wake up point of view
 	 */
 	max_depth = ux500_ci_dbg_deepest_state();
+	max_depth_per_cpu[0] = -1;
+	max_depth_per_cpu[1] = -1;
 
 	for_each_online_cpu(cpu) {
+		max_depth_per_cpu[cpu] = per_cpu(cpu_state, cpu)->gov_cstate;
 		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
 			max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
 	}
@@ -522,13 +557,23 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 	for (i = max_depth; i > 0; i--) {
 
-		if ((*sleep_time) <= cstates[i].threshold)
+		if ((*sleep_time) <= cstate_threshold[i]) {
+			sleep_time_too_small_count[i]++;
 			continue;
+		}
 
 		if (cstates[i].APE == APE_OFF) {
 			/* This state says APE should be off */
-			if (ape || modem || uart)
+			if (ape || modem || uart) {
+				if (ape)
+					ape_enabled_count[i]++;
+				else if (modem)
+					modem_enabled_count[i]++;
+				else if (uart)
+					uart_enabled_count[i]++;
+
 				continue;
+			}
 		}
 
 		/* OK state */
@@ -538,8 +583,10 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	/* temporary preventing pwr transition during charging */
 	{
 		extern bool vbus_state;
-		if (vbus_state)
+		if (vbus_state) {
 			i = CI_WFI;
+			vbus_enabled_count++;
+		}
 	}
 
 	ux500_ci_dbg_register_reason(i, ape, modem, uart,
@@ -648,6 +695,14 @@ static int enter_sleep(struct cpuidle_device *dev,
 	target = determine_sleep_state(&sleep_time, loc_idle_counter, false,
 				       time_enter, &est_wake_time);
 
+	for_each_online_cpu(cpu) {
+		cstate = max(CI_WFI, per_cpu(cpu_state, cpu)->gov_cstate);
+		atomic_inc(&max_depth_actual[cstate][cpu]);
+	}
+
+	atomic_inc(&last_target[target]);
+	atomic_set(&last_cstate, target);
+
 	if (target < 0)
 		/* "target" will be last_state in the cpuidle framework */
 		goto exit_fast;
@@ -680,22 +735,29 @@ static int enter_sleep(struct cpuidle_device *dev,
 		 * Check if sleep state has changed after GIC has been frozen
 		 */
 		if (target != determine_sleep_state(&sleep_time,
-						    loc_idle_counter,
-						    true,
-						    time_enter,
-						    &est_wake_time)) {
+                                                    loc_idle_counter,
+                                                    true,
+                                                    time_enter,
+                                                    &est_wake_time)) {
 			atomic_dec(&master_counter);
+
 			goto exit;
 		}
 
 		if (ux500_pm_gic_pending_interrupt()) {
 			/* An interrupt found => abort */
+			atomic_set(&pending_gic_irq, 1);
+
+			/* no PRCMU irq */
+			atomic_set(&pending_prcmu_irq, 0);
+
 			atomic_dec(&master_counter);
 			goto exit;
 		}
 
 		if (ux500_pm_prcmu_pending_interrupt(NULL)) {
 			/* An interrupt found => abort */
+			atomic_set(&pending_prcmu_irq, 1);
 			atomic_dec(&master_counter);
 			goto exit;
 
@@ -704,6 +766,9 @@ static int enter_sleep(struct cpuidle_device *dev,
 		 * No PRCMU interrupt was pending => continue the
 		 * sleeping stages
 		 */
+		atomic_set(&pending_gic_irq, 0);
+		atomic_set(&pending_prcmu_irq, 0);
+
 	}
 
 	if (master && (cstates[target].APE == APE_OFF)) {
@@ -799,11 +864,12 @@ static int enter_sleep(struct cpuidle_device *dev,
 				     rtcrtt_program_time,
 				     master);
 
-	if (master && cstates[target].ARM != ARM_ON)
+	if (master && cstates[target].ARM != ARM_ON) {
 		prcmu_set_power_state(cstates[target].pwrst,
 				      cstates[target].UL_PLL,
 				      /* Is actually the AP PLL */
 				      cstates[target].UL_PLL);
+	}
 
 	if (master)
 		atomic_dec(&master_counter);
@@ -929,7 +995,7 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 		cpuidle_set_statedata(ci_state, (void *)i);
 
 		ci_state->exit_latency = cstates[i].exit_latency;
-		ci_state->target_residency = cstates[i].threshold;
+		ci_state->target_residency = cstate_threshold[i];
 		ci_state->flags = cstates[i].flags;
 		ci_state->enter = enter_sleep;
 		ci_state->power_usage = cstates[i].power_usage;
