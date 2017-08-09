@@ -33,9 +33,6 @@
 
 struct cpuidle_device *cpuidle_dbx500_dev[2];
 
-
-// #define DEBUG 1
-
 #ifdef DEBUG
 static u64 last_timestamp = 0;
 cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
@@ -159,7 +156,7 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep                ",
+		.desc = "ApSleep, unused         ",
 	},
 	{
 		.enter_latency = 457,
@@ -173,13 +170,13 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep, UL PLL on    ",
+		.desc = "ApSleep, unused         ",
 	},
 	{
-		.enter_latency = 457,
+		.enter_latency = 488,
 
-		.exit_latency = 300,
-		.threshold = (457 + 300 + 20),
+		.exit_latency = 305,
+		.threshold = (488 + 305 + 20),
 
 		.power_usage = 1,
 		.APE = APE_OFF,
@@ -189,7 +186,7 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_DEEP_SLEEP,
 		.state = CI_DEEP_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApDeepsleep, UL PLL off",
+		.desc = "ApDeepsleep, UL PLL on   ",
 	},
 };
 
