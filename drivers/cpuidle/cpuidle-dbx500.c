@@ -31,6 +31,9 @@
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
 
+struct cpuidle_device *cpuidle_dbx500_dev[2];
+
+
 // #define DEBUG 1
 
 #ifdef DEBUG
@@ -617,6 +620,9 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int loc_idle_counter;
 	ktime_t est_wake_time;
 
+	if (ci_state->state >= CI_SLEEP)
+		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[CI_DEEP_SLEEP];
+
 	local_irq_disable();
 
 	time_enter = ktime_get(); /* Time now */
@@ -943,17 +949,17 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 {
 	int i;
 	struct cpuidle_state *ci_state;
-	struct cpuidle_device *dev;
 
-	dev = &state->dev;
-	dev->cpu = cpu;
+	cpuidle_dbx500_dev[cpu] = &state->dev;
+	cpuidle_dbx500_dev[cpu]->cpu = cpu;
 
 	for (i = 0; i < ARRAY_SIZE(cstates); i++) {
 
-		ci_state = &dev->states[i];
+		ci_state = &cpuidle_dbx500_dev[cpu]->states[i];
 
 		cpuidle_set_statedata(ci_state, (void *)i);
 
+		ci_state->state = cstates[i].state;
 		ci_state->exit_latency = cstates[i].exit_latency;
 		ci_state->target_residency = cstates[i].threshold;
 		ci_state->flags = cstates[i].flags;
@@ -963,9 +969,9 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 		strncpy(ci_state->desc, cstates[i].desc, CPUIDLE_DESC_LEN);
 	}
 
-	dev->state_count = ARRAY_SIZE(cstates);
+	cpuidle_dbx500_dev[cpu]->state_count = ARRAY_SIZE(cstates);
 
-	return cpuidle_register_device(dev);
+	return cpuidle_register_device(cpuidle_dbx500_dev[cpu]);
 }
 
 struct cpuidle_driver dbx500_cpuidle_driver = {
