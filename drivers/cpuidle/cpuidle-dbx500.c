@@ -113,9 +113,9 @@ static struct cstate cstates[] = {
 	},
 	{
 		/* These figures are not really true. There is a cost for WFI */
-		.enter_latency = 0,
+		.enter_latency = 20,
 		.exit_latency = 0,
-		.threshold = 0,
+		.threshold = 0 + 20,
 		.power_usage = 10,
 		.APE = APE_ON,
 		.ARM = ARM_ON,
@@ -127,9 +127,9 @@ static struct cstate cstates[] = {
 		.desc = "Wait for interrupt     ",
 	},
 	{
-		.enter_latency = 200,
-		.exit_latency = 70,
-		.threshold = 200 + 70 + 20,
+		.enter_latency = 335,
+		.exit_latency = 30,
+		.threshold = 335 + 30 + 20,
 		.power_usage = 4,
 		.APE = APE_ON,
 		.ARM = ARM_RET,
@@ -141,14 +141,14 @@ static struct cstate cstates[] = {
 		.desc = "ApIdle                 ",
 	},
 	{
-		.enter_latency = 450,
-		.exit_latency = MAX_SLEEP_WAKE_UP_LATENCY + 200,
+		.enter_latency = 457  /* ? */,
+		.exit_latency = 200,
 		/*
 		 * Note: Sleep time must be longer than 120 us or else
 		 * there might be issues with the RTC-RTT block.
 		 */
-		.threshold = MAX_SLEEP_WAKE_UP_LATENCY + 450 + 200,
-		.power_usage = 3,
+		.threshold = 457 + 200 + 20,
+		.power_usage = 4,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
 		.UL_PLL = UL_PLL_ON,
@@ -159,9 +159,9 @@ static struct cstate cstates[] = {
 		.desc = "ApSleep                ",
 	},
 	{
-		.enter_latency = 550,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 200),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 550 + 200),
+		.enter_latency = 457,
+		.exit_latency = 200,
+		.threshold = 457 + 200 + 20,
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
@@ -170,13 +170,13 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep, UL PLL off    ",
+		.desc = "ApSleep, UL PLL on    ",
 	},
 	{
-		.enter_latency = 650,
+		.enter_latency = 457,
 
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 1000),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 650 + 1000),
+		.exit_latency = 300,
+		.threshold = (457 + 300 + 20),
 
 		.power_usage = 1,
 		.APE = APE_OFF,
