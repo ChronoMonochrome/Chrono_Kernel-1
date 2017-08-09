@@ -190,33 +190,6 @@ static struct cstate cstates[] = {
 	},
 };
 
-static unsigned int cstate_threshold[6] = {
-	0 /* CI_RUNNING */, 0 /* CI_WFI */, 260 /* CI_IDLE */,
-	MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200 /* CI_SLEEP */,
-	((MAX_SLEEP_WAKE_UP_LATENCY +
-			UL_PLL_START_UP_LATENCY + 350 + 200)), /* CI_SLEEP, UL off */
-	((MAX_SLEEP_WAKE_UP_LATENCY +
-			UL_PLL_START_UP_LATENCY + 350 + 200) + 600) - 400 /* CI_DEEPSLEEP, ARM off */
-};
-
-// CI_RUNNING
-module_param_named(sleep_time_threshold_0, cstate_threshold[0], uint, 0644);
-
-// CI_WFI
-module_param_named(sleep_time_threshold_1, cstate_threshold[1], uint, 0644);
-
-// CI_IDLE
-module_param_named(sleep_time_threshold_2, cstate_threshold[2], uint, 0644);
-
-// CI_SLEEP
-module_param_named(sleep_time_threshold_3, cstate_threshold[3], uint, 0644);
-
-// CI_SLEEP, UL PLL off
-module_param_named(sleep_time_threshold_4, cstate_threshold[4], uint, 0644);
-
-// CI_DEEP_SLEEP, UL PLL off, ARM off
-module_param_named(sleep_time_threshold_5, cstate_threshold[5], uint, 0644);
-
 struct cpu_state {
 	int gov_cstate;
 	ktime_t sched_wake_up;
@@ -540,7 +513,7 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 	for (i = max_depth; i > 0; i--) {
 
-		if ((*sleep_time) <= cstate_threshold[i]) {
+		if ((*sleep_time) <= cstates[i].threshold) {
 			sleep_time_too_small_count[i]++;
 			continue;
 		}
@@ -982,7 +955,7 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 		cpuidle_set_statedata(ci_state, (void *)i);
 
 		ci_state->exit_latency = cstates[i].exit_latency;
-		ci_state->target_residency = cstate_threshold[i];
+		ci_state->target_residency = cstates[i].threshold;
 		ci_state->flags = cstates[i].flags;
 		ci_state->enter = enter_sleep;
 		ci_state->power_usage = cstates[i].power_usage;
