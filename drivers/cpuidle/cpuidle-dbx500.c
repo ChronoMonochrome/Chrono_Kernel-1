@@ -127,9 +127,9 @@ static struct cstate cstates[] = {
 		.desc = "Wait for interrupt     ",
 	},
 	{
-		.enter_latency = 170,
+		.enter_latency = 200,
 		.exit_latency = 70,
-		.threshold = 260,
+		.threshold = 200 + 70 + 20,
 		.power_usage = 4,
 		.APE = APE_ON,
 		.ARM = ARM_RET,
@@ -141,13 +141,13 @@ static struct cstate cstates[] = {
 		.desc = "ApIdle                 ",
 	},
 	{
-		.enter_latency = 350,
+		.enter_latency = 450,
 		.exit_latency = MAX_SLEEP_WAKE_UP_LATENCY + 200,
 		/*
 		 * Note: Sleep time must be longer than 120 us or else
 		 * there might be issues with the RTC-RTT block.
 		 */
-		.threshold = MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200,
+		.threshold = MAX_SLEEP_WAKE_UP_LATENCY + 450 + 200,
 		.power_usage = 3,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
@@ -159,49 +159,29 @@ static struct cstate cstates[] = {
 		.desc = "ApSleep                ",
 	},
 	{
-		.enter_latency = 350,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200),
+		.enter_latency = 550,
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 200),
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 550 + 200),
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
-		.UL_PLL = UL_PLL_OFF,
+		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
 		.desc = "ApSleep, UL PLL off    ",
 	},
-#ifdef CONFIG_UX500_CPUIDLE_APDEEPIDLE
 	{
-		.enter_latency = 400,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 400,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 400 + 400,
-		.power_usage = 2,
-		.APE = APE_ON,
-		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_ON,
-		.ESRAM = ESRAM_RET,
-		.pwrst = PRCMU_AP_DEEP_IDLE,
-		.state = CI_DEEP_IDLE,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApDeepIdle, UL PLL off ",
-	},
-#endif
-	{
-		.enter_latency = 410,
+		.enter_latency = 650,
 
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200) + 600,
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200) + 600 - 400,
+		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY + 1000),
+		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY + 650 + 1000),
 
 		.power_usage = 1,
 		.APE = APE_OFF,
 		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_OFF,
+		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_DEEP_SLEEP,
 		.state = CI_DEEP_SLEEP,
