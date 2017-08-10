@@ -165,12 +165,12 @@ static struct cstate cstates[] = {
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
-		.UL_PLL = UL_PLL_ON,
+		.UL_PLL = UL_PLL_OFF,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep, unused         ",
+		.desc = "ApSleep,                ",
 	},
 	{
 		.enter_latency = 488,
@@ -615,10 +615,11 @@ static int enter_sleep(struct cpuidle_device *dev,
 	bool migrate_timer;
 	bool master = false;
 	int loc_idle_counter;
+	int max_depth = ux500_ci_dbg_deepest_state();
 	ktime_t est_wake_time;
 
 	if (ci_state->state >= CI_SLEEP)
-		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[CI_DEEP_SLEEP];
+		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
 
 	local_irq_disable();
 
