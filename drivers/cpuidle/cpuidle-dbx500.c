@@ -33,6 +33,8 @@
 
 struct cpuidle_device *cpuidle_dbx500_dev[2];
 
+int current_cstate[] = {CI_RUNNING, CI_RUNNING};
+
 #ifdef DEBUG
 static u64 last_timestamp = 0;
 cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
@@ -620,6 +622,8 @@ static int enter_sleep(struct cpuidle_device *dev,
 
 	if (ci_state->state >= CI_SLEEP)
 		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
+
+	current_cstate[this_cpu] = ci_state->state;
 
 	local_irq_disable();
 

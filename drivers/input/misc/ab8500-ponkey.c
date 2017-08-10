@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/ab8500-ponkey.h>
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
@@ -144,36 +145,62 @@ static void pcut_disable(struct work_struct *work)
 	abx500_set(dev, AB8500_RTC, PCUT_CTR_AND_STATUS, 0);
 }
 
+void ab8500_ponkey_emulator(unsigned long keycode, bool press);
+
+extern int current_cstate[2];
+extern int pm_suspend_state;
+
+static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_work);
+static DECLARE_WORK(abb_ponkey_emulator_work, abb_ponkey_emulator_thread);
+static DECLARE_DELAYED_WORK(abb_ponkey_emulator_delayed_work, abb_ponkey_emulator_thread);
+
+void request_suspend_state(suspend_state_t new_state);
+
 /* AB8500 gives us an interrupt when ONKEY is held */
 static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 {
 	struct ab8500_ponkey_info *info = data;
 
-	if (irq == info->irq_dbf) {
-		if (info->pcut_wa)
-			schedule_delayed_work(&info->pcut_work, HZ * 1);
+	if (pm_suspend_state != 0 /* && current_cstate[0] >= 3 && current_cstate[1] >= 3 */) {
+		if (irq == info->irq_dbr) {
+			pr_err("%s: request wake up\n", __func__);
+			request_suspend_state(0);
 
-		gpio_keys_setstate(KEY_POWER, true);
-		info->key_state = true;
-		input_report_key(info->idev, KEY_POWER, true);
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-		pr_info("[ABB-POnKey] Power KEY pressed %d\n", KEY_POWER);
+			//schedule_delayed_work(&abb_ponkey_emulator_delayed_work, msecs_to_jiffies(100));
+#if 0
+			msleep(100);
+			ab8500_ponkey_emulator(KEY_POWER, true);
+			msleep(100);
+			ab8500_ponkey_emulator(KEY_POWER, false);
 #endif
-	} else if (irq == info->irq_dbr) {
-		if (info->pcut_wa && !cancel_delayed_work_sync(&info->pcut_work))
-			abx500_set(info->idev->dev.parent, AB8500_RTC,
-				   PCUT_CTR_AND_STATUS, info->pcut_ctrl);
-
-		gpio_keys_setstate(KEY_POWER, false);
-		info->key_state = false;
-		input_report_key(info->idev, KEY_POWER, false);
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-		pr_info("[ABB-POnKey] Power KEY released %d\n", KEY_POWER);
-#endif
-
+		}
 	}
+	//else {
+		if (irq == info->irq_dbf) {
+			if (info->pcut_wa)
+				schedule_delayed_work(&info->pcut_work, HZ * 1);
 
-	input_sync(info->idev);
+			gpio_keys_setstate(KEY_POWER, true);
+			info->key_state = true;
+			input_report_key(info->idev, KEY_POWER, true);
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+			pr_info("[ABB-POnKey] Power KEY pressed %d\n", KEY_POWER);
+#endif
+		} else if (irq == info->irq_dbr) {
+			if (info->pcut_wa && !cancel_delayed_work_sync(&info->pcut_work))
+				abx500_set(info->idev->dev.parent, AB8500_RTC,
+					   PCUT_CTR_AND_STATUS, info->pcut_ctrl);
+
+			gpio_keys_setstate(KEY_POWER, false);
+			info->key_state = false;
+			input_report_key(info->idev, KEY_POWER, false);
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+			pr_info("[ABB-POnKey] Power KEY released %d\n", KEY_POWER);
+#endif
+		}
+
+		input_sync(info->idev);
+	//}
 
 	return IRQ_HANDLED;
 }
@@ -241,7 +268,6 @@ static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_w
 
 	emu_working = false;
 }
-static DECLARE_WORK(abb_ponkey_emulator_work, abb_ponkey_emulator_thread);
 
 static ssize_t abb_ponkey_emulator_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
