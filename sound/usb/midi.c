@@ -375,8 +375,6 @@ static void snd_usbmidi_error_timer(unsigned long data)
 		if (in && in->error_resubmit) {
 			in->error_resubmit = 0;
 			for (j = 0; j < INPUT_URBS; ++j) {
-				if (atomic_read(&in->urbs[j]->use_count))
-					continue;
 				in->urbs[j]->dev = umidi->dev;
 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
 			}
@@ -1321,7 +1319,6 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
 		 * Various chips declare a packet size larger than 4 bytes, but
 		 * do not actually work with larger packets:
 		 */
-	case USB_ID(0x0a67, 0x5011): /* Medeli DD305 */
 	case USB_ID(0x0a92, 0x1020): /* ESI M4U */
 	case USB_ID(0x1430, 0x474b): /* RedOctane GH MIDI INTERFACE */
 	case USB_ID(0x15ca, 0x0101): /* Textech USB Midi Cable */
