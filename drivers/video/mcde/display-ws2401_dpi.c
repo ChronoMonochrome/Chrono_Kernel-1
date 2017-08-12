@@ -1162,6 +1162,38 @@ static ssize_t ws2401_sysfs_store_mcde_chnl(struct device *dev,
 static DEVICE_ATTR(mcde_chnl, 0644,
 		ws2401_sysfs_show_mcde_chnl, ws2401_sysfs_store_mcde_chnl);
 
+/*
+static ssize_t ws2401_sysfs_show_enable(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	struct ws2401_dpi *lcd = dev_get_drvdata(dev);
+
+	return strlen(buf);
+}
+*/
+
+static int ws2401_dpi_mcde_suspend(
+		struct mcde_display_device *ddev, pm_message_t state);
+static int ws2401_dpi_mcde_resume(struct mcde_display_device *ddev);
+
+static ssize_t ws2401_sysfs_store_enable(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t len)
+{
+	pm_message_t dummy;
+	struct ws2401_dpi *lcd = dev_get_drvdata(dev);
+
+	if (sysfs_streq(buf, "0"))
+		ws2401_dpi_mcde_suspend(lcd->mdd, dummy);
+	else
+		ws2401_dpi_mcde_resume(lcd->mdd);
+
+	return len;
+}
+
+static DEVICE_ATTR(enable, 0200,
+		NULL /*ws2401_sysfs_show_enable */, ws2401_sysfs_store_enable);
+
 static ssize_t ws2401_dpi_sysfs_store_lcd_power(struct device *dev,
 						struct device_attribute *attr,
 						const char *buf, size_t len)
@@ -1412,6 +1444,10 @@ static int __devinit ws2401_dpi_mcde_probe(
 		dev_err(&(ddev->dev), "failed to add display_settings sysfs entries\n");
 
 	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_chnl);
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
+
+	ret = device_create_file(&(ddev->dev), &dev_attr_enable);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
 
