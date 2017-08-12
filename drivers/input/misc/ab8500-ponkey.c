@@ -144,10 +144,18 @@ static void pcut_disable(struct work_struct *work)
 	abx500_set(dev, AB8500_RTC, PCUT_CTR_AND_STATUS, 0);
 }
 
+extern int pm_suspend_state;
+void request_suspend_state(suspend_state_t new_state);
+
 /* AB8500 gives us an interrupt when ONKEY is held */
 static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 {
 	struct ab8500_ponkey_info *info = data;
+
+	if (pm_suspend_state != 0 && irq == info->irq_dbr) {
+		pr_err("%s: request wake up\n", __func__);
+		request_suspend_state(0);
+	}
 
 	if (irq == info->irq_dbf) {
 		if (info->pcut_wa)
