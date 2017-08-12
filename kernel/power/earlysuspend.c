@@ -163,6 +163,8 @@ abort:
 	mutex_unlock(&early_suspend_lock);
 }
 
+int pm_suspend_state = 0;
+
 void request_suspend_state(suspend_state_t new_state)
 {
 	unsigned long irqflags;
@@ -175,6 +177,8 @@ void request_suspend_state(suspend_state_t new_state)
 		struct rtc_time tm;
 		getnstimeofday(&ts);
 		rtc_time_to_tm(ts.tv_sec, &tm);
+		pm_suspend_state = (int) new_state;
+
 		pr_info("request_suspend_state: %s (%d->%d) at %lld "
 			"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n",
 			new_state != PM_SUSPEND_ON ? "sleep" : "wakeup",
