@@ -97,9 +97,9 @@ static struct clk *uart_clk;
 static bool force_APE_on;
 static bool reset_timer;
 int deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
-static u32 measure_latency;
-static bool wake_latency;
-static int verbose;
+static u32 measure_latency = 1;
+static bool wake_latency = 1;
+static int verbose = 1;
 
 static struct cstate *cstates;
 static int cstates_len;
