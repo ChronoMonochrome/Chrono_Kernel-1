@@ -618,7 +618,7 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int max_depth = ux500_ci_dbg_deepest_state();
 	ktime_t est_wake_time;
 
-	if (ci_state->state >= CI_SLEEP)
+	if (ci_state->state >= CI_IDLE)
 		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
 
 	local_irq_disable();

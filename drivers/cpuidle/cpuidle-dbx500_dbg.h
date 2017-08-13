@@ -16,7 +16,7 @@
 #endif
 
 #define CSTATES_NUM 5
-#define BUF_SIZE 100000
+#define BUF_SIZE 10000
 
 typedef struct {
         u64 timestamp;
