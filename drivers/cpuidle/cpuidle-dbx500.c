@@ -127,9 +127,9 @@ static struct cstate cstates[] = {
 		.desc = "Wait for interrupt     ",
 	},
 	{
-		.enter_latency = 335,
-		.exit_latency = 30,
-		.threshold = 335 + 30 + 20,
+		.enter_latency = 125,
+		.exit_latency = 91,
+		.threshold = 125 + 91 + 20,
 		.power_usage = 4,
 		.APE = APE_ON,
 		.ARM = ARM_RET,
@@ -141,13 +141,13 @@ static struct cstate cstates[] = {
 		.desc = "ApIdle                 ",
 	},
 	{
-		.enter_latency = 457  /* ? */,
-		.exit_latency = 200,
+		.enter_latency = 245,
+		.exit_latency = 185,
 		/*
 		 * Note: Sleep time must be longer than 120 us or else
 		 * there might be issues with the RTC-RTT block.
 		 */
-		.threshold = 457 + 200 + 20,
+		.threshold = 245 + 185 + 20,
 		.power_usage = 4,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
@@ -159,9 +159,9 @@ static struct cstate cstates[] = {
 		.desc = "ApSleep, unused         ",
 	},
 	{
-		.enter_latency = 457,
-		.exit_latency = 200,
-		.threshold = 457 + 200 + 20,
+		.enter_latency = 245,
+		.exit_latency = 185,
+		.threshold = 245 + 185 + 20,
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
