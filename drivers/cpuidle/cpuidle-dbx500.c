@@ -31,7 +31,7 @@
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
 
-// #define DEBUG 1
+struct cpuidle_device *cpuidle_dbx500_dev[2];
 
 #ifdef DEBUG
 static u64 last_timestamp = 0;
@@ -113,9 +113,9 @@ static struct cstate cstates[] = {
 	},
 	{
 		/* These figures are not really true. There is a cost for WFI */
-		.enter_latency = 0,
+		.enter_latency = 20,
 		.exit_latency = 0,
-		.threshold = 0,
+		.threshold = 0 + 20,
 		.power_usage = 10,
 		.APE = APE_ON,
 		.ARM = ARM_ON,
@@ -127,9 +127,9 @@ static struct cstate cstates[] = {
 		.desc = "Wait for interrupt     ",
 	},
 	{
-		.enter_latency = 170,
-		.exit_latency = 70,
-		.threshold = 260,
+		.enter_latency = 125,
+		.exit_latency = 91,
+		.threshold = 125 + 91 + 20,
 		.power_usage = 4,
 		.APE = APE_ON,
 		.ARM = ARM_RET,
@@ -141,14 +141,14 @@ static struct cstate cstates[] = {
 		.desc = "ApIdle                 ",
 	},
 	{
-		.enter_latency = 350,
-		.exit_latency = MAX_SLEEP_WAKE_UP_LATENCY + 200,
+		.enter_latency = 245,
+		.exit_latency = 185,
 		/*
 		 * Note: Sleep time must be longer than 120 us or else
 		 * there might be issues with the RTC-RTT block.
 		 */
-		.threshold = MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200,
-		.power_usage = 3,
+		.threshold = 245 + 185 + 20,
+		.power_usage = 4,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
 		.UL_PLL = UL_PLL_ON,
@@ -156,14 +156,12 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep                ",
+		.desc = "ApSleep, unused         ",
 	},
 	{
-		.enter_latency = 350,
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200),
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200),
+		.enter_latency = 245,
+		.exit_latency = 185,
+		.threshold = 245 + 185 + 20,
 		.power_usage = 2,
 		.APE = APE_OFF,
 		.ARM = ARM_RET,
@@ -172,70 +170,25 @@ static struct cstate cstates[] = {
 		.pwrst = PRCMU_AP_SLEEP,
 		.state = CI_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApSleep, UL PLL off    ",
+		.desc = "ApSleep,                ",
 	},
-#ifdef CONFIG_UX500_CPUIDLE_APDEEPIDLE
 	{
-		.enter_latency = 400,
-		.exit_latency = DEEP_SLEEP_WAKE_UP_LATENCY + 400,
-		.threshold = DEEP_SLEEP_WAKE_UP_LATENCY + 400 + 400,
-		.power_usage = 2,
-		.APE = APE_ON,
-		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_ON,
-		.ESRAM = ESRAM_RET,
-		.pwrst = PRCMU_AP_DEEP_IDLE,
-		.state = CI_DEEP_IDLE,
-		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApDeepIdle, UL PLL off ",
-	},
-#endif
-	{
-		.enter_latency = 410,
+		.enter_latency = 488,
 
-		.exit_latency = (MAX_SLEEP_WAKE_UP_LATENCY +
-				 UL_PLL_START_UP_LATENCY + 200) + 600,
-		.threshold = (MAX_SLEEP_WAKE_UP_LATENCY +
-			      UL_PLL_START_UP_LATENCY + 350 + 200) + 600 - 400,
+		.exit_latency = 305,
+		.threshold = (488 + 305 + 20),
 
 		.power_usage = 1,
 		.APE = APE_OFF,
 		.ARM = ARM_OFF,
-		.UL_PLL = UL_PLL_OFF,
+		.UL_PLL = UL_PLL_ON,
 		.ESRAM = ESRAM_RET,
 		.pwrst = PRCMU_AP_DEEP_SLEEP,
 		.state = CI_DEEP_SLEEP,
 		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.desc = "ApDeepsleep, UL PLL off",
+		.desc = "ApDeepsleep, UL PLL on   ",
 	},
 };
-
-static unsigned int cstate_threshold[6] = {
-	0 /* CI_RUNNING */, 0 /* CI_WFI */, 260 /* CI_IDLE */,
-	MAX_SLEEP_WAKE_UP_LATENCY + 350 + 200 /* CI_SLEEP */,
-	((MAX_SLEEP_WAKE_UP_LATENCY +
-			UL_PLL_START_UP_LATENCY + 350 + 200)), /* CI_SLEEP, UL off */
-	((MAX_SLEEP_WAKE_UP_LATENCY +
-			UL_PLL_START_UP_LATENCY + 350 + 200) + 600) - 400 /* CI_DEEPSLEEP, ARM off */
-};
-
-// CI_RUNNING
-module_param_named(sleep_time_threshold_0, cstate_threshold[0], uint, 0644);
-
-// CI_WFI
-module_param_named(sleep_time_threshold_1, cstate_threshold[1], uint, 0644);
-
-// CI_IDLE
-module_param_named(sleep_time_threshold_2, cstate_threshold[2], uint, 0644);
-
-// CI_SLEEP
-module_param_named(sleep_time_threshold_3, cstate_threshold[3], uint, 0644);
-
-// CI_SLEEP, UL PLL off
-module_param_named(sleep_time_threshold_4, cstate_threshold[4], uint, 0644);
-
-// CI_DEEP_SLEEP, UL PLL off, ARM off
-module_param_named(sleep_time_threshold_5, cstate_threshold[5], uint, 0644);
 
 struct cpu_state {
 	int gov_cstate;
@@ -560,7 +513,7 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 	for (i = max_depth; i > 0; i--) {
 
-		if ((*sleep_time) <= cstate_threshold[i]) {
+		if ((*sleep_time) <= cstates[i].threshold) {
 			sleep_time_too_small_count[i]++;
 			continue;
 		}
@@ -662,7 +615,11 @@ static int enter_sleep(struct cpuidle_device *dev,
 	bool migrate_timer;
 	bool master = false;
 	int loc_idle_counter;
+	int max_depth = ux500_ci_dbg_deepest_state();
 	ktime_t est_wake_time;
+
+	if (ci_state->state >= CI_SLEEP)
+		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
 
 	local_irq_disable();
 
@@ -990,19 +947,19 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 {
 	int i;
 	struct cpuidle_state *ci_state;
-	struct cpuidle_device *dev;
 
-	dev = &state->dev;
-	dev->cpu = cpu;
+	cpuidle_dbx500_dev[cpu] = &state->dev;
+	cpuidle_dbx500_dev[cpu]->cpu = cpu;
 
 	for (i = 0; i < ARRAY_SIZE(cstates); i++) {
 
-		ci_state = &dev->states[i];
+		ci_state = &cpuidle_dbx500_dev[cpu]->states[i];
 
 		cpuidle_set_statedata(ci_state, (void *)i);
 
+		ci_state->state = cstates[i].state;
 		ci_state->exit_latency = cstates[i].exit_latency;
-		ci_state->target_residency = cstate_threshold[i];
+		ci_state->target_residency = cstates[i].threshold;
 		ci_state->flags = cstates[i].flags;
 		ci_state->enter = enter_sleep;
 		ci_state->power_usage = cstates[i].power_usage;
@@ -1010,9 +967,9 @@ static int __init init_cstates(int cpu, struct cpu_state *state)
 		strncpy(ci_state->desc, cstates[i].desc, CPUIDLE_DESC_LEN);
 	}
 
-	dev->state_count = ARRAY_SIZE(cstates);
+	cpuidle_dbx500_dev[cpu]->state_count = ARRAY_SIZE(cstates);
 
-	return cpuidle_register_device(dev);
+	return cpuidle_register_device(cpuidle_dbx500_dev[cpu]);
 }
 
 struct cpuidle_driver dbx500_cpuidle_driver = {
