@@ -4363,6 +4363,19 @@ static int set_mcde_enable(const char *val, struct kernel_param *kp)
 }
 module_param_call(mcde_enable, set_mcde_enable, param_get_int, &mcde_is_enabled, 0644);
 
+int dpi_display_platform_enable(struct mcde_display_device *ddev);
+int dpi_display_platform_disable(struct mcde_display_device *ddev);
+
+static int set_platform_mcde_enable(const char *val, struct kernel_param *kp)
+{
+	if (sysfs_streq(val, "0"))
+		dpi_display_platform_disable(NULL);
+	else
+		dpi_display_platform_enable(NULL);
+	return 0;
+}
+module_param_call(platform_mcde_enable, set_platform_mcde_enable, NULL, NULL, 0200);
+
 static struct platform_driver mcde_driver = {
 	.probe = mcde_probe,
 	.remove = mcde_remove,

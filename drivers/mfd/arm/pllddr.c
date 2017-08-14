@@ -561,10 +561,78 @@ invalid_input:
 }
 ATTR_RW(pllddr_cross_clocks);
 
+static ssize_t prcmu_mcdeclk_reg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	int enabled;
+	enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100;
+
+	return sprintf(buf, "%d\n", !!enabled);
+}
+
+static ssize_t prcmu_mcdeclk_reg_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val = -1;
+	u32 reg_val;
+
+	ret = sscanf(buf, "%d", &val);
+	if ((ret < 0) || (val < 0)) {
+		pr_err("%s: invalid input: %d, ret=%d\n", __func__, val, ret);
+		return -EINVAL;
+	}
+
+	reg_val = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0xff;
+
+	if (val) {
+		reg_val = 0x100 | reg_val;
+	}
+
+	//pr_err("%#010x\n", reg_val);
+
+	writel(reg_val, prcmu_base + PRCMU_MCDECLK_REG);
+
+	return 0;
+}
+ATTR_RW(prcmu_mcdeclk_reg);
+
+static ssize_t prcmu_sdmmcclk_reg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	int enabled;
+	enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;
+
+	return sprintf(buf, "%d\n", !!enabled);
+}
+
+static ssize_t prcmu_sdmmcclk_reg_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val = -1;
+	u32 reg_val;
+
+	ret = sscanf(buf, "%d", &val);
+	if ((ret < 0) || (val < 0)) {
+		pr_err("%s: invalid input: %d, ret=%d\n", __func__, val, ret);
+		return -EINVAL;
+	}
+
+	reg_val = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0xff;
+
+	if (val) {
+		reg_val = 0x100 | reg_val;
+	}
+
+	//pr_err("%#010x\n", reg_val);
+
+	writel(reg_val, prcmu_base + PRCMU_SDMMCCLK_REG);
+
+	return 0;
+}
+ATTR_RW(prcmu_sdmmcclk_reg);
+
 static struct attribute *pllddr_attrs[] = {
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
+	&prcmu_mcdeclk_reg_interface.attr,
+	&prcmu_sdmmcclk_reg_interface.attr,
 	NULL,
 };
 
