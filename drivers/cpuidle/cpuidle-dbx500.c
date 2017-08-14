@@ -621,9 +621,6 @@ static int enter_sleep(struct cpuidle_device *dev,
 	if (ci_state->state == CI_SLEEP)
 		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
 
-	if (ci_state->state == CI_IDLE)
-		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[3];
-
 	local_irq_disable();
 
 	time_enter = ktime_get(); /* Time now */
