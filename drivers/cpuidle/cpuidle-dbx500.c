@@ -17,6 +17,7 @@
 #include <linux/tick.h>
 #include <linux/clockchips.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/abx500/ab8500-fg.h>
 #include <linux/regulator/db8500-prcmu.h>
 #include <linux/cpuidle-dbx500.h>
 
@@ -29,6 +30,21 @@
 
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
+
+#define CSTATES_NUM 5
+#define BUF_SIZE 500000
+
+typedef struct {
+	u64 timestamp;
+	int current_inst;
+	int current_avg;
+} cstate_power_usage_t;
+
+static u64 last_timestamp = 0;
+static cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
+static int pwr_usg_idx[] = {0, 0, 0, 0, 0};
+
+extern struct ab8500_fg *ab8500_di_;
 
 int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t expires,
                              ktime_t now)
@@ -427,11 +443,15 @@ module_param_named(uart_enabled_count_5, uart_enabled_count[5], uint, 0444);
 
 module_param(vbus_enabled_count, uint, 0444);
 
+#define ONE_SEC 1000 * 1000
+
 static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
 				 ktime_t *est_wake_time)
 {
-	int i;
+	cstate_power_usage_t *pwr_usage_now;
+	u64 now;
+	int i, return_state;
 
 	int cpu;
 	int max_depth;
@@ -440,8 +460,10 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	s64 delta_us;
 
 	/* If first cpu to sleep, go to most shallow sleep state */
-	if (loc_idle_counter != num_online_cpus())
-		return CI_WFI;
+	if (loc_idle_counter != num_online_cpus()) {
+		return_state = CI_WFI;
+		goto out;
+	}
 
 	/*
 	 * This loop continuously checks if there is an IRQ and exits
@@ -469,7 +491,8 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 
 		if (!is_last_cpu_running()) {
 			start_critical_timings();
-			return CI_WFI;
+			return_state = CI_WFI;
+			goto out;
 		}
 
 		delta_us = ktime_us_delta(ktime_get(), entry_time);
@@ -486,9 +509,11 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	(*sleep_time) = get_remaining_sleep_time(est_wake_time, NULL);
 
 	if (((*sleep_time) == UINT_MAX) || ((*sleep_time) == 0)) {
-		atomic_inc(&sleep_time_bogus_count);
-		return CI_WFI;
+			atomic_inc(&sleep_time_bogus_count);
+			return_state = CI_WFI;
+			goto out;
 	}
+
 	/*
 	 * Never go deeper than the governor recommends even though it might be
 	 * possible from a scheduled wake up point of view
@@ -555,7 +580,29 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	ux500_ci_dbg_register_reason(i, ape, modem, uart,
 				     (*sleep_time),
 				     max_depth);
-	return max(CI_WFI, i);
+
+	return_state = max(CI_WFI, i);
+out:
+
+	pwr_usage_now = &cstate_power_usage[return_state - 1][pwr_usg_idx[return_state - 1]];
+
+	now = ktime_to_us(ktime_get());
+	if (likely(pwr_usg_idx[return_state - 1] != 0)) {
+		if (return_state <= 2 && now - last_timestamp < 1ULL * ONE_SEC)
+			return return_state;
+	}
+
+	pwr_usage_now->timestamp    = now;
+	pwr_usage_now->current_inst = ab8500_di_->inst_curr;
+	pwr_usage_now->current_avg  = ab8500_di_->avg_curr;
+	last_timestamp = now;
+
+	//pr_err("[cpuidle] state: %d; time: %llu; curr_inst: %d; cuur_avg: %d;\n",
+	//		return_state, pwr_usage_now->timestamp, pwr_usage_now->current_inst, pwr_usage_now->current_avg);
+
+	pwr_usg_idx[return_state - 1]++;
+
+	return return_state;
 }
 
 static atomic_t deepsleep_state[6]  = {
@@ -993,6 +1040,143 @@ out:
 	return ret;
 }
 
+static ssize_t cstate1_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+
+{
+	cstate_power_usage_t *pwr_usage;
+	int i, tmp, cstate = 0;
+
+	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
+
+	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
+		pwr_usage = &cstate_power_usage[cstate][i];
+		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
+			     pwr_usage->timestamp,
+			     pwr_usage->current_inst,
+			     pwr_usage->current_avg);
+	}
+
+	return tmp;
+}
+
+static struct kobj_attribute cstate1_attribute =
+	__ATTR(cstate1, 0444, cstate1_show, NULL);
+
+static ssize_t cstate2_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+
+{
+	cstate_power_usage_t *pwr_usage;
+	int i, tmp, cstate = 1;
+
+	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
+
+	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
+		pwr_usage = &cstate_power_usage[cstate][i];
+		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
+			     pwr_usage->timestamp,
+			     pwr_usage->current_inst,
+			     pwr_usage->current_avg);
+	}
+
+	return tmp;
+}
+
+static struct kobj_attribute cstate2_attribute =
+	__ATTR(cstate2, 0444, cstate2_show, NULL);
+
+
+
+static ssize_t cstate3_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+
+{
+	cstate_power_usage_t *pwr_usage;
+	int i, tmp, cstate = 2;
+
+	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
+
+	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
+		pwr_usage = &cstate_power_usage[cstate][i];
+		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
+			     pwr_usage->timestamp,
+			     pwr_usage->current_inst,
+			     pwr_usage->current_avg);
+	}
+
+	return tmp;
+}
+
+static struct kobj_attribute cstate3_attribute =
+	__ATTR(cstate3, 0444, cstate3_show, NULL);
+
+
+static ssize_t cstate4_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+
+{
+	cstate_power_usage_t *pwr_usage;
+	int i, tmp, cstate = 3;
+
+	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
+
+	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
+		pwr_usage = &cstate_power_usage[cstate][i];
+		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
+			     pwr_usage->timestamp,
+			     pwr_usage->current_inst,
+			     pwr_usage->current_avg);
+	}
+
+	return tmp;
+}
+
+static struct kobj_attribute cstate4_attribute =
+	__ATTR(cstate4, 0444, cstate4_show, NULL);
+
+
+static ssize_t cstate5_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+
+{
+	cstate_power_usage_t *pwr_usage;
+	int i, tmp, cstate = 4;
+
+	tmp = sprintf(buf, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
+
+	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
+		pwr_usage = &cstate_power_usage[cstate][i];
+		tmp += sprintf(buf + tmp, "%llu\t%d\t%d\n",
+			     pwr_usage->timestamp,
+			     pwr_usage->current_inst,
+			     pwr_usage->current_avg);
+	}
+
+	return tmp;
+}
+
+static struct kobj_attribute cstate5_attribute =
+	__ATTR(cstate5, 0444, cstate5_show, NULL);
+
+
+static struct attribute *cpuidle_debug_attrs[] =
+{
+	&cstate1_attribute.attr,
+	&cstate2_attribute.attr,
+	&cstate3_attribute.attr,
+	&cstate4_attribute.attr,
+	&cstate5_attribute.attr,
+	NULL,
+};
+
+static struct attribute_group cpuidle_debug_attrs_group =
+{
+	.attrs = cpuidle_debug_attrs,
+};
+
+static struct kobject *cpuidle_debug_kobj;
+
 static void __exit dbx500_cpuidle_exit(void)
 {
 	int cpu;
@@ -1017,6 +1201,25 @@ static struct platform_driver dbx500_cpuidle_plat_driver = {
 
 static int __init dbx500_cpuidle_init(void)
 {
+
+	int sysfs_result;
+
+        cpuidle_debug_kobj = kobject_create_and_add("cpuidle_debug",
+				kernel_kobj);
+
+        if (!cpuidle_debug_kobj) {
+                pr_err("%s kobject create failed!\n", __func__);
+        } else {
+
+	        sysfs_result = sysfs_create_group(cpuidle_debug_kobj,
+				&cpuidle_debug_attrs_group);
+
+	        if (sysfs_result) {
+	                pr_info("%s group create failed!\n", __func__);
+	                kobject_put(cpuidle_debug_kobj);
+	        }
+	}
+
 	return platform_driver_probe(&dbx500_cpuidle_plat_driver,
 				     dbx500_cpuidle_probe);
 }
