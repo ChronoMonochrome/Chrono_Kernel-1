@@ -152,7 +152,7 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 {
 	struct ab8500_ponkey_info *info = data;
 
-	if (pm_suspend_state != 0 && irq == info->irq_dbr) {
+	if (pm_suspend_state != 0) {
 		pr_err("%s: request wake up\n", __func__);
 		request_suspend_state(0);
 	}
