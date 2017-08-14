@@ -4341,6 +4341,28 @@ static int mcde_suspend(struct platform_device *pdev, pm_message_t state)
 }
 #endif
 
+extern struct fb_info* get_primary_display_fb_info(void);
+
+static int set_mcde_enable(const char *val, struct kernel_param *kp)
+{
+        struct fb_info *fbi;
+        struct mcde_fb *mfb;
+
+        fbi = get_primary_display_fb_info();
+        mfb = to_mcde_fb(fbi);
+
+	if (sysfs_streq(val, "0")) {
+		if (mfb->early_suspend.suspend)
+			mfb->early_suspend.suspend(&mfb->early_suspend);
+	} else {
+		if (mfb->early_suspend.resume)
+			mfb->early_suspend.resume(&mfb->early_suspend);
+	}
+
+	return 0;
+}
+module_param_call(mcde_enable, set_mcde_enable, param_get_int, &mcde_is_enabled, 0644);
+
 static struct platform_driver mcde_driver = {
 	.probe = mcde_probe,
 	.remove = mcde_remove,

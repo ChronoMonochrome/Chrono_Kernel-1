@@ -100,22 +100,36 @@ static struct mcde_port port0 = {
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
 {
 	int res = 0;
-	dev_info(&ddev->dev, "%s\n", __func__);
+	pr_err("%s\n", __func__);
+	//dev_info(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_enable(dpi_pins);
 	if (res)
-		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+		pr_err("Failure during %s\n", __func__);
+		//dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
 
 static int dpi_display_platform_disable(struct mcde_display_device *ddev)
 {
 	int res = 0;
-	dev_info(&ddev->dev, "%s\n", __func__);
+	pr_err("%s\n", __func__);
+	//dev_info(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_disable(dpi_pins);	/* disabled to save power */
 	if (res)
-		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+		pr_err("Failure during %s\n", __func__);
+		//dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
+
+static int set_mcde_enable(const char *val, struct kernel_param *kp)
+{
+	if (sysfs_streq(val, "0"))
+		dpi_display_platform_disable(NULL);
+	else
+		dpi_display_platform_enable(NULL);
+	return 0;
+}
+module_param_call(mcde_enable, set_mcde_enable, NULL, NULL, 0200);
 
 static int pri_display_power_on(struct ssg_dpi_display_platform_data *pd,
 					int enable);
