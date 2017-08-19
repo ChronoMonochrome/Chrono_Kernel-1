@@ -594,6 +594,9 @@ static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
 module_param_named(pending_gic_irq, pending_gic_irq.counter, uint, 0444);
 module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
 
+static unsigned int force_max_depth = 1;
+module_param(force_max_depth, uint, 0644);
+
 static int enter_sleep(struct cpuidle_device *dev,
 		       struct cpuidle_state *ci_state)
 {
@@ -618,8 +621,10 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int max_depth = ux500_ci_dbg_deepest_state();
 	ktime_t est_wake_time;
 
-	if (ci_state->state == CI_SLEEP)
-		ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
+	if (force_max_depth) {
+		if (ci_state->state == CI_SLEEP)
+			ci_state = &cpuidle_dbx500_dev[this_cpu]->states[max_depth];
+	}
 
 	local_irq_disable();
 
