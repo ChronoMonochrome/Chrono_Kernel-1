@@ -594,7 +594,7 @@ static atomic_t pending_prcmu_irq = ATOMIC_INIT(0);
 module_param_named(pending_gic_irq, pending_gic_irq.counter, uint, 0444);
 module_param_named(pending_prcmu_irq, pending_prcmu_irq.counter, uint, 0444);
 
-static unsigned int force_max_depth = 1;
+static unsigned int force_max_depth = 0;
 module_param(force_max_depth, uint, 0644);
 
 static int enter_sleep(struct cpuidle_device *dev,
