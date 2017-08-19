@@ -278,7 +278,7 @@ osl_detach(osl_t *osh)
 
 static struct sk_buff *osl_alloc_skb(unsigned int len)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 25)
 	return __dev_alloc_skb(len, GFP_ATOMIC);
 #else
 	return dev_alloc_skb(len);
@@ -475,7 +475,7 @@ osl_pktfastget(osl_t *osh, uint len)
 
 	skb->len = 0;
 	skb->cloned = 0;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 14)
 	skb->list = NULL;
 #endif
 	atomic_set(&skb->users, 1);
@@ -564,7 +564,7 @@ osl_pktfastfree(osl_t *osh, struct sk_buff *skb)
 	unsigned long flags;
 #endif 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 14)
 	skb->tstamp.tv.sec = 0;
 #else
 	skb->stamp.tv_sec = 0;

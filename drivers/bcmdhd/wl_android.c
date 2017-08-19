@@ -41,7 +41,14 @@
 #endif
 #if defined(CONFIG_WIFI_CONTROL_FUNC)
 #include <linux/platform_device.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35))
+#define VALUE_TO_STRING(x) #x
+#define VALUE(x) VALUE_TO_STRING(x)
+#define VAR_NAME_VALUE(var) #var "="  VALUE(var)
+
+//#define LINUX_VERSION_CODE_FAKE KERNEL_VERSION(3, 0, 101)
+//#pragma message(VAR_NAME_VALUE(LINUX_VERSION_CODE_FAKE))
+//#error abort
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 35))
 #include <linux/wlan_plat.h>
 #else
 #include <linux/wifi_tiwlan.h>
@@ -2233,7 +2240,7 @@ int wifi_set_power(int on, unsigned long msec)
 	return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 35))
 int wifi_get_mac_addr(unsigned char *buf)
 {
 	DHD_ERROR(("%s\n", __FUNCTION__));
@@ -2244,9 +2251,9 @@ int wifi_get_mac_addr(unsigned char *buf)
 	}
 	return -EOPNOTSUPP;
 }
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)) */
+#endif /* (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 35)) */
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 39))
 void *wifi_get_country_code(char *ccode)
 {
 	DHD_TRACE(("%s\n", __FUNCTION__));
@@ -2257,7 +2264,7 @@ void *wifi_get_country_code(char *ccode)
 	}
 	return NULL;
 }
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)) */
+#endif /* (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 39)) */
 
 static int wifi_set_carddetect(int on)
 {
@@ -2303,7 +2310,7 @@ static int wifi_remove(struct platform_device *pdev)
 static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY) && 1
+#if (LINUX_VERSION_CODE_FAKE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY) && 1
 	bcmsdh_oob_intr_set(0);
 #endif /* (OOB_INTR_ONLY) */
 	return 0;
@@ -2312,7 +2319,7 @@ static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 static int wifi_resume(struct platform_device *pdev)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY) && 1
+#if (LINUX_VERSION_CODE_FAKE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY) && 1
 	if (dhd_os_check_if_up(bcmsdh_get_drvdata()))
 		bcmsdh_oob_intr_set(1);
 #endif /* (OOB_INTR_ONLY) */

@@ -29,10 +29,10 @@
 #define _linuxver_h_
 
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 #include <linux/config.h>
 #else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 33))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 33))
 #include <generated/autoconf.h>
 #else
 #include <linux/autoconf.h>
@@ -40,7 +40,7 @@
 #endif 
 #include <linux/module.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 0))
 
 #ifdef __UNDEF_NO_VERSION__
 #undef __NO_VERSION__
@@ -49,14 +49,14 @@
 #endif
 #endif	
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 5, 0)
 #define module_param(_name_, _type_, _perm_)	MODULE_PARM(_name_, "i")
 #define module_param_string(_name_, _string_, _size_, _perm_) \
 		MODULE_PARM(_string_, "c" __MODULE_STRING(_size_))
 #endif
 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 9))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 4, 9))
 #include <linux/malloc.h>
 #else
 #include <linux/slab.h>
@@ -69,17 +69,17 @@
 #include <linux/pci.h>
 #include <linux/interrupt.h>
 #include <linux/netdevice.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 #include <linux/semaphore.h>
 #else
 #include <asm/semaphore.h>
 #endif 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 28))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 28))
 #undef IP_TOS
 #endif 
 #include <asm/io.h>
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 5, 41))
+#if (LINUX_VERSION_CODE_FAKE > KERNEL_VERSION(2, 5, 41))
 #include <linux/workqueue.h>
 #else
 #include <linux/tqueue.h>
@@ -97,7 +97,7 @@
 #endif
 #endif	
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #define DAEMONIZE(a) daemonize(a); \
 	allow_signal(SIGKILL); \
 	allow_signal(SIGTERM);
@@ -110,18 +110,18 @@
 	} while (0);
 #endif 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 19)
 #define	MY_INIT_WORK(_work, _func)	INIT_WORK(_work, _func)
 #else
 #define	MY_INIT_WORK(_work, _func)	INIT_WORK(_work, _func, _work)
-#if !(LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 18) && defined(RHEL_MAJOR) && \
+#if !(LINUX_VERSION_CODE_FAKE == KERNEL_VERSION(2, 6, 18) && defined(RHEL_MAJOR) && \
 	(RHEL_MAJOR == 5))
 
 typedef void (*work_func_t)(void *work);
 #endif
 #endif	
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 
 #ifndef IRQ_NONE
 typedef void irqreturn_t;
@@ -133,32 +133,32 @@ typedef void irqreturn_t;
 typedef irqreturn_t(*FN_ISR) (int irq, void *dev_id, struct pt_regs *ptregs);
 #endif	
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)
+#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 18)
 #define IRQF_SHARED	SA_SHIRQ
 #endif 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 17)
 #ifdef	CONFIG_NET_RADIO
 #define	CONFIG_WIRELESS_EXT
 #endif
 #endif	
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 67)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 5, 67)
 #define MOD_INC_USE_COUNT
 #define MOD_DEC_USE_COUNT
 #endif 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 32)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 32)
 #include <linux/sched.h>
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 29)
 #include <net/lib80211.h>
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 29)
 #include <linux/ieee80211.h>
 #else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 14)
 #include <net/ieee80211.h>
 #endif
 #endif 
@@ -184,7 +184,7 @@ typedef irqreturn_t(*FN_ISR) (int irq, void *dev_id, struct pt_regs *ptregs);
 #define __devexit_p(x)	x
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 4, 0))
 
 #define pci_get_drvdata(dev)		(dev)->sysdata
 #define pci_set_drvdata(dev, value)	(dev)->sysdata = (value)
@@ -219,11 +219,11 @@ extern void pci_unregister_driver(struct pci_driver *drv);
 
 #endif 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 18))
 #define pci_module_init pci_register_driver
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 2, 18))
 #ifdef MODULE
 #define module_init(x) int init_module(void) { return x(); }
 #define module_exit(x) void cleanup_module(void) { x(); }
@@ -233,38 +233,38 @@ extern void pci_unregister_driver(struct pci_driver *drv);
 #endif
 #endif	
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 31)
 #define WL_USE_NETDEV_OPS
 #else
 #undef WL_USE_NETDEV_OPS
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)) && defined(CONFIG_RFKILL)
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 31)) && defined(CONFIG_RFKILL)
 #define WL_CONFIG_RFKILL
 #else
 #undef WL_CONFIG_RFKILL
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 48))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 48))
 #define list_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 13))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 13))
 #define pci_resource_start(dev, bar)	((dev)->base_address[(bar)])
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 44))
+#elif (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 44))
 #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 23))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 23))
 #define pci_enable_device(dev) do { } while (0)
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 14))
 #define net_device device
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 42))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 42))
 
 
 
@@ -313,7 +313,7 @@ static inline void pci_free_consistent(struct pci_dev *hwdev, size_t size,
 
 #endif 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 43))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 3, 43))
 
 #define dev_kfree_skb_any(a)		dev_kfree_skb(a)
 #define netif_down(dev)			do { (dev)->start = 0; } while (0)
@@ -371,7 +371,7 @@ static inline void tasklet_init(struct tasklet_struct *tasklet,
 
 #endif 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 4, 3))
 
 
 #define PREPARE_TQUEUE(_tq, _routine, _data)			\
@@ -391,7 +391,7 @@ static inline void tasklet_init(struct tasklet_struct *tasklet,
 #endif	
 
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 9)
+#if LINUX_VERSION_CODE_FAKE > KERNEL_VERSION(2, 6, 9)
 #define	PCI_SAVE_STATE(a, b)	pci_save_state(a)
 #define	PCI_RESTORE_STATE(a, b)	pci_restore_state(a)
 #else
@@ -399,7 +399,7 @@ static inline void tasklet_init(struct tasklet_struct *tasklet,
 #define	PCI_RESTORE_STATE(a, b)	pci_restore_state(a, b)
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 6))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 4, 6))
 static inline int
 pci_save_state(struct pci_dev *dev, u32 *buffer)
 {
@@ -433,12 +433,12 @@ pci_restore_state(struct pci_dev *dev, u32 *buffer)
 #endif 
 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 19))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 4, 19))
 #define read_c0_count() read_32bit_cp0_register(CP0_COUNT)
 #endif
 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 24))
 #ifndef SET_MODULE_OWNER
 #define SET_MODULE_OWNER(dev)		do {} while (0)
 #define OLD_MOD_INC_USE_COUNT		MOD_INC_USE_COUNT
@@ -469,19 +469,19 @@ pci_restore_state(struct pci_dev *dev, u32 *buffer)
 #define free_netdev(dev)		kfree(dev)
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 
 #define af_packet_priv			data
 #endif
 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 11)
 #define DRV_SUSPEND_STATE_TYPE pm_message_t
 #else
 #define DRV_SUSPEND_STATE_TYPE uint32
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 19)
 #define CHECKSUM_HW	CHECKSUM_PARTIAL
 #endif
 
@@ -504,7 +504,7 @@ typedef struct {
 #define DBG_THR(x)
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #define SMP_RD_BARRIER_DEPENDS(x) smp_read_barrier_depends(x)
 #else
 #define SMP_RD_BARRIER_DEPENDS(x) smp_rmb(x)
@@ -549,7 +549,7 @@ typedef struct {
 
 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 31))
 #define KILL_PROC(nr, sig) \
 { \
 struct task_struct *tsk; \
@@ -559,7 +559,7 @@ tsk = pid_task(pid, PIDTYPE_PID);    \
 if (tsk) send_sig(sig, tsk, 1); \
 }
 #else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE <= \
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE <= \
 	KERNEL_VERSION(2, 6, 30))
 #define KILL_PROC(pid, sig) \
 { \
@@ -575,7 +575,7 @@ if (tsk) send_sig(sig, tsk, 1); \
 #endif
 #endif 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #include <linux/time.h>
 #include <linux/wait.h>
 #else
@@ -615,19 +615,19 @@ do {									\
 #endif 
 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 24))
 #define DEV_PRIV(dev)	(dev->priv)
 #else
 #define DEV_PRIV(dev)	netdev_priv(dev)
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 20)
 #define WL_ISR(i, d, p)         wl_isr((i), (d))
 #else
 #define WL_ISR(i, d, p)         wl_isr((i), (d), (p))
 #endif  
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 #define netdev_priv(dev) dev->priv
 #endif 
 

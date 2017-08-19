@@ -348,7 +348,7 @@ static struct pci_driver bcmsdh_pci_driver = {
 	id_table:	bcmsdh_pci_devid,
 	probe:		bcmsdh_pci_probe,
 	remove:		bcmsdh_pci_remove,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 	save_state:	NULL,
 #endif
 	suspend:	NULL,
@@ -574,7 +574,7 @@ bcmsdh_register(bcmsdh_driver_t *driver)
 #endif /* defined(BCMPLATFORM_BUS) */
 
 #if !defined(BCMPLATFORM_BUS) && !defined(BCMLXSDMMC)
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 	if (!(error = pci_module_init(&bcmsdh_pci_driver)))
 		return 0;
 #else
@@ -597,7 +597,7 @@ extern void sdio_function_cleanup(void);
 void
 bcmsdh_unregister(void)
 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
 	if (bcmsdh_pci_driver.node.next)
 #endif
 

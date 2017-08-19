@@ -73,7 +73,7 @@ typedef const struct si_pub	si_t;
 #endif
 #endif 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 #include <linux/rtnetlink.h>
 #endif
 #if defined(SOFTAP)
@@ -105,7 +105,7 @@ extern int dhd_wait_pend8021x(struct net_device *dev);
 #endif 
 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #define DAEMONIZE(a) daemonize(a); \
 	allow_signal(SIGKILL); \
 	allow_signal(SIGTERM);
@@ -156,7 +156,7 @@ typedef struct priv_link {
 } priv_link_t;
 
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
+#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 24))
 #define WL_DEV_LINK(dev)       (priv_link_t*)(dev->priv)
 #else
 #define WL_DEV_LINK(dev)       (priv_link_t*)netdev_priv(dev)
@@ -2161,7 +2161,7 @@ wl_iw_set_encode(
 		case WEP128_KEY_SIZE:
 			key.algo = CRYPTO_ALGO_WEP128;
 			break;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
+#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 14)
 		case TKIP_KEY_SIZE:
 			key.algo = CRYPTO_ALGO_TKIP;
 			break;
@@ -3634,23 +3634,23 @@ _iscan_sysioc_thread(void *data)
 			iscan->timer_on = 0;
 		}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 		rtnl_lock();
 #endif
 		status = wl_iw_iscan_get(iscan);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 		rtnl_unlock();
 #endif
 
 		switch (status) {
 			case WL_SCAN_RESULTS_PARTIAL:
 				WL_TRACE(("iscanresults incomplete\n"));
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 				rtnl_lock();
 #endif
 				
 				wl_iw_iscan(iscan, NULL, WL_SCAN_ACTION_CONTINUE);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27))
 				rtnl_unlock();
 #endif
 				

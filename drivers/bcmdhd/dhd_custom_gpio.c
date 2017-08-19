@@ -179,7 +179,7 @@ dhd_custom_get_mac_address(unsigned char *buf)
 		return -EINVAL;
 
 	/* Customer access to MAC address stored outside of DHD driver */
-#if defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35))
+#if defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 35))
 	ret = wifi_get_mac_addr(buf);
 #endif
 
@@ -252,7 +252,7 @@ const struct cntry_locales_custom translate_custom_table[] = {
 */
 void get_customized_country_code(char *country_iso_code, wl_country_t *cspec)
 {
-#if defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39))
+#if defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 39))
 
 	struct cntry_locales_custom *cloc_ptr;
 
@@ -290,6 +290,6 @@ void get_customized_country_code(char *country_iso_code, wl_country_t *cspec)
 	cspec->rev = translate_custom_table[0].custom_locale_rev;
 #endif /* EXMAPLE_TABLE */
 	return;
-#endif /* defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)) */
+#endif /* defined(CUSTOMER_HW2) && (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 36)) */
 }
 #endif /* CUSTOMER_HW4 */

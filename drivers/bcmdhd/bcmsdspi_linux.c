@@ -46,7 +46,7 @@
 extern uint sd_crc;
 module_param(sd_crc, uint, 0);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #define KERNEL26
 #endif
 #endif /* !BCMSPI_ANDROID */
@@ -60,7 +60,7 @@ struct sdos_info {
 };
 
 #ifndef BCMSPI_ANDROID
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
 #define BLOCKABLE()	(!in_atomic())
 #else
 #define BLOCKABLE()	(!in_interrupt())
@@ -69,7 +69,7 @@ struct sdos_info {
 /* Interrupt handler */
 static irqreturn_t
 sdspi_isr(int irq, void *dev_id
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
+#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 20)
 , struct pt_regs *ptregs
 #endif
 )
