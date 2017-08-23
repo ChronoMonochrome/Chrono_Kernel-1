@@ -453,8 +453,6 @@ schedule:
 	pending_pllddr_val = new_val;
 	pending_pllddr_freq = freq;
 
-	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
-
 	return count;
 }
 ATTR_RW(pllddr);
