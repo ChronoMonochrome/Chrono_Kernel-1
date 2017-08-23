@@ -110,6 +110,6 @@ busybox sh /ramdisk/10monkey_patch
 busybox umount /sys
 busybox umount /proc
 busybox date >>/ramdisk/last_boot.txt
-busybox rm -fr /stage1
+#busybox rm -fr /stage1
 export PATH="${_PATH}"
 exec /init
