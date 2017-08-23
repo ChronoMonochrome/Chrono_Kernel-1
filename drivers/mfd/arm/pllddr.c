@@ -457,6 +457,57 @@ schedule:
 }
 ATTR_RW(pllddr);
 
+static ssize_t pllddr1_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	u32 val;
+
+	val = readl(prcmu_base + PRCMU_PLLDDR_REG);
+	return sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
+}
+
+static ssize_t pllddr1_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	u32 new_val, old_val;
+	int freq = 0, div, mul;
+	int ret = 0;
+
+	if (unlikely(pending_pllddr_val > 0)) {
+		pr_err("%s: PLLDDR OC is already scheduled.\n");
+		return -EBUSY;
+	}
+
+	ret = sscanf(buf, "%d", &freq);
+
+	// check for bogus values - retry with hexademical input
+	if ((!freq) || (freq <= 50199)) {
+		ret = sscanf(buf, "%x", &freq);
+
+		if ((freq >= 0x50101) && (freq <= 0x501ff)) {
+			new_val = freq;
+			freq = pllarm_freq(freq);
+			goto schedule;
+		} else
+			goto inval_input;
+	}
+
+	if (!ret || !freq) {
+inval_input:
+		pr_err("[PLLDDR] invalid input\n");
+		return -EINVAL;
+	}
+
+	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
+	mul = (old_val & 0x000000FF);
+	div = (old_val & 0x00FF0000) >> 16;
+
+	new_val = 0x0050100 + (freq * 5 / 38400);
+
+schedule:
+	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
+	return count;
+}
+ATTR_RW(pllddr1);
+
 static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%d\n", pllddr_oc_delay_us);
@@ -627,6 +678,7 @@ ATTR_RW(prcmu_sdmmcclk_reg);
 
 static struct attribute *pllddr_attrs[] = {
 	&pllddr_interface.attr,
+	&pllddr1_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	&prcmu_mcdeclk_reg_interface.attr,
