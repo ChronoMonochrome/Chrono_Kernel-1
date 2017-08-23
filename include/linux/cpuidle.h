@@ -29,7 +29,6 @@ struct cpuidle_device;
  ****************************/
 
 struct cpuidle_state {
-	int		state;
 	char		name[CPUIDLE_NAME_LEN];
 	char		desc[CPUIDLE_DESC_LEN];
 	void		*driver_data;

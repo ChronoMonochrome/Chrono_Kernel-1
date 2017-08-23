@@ -15,15 +15,6 @@
 #define CONFIG_DBX500_CPUIDLE_DEEPEST_STATE 1
 #endif
 
-#define CSTATES_NUM 5
-#define BUF_SIZE 100000
-
-typedef struct {
-        u64 timestamp;
-        int current_inst;
-        int current_avg;
-} cstate_power_usage_t;
-
 enum post_mortem_sleep {
 	NO_SLEEP_PROGRAMMED = 0x12345678,
 };

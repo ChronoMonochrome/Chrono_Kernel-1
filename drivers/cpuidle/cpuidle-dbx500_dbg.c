@@ -97,9 +97,9 @@ static struct clk *uart_clk;
 static bool force_APE_on;
 static bool reset_timer;
 int deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
-static u32 measure_latency = 1;
-static bool wake_latency = 1;
-static int verbose = 1;
+static u32 measure_latency;
+static bool wake_latency;
+static int verbose;
 
 static struct cstate *cstates;
 static int cstates_len;
@@ -126,11 +126,6 @@ volatile struct {
 	struct cpuidle_post_mortem_entry status[POST_MORTEM_LEN];
 } cpuidle_post_mortem[NR_CPUS];
 static DEFINE_SPINLOCK(cpuidle_post_mortem_lock);
-#endif
-
-#ifdef DEBUG
-extern cstate_power_usage_t cstate_power_usage[CSTATES_NUM][BUF_SIZE];
-extern int pwr_usg_idx[CSTATES_NUM];
 #endif
 
 bool ux500_ci_dbg_force_ape_on(void)
@@ -705,98 +700,6 @@ static ssize_t wake_latency_write(struct file *file,
 	return count;
 }
 
-#ifdef DEBUG
-static ssize_t cstate1_read(struct seq_file *s, void *p)
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, cstate = 0;
-
-	seq_printf(s, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		seq_printf(s, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return 0;
-}
-
-static ssize_t cstate2_read(struct seq_file *s, void *p)
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, cstate = 1;
-
-	seq_printf(s, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		seq_printf(s, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return 0;
-}
-
-static ssize_t cstate3_read(struct seq_file *s, void *p)
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, cstate = 2;
-
-	seq_printf(s, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		seq_printf(s, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return 0;
-}
-
-static ssize_t cstate4_read(struct seq_file *s, void *p)
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, cstate = 3;
-
-	seq_printf(s, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		seq_printf(s, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return 0;
-}
-
-static ssize_t cstate5_read(struct seq_file *s, void *p)
-{
-	cstate_power_usage_t *pwr_usage;
-	int i, cstate = 4;
-
-	seq_printf(s, "time" "\t" "current_inst" "\t" "current_avg" "\t\n");
-
-	for (i = 0; i < pwr_usg_idx[cstate]; i++) {
-		pwr_usage = &cstate_power_usage[cstate][i];
-		seq_printf(s, "%llu\t%d\t%d\n",
-			     pwr_usage->timestamp,
-			     pwr_usage->current_inst,
-			     pwr_usage->current_avg);
-	}
-
-	return 0;
-}
-#endif
-
 static int verbose_read(struct seq_file *s, void *p)
 {
 	seq_printf(s, "verbose debug is %s\n", verbose ? "on" : "off");
@@ -1240,33 +1143,6 @@ static int verbose_open_file(struct inode *inode, struct file *file)
 	return single_open(file, verbose_read, inode->i_private);
 }
 
-#ifdef DEBUG
-static int cstate1_open_file(struct inode *inode, struct file *file)
-{
-	return single_open(file, cstate1_read, inode->i_private);
-}
-
-static int cstate2_open_file(struct inode *inode, struct file *file)
-{
-	return single_open(file, cstate2_read, inode->i_private);
-}
-
-static int cstate3_open_file(struct inode *inode, struct file *file)
-{
-	return single_open(file, cstate3_read, inode->i_private);
-}
-
-static int cstate4_open_file(struct inode *inode, struct file *file)
-{
-	return single_open(file, cstate4_read, inode->i_private);
-}
-
-static int cstate5_open_file(struct inode *inode, struct file *file)
-{
-	return single_open(file, cstate5_read, inode->i_private);
-}
-#endif
-
 static int stats_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, stats_print, inode->i_private);
@@ -1302,52 +1178,10 @@ static const struct file_operations verbose_state_fops = {
 	.owner = THIS_MODULE,
 };
 
-#ifdef DEBUG
-static const struct file_operations cstate1_fops = {
-	.open = cstate1_open_file,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-
-static const struct file_operations cstate2_fops = {
-	.open = cstate2_open_file,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-
-static const struct file_operations cstate3_fops = {
-	.open = cstate3_open_file,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-
-static const struct file_operations cstate4_fops = {
-	.open = cstate4_open_file,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-
-static const struct file_operations cstate5_fops = {
-	.open = cstate5_open_file,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-#endif
-
 static const struct file_operations stats_fops = {
 	.open = stats_open_file,
-	.read = seq_read,
 	.write = stats_write,
+	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
 	.owner = THIS_MODULE,
@@ -1387,33 +1221,6 @@ static void __init setup_debugfs(void)
 					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
 					       NULL, &verbose_state_fops)))
 		goto fail;
-
-#ifdef DEBUG
-	if (IS_ERR_OR_NULL(debugfs_create_file("cstate1",
-					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
-					       NULL, &cstate1_fops)))
-		goto fail;
-
-	if (IS_ERR_OR_NULL(debugfs_create_file("cstate2",
-					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
-					       NULL, &cstate2_fops)))
-		goto fail;
-
-	if (IS_ERR_OR_NULL(debugfs_create_file("cstate3",
-					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
-					       NULL, &cstate3_fops)))
-		goto fail;
-
-	if (IS_ERR_OR_NULL(debugfs_create_file("cstate4",
-					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
-					       NULL, &cstate4_fops)))
-		goto fail;
-
-	if (IS_ERR_OR_NULL(debugfs_create_file("cstate5",
-					       S_IWUSR | S_IWGRP | S_IRUGO, cpuidle_dir,
-					       NULL, &cstate5_fops)))
-		goto fail;
-#endif
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("stats",
 					       S_IRUGO, cpuidle_dir, NULL,
