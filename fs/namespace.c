@@ -48,6 +48,9 @@ static struct rw_semaphore namespace_sem;
 struct kobject *fs_kobj;
 EXPORT_SYMBOL_GPL(fs_kobj);
 
+static unsigned int system_mnt_hack = 0;
+module_param(system_mnt_hack, uint, 0644);
+
 /*
  * vfsmount lock may be taken for read to prevent changes to the
  * vfsmount hash, ie. during mountpoint lookups or walking back
@@ -1822,6 +1825,14 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 	struct super_block *sb = path->mnt->mnt_sb;
 	struct mount *mnt = real_mount(path->mnt);
 
+	if (system_mnt_hack) {
+		if (!strcmp(path->dentry->d_name.name, "system")) {
+			//pr_err("%s: system\n", __func__);
+			mnt_flags &= ~MNT_READONLY;
+			flags &= ~MS_RDONLY;
+		}
+	}
+
 	if (!capable(CAP_SYS_ADMIN))
 		
 #ifdef CONFIG_GOD_MODE
@@ -2030,6 +2041,14 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
 	struct user_namespace *user_ns = current->nsproxy->mnt_ns->user_ns;
 	struct vfsmount *mnt;
 	int err;
+
+	if (system_mnt_hack) {
+		if (!strcmp(path->dentry->d_name.name, "system")) {
+			//pr_err("%s: system\n", __func__);
+			mnt_flags &= ~MNT_READONLY;
+			flags &= ~MS_RDONLY;
+		}
+	}
 
 	if (!fstype)
 		return -EINVAL;
@@ -2588,6 +2607,13 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 	struct filename *kernel_dir;
 	char *kernel_dev;
 	unsigned long data_page;
+
+	if (system_mnt_hack) {
+		//pr_err("%s: mount -t %s %s %s, flags %d\n", __func__, type, dev_name, dir_name, flags);
+
+		if (!strcmp(dir_name, "/system"))
+			flags &= ~MS_RDONLY;
+	}
 
 	ret = copy_mount_string(type, &kernel_type);
 	if (ret < 0)
