@@ -79,8 +79,8 @@ int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t exp
  *
  */
 
-#define MIN_SLEEP_WAKE_UP_LATENCY 1400
-#define MAX_SLEEP_WAKE_UP_LATENCY 1500
+#define MIN_SLEEP_WAKE_UP_LATENCY 1900
+#define MAX_SLEEP_WAKE_UP_LATENCY 2000
 
 #define MAX_STATE_DETERMINE_LOOP_TIME 100000 /* usec */
 
