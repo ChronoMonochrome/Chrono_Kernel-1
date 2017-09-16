@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -21,6 +18,19 @@
 #include <linux/fs.h>
 
 #include "match.h"
+
+/*
+ * Class of mediation types in the AppArmor policy db
+ */
+#define AA_CLASS_ENTRY		0
+#define AA_CLASS_UNKNOWN	1
+#define AA_CLASS_FILE		2
+#define AA_CLASS_CAP		3
+#define AA_CLASS_NET		4
+#define AA_CLASS_RLIMITS	5
+#define AA_CLASS_DOMAIN		6
+
+#define AA_CLASS_LAST		AA_CLASS_DOMAIN
 
 /* Control parameters settable through module/boot flags */
 extern enum audit_mode aa_g_audit;
@@ -55,7 +65,6 @@ extern int apparmor_initialized __initdata;
 char *aa_split_fqname(char *args, char **ns_name);
 void aa_info_message(const char *str);
 void *kvmalloc(size_t size);
-void kvfree(void *buffer);
 
 
 /**
@@ -84,7 +93,7 @@ static inline unsigned int aa_dfa_null_transition(struct aa_dfa *dfa,
 						  unsigned int start)
 {
 	/* the null transition only needs the string's null terminator byte */
-	return aa_dfa_match_len(dfa, start, "", 1);
+	return aa_dfa_next(dfa, start, 0);
 }
 
 static inline bool mediated_filesystem(struct inode *inode)

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -120,7 +117,7 @@ static inline u16 dfa_map_xindex(u16 mask)
 		index |= AA_X_NAME;
 	} else if (old_index == 3) {
 		index |= AA_X_NAME | AA_X_CHILD;
-	} else {
+	} else if (old_index) {
 		index |= AA_X_TABLE;
 		index |= old_index - 4;
 	}

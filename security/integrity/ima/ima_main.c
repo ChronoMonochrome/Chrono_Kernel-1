@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2005,2006,2007,2008 IBM Corporation
  *
@@ -25,6 +22,7 @@
 #include <linux/mount.h>
 #include <linux/mman.h>
 #include <linux/slab.h>
+#include <linux/ima.h>
 
 #include "ima.h"
 
@@ -89,7 +87,7 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
 				  struct inode *inode,
 				  struct file *file)
 {
-	mode_t mode = file->f_mode;
+	fmode_t mode = file->f_mode;
 
 	mutex_lock(&iint->mutex);
 	if (mode & FMODE_WRITE &&

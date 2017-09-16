@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * A hash table (hashtab) maintains associations between
  * key values and datum values.  The type of the key values
