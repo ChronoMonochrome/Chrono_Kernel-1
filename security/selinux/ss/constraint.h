@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * A constraint is a condition that must be satisfied in
  * order for one or more permissions to be granted.

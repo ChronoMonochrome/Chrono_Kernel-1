@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Network port table
  *
@@ -176,13 +173,9 @@ static int sel_netport_sid_slow(u8 protocol, u16 pnum, u32 *sid)
 out:
 	spin_unlock_bh(&sel_netport_lock);
 	if (unlikely(ret)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "SELinux: failure in sel_netport_sid_slow(),"
 		       " unable to determine network port label\n");
-#else
-		;
-#endif
 		kfree(new);
 	}
 	return ret;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #
 # Makefile for building Trusted Computing Group's(TCG) runtime Integrity
 # Measurement Architecture(IMA).

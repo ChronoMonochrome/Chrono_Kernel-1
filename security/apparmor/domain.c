@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -363,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 	if (bprm->cred_prepared)
 		return 0;
 
-	/* XXX: no_new_privs is not usable with AppArmor yet */
-	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
-		return -EPERM;
-
 	cxt = bprm->cred->security;
 	BUG_ON(!cxt);
 
@@ -379,13 +372,12 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 	state = profile->file.start;
 
 	/* buffer freed below, name is pointer into buffer */
-	error = aa_get_name(&bprm->file->f_path, profile->path_flags, &buffer,
-			    &name);
+	error = aa_path_name(&bprm->file->f_path, profile->path_flags, &buffer,
+			     &name, &info);
 	if (error) {
 		if (profile->flags &
 		    (PFLAG_IX_ON_NAME_ERROR | PFLAG_UNCONFINED))
 			error = 0;
-		info = "Exec failed name resolution";
 		name = bprm->filename;
 		goto audit;
 	}
@@ -402,6 +394,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 			new_profile = find_attach(ns, &ns->base.profiles, name);
 		if (!new_profile)
 			goto cleanup;
+		/*
+		 * NOTE: Domain transitions from unconfined are allowed
+		 * even when no_new_privs is set because this aways results
+		 * in a further reduction of permissions.
+		 */
 		goto apply;
 	}
 
@@ -418,7 +415,8 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 		 * exec\0change_profile
 		 */
 		state = aa_dfa_null_transition(profile->file.dfa, state);
-		cp = change_profile_perms(profile, cxt->onexec->ns, name,
+		cp = change_profile_perms(profile, cxt->onexec->ns,
+					  cxt->onexec->base.name,
 					  AA_MAY_ONEXEC, state);
 
 		if (!(cp.allow & AA_MAY_ONEXEC))
@@ -461,6 +459,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 	} else
 		/* fail exec */
 		error = -EACCES;
+
+	/*
+	 * Policy has specified a domain transition, if no_new_privs then
+	 * fail the exec.
+	 */
+	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
+		aa_put_profile(new_profile);
+		error = -EPERM;
+		goto cleanup;
+	}
 
 	if (!new_profile)
 		goto audit;
@@ -616,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
 	const char *target = NULL, *info = NULL;
 	int error = 0;
 
+	/*
+	 * Fail explicitly requested domain transitions if no_new_privs.
+	 * There is no exception for unconfined as change_hat is not
+	 * available.
+	 */
+	if (task_no_new_privs(current))
+		return -EPERM;
+
 	/* released below */
 	cred = get_current_cred();
 	cxt = cred->security;
@@ -756,6 +772,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
 	cred = get_current_cred();
 	cxt = cred->security;
 	profile = aa_cred_profile(cred);
+
+	/*
+	 * Fail explicitly requested domain transitions if no_new_privs
+	 * and not unconfined.
+	 * Domain transitions from unconfined are allowed even when
+	 * no_new_privs is set because this aways results in a reduction
+	 * of permissions.
+	 */
+	if (task_no_new_privs(current) && !unconfined(profile)) {
+		put_cred(cred);
+		return -EPERM;
+	}
 
 	if (ns_name) {
 		/* released below */

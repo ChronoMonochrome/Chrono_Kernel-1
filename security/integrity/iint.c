@@ -74,6 +74,7 @@ static void iint_free(struct integrity_iint_cache *iint)
 {
 	iint->version = 0;
 	iint->flags = 0UL;
+	iint->evm_status = INTEGRITY_UNKNOWN;
 	kmem_cache_free(iint_cache, iint);
 }
 
@@ -157,6 +158,7 @@ static void init_once(void *foo)
 	iint->version = 0;
 	iint->flags = 0UL;
 	mutex_init(&iint->mutex);
+	iint->evm_status = INTEGRITY_UNKNOWN;
 }
 
 static int __init integrity_iintcache_init(void)

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Security plug functions
  *
@@ -22,6 +19,8 @@
 #include <linux/integrity.h>
 #include <linux/ima.h>
 #include <linux/evm.h>
+#include <linux/fsnotify.h>
+#include <net/flow.h>
 
 #define MAX_LSM_EVM_XATTR	2
 
@@ -60,11 +59,7 @@ static void __init do_security_initcalls(void)
  */
 int __init security_init(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Security Framework initialized\n");
-#else
-	;
-#endif
 
 	security_fixup_ops(&default_security_ops);
 	security_ops = &default_security_ops;
@@ -120,12 +115,8 @@ int __init security_module_enable(struct security_operations *ops)
 int __init register_security(struct security_operations *ops)
 {
 	if (verify(ops)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s could not verify "
 		       "security_operations structure.\n", __func__);
-#else
-		;
-#endif
 		return -EINVAL;
 	}
 
@@ -556,16 +547,6 @@ int security_inode_permission(struct inode *inode, int mask)
 	return security_ops->inode_permission(inode, mask);
 }
 
-int security_inode_exec_permission(struct inode *inode, unsigned int flags)
-{
-	int mask = MAY_EXEC;
-	if (unlikely(IS_PRIVATE(inode)))
-		return 0;
-	if (flags)
-		mask |= MAY_NOT_BLOCK;
-	return security_ops->inode_permission(inode, mask);
-}
-
 int security_inode_setattr(struct dentry *dentry, struct iattr *attr)
 {
 	int ret;
@@ -794,6 +775,11 @@ int security_kernel_create_files_as(struct cred *new, struct inode *inode)
 int security_kernel_module_request(char *kmod_name)
 {
 	return security_ops->kernel_module_request(kmod_name);
+}
+
+int security_kernel_module_from_file(struct file *file)
+{
+	return security_ops->kernel_module_from_file(file);
 }
 
 int security_task_fix_setuid(struct cred *new, const struct cred *old,

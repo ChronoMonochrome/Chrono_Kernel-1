@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -21,6 +18,8 @@
 #include <linux/resource.h>
 #include <linux/sched.h>
 
+#include "apparmorfs.h"
+
 struct aa_profile;
 
 /* struct aa_rlimit - rlimit settings for the profile
@@ -34,6 +33,8 @@ struct aa_rlimit {
 	unsigned int mask;
 	struct rlimit limits[RLIM_NLIMITS];
 };
+
+extern struct aa_fs_entry aa_fs_entry_rlimit[];
 
 int aa_map_resource(int resource);
 int aa_task_setrlimit(struct aa_profile *profile, struct task_struct *,

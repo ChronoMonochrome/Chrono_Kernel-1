@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * device_cgroup.c - device cgroup subsystem
  *
@@ -64,21 +61,13 @@ static inline struct dev_cgroup *task_devcgroup(struct task_struct *task)
 
 struct cgroup_subsys devices_subsys;
 
-static int devcgroup_can_attach(struct cgroup_subsys *ss,
-			struct cgroup *new_cgrp, struct cgroup_taskset *set)
+static int devcgroup_can_attach(struct cgroup *new_cgrp,
+				struct cgroup_taskset *set)
 {
 	struct task_struct *task = cgroup_taskset_first(set);
 
 	if (current != task && !capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	return 0;
 }
 
@@ -137,14 +126,6 @@ static int dev_whitelist_add(struct dev_cgroup *dev_cgroup,
 	return 0;
 }
 
-static void whitelist_item_free(struct rcu_head *rcu)
-{
-	struct dev_whitelist_item *item;
-
-	item = container_of(rcu, struct dev_whitelist_item, rcu);
-	kfree(item);
-}
-
 /*
  * called under devcgroup_mutex
  */
@@ -167,7 +148,7 @@ remove:
 		walk->access &= ~wh->access;
 		if (!walk->access) {
 			list_del_rcu(&walk->list);
-			call_rcu(&walk->rcu, whitelist_item_free);
+			kfree_rcu(walk, rcu);
 		}
 	}
 }
@@ -175,8 +156,7 @@ remove:
 /*
  * called from kernel/cgroup.c with cgroup_lock() held.
  */
-static struct cgroup_subsys_state *devcgroup_create(struct cgroup_subsys *ss,
-						struct cgroup *cgroup)
+static struct cgroup_subsys_state *devcgroup_create(struct cgroup *cgroup)
 {
 	struct dev_cgroup *dev_cgroup, *parent_dev_cgroup;
 	struct cgroup *parent_cgroup;
@@ -214,8 +194,7 @@ static struct cgroup_subsys_state *devcgroup_create(struct cgroup_subsys *ss,
 	return &dev_cgroup->css;
 }
 
-static void devcgroup_destroy(struct cgroup_subsys *ss,
-			struct cgroup *cgroup)
+static void devcgroup_destroy(struct cgroup *cgroup)
 {
 	struct dev_cgroup *dev_cgroup;
 	struct dev_whitelist_item *wh, *tmp;
@@ -355,15 +334,7 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
 	struct dev_whitelist_item wh;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	memset(&wh, 0, sizeof(wh));
 	b = buffer;
@@ -437,15 +408,7 @@ handle:
 	switch (filetype) {
 	case DEVCG_ALLOW:
 		if (!parent_has_perm(devcgroup, &wh))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		return dev_whitelist_add(devcgroup, &wh);
 	case DEVCG_DENY:
 		dev_whitelist_rm(devcgroup, &wh);
@@ -534,15 +497,7 @@ found:
 
 	rcu_read_unlock();
 
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }
 
 int devcgroup_inode_mknod(int mode, dev_t dev)
@@ -578,13 +533,5 @@ found:
 
 	rcu_read_unlock();
 
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }

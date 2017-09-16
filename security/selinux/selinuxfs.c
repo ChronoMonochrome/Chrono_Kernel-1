@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Updated: Karl MacMillan <kmacmillan@tresys.com>
  *
  *	Added conditional policy language extensions
@@ -255,15 +252,7 @@ static int sel_mmap_handle_status(struct file *filp,
 		return -EIO;
 	/* disallow writable mapping */
 	if (vma->vm_flags & VM_WRITE)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	/* disallow mprotect() turns it into writable */
 	vma->vm_flags &= ~VM_MAYWRITE;
 
@@ -1202,7 +1191,7 @@ static void sel_remove_entries(struct dentry *de)
 	spin_lock(&de->d_lock);
 	node = de->d_subdirs.next;
 	while (node != &de->d_subdirs) {
-		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
+		struct dentry *d = list_entry(node, struct dentry, d_child);
 
 		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
 		list_del_init(node);
@@ -1705,12 +1694,12 @@ static void sel_remove_classes(void)
 
 	list_for_each(class_node, &class_dir->d_subdirs) {
 		struct dentry *class_subdir = list_entry(class_node,
-					struct dentry, d_u.d_child);
+					struct dentry, d_child);
 		struct list_head *class_subdir_node;
 
 		list_for_each(class_subdir_node, &class_subdir->d_subdirs) {
 			struct dentry *d = list_entry(class_subdir_node,
-						struct dentry, d_u.d_child);
+						struct dentry, d_child);
 
 			if (d->d_inode)
 				if (d->d_inode->i_mode & S_IFDIR)

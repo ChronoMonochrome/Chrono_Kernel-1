@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Implementation of the access vector table type.
  *
@@ -63,8 +60,12 @@ avtab_insert_node(struct avtab *h, int hvalue,
 		newnode->next = prev->next;
 		prev->next = newnode;
 	} else {
-		newnode->next = h->htable[hvalue];
-		h->htable[hvalue] = newnode;
+		newnode->next = flex_array_get_ptr(h->htable, hvalue);
+		if (flex_array_put_ptr(h->htable, hvalue, newnode,
+				       GFP_KERNEL|__GFP_ZERO)) {
+			kmem_cache_free(avtab_node_cachep, newnode);
+			return NULL;
+		}
 	}
 
 	h->nel++;
@@ -81,7 +82,7 @@ static int avtab_insert(struct avtab *h, struct avtab_key *key, struct avtab_dat
 		return -EINVAL;
 
 	hvalue = avtab_hash(key, h->mask);
-	for (prev = NULL, cur = h->htable[hvalue];
+	for (prev = NULL, cur = flex_array_get_ptr(h->htable, hvalue);
 	     cur;
 	     prev = cur, cur = cur->next) {
 		if (key->source_type == cur->key.source_type &&
@@ -125,7 +126,7 @@ avtab_insert_nonunique(struct avtab *h, struct avtab_key *key, struct avtab_datu
 	if (!h || !h->htable)
 		return NULL;
 	hvalue = avtab_hash(key, h->mask);
-	for (prev = NULL, cur = h->htable[hvalue];
+	for (prev = NULL, cur = flex_array_get_ptr(h->htable, hvalue);
 	     cur;
 	     prev = cur, cur = cur->next) {
 		if (key->source_type == cur->key.source_type &&
@@ -156,7 +157,8 @@ struct avtab_datum *avtab_search(struct avtab *h, struct avtab_key *key)
 		return NULL;
 
 	hvalue = avtab_hash(key, h->mask);
-	for (cur = h->htable[hvalue]; cur; cur = cur->next) {
+	for (cur = flex_array_get_ptr(h->htable, hvalue); cur;
+	     cur = cur->next) {
 		if (key->source_type == cur->key.source_type &&
 		    key->target_type == cur->key.target_type &&
 		    key->target_class == cur->key.target_class &&
@@ -191,7 +193,8 @@ avtab_search_node(struct avtab *h, struct avtab_key *key)
 		return NULL;
 
 	hvalue = avtab_hash(key, h->mask);
-	for (cur = h->htable[hvalue]; cur; cur = cur->next) {
+	for (cur = flex_array_get_ptr(h->htable, hvalue); cur;
+	     cur = cur->next) {
 		if (key->source_type == cur->key.source_type &&
 		    key->target_type == cur->key.target_type &&
 		    key->target_class == cur->key.target_class &&
@@ -249,7 +252,7 @@ void avtab_destroy(struct avtab *h)
 		return;
 
 	for (i = 0; i < h->nslot; i++) {
-		cur = h->htable[i];
+		cur = flex_array_get_ptr(h->htable, i);
 		while (cur) {
 			temp = cur;
 			cur = cur->next;
@@ -258,9 +261,8 @@ void avtab_destroy(struct avtab *h)
 						temp->datum.u.xperms);
 			kmem_cache_free(avtab_node_cachep, temp);
 		}
-		h->htable[i] = NULL;
 	}
-	kfree(h->htable);
+	flex_array_free(h->htable);
 	h->htable = NULL;
 	h->nslot = 0;
 	h->mask = 0;
@@ -294,7 +296,8 @@ int avtab_alloc(struct avtab *h, u32 nrules)
 		nslot = MAX_AVTAB_HASH_BUCKETS;
 	mask = nslot - 1;
 
-	h->htable = kcalloc(nslot, sizeof(*(h->htable)), GFP_KERNEL);
+	h->htable = flex_array_alloc(sizeof(struct avtab_node *), nslot,
+				     GFP_KERNEL | __GFP_ZERO);
 	if (!h->htable)
 		return -ENOMEM;
 
@@ -302,12 +305,8 @@ int avtab_alloc(struct avtab *h, u32 nrules)
 	h->nel = 0;
 	h->nslot = nslot;
 	h->mask = mask;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux: %d avtab hash slots, %d rules.\n",
 	       h->nslot, nrules);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -321,7 +320,7 @@ void avtab_hash_eval(struct avtab *h, char *tag)
 	max_chain_len = 0;
 	chain2_len_sum = 0;
 	for (i = 0; i < h->nslot; i++) {
-		cur = h->htable[i];
+		cur = flex_array_get_ptr(h->htable, i);
 		if (cur) {
 			slots_used++;
 			chain_len = 0;
@@ -336,14 +335,10 @@ void avtab_hash_eval(struct avtab *h, char *tag)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SELinux: %s:  %d entries and %d/%d buckets used, "
 	       "longest chain length %d sum of chain length^2 %llu\n",
 	       tag, h->nel, slots_used, h->nslot, max_chain_len,
 	       chain2_len_sum);
-#else
-	;
-#endif
 }
 
 /*
@@ -670,7 +665,8 @@ int avtab_write(struct policydb *p, struct avtab *a, void *fp)
 		return rc;
 
 	for (i = 0; i < a->nslot; i++) {
-		for (cur = a->htable[i]; cur; cur = cur->next) {
+		for (cur = flex_array_get_ptr(a->htable, i); cur;
+		     cur = cur->next) {
 			rc = avtab_write_item(p, cur, fp);
 			if (rc)
 				return rc;
