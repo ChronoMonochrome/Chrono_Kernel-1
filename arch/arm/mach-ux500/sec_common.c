@@ -35,7 +35,6 @@
 #include <linux/kallsyms.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/fs.h>
 #include <linux/reboot.h>
 #include <linux/err.h>
 #include <linux/device.h>
@@ -305,8 +304,6 @@ struct sec_reboot_code {
 	int mode;
 };
 
-extern int skip_readonly_param_remount;
-
 static int __sec_common_reboot_call(struct notifier_block *this,
 				    unsigned long code, void *cmd)
 {
@@ -392,10 +389,7 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 		printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
 			__func__, temp_mode);
 	}
-
-	skip_readonly_param_remount = 0;
-	emergency_remount();
-
+	
 	return NOTIFY_DONE;
 }				/* end fn __sec_common_reboot_call */
 
