@@ -267,6 +267,7 @@ static int audit_log_config_change(char *function_name, int new, int old,
 				   uid_t loginuid, u32 sessionid, u32 sid,
 				   int allow_changes)
 {
+#if 0
 	struct audit_buffer *ab;
 	int rc = 0;
 
@@ -289,12 +290,15 @@ static int audit_log_config_change(char *function_name, int new, int old,
 	audit_log_format(ab, " res=%d", allow_changes);
 	audit_log_end(ab);
 	return rc;
+#endif
+	return 0;
 }
 
 static int audit_do_config_change(char *function_name, int *to_change,
 				  int new, uid_t loginuid, u32 sessionid,
 				  u32 sid)
 {
+#if 0
 	int allow_changes, rc = 0, old = *to_change;
 
 	/* check if we are locked */
@@ -317,6 +321,8 @@ static int audit_do_config_change(char *function_name, int *to_change,
 	else if (rc == 0)
 		rc = -EPERM;
 	return rc;
+#endif
+	return 0;
 }
 
 static int audit_set_rate_limit(int limit, uid_t loginuid, u32 sessionid,
@@ -994,8 +1000,8 @@ __initcall(audit_init);
 static int __init audit_enable(char *str)
 {
 	audit_default = !!simple_strtol(str, NULL, 0);
-	if (!audit_default)
-		audit_initialized = AUDIT_DISABLED;
+	//if (!audit_default)
+	audit_initialized = AUDIT_DISABLED;
 
 	printk(KERN_INFO "audit: %s", audit_default ? "enabled" : "disabled");
 
@@ -1143,6 +1149,7 @@ static inline void audit_get_stamp(struct audit_context *ctx,
 struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
 				     int type)
 {
+#if 0
 	struct audit_buffer	*ab	= NULL;
 	struct timespec		t;
 	unsigned int		uninitialized_var(serial);
@@ -1202,6 +1209,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
 	audit_log_format(ab, "audit(%lu.%03lu:%u): ",
 			 t.tv_sec, t.tv_nsec/1000000, serial);
 	return ab;
+#endif
+	return NULL;
 }
 
 /**
@@ -1237,6 +1246,7 @@ static inline int audit_expand(struct audit_buffer *ab, int extra)
 static void audit_log_vformat(struct audit_buffer *ab, const char *fmt,
 			      va_list args)
 {
+#if 0
 	int len, avail;
 	struct sk_buff *skb;
 	va_list args2;
@@ -1270,6 +1280,7 @@ out_va_end:
 	va_end(args2);
 out:
 	return;
+#endif
 }
 
 /**
@@ -1282,6 +1293,7 @@ out:
  */
 void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
 {
+#if 0
 	va_list args;
 
 	if (!ab)
@@ -1289,6 +1301,7 @@ void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
 	va_start(args, fmt);
 	audit_log_vformat(ab, fmt, args);
 	va_end(args);
+#endif
 }
 
 /**
@@ -1305,6 +1318,7 @@ void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
 void audit_log_n_hex(struct audit_buffer *ab, const unsigned char *buf,
 		size_t len)
 {
+#if 0
 	int i, avail, new_len;
 	unsigned char *ptr;
 	struct sk_buff *skb;
@@ -1332,6 +1346,7 @@ void audit_log_n_hex(struct audit_buffer *ab, const unsigned char *buf,
 	}
 	*ptr = 0;
 	skb_put(skb, len << 1); /* new string is twice the old string */
+#endif
 }
 
 /*
@@ -1341,6 +1356,7 @@ void audit_log_n_hex(struct audit_buffer *ab, const unsigned char *buf,
 void audit_log_n_string(struct audit_buffer *ab, const char *string,
 			size_t slen)
 {
+#if 0
 	int avail, new_len;
 	unsigned char *ptr;
 	struct sk_buff *skb;
@@ -1364,6 +1380,7 @@ void audit_log_n_string(struct audit_buffer *ab, const char *string,
 	*ptr++ = '"';
 	*ptr = 0;
 	skb_put(skb, slen + 2);	/* don't include null terminator */
+#endif
 }
 
 /**
@@ -1421,6 +1438,7 @@ void audit_log_untrustedstring(struct audit_buffer *ab, const char *string)
 void audit_log_d_path(struct audit_buffer *ab, const char *prefix,
 		      const struct path *path)
 {
+#if 0
 	char *p, *pathname;
 
 	if (prefix)
@@ -1439,15 +1457,18 @@ void audit_log_d_path(struct audit_buffer *ab, const char *prefix,
 	} else
 		audit_log_untrustedstring(ab, p);
 	kfree(pathname);
+#endif
 }
 
 void audit_log_key(struct audit_buffer *ab, char *key)
 {
+#if 0
 	audit_log_format(ab, " key=");
 	if (key)
 		audit_log_untrustedstring(ab, key);
 	else
 		audit_log_format(ab, "(null)");
+#endif
 }
 
 /**
@@ -1461,6 +1482,8 @@ void audit_log_key(struct audit_buffer *ab, char *key)
  */
 void audit_log_end(struct audit_buffer *ab)
 {
+	return;
+#if 0
 	if (!ab)
 		return;
 	if (!audit_rate_check()) {
@@ -1478,6 +1501,7 @@ void audit_log_end(struct audit_buffer *ab)
 		ab->skb = NULL;
 	}
 	audit_buffer_free(ab);
+#endif
 }
 
 /**
@@ -1495,6 +1519,7 @@ void audit_log_end(struct audit_buffer *ab)
 void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
 	       const char *fmt, ...)
 {
+#if 0
 	struct audit_buffer *ab;
 	va_list args;
 
@@ -1505,6 +1530,7 @@ void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
 		va_end(args);
 		audit_log_end(ab);
 	}
+#endif
 }
 
 #ifdef CONFIG_SECURITY
