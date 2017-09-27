@@ -118,8 +118,6 @@ enum {
       DMACLK,
 } clkddr;
 
-static int db8500_prcmu_get_ape_opp(void);
-
 static void ddr_cross_clocks_boost(bool state)
 {
 	int i, val;
