@@ -200,6 +200,7 @@ static void do_oc_ddr(int new_val_)
 {
 	u32 old_val_, val;
 	u8 sdmmc_val_base;
+	int i;
 	int mcdeclk_is_enabled = 0, sdmmcclk_is_enabled = 0;
 	int pllddr_freq;
 	int sdmmc_old_divider, sdmmc_new_divider,
@@ -299,7 +300,7 @@ static void do_oc_ddr(int new_val_)
 		local_fiq_disable();
 
 		pr_err("[pllddr] (mcdeclk_is_enabled || sdmmcclk_is_enabled) = %d", (mcdeclk_is_enabled || sdmmcclk_is_enabled));
-		for (int i = 0; i < 20 && (mcdeclk_is_enabled || sdmmcclk_is_enabled); i++) {
+		for (i = 0; i < 20 && (mcdeclk_is_enabled || sdmmcclk_is_enabled); i++) {
 			udelay(100);
 			mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 			sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
