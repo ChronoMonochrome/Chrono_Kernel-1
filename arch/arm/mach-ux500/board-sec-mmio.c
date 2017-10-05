@@ -50,9 +50,6 @@
 #error "Unknown machine type"
 #endif
 
-
-static int initialized = 0;
-
 static pin_cfg_t i2c2_pins[] = {
 	GPIO8_I2C2_SDA,
 	GPIO9_I2C2_SCL
@@ -168,11 +165,6 @@ static int mmio_get_ipgpio(struct mmio_platform_data *pdata, int gpio,
 static int mmio_clock_init(struct mmio_platform_data *pdata)
 {
 	int err;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
@@ -252,11 +244,6 @@ err_bml_clk:
 }
 static void mmio_clock_exit(struct mmio_platform_data *pdata)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	clk_put(extra->clk_ptr_bml);
@@ -310,11 +297,6 @@ static int mmio_pin_cfg_init(struct mmio_platform_data *pdata)
 
 static void mmio_pin_cfg_exit(struct mmio_platform_data *pdata)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
@@ -329,12 +311,6 @@ gpio_free(extra->xenon_charge);
 static int mmio_power_init(struct mmio_platform_data *pdata)
 {
 	int err = 0, i = 0;
-
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	extra->number_of_regulators = sizeof(regulator_names)/
@@ -372,11 +348,6 @@ err_no_mem_reg:
 static void mmio_power_exit(struct mmio_platform_data *pdata)
 {
 	int i = 0;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	for (i = 0; i < extra->number_of_regulators; i++)
@@ -388,13 +359,6 @@ static int mmio_platform_init(struct mmio_platform_data *pdata)
 {
 	int err = 0;
 	struct mmio_board_data *extra = NULL;
-
-	if (initialized) {
-		initialized++;
-		pr_err("%s: mmio_platform_init was enter count: %d.\n", __func__, initialized);
-		return 0;
-	}
-
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	/* Alloc memory for our own extra data */
 	extra = kzalloc(sizeof(struct mmio_board_data), GFP_KERNEL);
@@ -417,8 +381,6 @@ static int mmio_platform_init(struct mmio_platform_data *pdata)
 	if (err)
 		goto err_pin_cfg;
 	dev_dbg(pdata->dev , "Board %s() Exit\n", __func__);
-
-	initialized++;
 	return 0;
 
 err_pin_cfg:
@@ -428,18 +390,10 @@ err_clock:
 err_regulator:
 	kfree(extra);
 err_no_mem_extra:
-	pr_err("%s: returned with error: %d\n", __func__, err);
-	initialized++;
-
 	return err;
 }
 static void mmio_platform_exit(struct mmio_platform_data *pdata)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	mmio_power_exit(pdata);
@@ -452,11 +406,6 @@ static void mmio_platform_exit(struct mmio_platform_data *pdata)
 static int mmio_power_enable(struct mmio_platform_data *pdata)
 {
 	int err = 0, i = 0;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	/* Enable the regulators */
@@ -499,11 +448,6 @@ err_regulator:
 static void mmio_power_disable(struct mmio_platform_data *pdata)
 {
 	int i;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
@@ -518,11 +462,6 @@ static void mmio_power_disable(struct mmio_platform_data *pdata)
 static int mmio_clock_enable(struct mmio_platform_data *pdata)
 {
 	int err = 0;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
@@ -559,11 +498,6 @@ err_ext_clk:
 
 static void mmio_clock_disable(struct mmio_platform_data *pdata)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
-
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
@@ -590,10 +524,6 @@ static int mmio_config_xshutdown_pins(struct mmio_platform_data *pdata,
 				      int is_active_high)
 {
 	int err = 0;
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
 
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
@@ -617,12 +547,7 @@ static int mmio_config_xshutdown_pins(struct mmio_platform_data *pdata,
 }
 static void mmio_set_xshutdown(struct mmio_platform_data *pdata)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
 	struct mmio_board_data *extra = pdata->extra;
-
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
 	gpio_set_value(extra->xshutdown_pins[pdata->camera_slot].gpio ,
@@ -639,10 +564,6 @@ static void mmio_set_xshutdown(struct mmio_platform_data *pdata)
 static int mmio_config_i2c_pins(struct mmio_platform_data *pdata,
 				enum mmio_select_i2c_t select)
 {
-	if (initialized > 1) {
-		pr_err("%s: module was initialized improperly\n", __func__);
-		return 0;
-	}
 	int err = 0;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
