@@ -784,6 +784,8 @@ cancel_readonly:
 	return retval;
 }
 
+int skip_readonly_param_remount = 1;
+
 static void do_emergency_remount(struct work_struct *work)
 {
 	struct super_block *sb, *p = NULL;
@@ -802,8 +804,14 @@ static void do_emergency_remount(struct work_struct *work)
 			 */
 			if (strcmp(sb->s_id, "mmcblk0p1") != 0)
 				do_remount_sb(sb, MS_RDONLY, NULL, 1);
-			else
-				printk("Skipping read-only remount of mmcblk0p1\n");
+			else {
+				if (skip_readonly_param_remount)
+					printk("Skipping read-only remount of mmcblk0p1\n");
+				else {
+					printk("Remount mmcblk0p1\n");
+					do_remount_sb(sb, MS_RDONLY, NULL, 1);
+				}
+			}
 		}
 		up_write(&sb->s_umount);
 		spin_lock(&sb_lock);
