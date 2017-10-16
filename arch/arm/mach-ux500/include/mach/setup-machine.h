@@ -51,6 +51,10 @@ EXPORT_SYMBOL(lcdtype);
                pr_err("LCD type WS2401 from bootloader\n");			\
 	       lcdtype = 4;							\
                strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);	\
+	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=7") != NULL) {	\
+               pr_err("LCD type s6e63m0 from bootloader\n");			\
+               lcdtype = 8;							\
+               strlcat(default_command_line, "lcdtype=7 ", COMMAND_LINE_SIZE);	\
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) {	\
                pr_err("LCD type S6D from bootloader\n");			\
                lcdtype = 8;							\
