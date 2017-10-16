@@ -939,7 +939,7 @@ static void equalize_coordinate(bool detect, u8 id, u16 *px, u16 *py)
 }
 #endif  /* DRIVER_FILTER */
 
-static int __devinit mxt224_init_touch_driver(struct mxt224_data *data)
+static int mxt224_init_touch_driver(struct mxt224_data *data)
 {
 	struct object_t *object_table;
 	u32 read_crc = 0;
