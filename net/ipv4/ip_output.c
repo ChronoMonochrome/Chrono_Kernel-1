@@ -1282,14 +1282,23 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
 	struct iphdr *iph;
 	__be16 df = 0;
 	__u8 ttl;
+	pr_err("%s: %d\n", __func__, 1);
 
 	if ((skb = __skb_dequeue(queue)) == NULL)
 		goto out;
+
+	pr_err("%s: %d\n", __func__, 2);
+
 	tail_skb = &(skb_shinfo(skb)->frag_list);
+	pr_err("%s: %d\n", __func__, 3);
 
 	/* move skb->data to ip header from ext header */
-	if (skb->data < skb_network_header(skb))
+	if (skb->data < skb_network_header(skb)) {
 		__skb_pull(skb, skb_network_offset(skb));
+	}
+
+	pr_err("%s: %d\n", __func__, 4);
+
 	while ((tmp_skb = __skb_dequeue(queue)) != NULL) {
 		__skb_pull(tmp_skb, skb_network_header_len(skb));
 		*tail_skb = tmp_skb;
@@ -1301,12 +1310,16 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
 		tmp_skb->sk = NULL;
 	}
 
+	pr_err("%s: %d\n", __func__, 5);
+
 	/* Unless user demanded real pmtu discovery (IP_PMTUDISC_DO), we allow
 	 * to fragment the frame generated here. No matter, what transforms
 	 * how transforms change size of the packet, it will come out.
 	 */
 	if (inet->pmtudisc < IP_PMTUDISC_DO)
 		skb->local_df = 1;
+
+	pr_err("%s: %d\n", __func__, 6);
 
 	/* DF bit is set when we want to see DF on outgoing frames.
 	 * If local_df is set too, we still allow to fragment this frame
@@ -1316,17 +1329,26 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
 	     ip_dont_fragment(sk, &rt->dst)))
 		df = htons(IP_DF);
 
+	pr_err("%s: %d\n", __func__, 7);
+
 	if (cork->flags & IPCORK_OPT)
 		opt = cork->opt;
+	pr_err("%s: %d\n", __func__, 8);
 
-	if (rt->rt_type == RTN_MULTICAST)
+	if (rt->rt_type == RTN_MULTICAST) {
 		ttl = inet->mc_ttl;
-	else
+		pr_err("%s: %d\n", __func__, 9);
+	} else {
 		ttl = ip_select_ttl(inet, &rt->dst);
+		pr_err("%s: %d\n", __func__, 10);
+	}
 
 	iph = (struct iphdr *)skb->data;
 	iph->version = 4;
+		pr_err("%s: %d\n", __func__, 11);
+
 	iph->ihl = 5;
+
 	iph->tos = inet->tos;
 	iph->frag_off = df;
 	iph->ttl = ttl;
@@ -1338,9 +1360,15 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
 		iph->ihl += opt->optlen>>2;
 		ip_options_build(skb, opt, cork->addr, rt, 0);
 	}
+		pr_err("%s: %d\n", __func__, 12);
 
 	skb->priority = sk->sk_priority;
+		pr_err("%s: %d\n", __func__, 13);
+
 	skb->mark = sk->sk_mark;
+
+		pr_err("%s: %d\n", __func__, 14);
+
 	/*
 	 * Steal rt from cork.dst to avoid a pair of atomic_inc/atomic_dec
 	 * on dst refcount
@@ -1348,12 +1376,19 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
 	cork->dst = NULL;
 	skb_dst_set(skb, &rt->dst);
 
+		pr_err("%s: %d\n", __func__, 15);
+
 	if (iph->protocol == IPPROTO_ICMP)
 		icmp_out_count(net, ((struct icmphdr *)
 			skb_transport_header(skb))->type);
+		pr_err("%s: %d\n", __func__, 16);
 
 	ip_cork_release(cork);
+		pr_err("%s: %d\n", __func__, 17);
+
 out:
+
+		pr_err("%s: %d\n", __func__, 999);
 	return skb;
 }
 
