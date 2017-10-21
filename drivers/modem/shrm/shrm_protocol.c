@@ -11,6 +11,7 @@
 #include <linux/delay.h>
 #include <linux/netlink.h>
 #include <linux/kthread.h>
+#include <linux/sched/rt.h>
 #include <linux/modem/shrm/shrm.h>
 #include <linux/modem/shrm/shrm_driver.h>
 #include <linux/modem/shrm/shrm_private.h>
