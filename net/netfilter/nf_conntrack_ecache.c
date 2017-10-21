@@ -203,7 +203,7 @@ static int nf_conntrack_event_init_sysctl(struct net *net)
 	net->ct.event_sysctl_header =
 		register_net_sysctl(net, "net/netfilter", table);
 	if (!net->ct.event_sysctl_header) {
-;
+		printk(KERN_ERR "nf_ct_event: can't register to sysctl.\n");
 		goto out_register;
 	}
 	return 0;
@@ -238,16 +238,6 @@ int nf_conntrack_ecache_pernet_init(struct net *net)
 	net->ct.sysctl_events = nf_ct_events;
 	net->ct.sysctl_events_retry_timeout = nf_ct_events_retry_timeout;
 	return nf_conntrack_event_init_sysctl(net);
-}
-
-	if (net_eq(net, &init_net)) {
-		ret = nf_ct_extend_register(&event_extend);
-		if (ret < 0) {
-//			printk(KERN_ERR "nf_ct_event: Unable to register "
-;
-			goto out_extend_register;
-		}
-	}
 }
 
 void nf_conntrack_ecache_pernet_fini(struct net *net)

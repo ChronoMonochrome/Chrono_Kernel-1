@@ -76,7 +76,7 @@ static int nf_conntrack_acct_init_sysctl(struct net *net)
 	net->ct.acct_sysctl_header = register_net_sysctl(net, "net/netfilter",
 							 table);
 	if (!net->ct.acct_sysctl_header) {
-;
+		printk(KERN_ERR "nf_conntrack_acct: can't register to sysctl.\n");
 		goto out_register;
 	}
 	return 0;
@@ -110,15 +110,6 @@ int nf_conntrack_acct_pernet_init(struct net *net)
 {
 	net->ct.sysctl_acct = nf_ct_acct;
 	return nf_conntrack_acct_init_sysctl(net);
-}
-
-	if (net_eq(net, &init_net)) {
-		ret = nf_ct_extend_register(&acct_extend);
-		if (ret < 0) {
-;
-			goto out_extend_register;
-		}
-	}
 }
 
 void nf_conntrack_acct_pernet_fini(struct net *net)
