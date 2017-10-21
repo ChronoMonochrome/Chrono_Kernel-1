@@ -31,6 +31,7 @@
 #include <linux/earlysuspend.h>
 #include <linux/notifier.h>
 #include <linux/irq.h>
+#include <linux/irqchip/arm-gic.h>
 #include <linux/jiffies.h>
 #include <linux/bitops.h>
 #include <linux/fs.h>
@@ -44,7 +45,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/mfd/abx500.h>
 #include <linux/wakelock.h>
-#include <asm/hardware/gic.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db8500-regs.h>
