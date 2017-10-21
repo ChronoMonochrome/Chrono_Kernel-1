@@ -565,7 +565,7 @@ static void cputime_adjust(struct task_cputime *curr,
 	 * Fix this by scaling these tick based values against the total
 	 * runtime accounted by the CFS scheduler.
 	 */
-	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
+	rtime = nsecs_to_cputime64(curr->sum_exec_runtime);
 
 	if (total)
 		stime = scale_stime(stime, rtime, total);
