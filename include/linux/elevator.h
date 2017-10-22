@@ -2,7 +2,11 @@
 #define _LINUX_ELEVATOR_H
 
 #include <linux/percpu.h>
+#ifndef OLD_HASHTABLE
 #include <linux/hashtable.h>
+#else
+#include <linux/hashtable1.h>
+#endif
 
 #ifdef CONFIG_BLOCK
 

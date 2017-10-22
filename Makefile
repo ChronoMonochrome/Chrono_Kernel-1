@@ -4,7 +4,7 @@ SUBLEVEL = 0
 EXTRAVERSION =
 NAME = Unicycling Gorilla
 
-CROSS_COMPILE ?= /home/chrono/root/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE ?= /media/f/root/kernel/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 #CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
 
 # *DOCUMENTATION*

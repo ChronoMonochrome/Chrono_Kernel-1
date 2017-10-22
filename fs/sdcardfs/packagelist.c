@@ -18,6 +18,7 @@
  * General Public License.
  */
 
+#include <linux/list1.h>
 #include "sdcardfs.h"
 #include "strtok.h"
 #include "linux/hashtable1.h"

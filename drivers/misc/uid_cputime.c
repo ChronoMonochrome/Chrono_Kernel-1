@@ -15,7 +15,7 @@
 
 #include <linux/atomic.h>
 #include <linux/err.h>
-#include <linux/hashtable.h>
+#include <linux/hashtable1.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
