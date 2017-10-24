@@ -25,6 +25,7 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include "../../fs/proc/internal.h"
 
 #define UID_HASH_BITS	10
 DECLARE_HASHTABLE(hash_table, UID_HASH_BITS);
