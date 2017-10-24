@@ -58,16 +58,32 @@ static const char *isa_modes[] = {
 
 static volatile int hlt_counter;
 
+#ifdef CONFIG_SMP
+void arch_trigger_all_cpu_backtrace(void)
+{
+	smp_send_all_cpu_backtrace();
+}
+#else
+void arch_trigger_all_cpu_backtrace(void)
+{
+	dump_stack();
+}
+#endif
+
 void disable_hlt(void)
 {
 	hlt_counter++;
 }
+
+EXPORT_SYMBOL(disable_hlt);
 
 void enable_hlt(void)
 {
 	hlt_counter--;
 	BUG_ON(hlt_counter < 0);
 }
+
+EXPORT_SYMBOL(enable_hlt);
 
 static int __init nohlt_setup(char *__unused)
 {
@@ -86,6 +102,31 @@ __setup("hlt", hlt_setup);
 
 extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
 typedef void (*phys_reset_t)(unsigned long);
+
+#ifdef CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART
+void arm_machine_flush_console(void)
+{
+	printk("\n");
+	pr_emerg("Restarting %s\n", linux_banner);
+	if (console_trylock()) {
+		console_unlock();
+		return;
+	}
+
+	mdelay(50);
+
+	local_irq_disable();
+	if (!console_trylock())
+		pr_emerg("arm_restart: Console was locked! Busting\n");
+	else
+		pr_emerg("arm_restart: Console was locked!\n");
+	console_unlock();
+}
+#else
+void arm_machine_flush_console(void)
+{
+}
+#endif
 
 /*
  * A temporary stack to use for CPU reset. This is static so that we
