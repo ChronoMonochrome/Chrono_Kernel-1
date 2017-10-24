@@ -230,6 +230,8 @@ abort:
 	mutex_unlock(&early_suspend_lock);
 }
 
+int pm_suspend_state = 0;
+
 void request_suspend_state(suspend_state_t new_state)
 {
 	unsigned long irqflags;
@@ -242,6 +244,8 @@ void request_suspend_state(suspend_state_t new_state)
 		struct rtc_time tm;
 		getnstimeofday(&ts);
 		rtc_time_to_tm(ts.tv_sec, &tm);
+		pm_suspend_state = (int) new_state;
+
 		pr_info("request_suspend_state: %s (%d->%d) at %lld "
 			"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n",
 			new_state != PM_SUSPEND_ON ? "sleep" : "wakeup",
@@ -268,6 +272,18 @@ void request_suspend_state(suspend_state_t new_state)
 	requested_suspend_state = new_state;
 	spin_unlock_irqrestore(&state_lock, irqflags);
 }
+
+static int set_goto_suspend(const char *val, struct kernel_param *kp)
+{
+	if (sysfs_streq(val, "0"))
+		request_suspend_state(0);
+	else
+		request_suspend_state(3);
+
+	return 0;
+}
+
+module_param_call(goto_suspend, set_goto_suspend, param_get_int, &pm_suspend_state, 0644);
 
 suspend_state_t get_suspend_state(void)
 {
