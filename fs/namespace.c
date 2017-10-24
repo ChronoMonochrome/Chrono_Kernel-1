@@ -17,6 +17,7 @@
 #include <linux/mnt_namespace.h>
 #include <linux/user_namespace.h>
 #include <linux/namei.h>
+#include <linux/moduleparam.h>
 #include <linux/security.h>
 #include <linux/idr.h>
 #include <linux/acct.h>		/* acct_auto_close_mnt */
