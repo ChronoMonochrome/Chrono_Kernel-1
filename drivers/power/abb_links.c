@@ -13,6 +13,7 @@
 #include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <linux/device.h>
 #include <linux/sysfs.h>
 #include <linux/power_supply.h>
@@ -745,33 +746,47 @@ static struct ab8500_power_register ab8500_power_registers[] = {
 } ;
 
 
-static int charging_readproc(char *page, char **start, off_t off,
-                          int count, int *eof, void *data)
+static int charging_proc_read(struct seq_file *m, void *v)
 {
-	struct device *dev = (struct device *) data ;
+	struct device *dev = (struct device *) (m->private) ;
 	int i ;
 	unsigned char c ;
 	int len = 0;
 	int ret ;
 
+        if (!dev) {
+                pr_err("%s: dev is NULL!\n", __func__);
+                return 0;
+        }
+
 	for (i=0;i<ARRAY_SIZE(ab8500_power_registers);i++) {
 		c=0xff ;
 		ret = abx500_get_register_interruptible(dev,
-				ab8500_power_registers[i].region, 
+				ab8500_power_registers[i].region,
 				ab8500_power_registers[i].address, &c);
 		if (ret>=0) {
-			len+=sprintf(page+len,"(%#04x %#04x)%s = 0x%02x\n", 
-					ab8500_power_registers[i].region, 
-					ab8500_power_registers[i].address, 
+			seq_printf(m, "(%#04x %#04x)%s = 0x%02x\n",
+					ab8500_power_registers[i].region,
+					ab8500_power_registers[i].address,
 					ab8500_power_registers[i].name, c);
 		msleep(10);
 		}
 	}
-	*eof=-1;
 
-	return len ;
+	return 0;
 }
 
+static int charging_proc_open(struct inode *inode, struct file *file)
+{
+       return single_open(file, charging_proc_read, PDE_DATA(file_inode(file)));
+}
+
+static const struct file_operations charging_proc_fops = {
+       .open           = charging_proc_open,
+       .read           = seq_read,
+       .llseek         = seq_lseek,
+       .release        = seq_release,
+};
 #endif //AB8500_PROC_DEBUG_ENTRY
 
 void register_charging_i2c_dev(struct device * dev) /* todo add destructor call for caller */
@@ -783,7 +798,7 @@ void register_charging_i2c_dev(struct device * dev) /* todo add destructor call 
 	if (!charger_extra_sysfs.dev) {
 		charger_extra_sysfs.dev = dev ;
 #ifdef AB8500_PROC_DEBUG_ENTRY
-		charger_extra_sysfs.proc_entry = create_proc_read_entry("AB8500_CHG",0444,NULL,charging_readproc,dev);
+		charger_extra_sysfs.proc_entry = proc_create_data("AB8500_CHG", 0444, NULL, &charging_proc_fops, dev);
 #endif //AB8500_PROC_DEBUG_ENTRY
 
 		make_dfms_battery_device ( ) ;
