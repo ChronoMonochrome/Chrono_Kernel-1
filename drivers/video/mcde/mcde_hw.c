@@ -4248,7 +4248,7 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		goto failed_init_clocks;
 	}
 
-	INIT_DELAYED_WORK_DEFERRABLE(&hw_timeout_work, work_sleep_function);
+	INIT_DEFERRABLE_WORK(&hw_timeout_work, work_sleep_function);
 
 	WARN_ON(prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 		dev_name(&pdev->dev), PRCMU_QOS_MAX_VALUE));
