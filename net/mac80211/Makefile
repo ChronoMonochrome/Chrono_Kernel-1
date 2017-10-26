@@ -60,19 +60,4 @@ mac80211-$(CONFIG_MAC80211_RC_PID) += $(rc80211_pid-y)
 mac80211-$(CONFIG_MAC80211_RC_MINSTREL) += $(rc80211_minstrel-y)
 mac80211-$(CONFIG_MAC80211_RC_MINSTREL_HT) += $(rc80211_minstrel_ht-y)
 
-<<<<<<< HEAD
 ccflags-y += -D__CHECK_ENDIAN__ -DDEBUG
-=======
-ccflags-y += -D__CHECK_ENDIAN__
->>>>>>> 82f2a17... Thumb2: squashed changes
-AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
-AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
-CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
-AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
-
-KBUILD_AFLAGS += $(AFLAGS_THUMB2)
-KBUILD_CFLAGS += $(CFLAGS_THUMB2)
-<<<<<<< HEAD
-=======
-
->>>>>>> 82f2a17... Thumb2: squashed changes

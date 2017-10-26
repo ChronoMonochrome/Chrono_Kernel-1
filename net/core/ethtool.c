@@ -91,6 +91,8 @@ static const char netdev_features_strings[NETDEV_FEATURE_COUNT][ETH_GSTRING_LEN]
 	[NETIF_F_RXCSUM_BIT] =           "rx-checksum",
 	[NETIF_F_NOCACHE_COPY_BIT] =     "tx-nocache-copy",
 	[NETIF_F_LOOPBACK_BIT] =         "loopback",
+	[NETIF_F_RXFCS_BIT] =            "rx-fcs",
+	[NETIF_F_RXALL_BIT] =            "rx-all",
 };
 
 static int ethtool_get_features(struct net_device *dev, void __user *useraddr)
@@ -197,7 +199,7 @@ static void __ethtool_get_strings(struct net_device *dev,
 		ops->get_strings(dev, stringset, data);
 }
 
-static u32 ethtool_get_feature_mask(u32 eth_cmd)
+static netdev_features_t ethtool_get_feature_mask(u32 eth_cmd)
 {
 	/* feature masks of legacy discrete ethtool ops */
 
@@ -231,7 +233,7 @@ static u32 ethtool_get_feature_mask(u32 eth_cmd)
 static int ethtool_get_one_feature(struct net_device *dev,
 	char __user *useraddr, u32 ethcmd)
 {
-	u32 mask = ethtool_get_feature_mask(ethcmd);
+	netdev_features_t mask = ethtool_get_feature_mask(ethcmd);
 	struct ethtool_value edata = {
 		.cmd = ethcmd,
 		.data = !!(dev->features & mask),
@@ -246,7 +248,7 @@ static int ethtool_set_one_feature(struct net_device *dev,
 	void __user *useraddr, u32 ethcmd)
 {
 	struct ethtool_value edata;
-	u32 mask;
+	netdev_features_t mask;
 
 	if (copy_from_user(&edata, useraddr, sizeof(edata)))
 		return -EFAULT;
@@ -287,8 +289,7 @@ static u32 __ethtool_get_flags(struct net_device *dev)
 
 static int __ethtool_set_flags(struct net_device *dev, u32 data)
 {
-	u32 features = 0;
-	u32 changed;
+	netdev_features_t features = 0, changed;
 
 	if (data & ~ETH_ALL_FLAGS)
 		return -EINVAL;

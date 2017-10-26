@@ -7,11 +7,3 @@ obj-$(CONFIG_ROSE) += rose.o
 rose-y	  := af_rose.o rose_dev.o rose_in.o rose_link.o rose_loopback.o \
 	     rose_out.o rose_route.o rose_subr.o rose_timer.o
 rose-$(CONFIG_SYSCTL) += sysctl_net_rose.o
-AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
-AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
-CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
-AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
-
-KBUILD_AFLAGS += $(AFLAGS_THUMB2)
-KBUILD_CFLAGS += $(CFLAGS_THUMB2)
-
