@@ -168,9 +168,8 @@ obj-$(CONFIG_MEMORY)		+= memory/
 obj-$(CONFIG_IIO)		+= iio/
 obj-$(CONFIG_VME_BUS)		+= vme/
 obj-$(CONFIG_IPACK_BUS)		+= ipack/
-obj-$(CONFIG_BCM4330)		+= bcmdhd/
-obj-$(CONFIG_BCM4334)		+= bcmdhd/
-obj-$(CONFIG_ANDROID)		+= android/
+obj-$(CONFIG_BCM4330)	+= bcmdhd/
+obj-$(CONFIG_BCM4334)	+= bcmdhd/
 
 ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; fi))
 obj-y   += exfat/

@@ -18,6 +18,17 @@ config ANDROID_AB5500_TIMED_VIBRA
 	  output class device for ST-Ericsson's based on ST-Ericsson's
 	  AB5500 Mix-Sig PMIC
 
+config ANDROID_BINDER_IPC
+	bool "Android Binder IPC Driver"
+	default n
+
+config ANDROID_BINDER_IPC_32BIT
+	bool "Use old 32-bit binder api"
+	depends on !64BIT
+	---help---
+	  Enable to support an old 32-bit Android user-space. Breaks the new
+	  Android user-space.
+
 config ANDROID_LOGGER
 	tristate "Android log driver"
 	default n
