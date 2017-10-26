@@ -325,6 +325,8 @@ static int vr_init_queue(struct request_queue *q)
         vd->fifo_expire[ASYNC] = async_expire;
         vd->fifo_batch = fifo_batch;
         vd->rev_penalty = rev_penalty;
+
+	q->elevator->elevator_data = vd;
         return 0;
 }
 

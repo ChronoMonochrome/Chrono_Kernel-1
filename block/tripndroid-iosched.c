@@ -213,6 +213,8 @@ static int tripndroid_init_queue(struct request_queue *q)
 	td->fifo_expire[ASYNC][WRITE] = async_write_expire;
 	td->fifo_batch = fifo_batch;
 
+	q->elevator->elevator_data = td;
+
 	return 0;
 }
 

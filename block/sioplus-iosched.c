@@ -265,6 +265,7 @@ sio_init_queue(struct request_queue *q)
 	sd->fifo_batch = fifo_batch;
 	sd->writes_starved = writes_starved;
 
+	q->elevator->elevator_data = sd;
 	return 0;
 }
 

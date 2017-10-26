@@ -635,6 +635,8 @@ static int fiops_init_queue(struct request_queue *q)
 	fiopsd->sync_scale = VIOS_SYNC_SCALE;
 	fiopsd->async_scale = VIOS_ASYNC_SCALE;
 
+	q->elevator->elevator_data = fiopsd;
+
 	return 0;
 }
 

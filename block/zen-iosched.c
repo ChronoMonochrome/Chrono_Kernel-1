@@ -168,6 +168,8 @@ static int zen_init_queue(struct request_queue *q)
 	zdata->fifo_expire[SYNC] = sync_expire;
 	zdata->fifo_expire[ASYNC] = async_expire;
 	zdata->fifo_batch = fifo_batch;
+	q->elevator->elevator_data = zdata;
+
 	return 0;
 }
 
