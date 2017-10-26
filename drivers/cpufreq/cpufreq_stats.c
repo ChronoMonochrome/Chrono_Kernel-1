@@ -478,54 +478,6 @@ static void cpufreq_powerstats_create(unsigned int cpu,
 	spin_unlock(&cpufreq_stats_lock);
 }
 
-static void cpufreq_powerstats_create(unsigned int cpu,
-		struct cpufreq_frequency_table *table, int count) {
-	unsigned int alloc_size, i = 0, j = 0, ret = 0;
-	struct cpufreq_power_stats *powerstats;
-	struct device_node *cpu_node;
-	char device_path[16];
-
-	powerstats = kzalloc(sizeof(struct cpufreq_power_stats),
-			GFP_KERNEL);
-	if (!powerstats)
-		return;
-
-	/* Allocate memory for freq table per cpu as well as clockticks per
-	 * freq*/
-	alloc_size = count * sizeof(unsigned int) +
-		count * sizeof(unsigned int);
-	powerstats->curr = kzalloc(alloc_size, GFP_KERNEL);
-	if (!powerstats->curr) {
-		kfree(powerstats);
-		return;
-	}
-	powerstats->freq_table = powerstats->curr + count;
-
-	spin_lock(&cpufreq_stats_lock);
-	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END && j < count; i++) {
-		unsigned int freq = table[i].frequency;
-
-		if (freq == CPUFREQ_ENTRY_INVALID)
-			continue;
-		powerstats->freq_table[j++] = freq;
-	}
-	powerstats->state_num = j;
-
-	snprintf(device_path, sizeof(device_path), "/cpus/cpu@%d", cpu);
-	cpu_node = of_find_node_by_path(device_path);
-	if (cpu_node) {
-		ret = of_property_read_u32_array(cpu_node, "current",
-				powerstats->curr, count);
-		if (ret) {
-			kfree(powerstats->curr);
-			kfree(powerstats);
-			powerstats = NULL;
-		}
-	}
-	per_cpu(cpufreq_power_stats, cpu) = powerstats;
-	spin_unlock(&cpufreq_stats_lock);
-}
-
 static int compare_for_sort(const void *lhs_ptr, const void *rhs_ptr)
 {
 	unsigned int lhs = *(const unsigned int *)(lhs_ptr);
