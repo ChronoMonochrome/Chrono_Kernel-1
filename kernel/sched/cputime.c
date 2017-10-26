@@ -1,5 +1,4 @@
 #include <linux/export.h>
-#include <linux/cpufreq.h>
 #include <linux/sched.h>
 #include <linux/tsacct_kern.h>
 #include <linux/kernel_stat.h>
@@ -143,9 +142,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
 	p->utimescaled += cputime_scaled;
 	account_group_user_time(p, cputime);
 
-	/* Account power usage for system time */
-	acct_update_power(p, cputime);
-
 	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
 
 	/* Add user time to cpustat. */
@@ -197,9 +193,6 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
 	p->stime += cputime;
 	p->stimescaled += cputime_scaled;
 	account_group_system_time(p, cputime);
-
-	/* Account power usage for system time */
-	acct_update_power(p, cputime);
 
 	/* Add system time to cpustat. */
 	task_group_account_field(p, index, (__force u64) cputime);
