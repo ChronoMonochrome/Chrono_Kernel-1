@@ -263,7 +263,7 @@ static struct dbs_tuners {
 
 	.sampling_rate = 2*HZ/100,
 	.sampling_down_factor = 2,
-	.sampling_down_factor_relax_khz = 400000,
+	.sampling_down_factor_relax_khz = 500000,
 	.max_non_oc_freq = 0,
 	.oc_freq_boost_ms = 0,
 
@@ -272,7 +272,7 @@ static struct dbs_tuners {
 
 	.suspend_sampling_rate = 5*HZ/100,
 	.suspend_sampling_up_factor = 5,
-	.suspend_max_freq = 600000,
+	.suspend_max_freq = 800000,
 };
 
 static unsigned int delay;
