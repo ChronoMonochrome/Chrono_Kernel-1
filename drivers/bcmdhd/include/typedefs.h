@@ -79,11 +79,11 @@ typedef long unsigned int size_t;
 #endif 
 #ifdef __KERNEL__
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 19))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19))
 #define TYPEDEF_BOOL
 #endif	
 
-#if (LINUX_VERSION_CODE_FAKE == KERNEL_VERSION(2, 6, 18))
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 18))
 #include <linux/compiler.h>
 #ifdef noinline_for_stack
 #define TYPEDEF_BOOL

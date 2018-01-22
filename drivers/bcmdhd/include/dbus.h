@@ -407,7 +407,7 @@ extern void dbus_release_fw_nvfile(void *firmware);
 #if defined(EHCI_FASTPATH_TX) || defined(EHCI_FASTPATH_RX)
 
 
-#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
 	/* Backward compatibility */
 	typedef unsigned int gfp_t;
 
@@ -422,7 +422,7 @@ extern void dbus_release_fw_nvfile(void *firmware);
 	#define dma_unmap_single(dev, hnd, size, dir)	pci_unmap_single(dev, hnd, size, dir)
 	#define DMA_FROM_DEVICE PCI_DMA_FROMDEVICE
 	#define DMA_TO_DEVICE PCI_DMA_TODEVICE
-#endif /* (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0)) */
+#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)) */
 
 /* Availability of these functions varies (when present, they have two arguments) */
 #ifndef hc32_to_cpu
@@ -510,7 +510,7 @@ struct ehci_qh {
 	struct ehci_qh		*unused3;
 
 	struct ehci_hcd		*unused4;
-#if (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
 	struct kref		unused5;
 	unsigned		unused6;
 
@@ -539,13 +539,13 @@ struct ehci_qh {
 #ifdef EHCI_QUIRK_FIX
 	struct usb_device	*unused12;
 #endif /* EHCI_QUIRK_FIX */
-#endif /* (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0)) */
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)) */
 	struct ehci_qtd		*first_qtd;
 		/* Link to the first QTD; this is an optimized equivalent of the qtd_list field */
 		/* NOTE that ehci_qh in ehci.h shall reserve this word */
 } __attribute__ ((aligned(EHCI_QTD_ALIGN)));
 
-#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
 /* The corresponding structure in the kernel is used to get the QH */
 struct hcd_dev {	/* usb_device.hcpriv points to this */
 	struct list_head	unused0;
@@ -554,7 +554,7 @@ struct hcd_dev {	/* usb_device.hcpriv points to this */
 	/* array of QH pointers */
 	void			*ep[32];
 };
-#endif /* (LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 0)) */
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)) */
 
 int optimize_qtd_fill_with_rpc(const dbus_pub_t *pub,  int epn, struct ehci_qtd *qtd, void *rpc,
 	int token, int len);

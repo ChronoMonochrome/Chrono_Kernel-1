@@ -142,7 +142,7 @@ void wl_iw_detach(void);
 #define CSCAN_TLV_TYPE_HOME_IE         'H'
 #define CSCAN_TLV_TYPE_STYPE_IE        'T'
 
-#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 27)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
 #define IWE_STREAM_ADD_EVENT(info, stream, ends, iwe, extra) \
 	iwe_stream_add_event(info, stream, ends, iwe, extra)
 #define IWE_STREAM_ADD_VALUE(info, event, value, ends, iwe, event_len) \

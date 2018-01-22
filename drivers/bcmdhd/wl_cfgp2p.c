@@ -2190,7 +2190,7 @@ wl_cfgp2p_retreive_p2p_dev_addr(wl_bss_info_t *bi, u32 bi_length)
 	return ptr;
 }
 
-#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 24)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
 static void
 wl_cfgp2p_ethtool_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *info)
 {
@@ -2201,7 +2201,7 @@ wl_cfgp2p_ethtool_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *in
 struct ethtool_ops cfgp2p_ethtool_ops = {
 	.get_drvinfo = wl_cfgp2p_ethtool_get_drvinfo
 };
-#endif /* LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 24) */
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24) */
 
 s32
 wl_cfgp2p_register_ndev(struct wl_priv *wl)
@@ -2235,7 +2235,7 @@ wl_cfgp2p_register_ndev(struct wl_priv *wl)
 	/* Copy the reference to wl_priv */
 	memcpy((void *)netdev_priv(net), &wl, sizeof(struct wl_priv *));
 
-#if (LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 31))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31))
 	ASSERT(!net->open);
 	net->do_ioctl = wl_cfgp2p_do_ioctl;
 	net->hard_start_xmit = wl_cfgp2p_start_xmit;
@@ -2255,9 +2255,9 @@ wl_cfgp2p_register_ndev(struct wl_priv *wl)
 
 	net->ieee80211_ptr = wdev;
 
-#if LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 24)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
 	net->ethtool_ops = &cfgp2p_ethtool_ops;
-#endif /* LINUX_VERSION_CODE_FAKE >= KERNEL_VERSION(2, 6, 24) */
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24) */
 
 	SET_NETDEV_DEV(net, wiphy_dev(wdev->wiphy));
 

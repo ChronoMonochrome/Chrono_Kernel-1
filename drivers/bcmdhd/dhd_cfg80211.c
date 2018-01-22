@@ -199,11 +199,11 @@ dev_wlc_intvar_get_reg(struct net_device *dev, char *name,
 static int
 dev_wlc_bufvar_set(struct net_device *dev, char *name, char *buf, int len)
 {
-#if LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 31)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31)
 	char ioctlbuf_local[1024];
 #else
 	static char ioctlbuf_local[1024];
-#endif /* LINUX_VERSION_CODE_FAKE < KERNEL_VERSION(2, 6, 31) */
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31) */
 
 	bcm_mkiovar(name, buf, len, ioctlbuf_local, sizeof(ioctlbuf_local));
 
