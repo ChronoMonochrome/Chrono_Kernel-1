@@ -94,7 +94,7 @@ static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case ANDROID_ALARM_CLEAR(0):
 		spin_lock_irqsave(&alarm_slock, flags);
 		pr_alarm(IO, "alarm %d clear\n", alarm_type);
-		android_alarm_try_to_cancel(&alarms[alarm_type]);
+		alarm_try_to_cancel(&alarms[alarm_type]);
 		if (alarm_pending) {
 			alarm_pending &= ~alarm_type_mask;
 			if (!alarm_pending && !wait_pending)
@@ -229,7 +229,7 @@ static int alarm_release(struct inode *inode, struct file *file)
 				alarm_enabled &= ~alarm_type_mask;
 			}
 			spin_unlock_irqrestore(&alarm_slock, flags);
-			android_alarm_cancel(&alarms[i]);
+			alarm_cancel(&alarms[i]);
 			spin_lock_irqsave(&alarm_slock, flags);
 		}
 		if (alarm_pending | wait_pending) {
@@ -285,7 +285,7 @@ static int __init alarm_dev_init(void)
 		return err;
 
 	for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++)
-		android_alarm_init(&alarms[i], i, alarm_triggered);
+		alarm_init(&alarms[i], i, alarm_triggered);
 	wake_lock_init(&alarm_wake_lock, WAKE_LOCK_SUSPEND, "alarm");
 
 	return 0;

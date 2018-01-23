@@ -238,12 +238,12 @@ int alarm_set_alarm(char *alarm_data)
 #endif
 
 /**
- * android_alarm_init - initialize an alarm
+ * alarm_init - initialize an alarm
  * @alarm:	the alarm to be initialized
  * @type:	the alarm type to be used
  * @function:	alarm callback function
  */
-void android_alarm_init(struct alarm *alarm,
+void alarm_init(struct alarm *alarm,
 	enum android_alarm_type type, void (*function)(struct alarm *))
 {
 	RB_CLEAR_NODE(&alarm->node);
@@ -272,7 +272,7 @@ void alarm_start_range(struct alarm *alarm, ktime_t start, ktime_t end)
 }
 
 /**
- * android_alarm_try_to_cancel - try to deactivate an alarm
+ * alarm_try_to_cancel - try to deactivate an alarm
  * @alarm:	alarm to stop
  *
  * Returns:
@@ -281,7 +281,7 @@ void alarm_start_range(struct alarm *alarm, ktime_t start, ktime_t end)
  * -1 when the alarm may currently be excuting the callback function and
  *    cannot be stopped (it may also be inactive)
  */
-int android_alarm_try_to_cancel(struct alarm *alarm)
+int alarm_try_to_cancel(struct alarm *alarm)
 {
 	struct alarm_queue *base = &alarms[alarm->type];
 	unsigned long flags;
@@ -312,17 +312,17 @@ int android_alarm_try_to_cancel(struct alarm *alarm)
 }
 
 /**
- * android_alarm_cancel - cancel an alarm and wait for the handler to finish.
+ * alarm_cancel - cancel an alarm and wait for the handler to finish.
  * @alarm:	the alarm to be cancelled
  *
  * Returns:
  *  0 when the alarm was not active
  *  1 when the alarm was active
  */
-int android_alarm_cancel(struct alarm *alarm)
+int alarm_cancel(struct alarm *alarm)
 {
 	for (;;) {
-		int ret = android_alarm_try_to_cancel(alarm);
+		int ret = alarm_try_to_cancel(alarm);
 		if (ret >= 0)
 			return ret;
 		cpu_relax();
