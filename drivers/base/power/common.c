@@ -1,4 +1,3 @@
-#include <linux/export.h>
 /*
  * drivers/base/power/common.c - Common device power management code.
  *

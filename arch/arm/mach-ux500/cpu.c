@@ -22,7 +22,6 @@
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
-#include <asm/system_misc.h>
 
 #include <mach/hardware.h>
 #include <mach/setup.h>
