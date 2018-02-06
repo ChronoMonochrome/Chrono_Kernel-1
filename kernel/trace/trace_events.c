@@ -19,7 +19,6 @@
 #include <linux/delay.h>
 
 #include <asm/setup.h>
-#include <trace/stm.h>
 
 #include "trace_output.h"
 
@@ -1722,8 +1721,6 @@ function_test_events_call(unsigned long ip, unsigned long parent_ip)
 	entry->parent_ip		= parent_ip;
 
 	trace_nowake_buffer_unlock_commit(buffer, event, flags, pc);
-
-	stm_ftrace(ip, parent_ip);
 
  out:
 	atomic_dec(&per_cpu(ftrace_test_event_disable, cpu));
