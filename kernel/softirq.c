@@ -531,11 +531,7 @@ EXPORT_SYMBOL(tasklet_init);
 void tasklet_kill(struct tasklet_struct *t)
 {
 	if (in_interrupt())
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Attempt to kill tasklet from interrupt\n");
-#else
-		;
-#endif
 
 	while (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
 		do {
@@ -864,11 +860,7 @@ static int __cpuinit cpu_callback(struct notifier_block *nfb,
 					   cpu_to_node(hotcpu),
 					   "ksoftirqd/%d", hotcpu);
 		if (IS_ERR(p)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("ksoftirqd for %i failed\n", hotcpu);
-#else
-			;
-#endif
 			return notifier_from_errno(PTR_ERR(p));
 		}
 		kthread_bind(p, hotcpu);
