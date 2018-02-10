@@ -19,7 +19,6 @@
 #include <linux/input/mt.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/usb.h>
 
 #include "hid-ids.h"
 
@@ -361,10 +360,9 @@ static int magicmouse_raw_event(struct hid_device *hdev,
 	return 1;
 }
 
-static int magicmouse_setup_input(struct hid_device *hdev, struct hid_input *hi)
+static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
 {
 	int error;
-	struct input_dev *input = hi->input;
 
 	__set_bit(EV_KEY, input->evbit);
 
@@ -519,15 +517,12 @@ static int magicmouse_probe(struct hid_device *hdev,
 		goto err_free;
 	}
 
-<<<<<<< HEAD
-=======
 	if (!msc->input) {
 		hid_err(hdev, "magicmouse input not registered\n");
 		ret = -ENOMEM;
 		goto err_stop_hw;
 	}
 
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
 		report = hid_register_report(hdev, HID_INPUT_REPORT,
 			MOUSE_REPORT_ID);
@@ -592,11 +587,7 @@ static struct hid_driver magicmouse_driver = {
 	.remove = magicmouse_remove,
 	.raw_event = magicmouse_raw_event,
 	.input_mapping = magicmouse_input_mapping,
-<<<<<<< HEAD
-	.input_configured = magicmouse_setup_input,
-=======
 	.input_configured = magicmouse_input_configured,
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 };
 module_hid_driver(magicmouse_driver);
 

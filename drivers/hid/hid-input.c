@@ -1167,69 +1167,6 @@ unsigned int hidinput_count_leds(struct hid_device *hid)
 }
 EXPORT_SYMBOL_GPL(hidinput_count_leds);
 
-static void hidinput_led_worker(struct work_struct *work)
-{
-	struct hid_device *hid = container_of(work, struct hid_device,
-					      led_work);
-	struct hid_field *field;
-	struct hid_report *report;
-	int len;
-	__u8 *buf;
-
-	field = hidinput_get_led_field(hid);
-	if (!field)
-		return;
-
-	/*
-	 * field->report is accessed unlocked regarding HID core. So there might
-	 * be another incoming SET-LED request from user-space, which changes
-	 * the LED state while we assemble our outgoing buffer. However, this
-	 * doesn't matter as hid_output_report() correctly converts it into a
-	 * boolean value no matter what information is currently set on the LED
-	 * field (even garbage). So the remote device will always get a valid
-	 * request.
-	 * And in case we send a wrong value, a next led worker is spawned
-	 * for every SET-LED request so the following worker will send the
-	 * correct value, guaranteed!
-	 */
-
-	report = field->report;
-
-	len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
-	buf = kmalloc(len, GFP_KERNEL);
-	if (!buf)
-		return;
-
-	hid_output_report(report, buf);
-	/* synchronous output report */
-	hid->hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
-	kfree(buf);
-}
-
-static int hidinput_input_event(struct input_dev *dev, unsigned int type,
-				unsigned int code, int value)
-{
-	struct hid_device *hid = input_get_drvdata(dev);
-	struct hid_field *field;
-	int offset;
-
-	if (type == EV_FF)
-		return input_ff_event(dev, type, code, value);
-
-	if (type != EV_LED)
-		return -1;
-
-	if ((offset = hidinput_find_field(hid, type, code, &field)) == -1) {
-		hid_warn(dev, "event field not found\n");
-		return -1;
-	}
-
-	hid_set_field(field, offset, value);
-
-	schedule_work(&hid->led_work);
-	return 0;
-}
-
 static int hidinput_open(struct input_dev *dev)
 {
 	struct hid_device *hid = input_get_drvdata(dev);
@@ -1281,12 +1218,7 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
 	}
 
 	input_set_drvdata(input_dev, hid);
-	if(hid->ll_driver->hidinput_input_event) {
-		input_dev->event =
-				hid->ll_driver->hidinput_input_event;
-	} else if (hid->hid_output_raw_report) {
-		input_dev->event = hidinput_input_event;
-	}
+	input_dev->event = hid->ll_driver->hidinput_input_event;
 	input_dev->open = hidinput_open;
 	input_dev->close = hidinput_close;
 	input_dev->setkeycode = hidinput_setkeycode;
@@ -1306,6 +1238,67 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
 	return hidinput;
 }
 
+static bool hidinput_has_been_populated(struct hid_input *hidinput)
+{
+	int i;
+	unsigned long r = 0;
+
+	for (i = 0; i < BITS_TO_LONGS(EV_CNT); i++)
+		r |= hidinput->input->evbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(KEY_CNT); i++)
+		r |= hidinput->input->keybit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(REL_CNT); i++)
+		r |= hidinput->input->relbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(ABS_CNT); i++)
+		r |= hidinput->input->absbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(MSC_CNT); i++)
+		r |= hidinput->input->mscbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(LED_CNT); i++)
+		r |= hidinput->input->ledbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(SND_CNT); i++)
+		r |= hidinput->input->sndbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(FF_CNT); i++)
+		r |= hidinput->input->ffbit[i];
+
+	for (i = 0; i < BITS_TO_LONGS(SW_CNT); i++)
+		r |= hidinput->input->swbit[i];
+
+	return !!r;
+}
+
+static void hidinput_cleanup_hidinput(struct hid_device *hid,
+		struct hid_input *hidinput)
+{
+	struct hid_report *report;
+	int i, k;
+
+	list_del(&hidinput->list);
+	input_free_device(hidinput->input);
+
+	for (k = HID_INPUT_REPORT; k <= HID_OUTPUT_REPORT; k++) {
+		if (k == HID_OUTPUT_REPORT &&
+			hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
+			continue;
+
+		list_for_each_entry(report, &hid->report_enum[k].report_list,
+				    list) {
+
+			for (i = 0; i < report->maxfield; i++)
+				if (report->field[i]->hidinput == hidinput)
+					report->field[i]->hidinput = NULL;
+		}
+	}
+
+	kfree(hidinput);
+}
+
 /*
  * Register the input device; print a message.
  * Configure the input layer interface
@@ -1320,7 +1313,6 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 	int i, j, k;
 
 	INIT_LIST_HEAD(&hid->inputs);
-	INIT_WORK(&hid->led_work, hidinput_led_worker);
 
 	if (!force) {
 		for (i = 0; i < hid->maxcollection; i++) {
@@ -1358,6 +1350,10 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 					hidinput_configure_usage(hidinput, report->field[i],
 								 report->field[i]->usage + j);
 
+			if ((hid->quirks & HID_QUIRK_NO_EMPTY_INPUT) &&
+			    !hidinput_has_been_populated(hidinput))
+				continue;
+
 			if (hid->quirks & HID_QUIRK_MULTI_INPUT) {
 				/* This will leave hidinput NULL, so that it
 				 * allocates another one if we have more inputs on
@@ -1365,9 +1361,8 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 				 * UGCI) cram a lot of unrelated inputs into the
 				 * same interface. */
 				hidinput->report = report;
-				if (drv->input_configured &&
-				    drv->input_configured(hid, hidinput))
-					goto out_cleanup;
+				if (drv->input_configured)
+					drv->input_configured(hid, hidinput);
 				if (input_register_device(hidinput->input))
 					goto out_cleanup;
 				hidinput = NULL;
@@ -1375,10 +1370,21 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 		}
 	}
 
+	if (hidinput && (hid->quirks & HID_QUIRK_NO_EMPTY_INPUT) &&
+	    !hidinput_has_been_populated(hidinput)) {
+		/* no need to register an input device not populated */
+		hidinput_cleanup_hidinput(hid, hidinput);
+		hidinput = NULL;
+	}
+
+	if (list_empty(&hid->inputs)) {
+		hid_err(hid, "No inputs registered, leaving\n");
+		goto out_unwind;
+	}
+
 	if (hidinput) {
-		if (drv->input_configured &&
-		    drv->input_configured(hid, hidinput))
-			goto out_cleanup;
+		if (drv->input_configured)
+			drv->input_configured(hid, hidinput);
 		if (input_register_device(hidinput->input))
 			goto out_cleanup;
 	}
@@ -1408,12 +1414,6 @@ void hidinput_disconnect(struct hid_device *hid)
 		input_unregister_device(hidinput->input);
 		kfree(hidinput);
 	}
-
-	/* led_work is spawned by input_dev callbacks, but doesn't access the
-	 * parent input_dev at all. Once all input devices are removed, we
-	 * know that led_work will never get restarted, so we can cancel it
-	 * synchronously and are safe. */
-	cancel_work_sync(&hid->led_work);
 }
 EXPORT_SYMBOL_GPL(hidinput_disconnect);
 

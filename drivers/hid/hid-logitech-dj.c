@@ -27,7 +27,6 @@
 #include <linux/module.h>
 #include <linux/usb.h>
 #include <asm/unaligned.h>
-#include "usbhid/usbhid.h"
 #include "hid-ids.h"
 #include "hid-logitech-dj.h"
 
@@ -468,7 +467,7 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
 	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
 		report->field[0]->value[i] = data[i];
 
-	usbhid_submit_report(hdev, report, USB_DIR_OUT);
+	hid_hw_request(hdev, report, HID_REQ_SET_REPORT);
 
 	return 0;
 }
@@ -644,7 +643,7 @@ static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
 	hid_set_field(report->field[0], 1, REPORT_TYPE_LEDS);
 	hid_set_field(report->field[0], 2, data[1]);
 
-	usbhid_submit_report(dj_rcv_hiddev, report, USB_DIR_OUT);
+	hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
 
 	kfree(data);
 
@@ -828,6 +827,9 @@ static int logi_dj_probe(struct hid_device *hdev,
 			"error:%d\n", __func__, retval);
 		goto llopen_failed;
 	}
+
+	/* Allow incoming packets to arrive: */
+	hid_device_io_start(hdev);
 
 	retval = logi_dj_recv_query_paired_devices(djrcv_dev);
 	if (retval < 0) {

@@ -458,7 +458,6 @@ struct hid_device {							/* device report descriptor */
 	enum hid_type type;						/* device type (mouse, kbd, ...) */
 	unsigned country;						/* HID country */
 	struct hid_report_enum report_enum[HID_REPORT_TYPES];
-	struct work_struct led_work;					/* delayed LED worker */
 
 	struct semaphore driver_lock;					/* protects the current driver, except during input */
 	struct semaphore driver_input_lock;				/* protects the current driver */
@@ -650,8 +649,8 @@ struct hid_driver {
 	int (*input_mapped)(struct hid_device *hdev,
 			struct hid_input *hidinput, struct hid_field *field,
 			struct hid_usage *usage, unsigned long **bit, int *max);
-	int (*input_configured)(struct hid_device *hdev,
-				struct hid_input *hidinput);
+	void (*input_configured)(struct hid_device *hdev,
+				 struct hid_input *hidinput);
 	void (*feature_mapping)(struct hid_device *hdev,
 			struct hid_field *field,
 			struct hid_usage *usage);
