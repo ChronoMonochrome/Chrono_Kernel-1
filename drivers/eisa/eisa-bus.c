@@ -275,11 +275,13 @@ static int __init eisa_request_resources(struct eisa_root_device *root,
 		}
 		
 		if (slot) {
+			edev->res[i].name  = NULL;
 			edev->res[i].start = SLOT_ADDRESS(root, slot)
 					     + (i * 0x400);
 			edev->res[i].end   = edev->res[i].start + 0xff;
 			edev->res[i].flags = IORESOURCE_IO;
 		} else {
+			edev->res[i].name  = NULL;
 			edev->res[i].start = SLOT_ADDRESS(root, slot)
 					     + EISA_VENDOR_ID_OFFSET;
 			edev->res[i].end   = edev->res[i].start + 3;
@@ -315,16 +317,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
 	struct eisa_device *edev;
 	char *enabled_str;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "EISA: Probing bus %d at %s\n",
-	       root->bus_nr, dev_name(root->dev));
-#else
-	;
-#endif
-=======
 	dev_info(root->dev, "Probing EISA bus %d\n", root->bus_nr);
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 
 	/* First try to get hold of slot 0. If there is no device
 	 * here, simply fail, unless root->force_probe is set. */
@@ -335,23 +328,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		return -ENOMEM;
 	}
 		
-<<<<<<< HEAD
-	if (eisa_request_resources(root, edev, 0)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING \
-		       "EISA: Cannot allocate resource for mainboard\n");
-#else
-		;
-#endif
-=======
-	if (eisa_init_device(root, edev, 0)) {
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
-		kfree(edev);
-		if (!root->force_probe)
-			return -ENODEV;
-		goto force_probe;
-	}
-
 	if (eisa_request_resources(root, edev, 0)) {
 		dev_warn(root->dev,
 		         "EISA: Cannot allocate resource for mainboard\n");
@@ -361,15 +337,15 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		goto force_probe;
 	}
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "EISA: Mainboard %s detected.\n", edev->id.sig);
-#else
-	;
-#endif
-=======
+	if (eisa_init_device(root, edev, 0)) {
+		eisa_release_resources(edev);
+		kfree(edev);
+		if (!root->force_probe)
+			return -ENODEV;
+		goto force_probe;
+	}
+
 	dev_info(&edev->dev, "EISA: Mainboard %s detected\n", edev->id.sig);
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 
 	if (eisa_register_device(edev)) {
 		dev_err(&edev->dev, "EISA: Failed to register %s\n",
@@ -388,22 +364,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
 			continue;
 		}
 
-<<<<<<< HEAD
-		if (eisa_request_resources(root, edev, i)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING \
-			       "Cannot allocate resource for EISA slot %d\n",
-			       i);
-#else
-			;
-#endif
-=======
-		if (eisa_init_device(root, edev, i)) {
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
-			kfree(edev);
-			continue;
-		}
-
 		if (eisa_request_resources(root, edev, i)) {
 			dev_warn(root->dev,
 			         "Cannot allocate resource for EISA slot %d\n",
@@ -411,43 +371,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
 			kfree(edev);
 			continue;
 		}
-<<<<<<< HEAD
-		
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "EISA: slot %d : %s detected",
-		       i, edev->id.sig);
-#else
-		;
-#endif
-			
-		switch (edev->state) {
-		case EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" (forced enabled)");
-#else
-			;
-#endif
-			break;
 
-		case EISA_CONFIG_FORCED:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" (forced disabled)");
-#else
-			;
-#endif
-			break;
-
-		case 0:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" (disabled)");
-#else
-			;
-#endif
-			break;
+		if (eisa_init_device(root, edev, i)) {
+			eisa_release_resources(edev);
+			kfree(edev);
+			continue;
 		}
-			
-		printk (".\n");
-=======
 
 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
 			enabled_str = " (forced enabled)";
@@ -460,7 +389,6 @@ static int __init eisa_probe(struct eisa_root_device *root)
 
 		dev_info(&edev->dev, "EISA: slot %d: %s detected%s\n", i,
 			 edev->id.sig, enabled_str);
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 
 		c++;
 
@@ -472,16 +400,7 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		}
         }
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "EISA: Detected %d card%s.\n", c, c == 1 ? "" : "s");
-#else
-	;
-#endif
-
-=======
 	dev_info(root->dev, "EISA: Detected %d card%s\n", c, c == 1 ? "" : "s");
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 	return 0;
 }
 
@@ -529,11 +448,7 @@ static int __init eisa_init(void)
 	if (r)
 		return r;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA bus registered\n");
-#else
-	;
-#endif
 	return 0;
 }
 
