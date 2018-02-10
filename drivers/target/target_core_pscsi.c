@@ -79,28 +79,11 @@ static int pscsi_attach_hba(struct se_hba *hba, u32 host_id)
 
 	hba->hba_ptr = phv;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - TCM SCSI HBA Driver %s on"
-		" Generic Target Core Stack %s\n", hba->hba_id,
-		PSCSI_VERSION, TARGET_CORE_MOD_VERSION);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - Attached SCSI HBA to Generic"
-		" Target Core with TCQ Depth: %d\n", hba->hba_id,
-		atomic_read(&hba->max_queue_depth));
-#else
-	;
-#endif
-=======
 	pr_debug("CORE_HBA[%d] - TCM SCSI HBA Driver %s on"
 		" Generic Target Core Stack %s\n", hba->hba_id,
 		PSCSI_VERSION, TARGET_CORE_MOD_VERSION);
 	pr_debug("CORE_HBA[%d] - Attached SCSI HBA to Generic\n",
 	       hba->hba_id);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return 0;
 }
@@ -113,29 +96,13 @@ static void pscsi_detach_hba(struct se_hba *hba)
 	if (scsi_host) {
 		scsi_host_put(scsi_host);
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "CORE_HBA[%d] - Detached SCSI HBA: %s from"
-=======
 		pr_debug("CORE_HBA[%d] - Detached SCSI HBA: %s from"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			" Generic Target Core\n", hba->hba_id,
 			(scsi_host->hostt->name) ? (scsi_host->hostt->name) :
 			"Unknown");
-#else
-		;
-#endif
 	} else
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "CORE_HBA[%d] - Detached Virtual SCSI HBA"
-=======
 		pr_debug("CORE_HBA[%d] - Detached Virtual SCSI HBA"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			" from Generic Target Core\n", hba->hba_id);
-#else
-		;
-#endif
 
 	kfree(phv);
 	hba->hba_ptr = NULL;
@@ -155,17 +122,9 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
 		phv->phv_lld_host = NULL;
 		phv->phv_mode = PHV_VIRTUAL_HOST_ID;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "CORE_HBA[%d] - Disabled pSCSI HBA Passthrough"
-=======
 		pr_debug("CORE_HBA[%d] - Disabled pSCSI HBA Passthrough"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			" %s\n", hba->hba_id, (sh->hostt->name) ?
 			(sh->hostt->name) : "Unknown");
-#else
-		;
-#endif
 
 		scsi_host_put(sh);
 		return 0;
@@ -184,16 +143,8 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
 	phv->phv_lld_host = sh;
 	phv->phv_mode = PHV_LLD_SCSI_HOST_NO;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - Enabled pSCSI HBA Passthrough %s\n",
-=======
 	pr_debug("CORE_HBA[%d] - Enabled pSCSI HBA Passthrough %s\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		hba->hba_id, (sh->hostt->name) ? (sh->hostt->name) : "Unknown");
-#else
-	;
-#endif
 
 	return 1;
 }
@@ -206,7 +157,7 @@ static void pscsi_tape_read_blocksize(struct se_device *dev,
 
 	buf = kzalloc(12, GFP_KERNEL);
 	if (!buf)
-		return;
+		goto out_free;
 
 	memset(cdb, 0, MAX_COMMAND_SIZE);
 	cdb[0] = MODE_SENSE;
@@ -221,9 +172,10 @@ static void pscsi_tape_read_blocksize(struct se_device *dev,
 	 * If MODE_SENSE still returns zero, set the default value to 1024.
 	 */
 	sdev->sector_size = (buf[9] << 16) | (buf[10] << 8) | (buf[11]);
+out_free:
 	if (!sdev->sector_size)
 		sdev->sector_size = 1024;
-out_free:
+
 	kfree(buf);
 }
 
@@ -315,15 +267,7 @@ pscsi_get_inquiry_vpd_device_ident(struct scsi_device *sdev,
 					" length zero!\n");
 			break;
 		}
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "T10 VPD Identifer Length: %d\n", ident_len);
-#else
-		;
-#endif
-=======
 		pr_debug("T10 VPD Identifier Length: %d\n", ident_len);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 		vpd = kzalloc(sizeof(struct t10_vpd), GFP_KERNEL);
 		if (!vpd) {
@@ -374,9 +318,10 @@ static int pscsi_add_device_to_list(struct se_device *dev,
 				sd->lun, sd->queue_depth);
 	}
 
-	dev->dev_attrib.hw_block_size = sd->sector_size;
+	dev->dev_attrib.hw_block_size =
+		min_not_zero((int)sd->sector_size, 512);
 	dev->dev_attrib.hw_max_sectors =
-		min_t(int, sd->host->max_sectors, queue_max_hw_sectors(q));
+		min_not_zero((unsigned)sd->host->max_sectors, queue_max_hw_sectors(q));
 	dev->dev_attrib.hw_queue_depth = sd->queue_depth;
 
 	/*
@@ -399,8 +344,10 @@ static int pscsi_add_device_to_list(struct se_device *dev,
 	/*
 	 * For TYPE_TAPE, attempt to determine blocksize with MODE_SENSE.
 	 */
-	if (sd->type == TYPE_TAPE)
+	if (sd->type == TYPE_TAPE) {
 		pscsi_tape_read_blocksize(dev, sd);
+		dev->dev_attrib.hw_block_size = sd->sector_size;
+	}
 	return 0;
 }
 
@@ -415,17 +362,8 @@ static struct se_device *pscsi_alloc_device(struct se_hba *hba,
 		return NULL;
 	}
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "PSCSI: Allocated pdv: %p for %s\n", pdv, name);
-#else
-	;
-#endif
-	return (void *)pdv;
-=======
 	pr_debug("PSCSI: Allocated pdv: %p for %s\n", pdv, name);
 	return &pdv->dev;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 }
 
 /*
@@ -466,15 +404,6 @@ static int pscsi_create_type_disk(struct se_device *dev, struct scsi_device *sd)
 		scsi_device_put(sd);
 		return ret;
 	}
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_PSCSI[%d] - Added TYPE_DISK for %d:%d:%d:%d\n",
-		phv->phv_host_id, sh->host_no, sd->channel, sd->id, sd->lun);
-#else
-	;
-#endif
-=======
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	pr_debug("CORE_PSCSI[%d] - Added TYPE_DISK for %d:%d:%d:%d\n",
 		phv->phv_host_id, sh->host_no, sd->channel, sd->id, sd->lun);
@@ -484,7 +413,7 @@ static int pscsi_create_type_disk(struct se_device *dev, struct scsi_device *sd)
 /*
  * Called with struct Scsi_Host->host_lock called.
  */
-static int pscsi_create_type_rom(struct se_device *dev, struct scsi_device *sd)
+static int pscsi_create_type_nondisk(struct se_device *dev, struct scsi_device *sd)
 	__releases(sh->host_lock)
 {
 	struct pscsi_hba_virt *phv = dev->se_hba->hba_ptr;
@@ -504,53 +433,11 @@ static int pscsi_create_type_rom(struct se_device *dev, struct scsi_device *sd)
 		scsi_device_put(sd);
 		return ret;
 	}
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
-=======
-	pr_debug("CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
-		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
-		sd->channel, sd->id, sd->lun);
-#else
-	;
-#endif
-
-	return 0;
-}
-
-/*
- * Called with struct Scsi_Host->host_lock called.
- */
-static int pscsi_create_type_other(struct se_device *dev,
-		struct scsi_device *sd)
-	__releases(sh->host_lock)
-{
-	struct pscsi_hba_virt *phv = dev->se_hba->hba_ptr;
-	struct Scsi_Host *sh = sd->host;
-	int ret;
-
-	spin_unlock_irq(sh->host_lock);
-	ret = pscsi_add_device_to_list(dev, sd);
-	if (ret)
-		return ret;
-
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
-		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
-		sd->channel, sd->id, sd->lun);
-#else
-	;
-#endif
-
-	return dev;
-=======
 	pr_debug("CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
 		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
 		sd->channel, sd->id, sd->lun);
+
 	return 0;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 }
 
 static int pscsi_configure_device(struct se_device *dev)
@@ -640,11 +527,8 @@ static int pscsi_configure_device(struct se_device *dev)
 		case TYPE_DISK:
 			ret = pscsi_create_type_disk(dev, sd);
 			break;
-		case TYPE_ROM:
-			ret = pscsi_create_type_rom(dev, sd);
-			break;
 		default:
-			ret = pscsi_create_type_other(dev, sd);
+			ret = pscsi_create_type_nondisk(dev, sd);
 			break;
 		}
 
@@ -701,8 +585,7 @@ static void pscsi_free_device(struct se_device *dev)
 		else if (pdv->pdv_lld_host)
 			scsi_host_put(pdv->pdv_lld_host);
 
-		if ((sd->type == TYPE_DISK) || (sd->type == TYPE_ROM))
-			scsi_device_put(sd);
+		scsi_device_put(sd);
 
 		pdv->pdv_sd = NULL;
 	}
@@ -849,63 +732,31 @@ static ssize_t pscsi_set_configfs_dev_params(struct se_device *dev,
 			}
 			match_int(args, &arg);
 			pdv->pdv_host_id = arg;
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Host ID:"
-=======
 			pr_debug("PSCSI[%d]: Referencing SCSI Host ID:"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" %d\n", phv->phv_host_id, pdv->pdv_host_id);
-#else
-			;
-#endif
 			pdv->pdv_flags |= PDF_HAS_VIRT_HOST_ID;
 			break;
 		case Opt_scsi_channel_id:
 			match_int(args, &arg);
 			pdv->pdv_channel_id = arg;
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Channel"
-=======
 			pr_debug("PSCSI[%d]: Referencing SCSI Channel"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" ID: %d\n",  phv->phv_host_id,
 				pdv->pdv_channel_id);
-#else
-			;
-#endif
 			pdv->pdv_flags |= PDF_HAS_CHANNEL_ID;
 			break;
 		case Opt_scsi_target_id:
 			match_int(args, &arg);
 			pdv->pdv_target_id = arg;
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Target"
-=======
 			pr_debug("PSCSI[%d]: Referencing SCSI Target"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" ID: %d\n", phv->phv_host_id,
 				pdv->pdv_target_id);
-#else
-			;
-#endif
 			pdv->pdv_flags |= PDF_HAS_TARGET_ID;
 			break;
 		case Opt_scsi_lun_id:
 			match_int(args, &arg);
 			pdv->pdv_lun_id = arg;
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI LUN ID:"
-=======
 			pr_debug("PSCSI[%d]: Referencing SCSI LUN ID:"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" %d\n", phv->phv_host_id, pdv->pdv_lun_id);
-#else
-			;
-#endif
 			pdv->pdv_flags |= PDF_HAS_LUN_ID;
 			break;
 		default:
@@ -987,34 +838,12 @@ static inline struct bio *pscsi_get_bio(int nr_vecs)
 	return bio;
 }
 
-<<<<<<< HEAD
-#if 0
-#ifdef CONFIG_DEBUG_PRINTK
-#define DEBUG_PSCSI(x...) printk(x)
-#else
-#define DEBUG_PSCSI(x...)
-#endif
-
-static int __pscsi_map_task_SG(
-	struct se_task *task,
-	struct scatterlist *task_sg,
-	u32 task_sg_num,
-	int bidi_read)
-{
-	struct pscsi_plugin_task *pt = PSCSI_TASK(task);
-#else
-#define DEBUG_PSCSI(x...) ;
-#endif
-	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
-	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
-=======
 static sense_reason_t
 pscsi_map_sg(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
 		enum dma_data_direction data_direction, struct bio **hbio)
 {
 	struct pscsi_dev_virt *pdv = PSCSI_DEV(cmd->se_dev);
 	struct bio *bio = NULL, *tbio = NULL;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	struct page *page;
 	struct scatterlist *sg;
 	u32 data_len = cmd->data_length, i, len, bytes, off;
@@ -1274,20 +1103,11 @@ static sector_t pscsi_get_blocks(struct se_device *dev)
 	if (pdv->pdv_bd && pdv->pdv_bd->bd_part)
 		return pdv->pdv_bd->bd_part->nr_sects;
 
-	dump_stack();
 	return 0;
 }
 
 static void pscsi_req_done(struct request *req, int uptodate)
 {
-<<<<<<< HEAD
-	task->task_scsi_status = status_byte(pt->pscsi_result);
-	if ((task->task_scsi_status)) {
-		task->task_scsi_status <<= 1;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "PSCSI Status Byte exception at task: %p CDB:"
-			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
-=======
 	struct se_cmd *cmd = req->end_io_data;
 	struct pscsi_plugin_task *pt = cmd->priv;
 
@@ -1298,11 +1118,7 @@ static void pscsi_req_done(struct request *req, int uptodate)
 	if (cmd->scsi_status) {
 		pr_debug("PSCSI Status Byte exception at cmd: %p CDB:"
 			" 0x%02x Result: 0x%08x\n", cmd, pt->pscsi_cdb[0],
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			pt->pscsi_result);
-#else
-		;
-#endif
 	}
 
 	switch (host_byte(pt->pscsi_result)) {
@@ -1310,25 +1126,10 @@ static void pscsi_req_done(struct request *req, int uptodate)
 		target_complete_cmd(cmd, cmd->scsi_status);
 		break;
 	default:
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "PSCSI Host Byte exception at task: %p CDB:"
-			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
-			pt->pscsi_result);
-#else
-		;
-#endif
-		task->task_scsi_status = SAM_STAT_CHECK_CONDITION;
-		task->task_error_status = PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
-		TASK_CMD(task)->transport_error_status =
-					PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
-		transport_complete_task(task, 0);
-=======
 		pr_debug("PSCSI Host Byte exception at cmd: %p CDB:"
 			" 0x%02x Result: 0x%08x\n", cmd, pt->pscsi_cdb[0],
 			pt->pscsi_result);
 		target_complete_cmd(cmd, SAM_STAT_CHECK_CONDITION);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		break;
 	}
 
