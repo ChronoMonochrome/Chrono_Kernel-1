@@ -261,11 +261,7 @@ unsigned long scc_mode_filter(struct ata_device *adev, unsigned long mask)
 	/* errata A308 workaround: limit ATAPI UDMA mode to UDMA4 */
 	if (adev->class == ATA_DEV_ATAPI &&
 	    (mask & (0xE0 << ATA_SHIFT_UDMA))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: limit ATAPI UDMA to UDMA4\n", DRV_NAME);
-#else
-		;
-#endif
 		mask &= ~(0xE0 << ATA_SHIFT_UDMA);
 	}
 	return mask;
@@ -590,7 +586,7 @@ static int scc_wait_after_reset(struct ata_link *link, unsigned int devmask,
  *	Note: Original code is ata_bus_softreset().
  */
 
-static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
                                       unsigned long deadline)
 {
 	struct ata_ioports *ioaddr = &ap->ioaddr;
@@ -604,9 +600,7 @@ static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
 	udelay(20);
 	out_be32(ioaddr->ctl_addr, ap->ctl);
 
-	scc_wait_after_reset(&ap->link, devmask, deadline);
-
-	return 0;
+	return scc_wait_after_reset(&ap->link, devmask, deadline);
 }
 
 /**
@@ -623,7 +617,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
 {
 	struct ata_port *ap = link->ap;
 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
-	unsigned int devmask = 0, err_mask;
+	unsigned int devmask = 0;
+	int rc;
 	u8 err;
 
 	DPRINTK("ENTER\n");
@@ -639,10 +634,9 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
 
 	/* issue bus reset */
 	DPRINTK("about to softreset, devmask=%x\n", devmask);
-	err_mask = scc_bus_softreset(ap, devmask, deadline);
-	if (err_mask) {
-		ata_port_printk(ap, KERN_ERR, "SRST failed (err_mask=0x%x)\n",
-				err_mask);
+	rc = scc_bus_softreset(ap, devmask, deadline);
+	if (rc) {
+		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
 		return -EIO;
 	}
 
@@ -673,11 +667,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		reg = in_be32(bmid_base + SCC_DMA_INTST);
 
 		if (reg & INTSTS_SERROR) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: SERROR\n", DRV_NAME);
-#else
-			;
-#endif
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_SERROR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -688,11 +678,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 			u32 maea0, maec0;
 			maea0 = in_be32(ctrl_base + SCC_CTL_MAEA0);
 			maec0 = in_be32(ctrl_base + SCC_CTL_MAEC0);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: PRERR [addr:%x cmd:%x]\n", DRV_NAME, maea0, maec0);
-#else
-			;
-#endif
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_PRERR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -700,11 +686,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		}
 
 		if (reg & INTSTS_RERR) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Response Error\n", DRV_NAME);
-#else
-			;
-#endif
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_RERR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -714,11 +696,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		if (reg & INTSTS_ICERR) {
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Illegal Configuration\n", DRV_NAME);
-#else
-			;
-#endif
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_ICERR|INTSTS_BMSINT);
 			continue;
 		}
@@ -726,11 +704,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		if (reg & INTSTS_BMSINT) {
 			unsigned int classes;
 			unsigned long deadline = ata_deadline(jiffies, ATA_TMOUT_BOOT);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Internal Bus Error\n", DRV_NAME);
-#else
-			;
-#endif
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_BMSINT);
 			/* TBD: SW reset */
 			scc_softreset(&ap->link, &classes, deadline);
@@ -792,12 +766,8 @@ static u8 scc_bmdma_status (struct ata_port *ap)
 		if ((qc->tf.protocol == ATA_PROT_DMA &&
 		     qc->dev->xfer_mode > XFER_UDMA_4)) {
 			if (!(int_status & INTSTS_ACTEINT)) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "ata%u: operation failed (transfer data loss)\n",
 				       ap->print_id);
-#else
-				;
-#endif
 				host_stat |= ATA_DMA_ERR;
 				if (retry++)
 					ap->udma_mask &= ~(1 << qc->dev->xfer_mode);
@@ -852,18 +822,6 @@ static unsigned int scc_data_xfer (struct ata_device *dev, unsigned char *buf,
 	}
 
 	return words << 1;
-}
-
-/**
- *	scc_pata_prereset - prepare for reset
- *	@ap: ATA port to be reset
- *	@deadline: deadline jiffies for the operation
- */
-
-static int scc_pata_prereset(struct ata_link *link, unsigned long deadline)
-{
-	link->ap->cbl = ATA_CBL_PATA80;
-	return ata_sff_prereset(link, deadline);
 }
 
 /**
@@ -975,7 +933,7 @@ static struct ata_port_operations scc_pata_ops = {
 	.bmdma_status		= scc_bmdma_status,
 	.sff_data_xfer		= scc_data_xfer,
 
-	.prereset		= scc_pata_prereset,
+	.cable_detect		= ata_cable_80wire,
 	.softreset		= scc_softreset,
 	.postreset		= scc_postreset,
 
@@ -1032,11 +990,7 @@ static int scc_reset_controller(struct ata_host *host)
 	out_be32(intmask_port, INTMASK_MSK);
 
 	if (in_be32(dmastatus_port) & QCHSD_STPDIAG) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: failed to detect 80c cable. (PDIAG# is high)\n", DRV_NAME);
-#else
-		;
-#endif
 		return -EIO;
 	}
 
@@ -1104,19 +1058,12 @@ static int scc_host_init(struct ata_host *host)
 
 static int scc_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-	static int printed_version;
 	unsigned int board_idx = (unsigned int) ent->driver_data;
 	const struct ata_port_info *ppi[] = { &scc_port_info[board_idx], NULL };
 	struct ata_host *host;
 	int rc;
 
-	if (!printed_version++)
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "version " DRV_VERSION "\n");
-#else
-		dev_;
-#endif
+	ata_print_version_once(&pdev->dev, DRV_VERSION);
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 1);
 	if (!host)
@@ -1155,26 +1102,7 @@ static struct pci_driver scc_pci_driver = {
 #endif
 };
 
-static int __init scc_init (void)
-{
-	int rc;
-
-	DPRINTK("pci_register_driver\n");
-	rc = pci_register_driver(&scc_pci_driver);
-	if (rc)
-		return rc;
-
-	DPRINTK("done\n");
-	return 0;
-}
-
-static void __exit scc_exit (void)
-{
-	pci_unregister_driver(&scc_pci_driver);
-}
-
-module_init(scc_init);
-module_exit(scc_exit);
+module_pci_driver(scc_pci_driver);
 
 MODULE_AUTHOR("Toshiba corp");
 MODULE_DESCRIPTION("SCSI low-level driver for Toshiba SCC PATA controller");
