@@ -19,7 +19,6 @@
 #include <linux/slab.h>
 #include <linux/usb.h>
 #include <linux/usb/audio.h>
-#include <linux/module.h>
 #include <sound/core.h>
 #include <sound/hwdep.h>
 #include <sound/pcm.h>
@@ -37,7 +36,7 @@ MODULE_LICENSE("GPL");
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-max */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* Id for this card */
 							/* Enable this card */
-static bool enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
+static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for "NAME_ALLCAPS".");
@@ -255,16 +254,18 @@ static int usb_stream_hwdep_mmap(struct snd_hwdep *hw,
 		    read ? s->read_size : s->write_size);
 	/* if userspace tries to mmap beyond end of our buffer, fail */
 	if (size > PAGE_ALIGN(read ? s->read_size : s->write_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%lu > %u\n", size,
 			   read ? s->read_size : s->write_size);
+#else
+		;
+#endif
 		err = -EINVAL;
 		goto out;
 	}
 
 	area->vm_ops = &usb_stream_hwdep_vm_ops;
-	area->vm_flags |= VM_DONTDUMP;
-	if (!read)
-		area->vm_flags |= VM_DONTEXPAND;
+	area->vm_flags |= VM_RESERVED;
 	area->vm_private_data = us122l;
 	atomic_inc(&us122l->mmap_count);
 out:
@@ -774,4 +775,16 @@ static struct usb_driver snd_us122l_usb_driver = {
 	.supports_autosuspend = 1
 };
 
-module_usb_driver(snd_us122l_usb_driver);
+
+static int __init snd_us122l_module_init(void)
+{
+	return usb_register(&snd_us122l_usb_driver);
+}
+
+static void __exit snd_us122l_module_exit(void)
+{
+	usb_deregister(&snd_us122l_usb_driver);
+}
+
+module_init(snd_us122l_module_init)
+module_exit(snd_us122l_module_exit)

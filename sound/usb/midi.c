@@ -47,7 +47,6 @@
 #include <linux/usb.h>
 #include <linux/wait.h>
 #include <linux/usb/audio.h>
-#include <linux/module.h>
 
 #include <sound/core.h>
 #include <sound/control.h>
@@ -174,8 +173,6 @@ struct snd_usb_midi_in_endpoint {
 		u8 running_status_length;
 	} ports[0x10];
 	u8 seen_f5;
-	bool in_sysex;
-	u8 last_cin;
 	u8 error_resubmit;
 	int current_port;
 };
@@ -240,10 +237,22 @@ static void snd_usbmidi_input_data(struct snd_usb_midi_in_endpoint* ep, int port
 #ifdef DUMP_PACKETS
 static void dump_urb(const char *type, const u8 *data, int length)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "%s packet: [", type);
+#else
+	;
+#endif
 	for (; length > 0; ++data, --length)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", *data);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" ]\n");
+#else
+	;
+#endif
 }
 #else
 #define dump_urb(type, data, length) /* nothing */
@@ -366,8 +375,6 @@ static void snd_usbmidi_error_timer(unsigned long data)
 		if (in && in->error_resubmit) {
 			in->error_resubmit = 0;
 			for (j = 0; j < INPUT_URBS; ++j) {
-				if (atomic_read(&in->urbs[j]->use_count))
-					continue;
 				in->urbs[j]->dev = umidi->dev;
 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
 			}
@@ -464,39 +471,6 @@ static void snd_usbmidi_maudio_broken_running_status_input(
 				port->running_status_length = 0;
 			snd_usbmidi_input_data(ep, cable, &buffer[i + 1], length);
 		}
-}
-
-/*
- * QinHeng CH345 is buggy: every second packet inside a SysEx has not CIN 4
- * but the previously seen CIN, but still with three data bytes.
- */
-static void ch345_broken_sysex_input(struct snd_usb_midi_in_endpoint *ep,
-				     uint8_t *buffer, int buffer_length)
-{
-	unsigned int i, cin, length;
-
-	for (i = 0; i + 3 < buffer_length; i += 4) {
-		if (buffer[i] == 0 && i > 0)
-			break;
-		cin = buffer[i] & 0x0f;
-		if (ep->in_sysex &&
-		    cin == ep->last_cin &&
-		    (buffer[i + 1 + (cin == 0x6)] & 0x80) == 0)
-			cin = 0x4;
-#if 0
-		if (buffer[i + 1] == 0x90) {
-			/*
-			 * Either a corrupted running status or a real note-on
-			 * message; impossible to detect reliably.
-			 */
-		}
-#endif
-		length = snd_usbmidi_cin_length[cin];
-		snd_usbmidi_input_data(ep, 0, &buffer[i + 1], length);
-		ep->in_sysex = cin == 0x4;
-		if (!ep->in_sysex)
-			ep->last_cin = cin;
-	}
 }
 
 /*
@@ -685,12 +659,6 @@ static struct usb_protocol_ops snd_usbmidi_cme_ops = {
 	.output_packet = snd_usbmidi_output_standard_packet,
 };
 
-static struct usb_protocol_ops snd_usbmidi_ch345_broken_sysex_ops = {
-	.input = ch345_broken_sysex_input,
-	.output = snd_usbmidi_standard_output,
-	.output_packet = snd_usbmidi_output_standard_packet,
-};
-
 /*
  * AKAI MPD16 protocol:
  *
@@ -859,22 +827,6 @@ static void snd_usbmidi_raw_output(struct snd_usb_midi_out_endpoint* ep,
 
 static struct usb_protocol_ops snd_usbmidi_raw_ops = {
 	.input = snd_usbmidi_raw_input,
-	.output = snd_usbmidi_raw_output,
-};
-
-/*
- * FTDI protocol: raw MIDI bytes, but input packets have two modem status bytes.
- */
-
-static void snd_usbmidi_ftdi_input(struct snd_usb_midi_in_endpoint* ep,
-				   uint8_t* buffer, int buffer_length)
-{
-	if (buffer_length > 2)
-		snd_usbmidi_input_data(ep, 0, buffer + 2, buffer_length - 2);
-}
-
-static struct usb_protocol_ops snd_usbmidi_ftdi_ops = {
-	.input = snd_usbmidi_ftdi_input,
 	.output = snd_usbmidi_raw_output,
 };
 
@@ -1367,7 +1319,6 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
 		 * Various chips declare a packet size larger than 4 bytes, but
 		 * do not actually work with larger packets:
 		 */
-	case USB_ID(0x0a67, 0x5011): /* Medeli DD305 */
 	case USB_ID(0x0a92, 0x1020): /* ESI M4U */
 	case USB_ID(0x1430, 0x474b): /* RedOctane GH MIDI INTERFACE */
 	case USB_ID(0x15ca, 0x0101): /* Textech USB Midi Cable */
@@ -1488,7 +1439,6 @@ void snd_usbmidi_disconnect(struct list_head* p)
 	}
 	del_timer_sync(&umidi->error_timer);
 }
-EXPORT_SYMBOL(snd_usbmidi_disconnect);
 
 static void snd_usbmidi_rawmidi_free(struct snd_rawmidi *rmidi)
 {
@@ -1499,9 +1449,10 @@ static void snd_usbmidi_rawmidi_free(struct snd_rawmidi *rmidi)
 static struct snd_rawmidi_substream *snd_usbmidi_find_substream(struct snd_usb_midi* umidi,
 								int stream, int number)
 {
-	struct snd_rawmidi_substream *substream;
+	struct list_head* list;
 
-	list_for_each_entry(substream, &umidi->rmidi->streams[stream].substreams, list) {
+	list_for_each(list, &umidi->rmidi->streams[stream].substreams) {
+		struct snd_rawmidi_substream *substream = list_entry(list, struct snd_rawmidi_substream, list);
 		if (substream->number == number)
 			return substream;
 	}
@@ -1761,7 +1712,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		snd_printdd(KERN_INFO "MIDIStreaming version %02x.%02x\n",
 			    ms_header->bcdMSC[1], ms_header->bcdMSC[0]);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "MIDIStreaming interface descriptor not found\n");
+#else
+		;
+#endif
 
 	epidx = 0;
 	for (i = 0; i < intfd->bNumEndpoints; ++i) {
@@ -1778,7 +1733,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		if (usb_endpoint_dir_out(ep)) {
 			if (endpoints[epidx].out_ep) {
 				if (++epidx >= MIDI_MAX_ENDPOINTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING "too many endpoints\n");
+#else
+					;
+#endif
 					break;
 				}
 			}
@@ -1798,7 +1757,11 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 		} else {
 			if (endpoints[epidx].in_ep) {
 				if (++epidx >= MIDI_MAX_ENDPOINTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING "too many endpoints\n");
+#else
+					;
+#endif
 					break;
 				}
 			}
@@ -2124,7 +2087,6 @@ void snd_usbmidi_input_stop(struct list_head* p)
 	}
 	umidi->input_running = 0;
 }
-EXPORT_SYMBOL(snd_usbmidi_input_stop);
 
 static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
 {
@@ -2154,7 +2116,6 @@ void snd_usbmidi_input_start(struct list_head* p)
 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
 	umidi->input_running = 1;
 }
-EXPORT_SYMBOL(snd_usbmidi_input_start);
 
 /*
  * Creates and registers everything needed for a MIDI streaming interface.
@@ -2247,21 +2208,6 @@ int snd_usbmidi_create(struct snd_card *card,
 		/* endpoint 1 is input-only */
 		endpoints[1].out_cables = 0;
 		break;
-	case QUIRK_MIDI_FTDI:
-		umidi->usb_protocol_ops = &snd_usbmidi_ftdi_ops;
-
-		/* set baud rate to 31250 (48 MHz / 16 / 96) */
-		err = usb_control_msg(umidi->dev, usb_sndctrlpipe(umidi->dev, 0),
-				      3, 0x40, 0x60, 0, NULL, 0, 1000);
-		if (err < 0)
-			break;
-
-		err = snd_usbmidi_detect_per_port_endpoints(umidi, endpoints);
-		break;
-	case QUIRK_MIDI_CH345:
-		umidi->usb_protocol_ops = &snd_usbmidi_ch345_broken_sysex_ops;
-		err = snd_usbmidi_detect_per_port_endpoints(umidi, endpoints);
-		break;
 	default:
 		snd_printd(KERN_ERR "invalid quirk type %d\n", quirk->type);
 		err = -ENXIO;
@@ -2299,4 +2245,8 @@ int snd_usbmidi_create(struct snd_card *card,
 	list_add_tail(&umidi->list, midi_list);
 	return 0;
 }
+
 EXPORT_SYMBOL(snd_usbmidi_create);
+EXPORT_SYMBOL(snd_usbmidi_input_stop);
+EXPORT_SYMBOL(snd_usbmidi_input_start);
+EXPORT_SYMBOL(snd_usbmidi_disconnect);

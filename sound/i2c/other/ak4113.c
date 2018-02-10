@@ -23,7 +23,6 @@
 
 #include <linux/slab.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -56,7 +55,8 @@ static inline unsigned char reg_read(struct ak4113 *ak4113, unsigned char reg)
 
 static void snd_ak4113_free(struct ak4113 *chip)
 {
-	atomic_inc(&chip->wq_processing);	/* don't schedule new work */
+	chip->init = 1;	/* don't schedule new work */
+	mb();
 	cancel_delayed_work_sync(&chip->work);
 	kfree(chip);
 }
@@ -88,7 +88,6 @@ int snd_ak4113_create(struct snd_card *card, ak4113_read_t *read,
 	chip->write = write;
 	chip->private_data = private_data;
 	INIT_DELAYED_WORK(&chip->work, ak4113_stats);
-	atomic_set(&chip->wq_processing, 0);
 
 	for (reg = 0; reg < AK4113_WRITABLE_REGS ; reg++)
 		chip->regmap[reg] = pgm[reg];
@@ -139,11 +138,13 @@ static void ak4113_init_regs(struct ak4113 *chip)
 
 void snd_ak4113_reinit(struct ak4113 *chip)
 {
-	if (atomic_inc_return(&chip->wq_processing) == 1)
-		cancel_delayed_work_sync(&chip->work);
+	chip->init = 1;
+	mb();
+	flush_delayed_work_sync(&chip->work);
 	ak4113_init_regs(chip);
 	/* bring up statistics / event queing */
-	if (atomic_dec_and_test(&chip->wq_processing))
+	chip->init = 0;
+	if (chip->kctls[0])
 		schedule_delayed_work(&chip->work, HZ / 10);
 }
 EXPORT_SYMBOL_GPL(snd_ak4113_reinit);
@@ -424,7 +425,7 @@ static struct snd_kcontrol_new snd_ak4113_iec958_controls[] = {
 },
 {
 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
-	.name =		"IEC958 Preamble Capture Default",
+	.name =		"IEC958 Preample Capture Default",
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ |
 		SNDRV_CTL_ELEM_ACCESS_VOLATILE,
 	.info =		snd_ak4113_spdif_pinfo,
@@ -613,8 +614,12 @@ __rate:
 			(runtime->rate != res)) {
 		snd_pcm_stream_lock_irqsave(ak4113->substream, _flags);
 		if (snd_pcm_running(ak4113->substream)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk(KERN_DEBUG "rate changed (%i <- %i)\n",
 			 * runtime->rate, res); */
+#else
+			/*;
+#endif
 			snd_pcm_stop(ak4113->substream,
 					SNDRV_PCM_STATE_DRAINING);
 			wake_up(&runtime->sleep);
@@ -630,9 +635,8 @@ static void ak4113_stats(struct work_struct *work)
 {
 	struct ak4113 *chip = container_of(work, struct ak4113, work.work);
 
-	if (atomic_inc_return(&chip->wq_processing) == 1)
+	if (!chip->init)
 		snd_ak4113_check_rate_and_errors(chip, chip->check_flags);
 
-	if (atomic_dec_and_test(&chip->wq_processing))
-		schedule_delayed_work(&chip->work, HZ / 10);
+	schedule_delayed_work(&chip->work, HZ / 10);
 }

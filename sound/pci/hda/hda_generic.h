@@ -219,9 +219,6 @@ struct hda_gen_spec {
 	unsigned int indep_hp_enabled:1; /* independent HP enabled */
 	unsigned int have_aamix_ctl:1;
 
-	/* preferred pin/DAC pairs; an array of paired NIDs */
-	const hda_nid_t *preferred_dacs;
-
 	/* loopback mixing mode */
 	bool aamix_mode;
 

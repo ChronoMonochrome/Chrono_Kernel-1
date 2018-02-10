@@ -24,11 +24,10 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/module.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
-#include <linux/utsname.h>
+#include <sound/version.h>
 #include <linux/proc_fs.h>
 #include <linux/mutex.h>
 #include <stdarg.h>
@@ -89,7 +88,7 @@ static int resize_info_buffer(struct snd_info_buffer *buffer,
 	char *nbuf;
 
 	nsize = PAGE_ALIGN(nsize);
-	nbuf = krealloc(buffer->buffer, nsize, GFP_KERNEL | __GFP_ZERO);
+	nbuf = krealloc(buffer->buffer, nsize, GFP_KERNEL);
 	if (! nbuf)
 		return -ENOMEM;
 
@@ -105,7 +104,7 @@ static int resize_info_buffer(struct snd_info_buffer *buffer,
  *
  * Outputs the string on the procfs buffer just like printf().
  *
- * Return: The size of output string, or a negative error code.
+ * Returns the size of output string.
  */
 int snd_iprintf(struct snd_info_buffer *buffer, const char *fmt, ...)
 {
@@ -344,7 +343,7 @@ static int snd_info_entry_open(struct inode *inode, struct file *file)
 				goto __nomem;
 			data->rbuffer = buffer;
 			buffer->len = PAGE_SIZE;
-			buffer->buffer = kzalloc(buffer->len, GFP_KERNEL);
+			buffer->buffer = kmalloc(buffer->len, GFP_KERNEL);
 			if (buffer->buffer == NULL)
 				goto __nomem;
 		}
@@ -418,9 +417,13 @@ static int snd_info_entry_release(struct inode *inode, struct file *file)
 			if (entry->c.text.write) {
 				entry->c.text.write(entry, data->wbuffer);
 				if (data->wbuffer->error) {
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_WARNING "data write error to %s (%i)\n",
 						entry->name,
 						data->wbuffer->error);
+#else
+					;
+#endif
 				}
 			}
 			kfree(data->wbuffer->buffer);
@@ -487,7 +490,7 @@ static long snd_info_entry_ioctl(struct file *file, unsigned int cmd,
 
 static int snd_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	struct inode *inode = file_inode(file);
+	struct inode *inode = file->f_path.dentry->d_inode;
 	struct snd_info_private_data *data;
 	struct snd_info_entry *entry;
 
@@ -679,30 +682,35 @@ int snd_info_card_free(struct snd_card *card)
  * snd_info_get_line - read one line from the procfs buffer
  * @buffer: the procfs buffer
  * @line: the buffer to store
- * @len: the max. buffer size
+ * @len: the max. buffer size - 1
  *
  * Reads one line from the buffer and stores the string.
  *
- * Return: Zero if successful, or 1 if error or EOF.
+ * Returns zero if successful, or 1 if error or EOF.
  */
 int snd_info_get_line(struct snd_info_buffer *buffer, char *line, int len)
 {
 	int c = -1;
 
-	if (snd_BUG_ON(!buffer || !buffer->buffer))
-		return 1;
 	if (len <= 0 || buffer->stop || buffer->error)
 		return 1;
-	while (!buffer->stop) {
+	while (--len > 0) {
+		c = buffer->buffer[buffer->curr++];
+		if (c == '\n') {
+			if (buffer->curr >= buffer->size)
+				buffer->stop = 1;
+			break;
+		}
+		*line++ = c;
+		if (buffer->curr >= buffer->size) {
+			buffer->stop = 1;
+			break;
+		}
+	}
+	while (c != '\n' && !buffer->stop) {
 		c = buffer->buffer[buffer->curr++];
 		if (buffer->curr >= buffer->size)
 			buffer->stop = 1;
-		if (c == '\n')
-			break;
-		if (len > 1) {
-			len--;
-			*line++ = c;
-		}
 	}
 	*line = '\0';
 	return 0;
@@ -719,7 +727,7 @@ EXPORT_SYMBOL(snd_info_get_line);
  * Parses the original string and copy a token to the given
  * string buffer.
  *
- * Return: The updated pointer of the original string so that
+ * Returns the updated pointer of the original string so that
  * it can be used for the next call.
  */
 const char *snd_info_get_str(char *dest, const char *src, int len)
@@ -758,7 +766,7 @@ EXPORT_SYMBOL(snd_info_get_str);
  * Usually called from other functions such as
  * snd_info_create_card_entry().
  *
- * Return: The pointer of the new instance, or %NULL on failure.
+ * Returns the pointer of the new instance, or NULL on failure.
  */
 static struct snd_info_entry *snd_info_create_entry(const char *name)
 {
@@ -787,7 +795,7 @@ static struct snd_info_entry *snd_info_create_entry(const char *name)
  *
  * Creates a new info entry and assigns it to the given module.
  *
- * Return: The pointer of the new instance, or %NULL on failure.
+ * Returns the pointer of the new instance, or NULL on failure.
  */
 struct snd_info_entry *snd_info_create_module_entry(struct module * module,
 					       const char *name,
@@ -811,7 +819,7 @@ EXPORT_SYMBOL(snd_info_create_module_entry);
  *
  * Creates a new info entry and assigns it to the given card.
  *
- * Return: The pointer of the new instance, or %NULL on failure.
+ * Returns the pointer of the new instance, or NULL on failure.
  */
 struct snd_info_entry *snd_info_create_card_entry(struct snd_card *card,
 					     const char *name,
@@ -877,7 +885,7 @@ static int snd_info_dev_register_entry(struct snd_device *device)
  * For releasing this entry, use snd_device_free() instead of
  * snd_info_free_entry(). 
  *
- * Return: Zero if successful, or a negative error code on failure.
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_card_proc_new(struct snd_card *card, const char *name,
 		      struct snd_info_entry **entryp)
@@ -933,7 +941,7 @@ EXPORT_SYMBOL(snd_info_free_entry);
  *
  * Registers the proc info entry.
  *
- * Return: Zero if successful, or a negative error code on failure.
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_info_register(struct snd_info_entry * entry)
 {
@@ -976,8 +984,9 @@ static struct snd_info_entry *snd_info_version_entry;
 static void snd_info_version_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
 {
 	snd_iprintf(buffer,
-		    "Advanced Linux Sound Architecture Driver Version k%s.\n",
-		    init_utsname()->release);
+		    "Advanced Linux Sound Architecture Driver Version "
+		    CONFIG_SND_VERSION CONFIG_SND_DATE ".\n"
+		   );
 }
 
 static int __init snd_info_version_init(void)

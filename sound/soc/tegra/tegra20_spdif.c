@@ -32,17 +32,29 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <sound/dmaengine_pcm.h>
 
 #include "tegra20_spdif.h"
 
 #define DRV_NAME "tegra20-spdif"
 
+static inline void tegra20_spdif_write(struct tegra20_spdif *spdif, u32 reg,
+					u32 val)
+{
+	regmap_write(spdif->regmap, reg, val);
+}
+
+static inline u32 tegra20_spdif_read(struct tegra20_spdif *spdif, u32 reg)
+{
+	u32 val;
+	regmap_read(spdif->regmap, reg, &val);
+	return val;
+}
+
 static int tegra20_spdif_runtime_suspend(struct device *dev)
 {
 	struct tegra20_spdif *spdif = dev_get_drvdata(dev);
 
-	clk_disable_unprepare(spdif->clk_spdif_out);
+	clk_disable(spdif->clk_spdif_out);
 
 	return 0;
 }
@@ -52,7 +64,7 @@ static int tegra20_spdif_runtime_resume(struct device *dev)
 	struct tegra20_spdif *spdif = dev_get_drvdata(dev);
 	int ret;
 
-	ret = clk_prepare_enable(spdif->clk_spdif_out);
+	ret = clk_enable(spdif->clk_spdif_out);
 	if (ret) {
 		dev_err(dev, "clk_enable failed: %d\n", ret);
 		return ret;
@@ -65,23 +77,20 @@ static int tegra20_spdif_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params,
 				struct snd_soc_dai *dai)
 {
-	struct device *dev = dai->dev;
+	struct device *dev = substream->pcm->card->dev;
 	struct tegra20_spdif *spdif = snd_soc_dai_get_drvdata(dai);
-	unsigned int mask = 0, val = 0;
 	int ret, spdifclock;
 
-	mask |= TEGRA20_SPDIF_CTRL_PACK |
-		TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
+	spdif->reg_ctrl &= ~TEGRA20_SPDIF_CTRL_PACK;
+	spdif->reg_ctrl &= ~TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-		val |= TEGRA20_SPDIF_CTRL_PACK |
-		       TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
+		spdif->reg_ctrl |= TEGRA20_SPDIF_CTRL_PACK;
+		spdif->reg_ctrl |= TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
 		break;
 	default:
 		return -EINVAL;
 	}
-
-	regmap_update_bits(spdif->regmap, TEGRA20_SPDIF_CTRL, mask, val);
 
 	switch (params_rate(params)) {
 	case 32000:
@@ -120,15 +129,14 @@ static int tegra20_spdif_hw_params(struct snd_pcm_substream *substream,
 
 static void tegra20_spdif_start_playback(struct tegra20_spdif *spdif)
 {
-	regmap_update_bits(spdif->regmap, TEGRA20_SPDIF_CTRL,
-			   TEGRA20_SPDIF_CTRL_TX_EN,
-			   TEGRA20_SPDIF_CTRL_TX_EN);
+	spdif->reg_ctrl |= TEGRA20_SPDIF_CTRL_TX_EN;
+	tegra20_spdif_write(spdif, TEGRA20_SPDIF_CTRL, spdif->reg_ctrl);
 }
 
 static void tegra20_spdif_stop_playback(struct tegra20_spdif *spdif)
 {
-	regmap_update_bits(spdif->regmap, TEGRA20_SPDIF_CTRL,
-			   TEGRA20_SPDIF_CTRL_TX_EN, 0);
+	spdif->reg_ctrl &= ~TEGRA20_SPDIF_CTRL_TX_EN;
+	tegra20_spdif_write(spdif, TEGRA20_SPDIF_CTRL, spdif->reg_ctrl);
 }
 
 static int tegra20_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
@@ -173,7 +181,6 @@ static struct snd_soc_dai_driver tegra20_spdif_dai = {
 	.name = DRV_NAME,
 	.probe = tegra20_spdif_probe,
 	.playback = {
-		.stream_name = "Playback",
 		.channels_min = 2,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |
@@ -181,10 +188,6 @@ static struct snd_soc_dai_driver tegra20_spdif_dai = {
 		.formats = SNDRV_PCM_FMTBIT_S16_LE,
 	},
 	.ops = &tegra20_spdif_dai_ops,
-};
-
-static const struct snd_soc_component_driver tegra20_spdif_component = {
-	.name		= DRV_NAME,
 };
 
 static bool tegra20_spdif_wr_rd_reg(struct device *dev, unsigned int reg)
@@ -262,7 +265,7 @@ static const struct regmap_config tegra20_spdif_regmap_config = {
 	.cache_type = REGCACHE_RBTREE,
 };
 
-static int tegra20_spdif_platform_probe(struct platform_device *pdev)
+static __devinit int tegra20_spdif_platform_probe(struct platform_device *pdev)
 {
 	struct tegra20_spdif *spdif;
 	struct resource *mem, *memregion, *dmareq;
@@ -323,9 +326,9 @@ static int tegra20_spdif_platform_probe(struct platform_device *pdev)
 	}
 
 	spdif->playback_dma_data.addr = mem->start + TEGRA20_SPDIF_DATA_OUT;
-	spdif->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-	spdif->playback_dma_data.maxburst = 4;
-	spdif->playback_dma_data.slave_id = dmareq->start;
+	spdif->playback_dma_data.wrap = 4;
+	spdif->playback_dma_data.width = 32;
+	spdif->playback_dma_data.req_sel = dmareq->start;
 
 	pm_runtime_enable(&pdev->dev);
 	if (!pm_runtime_enabled(&pdev->dev)) {
@@ -334,8 +337,7 @@ static int tegra20_spdif_platform_probe(struct platform_device *pdev)
 			goto err_pm_disable;
 	}
 
-	ret = snd_soc_register_component(&pdev->dev, &tegra20_spdif_component,
-				   &tegra20_spdif_dai, 1);
+	ret = snd_soc_register_dai(&pdev->dev, &tegra20_spdif_dai);
 	if (ret) {
 		dev_err(&pdev->dev, "Could not register DAI: %d\n", ret);
 		ret = -ENOMEM;
@@ -345,13 +347,13 @@ static int tegra20_spdif_platform_probe(struct platform_device *pdev)
 	ret = tegra_pcm_platform_register(&pdev->dev);
 	if (ret) {
 		dev_err(&pdev->dev, "Could not register PCM: %d\n", ret);
-		goto err_unregister_component;
+		goto err_unregister_dai;
 	}
 
 	return 0;
 
-err_unregister_component:
-	snd_soc_unregister_component(&pdev->dev);
+err_unregister_dai:
+	snd_soc_unregister_dai(&pdev->dev);
 err_suspend:
 	if (!pm_runtime_status_suspended(&pdev->dev))
 		tegra20_spdif_runtime_suspend(&pdev->dev);
@@ -363,7 +365,7 @@ err:
 	return ret;
 }
 
-static int tegra20_spdif_platform_remove(struct platform_device *pdev)
+static int __devexit tegra20_spdif_platform_remove(struct platform_device *pdev)
 {
 	struct tegra20_spdif *spdif = dev_get_drvdata(&pdev->dev);
 
@@ -372,14 +374,14 @@ static int tegra20_spdif_platform_remove(struct platform_device *pdev)
 		tegra20_spdif_runtime_suspend(&pdev->dev);
 
 	tegra_pcm_platform_unregister(&pdev->dev);
-	snd_soc_unregister_component(&pdev->dev);
+	snd_soc_unregister_dai(&pdev->dev);
 
 	clk_put(spdif->clk_spdif_out);
 
 	return 0;
 }
 
-static const struct dev_pm_ops tegra20_spdif_pm_ops = {
+static const struct dev_pm_ops tegra20_spdif_pm_ops __devinitconst = {
 	SET_RUNTIME_PM_OPS(tegra20_spdif_runtime_suspend,
 			   tegra20_spdif_runtime_resume, NULL)
 };
@@ -391,7 +393,7 @@ static struct platform_driver tegra20_spdif_driver = {
 		.pm = &tegra20_spdif_pm_ops,
 	},
 	.probe = tegra20_spdif_platform_probe,
-	.remove = tegra20_spdif_platform_remove,
+	.remove = __devexit_p(tegra20_spdif_platform_remove),
 };
 
 module_platform_driver(tegra20_spdif_driver);
