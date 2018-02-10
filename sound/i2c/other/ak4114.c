@@ -22,6 +22,7 @@
 
 #include <linux/slab.h>
 #include <linux/delay.h>
+#include <linux/module.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -57,24 +58,15 @@ static void reg_dump(struct ak4114 *ak4114)
 {
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "AK4114 REG DUMP:\n");
-#else
-	;
-#endif
 	for (i = 0; i < 0x20; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "reg[%02x] = %02x (%02x)\n", i, reg_read(ak4114, i), i < sizeof(ak4114->regmap) ? ak4114->regmap[i] : 0);
-#else
-		;
-#endif
 }
 #endif
 
 static void snd_ak4114_free(struct ak4114 *chip)
 {
-	chip->init = 1;	/* don't schedule new work */
-	mb();
+	atomic_inc(&chip->wq_processing);	/* don't schedule new work */
 	cancel_delayed_work_sync(&chip->work);
 	kfree(chip);
 }
@@ -107,6 +99,7 @@ int snd_ak4114_create(struct snd_card *card,
 	chip->write = write;
 	chip->private_data = private_data;
 	INIT_DELAYED_WORK(&chip->work, ak4114_stats);
+	atomic_set(&chip->wq_processing, 0);
 
 	for (reg = 0; reg < 7; reg++)
 		chip->regmap[reg] = pgm[reg];
@@ -159,13 +152,11 @@ static void ak4114_init_regs(struct ak4114 *chip)
 
 void snd_ak4114_reinit(struct ak4114 *chip)
 {
-	chip->init = 1;
-	mb();
-	flush_delayed_work_sync(&chip->work);
+	if (atomic_inc_return(&chip->wq_processing) == 1)
+		cancel_delayed_work_sync(&chip->work);
 	ak4114_init_regs(chip);
 	/* bring up statistics / event queing */
-	chip->init = 0;
-	if (chip->kctls[0])
+	if (atomic_dec_and_test(&chip->wq_processing))
 		schedule_delayed_work(&chip->work, HZ / 10);
 }
 
@@ -408,7 +399,7 @@ static struct snd_kcontrol_new snd_ak4114_iec958_controls[] = {
 },
 {
 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
-	.name =		"IEC958 Preample Capture Default",
+	.name =		"IEC958 Preamble Capture Default",
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
 	.info =		snd_ak4114_spdif_pinfo,
 	.get =		snd_ak4114_spdif_pget,
@@ -606,11 +597,7 @@ int snd_ak4114_check_rate_and_errors(struct ak4114 *ak4114, unsigned int flags)
 	if (!(flags & AK4114_CHECK_NO_RATE) && runtime && runtime->rate != res) {
 		snd_pcm_stream_lock_irqsave(ak4114->capture_substream, _flags);
 		if (snd_pcm_running(ak4114->capture_substream)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			// printk(KERN_DEBUG "rate changed (%i <- %i)\n", runtime->rate, res);
-#else
-			// ;
-#endif
 			snd_pcm_stop(ak4114->capture_substream, SNDRV_PCM_STATE_DRAINING);
 			res = 1;
 		}
@@ -623,10 +610,10 @@ static void ak4114_stats(struct work_struct *work)
 {
 	struct ak4114 *chip = container_of(work, struct ak4114, work.work);
 
-	if (!chip->init)
+	if (atomic_inc_return(&chip->wq_processing) == 1)
 		snd_ak4114_check_rate_and_errors(chip, chip->check_flags);
-
-	schedule_delayed_work(&chip->work, HZ / 10);
+	if (atomic_dec_and_test(&chip->wq_processing))
+		schedule_delayed_work(&chip->work, HZ / 10);
 }
 
 EXPORT_SYMBOL(snd_ak4114_create);
