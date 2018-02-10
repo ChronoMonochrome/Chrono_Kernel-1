@@ -114,7 +114,6 @@
 #include <linux/mount.h>
 #include <net/checksum.h>
 #include <linux/security.h>
-#include <linux/freezer.h>
 
 struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
 EXPORT_SYMBOL_GPL(unix_socket_table);
@@ -477,7 +476,7 @@ static void unix_sock_destructor(struct sock *sk)
 	WARN_ON(!sk_unhashed(sk));
 	WARN_ON(sk->sk_socket);
 	if (!sock_flag(sk, SOCK_DEAD)) {
-;
+		printk(KERN_INFO "Attempt to release alive unix socket: %p\n", sk);
 		return;
 	}
 
@@ -489,8 +488,8 @@ static void unix_sock_destructor(struct sock *sk)
 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
 	local_bh_enable();
 #ifdef UNIX_REFCNT_DEBUG
-//	printk(KERN_DEBUG "UNIX %p is destroyed, %ld are still alive.\n", sk,
-;
+	printk(KERN_DEBUG "UNIX %p is destroyed, %ld are still alive.\n", sk,
+		atomic_long_read(&unix_nr_socks));
 #endif
 }
 
@@ -1699,12 +1698,7 @@ restart_locked:
 			goto out_unlock;
 	}
 
-	/* other == sk && unix_peer(other) != sk if
-	 * - unix_peer(sk) == NULL, destination address bound to sk
-	 * - unix_peer(sk) == sk by time of get but disconnected before lock
-	 */
-	if (other != sk &&
-	    unlikely(unix_peer(other) != sk && unix_recvq_full(other))) {
+	if (unlikely(unix_peer(other) != sk && unix_recvq_full(other))) {
 		if (timeo) {
 			timeo = unix_wait_for_peer(other, timeo);
 
@@ -1940,14 +1934,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
 	if (flags&MSG_OOB)
 		goto out;
 
-	err = mutex_lock_interruptible(&u->readlock);
-	if (unlikely(err)) {
-		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-		 */
-		err = noblock ? -EAGAIN : -ERESTARTSYS;
-		goto out;
-	}
+	mutex_lock(&u->readlock);
 
 	skip = sk_peek_offset(sk, flags);
 
@@ -2045,7 +2032,7 @@ static long unix_stream_data_wait(struct sock *sk, long timeo,
 
 		set_bit(SOCK_ASYNC_WAITDATA, &sk->sk_socket->flags);
 		unix_state_unlock(sk);
-		timeo = freezable_schedule_timeout(timeo);
+		timeo = schedule_timeout(timeo);
 		unix_state_lock(sk);
 
 		if (sock_flag(sk, SOCK_DEAD))
@@ -2139,12 +2126,12 @@ again:
 
 			timeo = unix_stream_data_wait(sk, timeo, last);
 
-			if (signal_pending(current)
-			    ||  mutex_lock_interruptible(&u->readlock)) {
+			if (signal_pending(current)) {
 				err = sock_intr_errno(timeo);
 				goto out;
 			}
 
+			mutex_lock(&u->readlock);
 			continue;
  unlock:
 			unix_state_unlock(sk);
@@ -2619,8 +2606,8 @@ static int __init af_unix_init(void)
 
 	rc = proto_register(&unix_proto, 1);
 	if (rc != 0) {
-//		printk(KERN_CRIT "%s: Cannot create unix_sock SLAB cache!\n",
-;
+		printk(KERN_CRIT "%s: Cannot create unix_sock SLAB cache!\n",
+		       __func__);
 		goto out;
 	}
 
