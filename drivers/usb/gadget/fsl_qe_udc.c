@@ -1883,8 +1883,11 @@ static int qe_get_frame(struct usb_gadget *gadget)
 
 	tmp = in_be16(&udc_controller->usb_param->frame_n);
 	if (tmp & 0x8000)
-		return tmp & 0x07ff;
-	return -EINVAL;
+		tmp = tmp & 0x07ff;
+	else
+		tmp = -EINVAL;
+
+	return (int)tmp;
 }
 
 /* Tries to wake up the host connected to this gadget

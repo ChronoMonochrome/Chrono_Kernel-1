@@ -363,7 +363,6 @@ static int __devinit ci_hdrc_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	spin_lock_init(&ci->lock);
 	ci->dev = dev;
 	ci->udc_driver = dev->platform_data;
 

@@ -117,8 +117,7 @@ static void usb_parse_ss_endpoint_companion(struct device *ddev, int cfgno,
 			desc->bmAttributes > 2) {
 		dev_warn(ddev, "Isoc endpoint has Mult of %d in "
 				"config %d interface %d altsetting %d ep %d: "
-				"setting to 3\n",
-				USB_SS_MULT(desc->bmAttributes),
+				"setting to 3\n", desc->bmAttributes + 1,
 				cfgno, inum, asnum, ep->desc.bEndpointAddress);
 		ep->ss_ep_comp.bmAttributes = 2;
 	}
@@ -178,16 +177,6 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
 	/* Only store as many endpoints as we have room for */
 	if (ifp->desc.bNumEndpoints >= num_ep)
 		goto skip_to_next_endpoint_or_interface_descriptor;
-
-	/* Check for duplicate endpoint addresses */
-	for (i = 0; i < ifp->desc.bNumEndpoints; ++i) {
-		if (ifp->endpoint[i].desc.bEndpointAddress ==
-		    d->bEndpointAddress) {
-			dev_warn(ddev, "config %d interface %d altsetting %d has a duplicate endpoint with address 0x%X, skipping\n",
-			    cfgno, inum, asnum, d->bEndpointAddress);
-			goto skip_to_next_endpoint_or_interface_descriptor;
-		}
-	}
 
 	endpoint = &ifp->endpoint[ifp->desc.bNumEndpoints];
 	++ifp->desc.bNumEndpoints;
@@ -662,6 +651,10 @@ void usb_destroy_configuration(struct usb_device *dev)
  *
  * hub-only!! ... and only in reset path, or usb_new_device()
  * (used by real hubs and virtual root hubs)
+ *
+ * NOTE: if this is a WUSB device and is not authorized, we skip the
+ *       whole thing. A non-authorized USB device has no
+ *       configurations.
  */
 int usb_get_configuration(struct usb_device *dev)
 {
@@ -673,6 +666,8 @@ int usb_get_configuration(struct usb_device *dev)
 	struct usb_config_descriptor *desc;
 
 	cfgno = 0;
+	if (dev->authorized == 0)	/* Not really an error */
+		goto out_not_authorized;
 	result = -ENOMEM;
 	if (ncfg > USB_MAXCONFIG) {
 		dev_warn(ddev, "too many configurations: %d, "
@@ -727,10 +722,6 @@ int usb_get_configuration(struct usb_device *dev)
 			result = -ENOMEM;
 			goto err;
 		}
-
-		if (dev->quirks & USB_QUIRK_DELAY_INIT)
-			msleep(100);
-
 		result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno,
 		    bigbuffer, length);
 		if (result < 0) {
@@ -758,6 +749,7 @@ int usb_get_configuration(struct usb_device *dev)
 
 err:
 	kfree(desc);
+out_not_authorized:
 	dev->descriptor.bNumConfigurations = cfgno;
 err2:
 	if (result == -ENOMEM)

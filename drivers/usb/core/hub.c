@@ -875,8 +875,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 			/* Tell khubd to disconnect the device or
 			 * check for a new connection
 			 */
-			if (udev || (portstatus & USB_PORT_STAT_CONNECTION) ||
-			    (portstatus & USB_PORT_STAT_OVERCURRENT))
+			if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
 				set_bit(port1, hub->change_bits);
 
 		} else if (portstatus & USB_PORT_STAT_ENABLE) {
@@ -1565,10 +1564,8 @@ void usb_set_device_state(struct usb_device *udev,
 					|| new_state == USB_STATE_SUSPENDED)
 				;	/* No change to wakeup settings */
 			else if (new_state == USB_STATE_CONFIGURED)
-				wakeup = (udev->quirks &
-					USB_QUIRK_IGNORE_REMOTE_WAKEUP) ? 0 :
-					udev->actconfig->desc.bmAttributes &
-					USB_CONFIG_ATT_WAKEUP;
+				wakeup = udev->actconfig->desc.bmAttributes
+					 & USB_CONFIG_ATT_WAKEUP;
 			else
 				wakeup = 0;
 		}
@@ -2711,10 +2708,10 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 		dev_dbg(hub->intfdev, "can't resume port %d, status %d\n",
 				port1, status);
 	} else {
-		/* drive resume for USB_RESUME_TIMEOUT msec */
+		/* drive resume for at least 20 msec */
 		dev_dbg(&udev->dev, "usb %sresume\n",
 				(PMSG_IS_AUTO(msg) ? "auto-" : ""));
-		msleep(USB_RESUME_TIMEOUT);
+		msleep(25);
 
 		/* Virtual root hubs can trigger on GET_PORT_STATUS to
 		 * stop resume signaling.  Then finish the resume
@@ -3132,13 +3129,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 						r = -EPROTO;
 					break;
 				}
-				/*
-				 * Some devices time out if they are powered on
-				 * when already connected. They need a second
-				 * reset. But only on the first attempt,
-				 * lest we get into a time out/reset loop
-				 */
-				if (r == 0  || (r == -ETIMEDOUT && j == 0))
+				if (r == 0)
 					break;
 			}
 			udev->descriptor.bMaxPacketSize0 =
@@ -3721,10 +3712,9 @@ static void hub_events(void)
 
 		hub = list_entry(tmp, struct usb_hub, event_list);
 		kref_get(&hub->kref);
-		hdev = hub->hdev;
-		usb_get_dev(hdev);
 		spin_unlock_irq(&hub_event_lock);
 
+		hdev = hub->hdev;
 		hub_dev = hub->intfdev;
 		intf = to_usb_interface(hub_dev);
 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
@@ -3944,7 +3934,6 @@ static void hub_events(void)
 		usb_autopm_put_interface(intf);
  loop_disconnected:
 		usb_unlock_device(hdev);
-		usb_put_dev(hdev);
 		kref_put(&hub->kref, hub_release);
 
         } /* end while (1) */
@@ -4327,11 +4316,10 @@ int usb_reset_device(struct usb_device *udev)
 				else if (cintf->condition ==
 						USB_INTERFACE_BOUND)
 					rebind = 1;
-				if (rebind)
-					cintf->needs_binding = 1;
 			}
+			if (ret == 0 && rebind)
+				usb_rebind_intf(cintf);
 		}
-		usb_unbind_and_rebind_marked_interfaces(udev);
 	}
 
 	usb_autosuspend_device(udev);

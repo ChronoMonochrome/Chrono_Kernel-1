@@ -794,12 +794,11 @@ static void acm_tty_set_termios(struct tty_struct *tty,
 	/* FIXME: Needs to clear unsupported bits in the termios */
 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
 
-	if (C_BAUD(tty) == B0) {
+	if (!newline.dwDTERate) {
 		newline.dwDTERate = acm->line.dwDTERate;
 		newctrl &= ~ACM_CTRL_DTR;
-	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
+	} else
 		newctrl |=  ACM_CTRL_DTR;
-	}
 
 	if (newctrl != acm->ctrlout)
 		acm_set_control(acm, acm->ctrlout = newctrl);
@@ -1110,6 +1109,7 @@ made_compressed_probe:
 	spin_lock_init(&acm->write_lock);
 	spin_lock_init(&acm->read_lock);
 	mutex_init(&acm->mutex);
+	acm->rx_endpoint = usb_rcvbulkpipe(usb_dev, epread->bEndpointAddress);
 	acm->is_int_ep = usb_endpoint_xfer_int(epread);
 	if (acm->is_int_ep)
 		acm->bInterval = epread->bInterval;
@@ -1157,14 +1157,14 @@ made_compressed_probe:
 		urb->transfer_dma = rb->dma;
 		if (acm->is_int_ep) {
 			usb_fill_int_urb(urb, acm->dev,
-					 usb_rcvintpipe(usb_dev, epread->bEndpointAddress),
+					 acm->rx_endpoint,
 					 rb->base,
 					 acm->readsize,
 					 acm_read_bulk_callback, rb,
 					 acm->bInterval);
 		} else {
 			usb_fill_bulk_urb(urb, acm->dev,
-					  usb_rcvbulkpipe(usb_dev, epread->bEndpointAddress),
+					  acm->rx_endpoint,
 					  rb->base,
 					  acm->readsize,
 					  acm_read_bulk_callback, rb);
@@ -1451,8 +1451,6 @@ static int acm_reset_resume(struct usb_interface *intf)
 
 static const struct usb_device_id acm_ids[] = {
 	/* quirky and broken devices */
-	{ USB_DEVICE(0x17ef, 0x7000), /* Lenovo USB modem */
-	.driver_info = NO_UNION_NORMAL, },/* has no union descriptor */
 	{ USB_DEVICE(0x0870, 0x0001), /* Metricom GS Modem */
 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
 	},
@@ -1492,32 +1490,17 @@ static const struct usb_device_id acm_ids[] = {
 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
 	},
-	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
 	},
 	/* Motorola H24 HSPA module: */
 	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
-	{ USB_DEVICE(0x22b8, 0x2d92),   /* modem           + diagnostics        */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d93),   /* modem + AT port                      */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d95),   /* modem + AT port + diagnostics        */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d96),   /* modem                         + NMEA */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d97),   /* modem           + diagnostics + NMEA */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d99),   /* modem + AT port               + NMEA */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
-	{ USB_DEVICE(0x22b8, 0x2d9a),   /* modem + AT port + diagnostics + NMEA */
-	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-	},
+	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
+	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
+	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
+	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
+	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
+	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
+	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
 
 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on

@@ -160,11 +160,6 @@ static int xhci_pci_setup(struct usb_hcd *hcd)
 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
 	}
-	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
-			pdev->device == 0x0015 &&
-			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
-			pdev->subsystem_device == 0xc0cd)
-		xhci->quirks |= XHCI_RESET_ON_RESUME;
 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 
@@ -265,7 +260,6 @@ static void xhci_pci_remove(struct pci_dev *dev)
 	struct xhci_hcd *xhci;
 
 	xhci = hcd_to_xhci(pci_get_drvdata(dev));
-	xhci->xhc_state |= XHCI_STATE_REMOVING;
 	if (xhci->shared_hcd) {
 		usb_remove_hcd(xhci->shared_hcd);
 		usb_put_hcd(xhci->shared_hcd);
@@ -394,7 +388,7 @@ static struct pci_driver xhci_pci_driver = {
 	/* suspend and resume implemented later */
 
 	.shutdown = 	usb_hcd_pci_shutdown,
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_SLEEP
 	.driver = {
 		.pm = &usb_hcd_pci_pm_ops
 	},
