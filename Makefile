@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 10
-SUBLEVEL = 5
+SUBLEVEL = 6
 EXTRAVERSION =
-NAME = Unicycling Gorilla
+NAME = TOSSUG Baby Fish
 
 CROSS_COMPILE ?= /media/f/root/kernel/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 #CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
