@@ -3065,6 +3065,10 @@ return -EPERM;
 		ret = PTR_ERR(new_root);
 		goto out;
 	}
+	if (!is_fstree(new_root->objectid)) {
+		ret = -ENOENT;
+		goto out;
+	}
 
 	if (btrfs_root_refs(&new_root->root_item) == 0) {
 		ret = -ENOENT;
