@@ -1500,8 +1500,6 @@ void ip_send_unicast_reply(struct sock *sk, struct sk_buff *skb, __be32 daddr,
 	struct rtable *rt = skb_rtable(skb);
 	struct net *net = sock_net(sk);
 	struct sk_buff *nskb;
-	struct sock *sk;
-	struct inet_sock *inet;
 	int err;
 
 	if (ip_options_echo(&replyopts.opt.opt, skb))
@@ -1553,8 +1551,6 @@ void ip_send_unicast_reply(struct sock *sk, struct sk_buff *skb, __be32 daddr,
 		ip_push_pending_frames(sk, &fl4);
 	}
 out:
-	put_cpu_var(unicast_sock);
-
 	ip_rt_put(rt);
 }
 
