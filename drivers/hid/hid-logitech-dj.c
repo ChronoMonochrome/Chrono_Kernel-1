@@ -620,7 +620,7 @@ static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
 
 	struct hid_field *field;
 	struct hid_report *report;
-	unsigned char data[8];
+	unsigned char *data;
 	int offset;
 
 	dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
@@ -636,6 +636,13 @@ static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
 		return -1;
 	}
 	hid_set_field(field, offset, value);
+
+	data = hid_alloc_report_buf(field->report, GFP_KERNEL);
+	if (!data) {
+		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
+		return -1;
+	}
+
 	hid_output_report(field->report, &data[0]);
 
 	output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
@@ -646,8 +653,9 @@ static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
 
 	usbhid_submit_report(dj_rcv_hiddev, report, USB_DIR_OUT);
 
-	return 0;
+	kfree(data);
 
+	return 0;
 }
 
 static int logi_dj_ll_start(struct hid_device *hid)
