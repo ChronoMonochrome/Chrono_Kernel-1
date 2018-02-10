@@ -903,12 +903,6 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
 	case TPS65910:
 		pmic->get_ctrl_reg = &tps65910_get_ctrl_register;
 		info = tps65910_regs;
-		/* Work around silicon erratum SWCZ010: output programmed
-		 * voltage level can go higher than expected or crash
-		 * Workaround: use no synchronization of DCDC clocks
-		 */
-		tps65910_reg_clear_bits(pmic->mfd, TPS65910_DCDCCTRL,
-					DCDCCTRL_DCDCCKSYNC_MASK);
 		break;
 	case TPS65911:
 		pmic->get_ctrl_reg = &tps65911_get_ctrl_register;
