@@ -58,6 +58,7 @@ void machine_crash_nonpanic_core(void *unused)
 	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
 
+	set_cpu_online(smp_processor_id(), false);
 	atomic_dec(&waiting_for_crash_ipi);
 	while (1)
 		cpu_relax();
