@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * inode.c
  *
@@ -1217,15 +1214,7 @@ int udf_setsize(struct inode *inode, loff_t newsize)
 	      S_ISLNK(inode->i_mode)))
 		return -EINVAL;
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	iinfo = UDF_I(inode);
 	if (newsize > inode->i_size) {
@@ -1506,19 +1495,15 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
 		iinfo->i_checkpoint = le32_to_cpu(efe->checkpoint);
 	}
 
-	/* Sanity checks for files in ICB so that we don't get confused later */
-	if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
-		/*
-		 * For file in ICB data is stored in allocation descriptor
-		 * so sizes should match
-		 */
-		if (iinfo->i_lenAlloc != inode->i_size)
-			return;
-		/* File in ICB has to fit in there... */
-		if (inode->i_size > inode->i_sb->s_blocksize -
-					udf_file_entry_alloc_offset(inode))
-			return;
-	}
+	/*
+	 * Sanity check length of allocation descriptors and extended attrs to
+	 * avoid integer overflows
+	 */
+	if (iinfo->i_lenEAttr > inode->i_sb->s_blocksize || iinfo->i_lenAlloc > inode->i_sb->s_blocksize)
+		return;
+	/* Now do exact checks */
+	if (udf_file_entry_alloc_offset(inode) + iinfo->i_lenAlloc > inode->i_sb->s_blocksize)
+		return;
 
 	switch (fe->icbTag.fileType) {
 	case ICBTAG_FILE_TYPE_DIRECTORY:
