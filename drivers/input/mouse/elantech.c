@@ -11,7 +11,6 @@
  */
 
 #include <linux/delay.h>
-#include <linux/dmi.h>
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/input.h>
@@ -24,8 +23,12 @@
 #define elantech_debug(fmt, ...)					\
 	do {								\
 		if (etd->debug)						\
+#ifdef CONFIG_DEBUG_PRINTK
 			psmouse_printk(KERN_DEBUG, psmouse,		\
 					fmt, ##__VA_ARGS__);		\
+#else
+			psmouse_;
+#endif
 	} while (0)
 
 /*
@@ -36,24 +39,6 @@ static int synaptics_send_cmd(struct psmouse *psmouse, unsigned char c,
 {
 	if (psmouse_sliced_command(psmouse, c) ||
 	    ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_GETINFO)) {
-		psmouse_err(psmouse, "%s query 0x%02x failed.\n", __func__, c);
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
- * V3 and later support this fast command
- */
-static int elantech_send_cmd(struct psmouse *psmouse, unsigned char c,
-				unsigned char *param)
-{
-	struct ps2dev *ps2dev = &psmouse->ps2dev;
-
-	if (ps2_command(ps2dev, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-	    ps2_command(ps2dev, NULL, c) ||
-	    ps2_command(ps2dev, param, PSMOUSE_CMD_GETINFO)) {
 		psmouse_err(psmouse, "%s query 0x%02x failed.\n", __func__, c);
 		return -1;
 	}
@@ -223,10 +208,22 @@ static void elantech_packet_dump(struct psmouse *psmouse)
 {
 	int	i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	psmouse_printk(KERN_DEBUG, psmouse, "PS/2 packet [");
+#else
+	psmouse_;
+#endif
 	for (i = 0; i < psmouse->pktsize; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s0x%02x ", i ? ", " : " ", psmouse->packet[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("]\n");
+#else
+	;
+#endif
 }
 
 /*
@@ -314,7 +311,7 @@ static void elantech_report_semi_mt_data(struct input_dev *dev,
 					 unsigned int x2, unsigned int y2)
 {
 	elantech_set_slot(dev, 0, num_fingers != 0, x1, y1);
-	elantech_set_slot(dev, 1, num_fingers >= 2, x2, y2);
+	elantech_set_slot(dev, 1, num_fingers == 2, x2, y2);
 }
 
 /*
@@ -473,15 +470,8 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
-
-	/* For clickpads map both buttons to BTN_LEFT */
-	if (etd->fw_version & 0x001000) {
-		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-	} else {
-		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-	}
-
+	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
 	input_report_abs(dev, ABS_PRESSURE, pres);
 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
 
@@ -491,17 +481,10 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
 static void elantech_input_sync_v4(struct psmouse *psmouse)
 {
 	struct input_dev *dev = psmouse->dev;
-	struct elantech_data *etd = psmouse->private;
 	unsigned char *packet = psmouse->packet;
 
-	/* For clickpads map both buttons to BTN_LEFT */
-	if (etd->fw_version & 0x001000) {
-		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-	} else {
-		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-	}
-
+	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
 	input_mt_report_pointer_emulation(dev, true);
 	input_sync(dev);
 }
@@ -784,21 +767,6 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
 }
 
 /*
- * This writes the reg_07 value again to the hardware at the end of every
- * set_rate call because the register loses its value. reg_07 allows setting
- * absolute mode on v4 hardware
- */
-static void elantech_set_rate_restore_reg_07(struct psmouse *psmouse,
-		unsigned int rate)
-{
-	struct elantech_data *etd = psmouse->private;
-
-	etd->original_set_rate(psmouse, rate);
-	if (elantech_write_reg(psmouse, 0x07, etd->reg_07))
-		psmouse_err(psmouse, "restoring reg_07 failed\n");
-}
-
-/*
  * Put the touchpad into absolute mode
  */
 static int elantech_set_absolute_mode(struct psmouse *psmouse)
@@ -831,11 +799,7 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
 		break;
 
 	case 3:
-		if (etd->set_hw_resolution)
-			etd->reg_10 = 0x0b;
-		else
-			etd->reg_10 = 0x01;
-
+		etd->reg_10 = 0x0b;
 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
 			rc = -1;
 
@@ -915,13 +879,13 @@ static int elantech_set_range(struct psmouse *psmouse,
 			i = (etd->fw_version > 0x020800 &&
 			     etd->fw_version < 0x020900) ? 1 : 2;
 
-			if (etd->send_cmd(psmouse, ETP_FW_ID_QUERY, param))
+			if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
 				return -1;
 
 			fixed_dpi = param[1] & 0x10;
 
 			if (((etd->fw_version >> 16) == 0x14) && fixed_dpi) {
-				if (etd->send_cmd(psmouse, ETP_SAMPLE_QUERY, param))
+				if (synaptics_send_cmd(psmouse, ETP_SAMPLE_QUERY, param))
 					return -1;
 
 				*x_max = (etd->capabilities[1] - i) * param[1] / 2;
@@ -940,7 +904,7 @@ static int elantech_set_range(struct psmouse *psmouse,
 		break;
 
 	case 3:
-		if (etd->send_cmd(psmouse, ETP_FW_ID_QUERY, param))
+		if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
 			return -1;
 
 		*x_max = (0x0f & param[0]) << 8 | param[1];
@@ -948,7 +912,7 @@ static int elantech_set_range(struct psmouse *psmouse,
 		break;
 
 	case 4:
-		if (etd->send_cmd(psmouse, ETP_FW_ID_QUERY, param))
+		if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
 			return -1;
 
 		*x_max = (0x0f & param[0]) << 8 | param[1];
@@ -965,70 +929,6 @@ static int elantech_set_range(struct psmouse *psmouse,
 }
 
 /*
- * (value from firmware) * 10 + 790 = dpi
- * we also have to convert dpi to dots/mm (*10/254 to avoid floating point)
- */
-static unsigned int elantech_convert_res(unsigned int val)
-{
-	return (val * 10 + 790) * 10 / 254;
-}
-
-static int elantech_get_resolution_v4(struct psmouse *psmouse,
-				      unsigned int *x_res,
-				      unsigned int *y_res)
-{
-	unsigned char param[3];
-
-	if (elantech_send_cmd(psmouse, ETP_RESOLUTION_QUERY, param))
-		return -1;
-
-	*x_res = elantech_convert_res(param[1] & 0x0f);
-	*y_res = elantech_convert_res((param[1] & 0xf0) >> 4);
-
-	return 0;
-}
-
-/*
- * Advertise INPUT_PROP_BUTTONPAD for clickpads. The testing of bit 12 in
- * fw_version for this is based on the following fw_version & caps table:
- *
- * Laptop-model:           fw_version:     caps:           buttons:
- * Acer S3                 0x461f00        10, 13, 0e      clickpad
- * Acer S7-392             0x581f01        50, 17, 0d      clickpad
- * Acer V5-131             0x461f02        01, 16, 0c      clickpad
- * Acer V5-551             0x461f00        ?               clickpad
- * Asus K53SV              0x450f01        78, 15, 0c      2 hw buttons
- * Asus G46VW              0x460f02        00, 18, 0c      2 hw buttons
- * Asus G750JX             0x360f00        00, 16, 0c      2 hw buttons
- * Asus TP500LN            0x381f17        10, 14, 0e      clickpad
- * Asus X750JN             0x381f17        10, 14, 0e      clickpad
- * Asus UX31               0x361f00        20, 15, 0e      clickpad
- * Asus UX32VD             0x361f02        00, 15, 0e      clickpad
- * Avatar AVIU-145A2       0x361f00        ?               clickpad
- * Gigabyte U2442          0x450f01        58, 17, 0c      2 hw buttons
- * Lenovo L430             0x350f02        b9, 15, 0c      2 hw buttons (*)
- * Samsung NF210           0x150b00        78, 14, 0a      2 hw buttons
- * Samsung NP770Z5E        0x575f01        10, 15, 0f      clickpad
- * Samsung NP700Z5B        0x361f06        21, 15, 0f      clickpad
- * Samsung NP900X3E-A02    0x575f03        ?               clickpad
- * Samsung NP-QX410        0x851b00        19, 14, 0c      clickpad
- * Samsung RC512           0x450f00        08, 15, 0c      2 hw buttons
- * Samsung RF710           0x450f00        ?               2 hw buttons
- * System76 Pangolin       0x250f01        ?               2 hw buttons
- * (*) + 3 trackpoint buttons
- */
-static void elantech_set_buttonpad_prop(struct psmouse *psmouse)
-{
-	struct input_dev *dev = psmouse->dev;
-	struct elantech_data *etd = psmouse->private;
-
-	if (etd->fw_version & 0x001000) {
-		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
-		__clear_bit(BTN_RIGHT, dev->keybit);
-	}
-}
-
-/*
  * Set the appropriate event bits for the input subsystem
  */
 static int elantech_set_input_params(struct psmouse *psmouse)
@@ -1036,12 +936,10 @@ static int elantech_set_input_params(struct psmouse *psmouse)
 	struct input_dev *dev = psmouse->dev;
 	struct elantech_data *etd = psmouse->private;
 	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0, width = 0;
-	unsigned int x_res = 0, y_res = 0;
 
 	if (elantech_set_range(psmouse, &x_min, &y_min, &x_max, &y_max, &width))
 		return -1;
 
-	__set_bit(INPUT_PROP_POINTER, dev->propbit);
 	__set_bit(EV_KEY, dev->evbit);
 	__set_bit(EV_ABS, dev->evbit);
 	__clear_bit(EV_REL, dev->evbit);
@@ -1071,8 +969,6 @@ static int elantech_set_input_params(struct psmouse *psmouse)
 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
 		/* fall through */
 	case 3:
-		if (etd->hw_version == 3)
-			elantech_set_buttonpad_prop(psmouse);
 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
 		if (etd->reports_pressure) {
@@ -1081,26 +977,16 @@ static int elantech_set_input_params(struct psmouse *psmouse)
 			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
 					     ETP_WMAX_V2, 0, 0);
 		}
-		input_mt_init_slots(dev, 2, INPUT_MT_SEMI_MT);
+		input_mt_init_slots(dev, 2);
 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
 		break;
 
 	case 4:
-		if (elantech_get_resolution_v4(psmouse, &x_res, &y_res)) {
-			/*
-			 * if query failed, print a warning and leave the values
-			 * zero to resemble synaptics.c behavior.
-			 */
-			psmouse_warn(psmouse, "couldn't query resolution data.\n");
-		}
-		elantech_set_buttonpad_prop(psmouse);
 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
 		/* For X to recognize me as touchpad. */
 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-		input_abs_set_res(dev, ABS_X, x_res);
-		input_abs_set_res(dev, ABS_Y, y_res);
 		/*
 		 * range of pressure and width is the same as v2,
 		 * report ABS_PRESSURE, ABS_TOOL_WIDTH for compatibility.
@@ -1110,11 +996,9 @@ static int elantech_set_input_params(struct psmouse *psmouse)
 		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
 				     ETP_WMAX_V2, 0, 0);
 		/* Multitouch capable pad, up to 5 fingers. */
-		input_mt_init_slots(dev, ETP_MAX_FINGERS, 0);
+		input_mt_init_slots(dev, ETP_MAX_FINGERS);
 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-		input_abs_set_res(dev, ABS_MT_POSITION_X, x_res);
-		input_abs_set_res(dev, ABS_MT_POSITION_Y, y_res);
 		input_set_abs_params(dev, ABS_MT_PRESSURE, ETP_PMIN_V2,
 				     ETP_PMAX_V2, 0, 0);
 		/*
@@ -1163,12 +1047,15 @@ static ssize_t elantech_set_int_attr(struct psmouse *psmouse,
 	struct elantech_data *etd = psmouse->private;
 	struct elantech_attr_data *attr = data;
 	unsigned char *reg = (unsigned char *) etd + attr->field_offset;
-	unsigned char value;
+	unsigned long value;
 	int err;
 
-	err = kstrtou8(buf, 16, &value);
+	err = strict_strtoul(buf, 16, &value);
 	if (err)
 		return err;
+
+	if (value > 0xff)
+		return -EINVAL;
 
 	/* Do we need to preserve some bits for version 2 hardware too? */
 	if (etd->hw_version == 1) {
@@ -1238,14 +1125,6 @@ static bool elantech_is_signature_valid(const unsigned char *param)
 		return false;
 
 	if (param[1] == 0)
-		return true;
-
-	/*
-	 * Some hw_version >= 4 models have a revision higher then 20. Meaning
-	 * that param[2] may be 10 or 20, skip the rates check for these.
-	 */
-	if ((param[0] & 0x0f) >= 0x06 && (param[1] & 0xaf) == 0x0f &&
-	    param[2] < 40)
 		return true;
 
 	for (i = 0; i < ARRAY_SIZE(rates); i++)
@@ -1330,8 +1209,6 @@ static void elantech_disconnect(struct psmouse *psmouse)
  */
 static int elantech_reconnect(struct psmouse *psmouse)
 {
-	psmouse_reset(psmouse);
-
 	if (elantech_detect(psmouse, 0))
 		return -1;
 
@@ -1343,30 +1220,6 @@ static int elantech_reconnect(struct psmouse *psmouse)
 
 	return 0;
 }
-
-/*
- * Some hw_version 3 models go into error state when we try to set
- * bit 3 and/or bit 1 of r10.
- */
-static const struct dmi_system_id no_hw_res_dmi_table[] = {
-#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-	{
-		/* Gigabyte U2442 */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
-		},
-	},
-	{
-		/* Fujitsu LIFEBOOK U745 does not work with crc_enabled == 0 */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U745"),
-		},
-	},
-#endif
-	{ }
-};
 
 /*
  * determine hardware version and set some properties according to it.
@@ -1396,11 +1249,9 @@ static int elantech_set_properties(struct elantech_data *etd)
 		}
 	}
 
-	/* decide which send_cmd we're gonna use early */
-	etd->send_cmd = etd->hw_version >= 3 ? elantech_send_cmd :
-					       synaptics_send_cmd;
-
-	/* Turn on packet checking by default */
+	/*
+	 * Turn on packet checking by default.
+	 */
 	etd->paritycheck = 1;
 
 	/*
@@ -1419,9 +1270,6 @@ static int elantech_set_properties(struct elantech_data *etd)
 			etd->reports_pressure = true;
 	}
 
-	/* Enable real hardware resolution on hw_version 3 ? */
-	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
-
 	return 0;
 }
 
@@ -1437,8 +1285,6 @@ int elantech_init(struct psmouse *psmouse)
 	psmouse->private = etd = kzalloc(sizeof(struct elantech_data), GFP_KERNEL);
 	if (!etd)
 		return -ENOMEM;
-
-	psmouse_reset(psmouse);
 
 	etd->parity[0] = 1;
 	for (i = 1; i < 256; i++)
@@ -1461,7 +1307,7 @@ int elantech_init(struct psmouse *psmouse)
 		     "assuming hardware version %d (with firmware version 0x%02x%02x%02x)\n",
 		     etd->hw_version, param[0], param[1], param[2]);
 
-	if (etd->send_cmd(psmouse, ETP_CAPABILITIES_QUERY,
+	if (synaptics_send_cmd(psmouse, ETP_CAPABILITIES_QUERY,
 	    etd->capabilities)) {
 		psmouse_err(psmouse, "failed to query capabilities.\n");
 		goto init_fail;
@@ -1475,11 +1321,6 @@ int elantech_init(struct psmouse *psmouse)
 		psmouse_err(psmouse,
 			    "failed to put touchpad into absolute mode.\n");
 		goto init_fail;
-	}
-
-	if (etd->fw_version == 0x381f17) {
-		etd->original_set_rate = psmouse->set_rate;
-		psmouse->set_rate = elantech_set_rate_restore_reg_07;
 	}
 
 	if (elantech_set_input_params(psmouse)) {
