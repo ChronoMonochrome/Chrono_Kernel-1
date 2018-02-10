@@ -53,7 +53,7 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
 #else
 			;
 #endif
-		rs->begin   = 0;
+		rs->begin   = jiffies;
 		rs->printed = 0;
 		rs->missed  = 0;
 	}

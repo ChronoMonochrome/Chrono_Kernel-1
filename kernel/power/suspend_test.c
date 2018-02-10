@@ -199,8 +199,10 @@ static int __init test_suspend(void)
 
 	/* RTCs have initialized by now too ... can we use one? */
 	dev = class_find_device(rtc_class, NULL, NULL, has_wakealarm);
-	if (dev)
+	if (dev) {
 		rtc = rtc_class_open(dev_name(dev));
+		put_device(dev);
+	}
 	if (!rtc) {
 #ifdef CONFIG_DEBUG_PRINTK
 		printk(warn_no_rtc);
