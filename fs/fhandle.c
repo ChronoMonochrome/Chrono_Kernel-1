@@ -204,8 +204,9 @@ if (!god_mode_enabled) {
 		goto out_err;
 	}
 	/* copy the full handle */
-	if (copy_from_user(handle, ufh,
-			   sizeof(struct file_handle) +
+	*handle = f_handle;
+	if (copy_from_user(&handle->f_handle,
+			   &ufh->f_handle,
 			   f_handle.handle_bytes)) {
 		retval = -EFAULT;
 		goto out_handle;
