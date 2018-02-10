@@ -1,35 +1,27 @@
 /*
- *  arch/arm/include/asm/tlb.h
+ * Based on arch/arm/include/asm/tlb.h
  *
- *  Copyright (C) 2002 Russell King
+ * Copyright (C) 2002 Russell King
+ * Copyright (C) 2012 ARM Ltd.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
- *  Experimentation shows that on a StrongARM, it appears to be faster
- *  to use the "invalidate whole tlb" rather than "invalidate single
- *  tlb" for this.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  This appears true for both the process fork+exit case, as well as
- *  the munmap-large-area case.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __ASMARM_TLB_H
-#define __ASMARM_TLB_H
-
-#include <asm/cacheflush.h>
-
-#ifndef CONFIG_MMU
+#ifndef __ASM_TLB_H
+#define __ASM_TLB_H
 
 #include <linux/pagemap.h>
-
-#define tlb_flush(tlb)	((void) tlb)
-
-#include <asm-generic/tlb.h>
-
-#else /* !CONFIG_MMU */
-
 #include <linux/swap.h>
+
 #include <asm/pgalloc.h>
 #include <asm/tlbflush.h>
 
@@ -51,8 +43,6 @@ struct mmu_gather {
 	struct page		**pages;
 	struct page		*local[MMU_GATHER_BUNDLE];
 };
-
-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 
 /*
  * This is unnecessarily complex.  There's three ways the TLB shootdown
@@ -151,7 +141,6 @@ static inline void
 tlb_start_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
 {
 	if (!tlb->fullmm) {
-		flush_cache_range(vma, vma->vm_start, vma->vm_end);
 		tlb->vma = vma;
 		tlb->range_start = TASK_SIZE;
 		tlb->range_end = 0;
@@ -182,30 +171,18 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
 	unsigned long addr)
 {
 	pgtable_page_dtor(pte);
-
-#ifdef CONFIG_ARM_LPAE
 	tlb_add_flush(tlb, addr);
-#else
-	/*
-	 * With the classic ARM MMU, a pte page has two corresponding pmd
-	 * entries, each covering 1MB.
-	 */
-	addr &= PMD_MASK;
-	tlb_add_flush(tlb, addr + SZ_1M - PAGE_SIZE);
-	tlb_add_flush(tlb, addr + SZ_1M);
-#endif
-
 	tlb_remove_page(tlb, pte);
 }
 
+#ifndef CONFIG_ARM64_64K_PAGES
 static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
 				  unsigned long addr)
 {
-#ifdef CONFIG_ARM_LPAE
 	tlb_add_flush(tlb, addr);
 	tlb_remove_page(tlb, virt_to_page(pmdp));
-#endif
 }
+#endif
 
 #define pte_free_tlb(tlb, ptep, addr)	__pte_free_tlb(tlb, ptep, addr)
 #define pmd_free_tlb(tlb, pmdp, addr)	__pmd_free_tlb(tlb, pmdp, addr)
@@ -213,5 +190,4 @@ static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
 
 #define tlb_migrate_finish(mm)		do { } while (0)
 
-#endif /* CONFIG_MMU */
 #endif
