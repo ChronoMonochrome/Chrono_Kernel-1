@@ -16,69 +16,48 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/platform_device.h>
+#include <linux/of_platform.h>
 #include <linux/fb.h>
 #include <linux/leds.h>
 #include <linux/err.h>
 #include <linux/pwm.h>
 #include <linux/leds_pwm.h>
 #include <linux/slab.h>
+#include <linux/workqueue.h>
 
 struct led_pwm_data {
 	struct led_classdev	cdev;
 	struct pwm_device	*pwm;
-	unsigned int 		active_low;
-	unsigned int		lth_brightness;
+	struct work_struct	work;
+	unsigned int		active_low;
 	unsigned int		period;
-	unsigned int		dutycycle_steps;
-	unsigned int		period_steps;
+	int			duty;
+	bool			can_sleep;
 };
 
-static int led_pwm_blink_set(struct led_classdev *led_cdev,
-	unsigned long *delay_on, unsigned long *delay_off)
+struct led_pwm_priv {
+	int num_leds;
+	struct led_pwm_data leds[0];
+};
+
+static void __led_pwm_set(struct led_pwm_data *led_dat)
+{
+	int new_duty = led_dat->duty;
+
+	pwm_config(led_dat->pwm, new_duty, led_dat->period);
+
+	if (new_duty == 0)
+		pwm_disable(led_dat->pwm);
+	else
+		pwm_enable(led_dat->pwm);
+}
+
+static void led_pwm_work(struct work_struct *work)
 {
 	struct led_pwm_data *led_dat =
-		container_of(led_cdev, struct led_pwm_data, cdev);
-	int dutycycle_ms, period_sec;
-	int dutycycle, period;
-	/*
-	 * If both the delays are zero set some sensible delay
-	 */
-	if (*delay_on == 0 && *delay_off == 0) {
-		*delay_on = 500;
-		*delay_off = 500;
-	}
-	/*
-	 * calculate the duty cycle from on and off time
-	 */
-	dutycycle_ms = ((*delay_on * 1000)/(*delay_on + *delay_off));
-	/*
-	 * convert calculated value to write into the PWM out register
-	 */
-	if (led_dat->dutycycle_steps)
-		dutycycle = ((dutycycle_ms * led_dat->dutycycle_steps)/1000);
-	else
-		dutycycle = (dutycycle_ms/1000);
-	/*
-	 * calculate period from on and off time(msec)
-	 */
-	period_sec = ((*delay_on + *delay_off)/1000);
-	/*
-	 * convert calculated value to write into the PWM out register
-	 */
-	if (led_dat->period_steps) {
-		if ((*delay_on + *delay_off) == 500)
-			period = led_dat->period_steps;
-		else
-			period = led_dat->period_steps - period_sec;
-	}
-	else
-		period = period_sec;
-	/*
-	 * configure the PWM registers and enable blink functionality
-	 */
-	pwm_config_blink(led_dat->pwm, dutycycle, period);
-	pwm_blink_ctrl(led_dat->pwm, 1);
-	return 0;
+		container_of(work, struct led_pwm_data, work);
+
+	__led_pwm_set(led_dat);
 }
 
 static void led_pwm_set(struct led_classdev *led_cdev,
@@ -89,123 +68,178 @@ static void led_pwm_set(struct led_classdev *led_cdev,
 	unsigned int max = led_dat->cdev.max_brightness;
 	unsigned int period =  led_dat->period;
 
-	if (brightness == 0) {
-		pwm_config(led_dat->pwm, 0, period);
-		pwm_disable(led_dat->pwm);
-	} else {
-		brightness = led_dat->lth_brightness + (brightness *
-			(led_dat->period - led_dat->lth_brightness) / max);
-		pwm_config(led_dat->pwm, brightness, led_dat->period);
+	led_dat->duty = brightness * period / max;
 
-		pwm_enable(led_dat->pwm);
+	if (led_dat->can_sleep)
+		schedule_work(&led_dat->work);
+	else
+		__led_pwm_set(led_dat);
+}
+
+static inline size_t sizeof_pwm_leds_priv(int num_leds)
+{
+	return sizeof(struct led_pwm_priv) +
+		      (sizeof(struct led_pwm_data) * num_leds);
+}
+
+static void led_pwm_cleanup(struct led_pwm_priv *priv)
+{
+	while (priv->num_leds--) {
+		led_classdev_unregister(&priv->leds[priv->num_leds].cdev);
+		if (priv->leds[priv->num_leds].can_sleep)
+			cancel_work_sync(&priv->leds[priv->num_leds].work);
 	}
+}
+
+static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
+{
+	struct device_node *node = pdev->dev.of_node;
+	struct device_node *child;
+	struct led_pwm_priv *priv;
+	int count, ret;
+
+	/* count LEDs in this device, so we know how much to allocate */
+	count = of_get_child_count(node);
+	if (!count)
+		return NULL;
+
+	priv = devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(count),
+			    GFP_KERNEL);
+	if (!priv)
+		return NULL;
+
+	for_each_child_of_node(node, child) {
+		struct led_pwm_data *led_dat = &priv->leds[priv->num_leds];
+
+		led_dat->cdev.name = of_get_property(child, "label",
+						     NULL) ? : child->name;
+
+		led_dat->pwm = devm_of_pwm_get(&pdev->dev, child, NULL);
+		if (IS_ERR(led_dat->pwm)) {
+			dev_err(&pdev->dev, "unable to request PWM for %s\n",
+				led_dat->cdev.name);
+			goto err;
+		}
+		/* Get the period from PWM core when n*/
+		led_dat->period = pwm_get_period(led_dat->pwm);
+
+		led_dat->cdev.default_trigger = of_get_property(child,
+						"linux,default-trigger", NULL);
+		of_property_read_u32(child, "max-brightness",
+				     &led_dat->cdev.max_brightness);
+
+		led_dat->cdev.brightness_set = led_pwm_set;
+		led_dat->cdev.brightness = LED_OFF;
+		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+
+		led_dat->can_sleep = pwm_can_sleep(led_dat->pwm);
+		if (led_dat->can_sleep)
+			INIT_WORK(&led_dat->work, led_pwm_work);
+
+		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "failed to register for %s\n",
+				led_dat->cdev.name);
+			of_node_put(child);
+			goto err;
+		}
+		priv->num_leds++;
+	}
+
+	return priv;
+err:
+	led_pwm_cleanup(priv);
+
+	return NULL;
 }
 
 static int led_pwm_probe(struct platform_device *pdev)
 {
 	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
-	struct led_pwm *cur_led;
-	struct led_pwm_data *leds_data, *led_dat;
+	struct led_pwm_priv *priv;
 	int i, ret = 0;
 
-	if (!pdata)
-		return -EBUSY;
+	if (pdata && pdata->num_leds) {
+		priv = devm_kzalloc(&pdev->dev,
+				    sizeof_pwm_leds_priv(pdata->num_leds),
+				    GFP_KERNEL);
+		if (!priv)
+			return -ENOMEM;
 
-	leds_data = kzalloc(sizeof(struct led_pwm_data) * pdata->num_leds,
-				GFP_KERNEL);
-	if (!leds_data)
-		return -ENOMEM;
+		for (i = 0; i < pdata->num_leds; i++) {
+			struct led_pwm *cur_led = &pdata->leds[i];
+			struct led_pwm_data *led_dat = &priv->leds[i];
 
-	for (i = 0; i < pdata->num_leds; i++) {
-		cur_led = &pdata->leds[i];
-		led_dat = &leds_data[i];
+			led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
+			if (IS_ERR(led_dat->pwm)) {
+				ret = PTR_ERR(led_dat->pwm);
+				dev_err(&pdev->dev,
+					"unable to request PWM for %s\n",
+					cur_led->name);
+				goto err;
+			}
 
-		led_dat->pwm = pwm_request(cur_led->pwm_id,
-				cur_led->name);
-		if (IS_ERR(led_dat->pwm)) {
-			ret = PTR_ERR(led_dat->pwm);
-			dev_err(&pdev->dev, "unable to request PWM %d\n",
-					cur_led->pwm_id);
-			goto err;
+			led_dat->cdev.name = cur_led->name;
+			led_dat->cdev.default_trigger = cur_led->default_trigger;
+			led_dat->active_low = cur_led->active_low;
+			led_dat->period = cur_led->pwm_period_ns;
+			led_dat->cdev.brightness_set = led_pwm_set;
+			led_dat->cdev.brightness = LED_OFF;
+			led_dat->cdev.max_brightness = cur_led->max_brightness;
+			led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+
+			led_dat->can_sleep = pwm_can_sleep(led_dat->pwm);
+			if (led_dat->can_sleep)
+				INIT_WORK(&led_dat->work, led_pwm_work);
+
+			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+			if (ret < 0)
+				goto err;
 		}
-
-		led_dat->cdev.name = cur_led->name;
-		led_dat->cdev.default_trigger = cur_led->default_trigger;
-		led_dat->active_low = cur_led->active_low;
-		led_dat->period = cur_led->pwm_period_ns;
-		led_dat->lth_brightness = cur_led->lth_brightness *
-		      (cur_led->pwm_period_ns / cur_led->max_brightness);
-		led_dat->dutycycle_steps = cur_led->dutycycle_steps;
-		led_dat->period_steps = cur_led->period_steps;
-		led_dat->cdev.brightness_set = led_pwm_set;
-		led_dat->cdev.brightness = LED_OFF;
-		led_dat->cdev.blink_set = led_pwm_blink_set;
-		led_dat->cdev.max_brightness = cur_led->max_brightness;
-		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
-
-		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
-		if (ret < 0) {
-			pwm_free(led_dat->pwm);
-			goto err;
-		}
+		priv->num_leds = pdata->num_leds;
+	} else {
+		priv = led_pwm_create_of(pdev);
+		if (!priv)
+			return -ENODEV;
 	}
 
-	platform_set_drvdata(pdev, leds_data);
+	platform_set_drvdata(pdev, priv);
 
 	return 0;
 
 err:
-	if (i > 0) {
-		for (i = i - 1; i >= 0; i--) {
-			led_classdev_unregister(&leds_data[i].cdev);
-			pwm_free(leds_data[i].pwm);
-		}
-	}
-
-	kfree(leds_data);
+	priv->num_leds = i;
+	led_pwm_cleanup(priv);
 
 	return ret;
 }
 
-static int __devexit led_pwm_remove(struct platform_device *pdev)
+static int led_pwm_remove(struct platform_device *pdev)
 {
-	int i;
-	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
-	struct led_pwm_data *leds_data;
+	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
 
-	leds_data = platform_get_drvdata(pdev);
-
-	for (i = 0; i < pdata->num_leds; i++) {
-		led_classdev_unregister(&leds_data[i].cdev);
-		pwm_free(leds_data[i].pwm);
-	}
-
-	kfree(leds_data);
+	led_pwm_cleanup(priv);
 
 	return 0;
 }
 
+static const struct of_device_id of_pwm_leds_match[] = {
+	{ .compatible = "pwm-leds", },
+	{},
+};
+MODULE_DEVICE_TABLE(of, of_pwm_leds_match);
+
 static struct platform_driver led_pwm_driver = {
 	.probe		= led_pwm_probe,
-	.remove		= __devexit_p(led_pwm_remove),
+	.remove		= led_pwm_remove,
 	.driver		= {
 		.name	= "leds_pwm",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(of_pwm_leds_match),
 	},
 };
 
-static int __init led_pwm_init(void)
-{
-	return platform_driver_register(&led_pwm_driver);
-}
-
-static void __exit led_pwm_exit(void)
-{
-	platform_driver_unregister(&led_pwm_driver);
-}
-
-module_init(led_pwm_init);
-module_exit(led_pwm_exit);
+module_platform_driver(led_pwm_driver);
 
 MODULE_AUTHOR("Luotao Fu <l.fu@pengutronix.de>");
 MODULE_DESCRIPTION("PWM LED driver for PXA");
