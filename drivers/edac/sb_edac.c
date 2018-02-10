@@ -270,8 +270,9 @@ static const u32 correrrthrsld[] = {
  * sbridge structs
  */
 
-#define NUM_CHANNELS	4
-#define MAX_DIMMS	3		/* Max DIMMS per channel */
+#define NUM_CHANNELS		4
+#define MAX_DIMMS		3	/* Max DIMMS per channel */
+#define CHANNEL_UNSPECIFIED	0xf	/* Intel IA32 SDM 15-14 */
 
 struct sbridge_info {
 	u32	mcmtr;
@@ -1517,6 +1518,9 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
 			rank);
 
 	debugf0("%s", msg);
+
+	if (channel == CHANNEL_UNSPECIFIED)
+		channel = -1;
 
 	/* Call the helper to output message */
 	if (uncorrected_error)
