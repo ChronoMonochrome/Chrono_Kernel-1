@@ -129,13 +129,6 @@ nfsd_reply_cache_alloc(void)
 }
 
 static void
-nfsd_reply_cache_unhash(struct svc_cacherep *rp)
-{
-	hlist_del_init(&rp->c_hash);
-	list_del_init(&rp->c_lru);
-}
-
-static void
 nfsd_reply_cache_free_locked(struct svc_cacherep *rp)
 {
 	if (rp->c_type == RC_REPLBUFF && rp->c_replvec.iov_base) {
@@ -180,7 +173,7 @@ int nfsd_reply_cache_init(void)
 
 	return 0;
 out_nomem:
-;
+	printk(KERN_ERR "nfsd: failed to allocate reply cache\n");
 	nfsd_reply_cache_shutdown();
 	return -ENOMEM;
 }
@@ -228,13 +221,6 @@ hash_refile(struct svc_cacherep *rp)
 	hlist_add_head(&rp->c_hash, cache_hash + hash_32(rp->c_xid, maskbits));
 }
 
-static inline bool
-nfsd_cache_entry_expired(struct svc_cacherep *rp)
-{
-	return rp->c_state != RC_INPROG &&
-	       time_after(jiffies, rp->c_timestamp + RC_EXPIRE);
-}
-
 /*
  * Walk the LRU list and prune off entries that are older than RC_EXPIRE.
  * Also prune the oldest ones when the total exceeds the max number of entries.
@@ -245,8 +231,14 @@ prune_cache_entries(void)
 	struct svc_cacherep *rp, *tmp;
 
 	list_for_each_entry_safe(rp, tmp, &lru_head, c_lru) {
-		if (!nfsd_cache_entry_expired(rp) &&
-		    num_drc_entries <= max_drc_entries)
+		/*
+		 * Don't free entries attached to calls that are still
+		 * in-progress, but do keep scanning the list.
+		 */
+		if (rp->c_state == RC_INPROG)
+			continue;
+		if (num_drc_entries <= max_drc_entries &&
+		    time_before(jiffies, rp->c_timestamp + RC_EXPIRE))
 			break;
 		nfsd_reply_cache_free_locked(rp);
 	}
@@ -402,54 +394,18 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
 
 	/*
 	 * Since the common case is a cache miss followed by an insert,
-	 * preallocate an entry. First, try to reuse the first entry on the LRU
-	 * if it works, then go ahead and prune the LRU list.
+	 * preallocate an entry.
 	 */
-	spin_lock(&cache_lock);
-	if (!list_empty(&lru_head)) {
-		rp = list_first_entry(&lru_head, struct svc_cacherep, c_lru);
-		if (nfsd_cache_entry_expired(rp) ||
-		    num_drc_entries >= max_drc_entries) {
-			nfsd_reply_cache_unhash(rp);
-			prune_cache_entries();
-			goto search_cache;
-		}
-	}
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-	/* This loop shouldn't take more than a few iterations normally */
-	{
-	int	safe = 0;
-	list_for_each_entry(rp, &lru_head, c_lru) {
-		if (rp->c_state != RC_INPROG)
-			break;
-		if (safe++ > CACHESIZE) {
-;
-			cache_disabled = 1;
-			goto out;
-		}
-=======
-	/* Drop the lock and allocate a new entry */
-	spin_unlock(&cache_lock);
 	rp = nfsd_reply_cache_alloc();
-	if (!rp) {
-		dprintk("nfsd: unable to allocate DRC entry!\n");
-		return RC_DOIT;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
-	}
-=======
-	/* No expired ones available, allocate a new one. */
-	spin_unlock(&cache_lock);
-	rp = nfsd_reply_cache_alloc();
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
 	spin_lock(&cache_lock);
 	if (likely(rp)) {
 		++num_drc_entries;
 		drc_mem_usage += sizeof(*rp);
 	}
 
-search_cache:
+	/* go ahead and prune the cache */
+	prune_cache_entries();
+
 	found = nfsd_cache_search(rqstp, csum);
 	if (found) {
 		if (likely(rp))
@@ -458,36 +414,10 @@ search_cache:
 		goto found_entry;
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	/* All entries on the LRU are in-progress. This should not happen */
-	if (&rp->c_lru == &lru_head) {
-		static int	complaints;
-
-;
-		if (++complaints > 5) {
-;
-			cache_disabled = 1;
-		}
-		goto out;
-	}
-=======
-=======
 	if (!rp) {
 		dprintk("nfsd: unable to allocate DRC entry!\n");
 		goto out;
 	}
-
->>>>>>> 15d5511a... Merge branch 'lk-3.10' into HEAD
-	/*
-	 * We're keeping the one we just allocated. Are we now over the
-	 * limit? Prune one off the tip of the LRU in trade for the one we
-	 * just allocated if so.
-	 */
-	if (num_drc_entries >= max_drc_entries)
-		nfsd_reply_cache_free_locked(list_first_entry(&lru_head,
-						struct svc_cacherep, c_lru));
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	nfsdstats.rcmisses++;
 	rqstp->rq_cacherep = rp;
@@ -546,13 +476,8 @@ found_entry:
 		rtn = RC_REPLY;
 		break;
 	default:
-<<<<<<< HEAD
-;
-		rp->c_state = RC_UNUSED;
-=======
 		printk(KERN_WARNING "nfsd: bad repcache type %d\n", rp->c_type);
 		nfsd_reply_cache_free_locked(rp);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	}
 
 	goto out;
@@ -597,7 +522,7 @@ nfsd_cache_update(struct svc_rqst *rqstp, int cachetype, __be32 *statp)
 	switch (cachetype) {
 	case RC_REPLSTAT:
 		if (len != 1)
-;
+			printk("nfsd: RC_REPLSTAT/reply len %d!\n",len);
 		rp->c_replstat = *statp;
 		break;
 	case RC_REPLBUFF:
@@ -636,8 +561,8 @@ nfsd_cache_append(struct svc_rqst *rqstp, struct kvec *data)
 	struct kvec	*vec = &rqstp->rq_res.head[0];
 
 	if (vec->iov_len + data->iov_len > PAGE_SIZE) {
-//		printk(KERN_WARNING "nfsd: cached reply too large (%Zd).\n",
-;
+		printk(KERN_WARNING "nfsd: cached reply too large (%Zd).\n",
+				data->iov_len);
 		return 0;
 	}
 	memcpy((char*)vec->iov_base + vec->iov_len, data->iov_base, data->iov_len);
