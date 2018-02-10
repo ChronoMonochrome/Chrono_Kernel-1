@@ -60,7 +60,7 @@ int adis_probe_trigger(struct adis *adis, struct iio_dev *indio_dev)
 	adis->trig->private_data = adis;
 	ret = iio_trigger_register(adis->trig);
 
-	indio_dev->trig = adis->trig;
+	indio_dev->trig = iio_trigger_get(adis->trig);
 	if (ret)
 		goto error_free_irq;
 
