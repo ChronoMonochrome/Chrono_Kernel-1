@@ -1239,11 +1239,7 @@ static int au1200fb_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	pgprot_val(vma->vm_page_prot) |= _CACHE_MASK; /* CCA=7 */
 
-	vma->vm_flags |= VM_IO;
-
 	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
-
-	return 0;
 }
 
 static void set_global(u_int cmd, struct au1200_lcd_global_regs_t *pdata)
@@ -1652,7 +1648,7 @@ out:
 }
 
 /* AU1200 LCD controller device driver */
-static int __devinit au1200fb_drv_probe(struct platform_device *dev)
+static int au1200fb_drv_probe(struct platform_device *dev)
 {
 	struct au1200fb_device *fbdev;
 	struct au1200fb_platdata *pd;
@@ -1777,7 +1773,7 @@ failed:
 	return ret;
 }
 
-static int __devexit au1200fb_drv_remove(struct platform_device *dev)
+static int au1200fb_drv_remove(struct platform_device *dev)
 {
 	struct au1200fb_platdata *pd = platform_get_drvdata(dev);
 	struct au1200fb_device *fbdev;
@@ -1855,7 +1851,7 @@ static struct platform_driver au1200fb_driver = {
 		.pm	= AU1200FB_PMOPS,
 	},
 	.probe		= au1200fb_drv_probe,
-	.remove		= __devexit_p(au1200fb_drv_remove),
+	.remove		= au1200fb_drv_remove,
 };
 
 /*-------------------------------------------------------------------------*/
