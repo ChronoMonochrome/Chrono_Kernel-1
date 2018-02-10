@@ -437,6 +437,7 @@ redo:
 				break;
 			}
 			ret += chars;
+			buf->offset += chars;
 			buf->len -= chars;
 
 			/* Was it a packet buffer? Clean up and exit */
