@@ -33,6 +33,9 @@
 
 #include "dvb_frontend.h"
 
+/* Max transfer size done by I2C transfer functions */
+#define MAX_XFER_SIZE  64
+
 struct SStandardParam {
 	s32   m_IFFrequency;
 	u32   m_BandWidth;
@@ -138,11 +141,18 @@ static int i2c_write(struct i2c_adapter *adap, u8 adr, u8 *data, int len)
 static int WriteRegs(struct tda_state *state,
 		     u8 SubAddr, u8 *Regs, u16 nRegs)
 {
-	u8 data[nRegs+1];
+	u8 data[MAX_XFER_SIZE];
+
+	if (1 + nRegs > sizeof(data)) {
+		printk(KERN_WARNING
+		       "%s: i2c wr: len=%d is too big!\n",
+		       KBUILD_MODNAME, nRegs);
+		return -EINVAL;
+	}
 
 	data[0] = SubAddr;
 	memcpy(data + 1, Regs, nRegs);
-	return i2c_write(state->i2c, state->adr, data, nRegs+1);
+	return i2c_write(state->i2c, state->adr, data, nRegs + 1);
 }
 
 static int WriteReg(struct tda_state *state, u8 SubAddr, u8 Reg)
