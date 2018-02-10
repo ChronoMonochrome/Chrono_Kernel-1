@@ -19,9 +19,11 @@
  ******************************************************************************/
 
 #include <linux/ctype.h>
+#include <linux/kthread.h>
 #include <scsi/iscsi_proto.h>
 #include <target/target_core_base.h>
 #include <target/target_core_fabric.h>
+#include <target/iscsi/iscsi_transport.h>
 
 #include "iscsi_target_core.h"
 #include "iscsi_target_parameters.h"
@@ -169,7 +171,7 @@ static void iscsi_remove_failed_auth_entry(struct iscsi_conn *conn)
 	kfree(conn->auth_protocol);
 }
 
-static int iscsi_target_check_login_request(
+int iscsi_target_check_login_request(
 	struct iscsi_conn *conn,
 	struct iscsi_login *login)
 {
@@ -200,8 +202,8 @@ static int iscsi_target_check_login_request(
 		return -1;
 	}
 
-	req_csg = (login_req->flags & ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK) >> 2;
-	req_nsg = (login_req->flags & ISCSI_FLAG_LOGIN_NEXT_STAGE_MASK);
+	req_csg = ISCSI_LOGIN_CURRENT_STAGE(login_req->flags);
+	req_nsg = ISCSI_LOGIN_NEXT_STAGE(login_req->flags);
 
 	if (req_csg != login->current_stage) {
 		pr_err("Initiator unexpectedly changed login stage"
@@ -351,13 +353,24 @@ static int iscsi_target_do_tx_login_io(struct iscsi_conn *conn, struct iscsi_log
 		ntohl(login_rsp->statsn), login->rsp_length);
 
 	padding = ((-login->rsp_length) & 3);
+	/*
+	 * Before sending the last login response containing the transition
+	 * bit for full-feature-phase, go ahead and start up TX/RX threads
+	 * now to avoid potential resource allocation failures after the
+	 * final login response has been sent.
+	 */
+	if (login->login_complete) {
+		int rc = iscsit_start_kthreads(conn);
+		if (rc) {
+			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+					    ISCSI_LOGIN_STATUS_NO_RESOURCES);
+			return -1;
+		}
+	}
 
-	if (iscsi_login_tx_data(
-			conn,
-			login->rsp,
-			login->rsp_buf,
-			login->rsp_length + padding) < 0)
-		return -1;
+	if (conn->conn_transport->iscsit_put_login_tx(conn, login,
+					login->rsp_length + padding) < 0)
+		goto err;
 
 	login->rsp_length		= 0;
 	mutex_lock(&sess->cmdsn_mutex);
@@ -366,37 +379,23 @@ static int iscsi_target_do_tx_login_io(struct iscsi_conn *conn, struct iscsi_log
 	mutex_unlock(&sess->cmdsn_mutex);
 
 	return 0;
-}
 
-static int iscsi_target_do_rx_login_io(struct iscsi_conn *conn, struct iscsi_login *login)
-{
-	u32 padding = 0, payload_length;
-	struct iscsi_login_req *login_req;
-
-	if (iscsi_login_rx_data(conn, login->req, ISCSI_HDR_LEN) < 0)
-		return -1;
-
-	login_req = (struct iscsi_login_req *) login->req;
-	payload_length			= ntoh24(login_req->dlength);
-
-	pr_debug("Got Login Command, Flags 0x%02x, ITT: 0x%08x,"
-		" CmdSN: 0x%08x, ExpStatSN: 0x%08x, CID: %hu, Length: %u\n",
-		 login_req->flags, login_req->itt, login_req->cmdsn,
-		 login_req->exp_statsn, login_req->cid, payload_length);
-
-	if (iscsi_target_check_login_request(conn, login) < 0)
-		return -1;
-
-	padding = ((-payload_length) & 3);
-	memset(login->req_buf, 0, MAX_KEY_VALUE_PAIRS);
-
-	if (iscsi_login_rx_data(
-			conn,
-			login->req_buf,
-			payload_length + padding) < 0)
-		return -1;
-
-	return 0;
+err:
+	if (login->login_complete) {
+		if (conn->rx_thread && conn->rx_thread_active) {
+			send_sig(SIGINT, conn->rx_thread, 1);
+			kthread_stop(conn->rx_thread);
+		}
+		if (conn->tx_thread && conn->tx_thread_active) {
+			send_sig(SIGINT, conn->tx_thread, 1);
+			kthread_stop(conn->tx_thread);
+		}
+		spin_lock(&iscsit_global->ts_bitmap_lock);
+		bitmap_release_region(iscsit_global->ts_bitmap, conn->bitmap_id,
+				      get_order(1));
+		spin_unlock(&iscsit_global->ts_bitmap_lock);
+	}
+	return -1;
 }
 
 static int iscsi_target_do_login_io(struct iscsi_conn *conn, struct iscsi_login *login)
@@ -404,36 +403,7 @@ static int iscsi_target_do_login_io(struct iscsi_conn *conn, struct iscsi_login 
 	if (iscsi_target_do_tx_login_io(conn, login) < 0)
 		return -1;
 
-	if (iscsi_target_do_rx_login_io(conn, login) < 0)
-		return -1;
-
-	return 0;
-}
-
-static int iscsi_target_get_initial_payload(
-	struct iscsi_conn *conn,
-	struct iscsi_login *login)
-{
-	u32 padding = 0, payload_length;
-	struct iscsi_login_req *login_req;
-
-	login_req = (struct iscsi_login_req *) login->req;
-	payload_length = ntoh24(login_req->dlength);
-
-	pr_debug("Got Login Command, Flags 0x%02x, ITT: 0x%08x,"
-		" CmdSN: 0x%08x, ExpStatSN: 0x%08x, Length: %u\n",
-		login_req->flags, login_req->itt, login_req->cmdsn,
-		login_req->exp_statsn, payload_length);
-
-	if (iscsi_target_check_login_request(conn, login) < 0)
-		return -1;
-
-	padding = ((-payload_length) & 3);
-
-	if (iscsi_login_rx_data(
-			conn,
-			login->req_buf,
-			payload_length + padding) < 0)
+	if (conn->conn_transport->iscsit_get_login_rx(conn, login) < 0)
 		return -1;
 
 	return 0;
@@ -681,9 +651,9 @@ static int iscsi_target_do_login(struct iscsi_conn *conn, struct iscsi_login *lo
 			return -1;
 		}
 
-		switch ((login_req->flags & ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK) >> 2) {
+		switch (ISCSI_LOGIN_CURRENT_STAGE(login_req->flags)) {
 		case 0:
-			login_rsp->flags |= (0 & ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK);
+			login_rsp->flags &= ~ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK;
 			if (iscsi_target_handle_csg_zero(conn, login) < 0)
 				return -1;
 			break;
@@ -693,6 +663,7 @@ static int iscsi_target_do_login(struct iscsi_conn *conn, struct iscsi_login *lo
 				return -1;
 			if (login_rsp->flags & ISCSI_FLAG_LOGIN_TRANSIT) {
 				login->tsih = conn->sess->tsih;
+				login->login_complete = 1;
 				if (iscsi_target_do_tx_login_io(conn,
 						login) < 0)
 					return -1;
@@ -702,8 +673,7 @@ static int iscsi_target_do_login(struct iscsi_conn *conn, struct iscsi_login *lo
 		default:
 			pr_err("Illegal CSG: %d received from"
 				" Initiator, protocol error.\n",
-				(login_req->flags & ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK)
-				>> 2);
+				ISCSI_LOGIN_CURRENT_STAGE(login_req->flags));
 			break;
 		}
 
@@ -737,7 +707,7 @@ static void iscsi_initiatorname_tolower(
 /*
  * Processes the first Login Request..
  */
-static int iscsi_target_locate_portal(
+int iscsi_target_locate_portal(
 	struct iscsi_np *np,
 	struct iscsi_conn *conn,
 	struct iscsi_login *login)
@@ -752,22 +722,6 @@ static int iscsi_target_locate_portal(
 
 	login_req = (struct iscsi_login_req *) login->req;
 	payload_length = ntoh24(login_req->dlength);
-
-	login->first_request	= 1;
-	login->leading_connection = (!login_req->tsih) ? 1 : 0;
-	login->current_stage	=
-		(login_req->flags & ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK) >> 2;
-	login->version_min	= login_req->min_version;
-	login->version_max	= login_req->max_version;
-	memcpy(login->isid, login_req->isid, 6);
-	login->cmd_sn		= be32_to_cpu(login_req->cmdsn);
-	login->init_task_tag	= login_req->itt;
-	login->initial_exp_statsn = be32_to_cpu(login_req->exp_statsn);
-	login->cid		= be16_to_cpu(login_req->cid);
-	login->tsih		= be16_to_cpu(login_req->tsih);
-
-	if (iscsi_target_get_initial_payload(conn, login) < 0)
-		return -1;
 
 	tmpbuf = kzalloc(payload_length + 1, GFP_KERNEL);
 	if (!tmpbuf) {
@@ -799,7 +753,6 @@ static int iscsi_target_locate_portal(
 
 		start += strlen(key) + strlen(value) + 2;
 	}
-
 	/*
 	 * See 5.3.  Login Phase.
 	 */
@@ -958,100 +911,30 @@ out:
 	return ret;
 }
 
-struct iscsi_login *iscsi_target_init_negotiation(
-	struct iscsi_np *np,
-	struct iscsi_conn *conn,
-	char *login_pdu)
-{
-	struct iscsi_login *login;
-
-	login = kzalloc(sizeof(struct iscsi_login), GFP_KERNEL);
-	if (!login) {
-		pr_err("Unable to allocate memory for struct iscsi_login.\n");
-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		return NULL;
-	}
-
-	login->req = kmemdup(login_pdu, ISCSI_HDR_LEN, GFP_KERNEL);
-	if (!login->req) {
-		pr_err("Unable to allocate memory for Login Request.\n");
-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		goto out;
-	}
-
-	login->req_buf = kzalloc(MAX_KEY_VALUE_PAIRS, GFP_KERNEL);
-	if (!login->req_buf) {
-		pr_err("Unable to allocate memory for response buffer.\n");
-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		goto out;
-	}
-	/*
-	 * SessionType: Discovery
-	 *
-	 *	Locates Default Portal
-	 *
-	 * SessionType: Normal
-	 *
-	 *	Locates Target Portal from NP -> Target IQN
-	 */
-	if (iscsi_target_locate_portal(np, conn, login) < 0) {
-		goto out;
-	}
-
-	return login;
-out:
-	kfree(login->req);
-	kfree(login->req_buf);
-	kfree(login);
-
-	return NULL;
-}
-
 int iscsi_target_start_negotiation(
 	struct iscsi_login *login,
 	struct iscsi_conn *conn)
 {
-	int ret = -1;
-
-	login->rsp = kzalloc(ISCSI_HDR_LEN, GFP_KERNEL);
-	if (!login->rsp) {
-		pr_err("Unable to allocate memory for"
-				" Login Response.\n");
-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		ret = -1;
-		goto out;
-	}
-
-	login->rsp_buf = kzalloc(MAX_KEY_VALUE_PAIRS, GFP_KERNEL);
-	if (!login->rsp_buf) {
-		pr_err("Unable to allocate memory for"
-			" request buffer.\n");
-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		ret = -1;
-		goto out;
-	}
+	int ret;
 
 	ret = iscsi_target_do_login(conn, login);
-out:
 	if (ret != 0)
 		iscsi_remove_failed_auth_entry(conn);
 
-	iscsi_target_nego_release(login, conn);
+	iscsi_target_nego_release(conn);
 	return ret;
 }
 
-void iscsi_target_nego_release(
-	struct iscsi_login *login,
-	struct iscsi_conn *conn)
+void iscsi_target_nego_release(struct iscsi_conn *conn)
 {
-	kfree(login->req);
-	kfree(login->rsp);
+	struct iscsi_login *login = conn->conn_login;
+
+	if (!login)
+		return;
+
 	kfree(login->req_buf);
 	kfree(login->rsp_buf);
 	kfree(login);
+
+	conn->conn_login = NULL;
 }
