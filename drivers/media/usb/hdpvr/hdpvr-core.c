@@ -174,6 +174,7 @@ static int device_authorization(struct hdpvr_device *dev)
 	case HDPVR_FIRMWARE_VERSION_AC3:
 	case HDPVR_FIRMWARE_VERSION_0X12:
 	case HDPVR_FIRMWARE_VERSION_0X15:
+	case HDPVR_FIRMWARE_VERSION_0X1E:
 		dev->flags |= HDPVR_FLAG_AC3_CAP;
 		break;
 	default:
@@ -196,6 +197,7 @@ static int device_authorization(struct hdpvr_device *dev)
 	hex_dump_to_buffer(response, 8, 16, 1, print_buf, 5*buf_size+1, 0);
 	v4l2_dbg(MSG_INFO, hdpvr_debug, &dev->v4l2_dev, " response: %s\n",
 		 print_buf);
+	kfree(print_buf);
 #endif
 
 	msleep(100);
@@ -303,15 +305,20 @@ static int hdpvr_probe(struct usb_interface *interface,
 	/* allocate memory for our device state and initialize it */
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev) {
-		err("Out of memory");
+		dev_err(&interface->dev, "Out of memory\n");
 		goto error;
 	}
 
 	dev->workqueue = 0;
 
+	/* init video transfer queues first of all */
+	/* to prevent oops in hdpvr_delete() on error paths */
+	INIT_LIST_HEAD(&dev->free_buff_list);
+	INIT_LIST_HEAD(&dev->rec_buff_list);
+
 	/* register v4l2_device early so it can be used for printks */
 	if (v4l2_device_register(&interface->dev, &dev->v4l2_dev)) {
-		err("v4l2_device_register failed");
+		dev_err(&interface->dev, "v4l2_device_register failed\n");
 		goto error;
 	}
 
@@ -330,10 +337,6 @@ static int hdpvr_probe(struct usb_interface *interface,
 	dev->workqueue = create_singlethread_workqueue("hdpvr_buffer");
 	if (!dev->workqueue)
 		goto error;
-
-	/* init video transfer queues */
-	INIT_LIST_HEAD(&dev->free_buff_list);
-	INIT_LIST_HEAD(&dev->rec_buff_list);
 
 	dev->options = hdpvr_default_options;
 
@@ -385,13 +388,7 @@ static int hdpvr_probe(struct usb_interface *interface,
 	}
 	mutex_unlock(&dev->io_mutex);
 
-	if (hdpvr_register_videodev(dev, &interface->dev,
-				    video_nr[atomic_inc_return(&dev_nr)])) {
-		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
-		goto error;
-	}
-
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+#if IS_ENABLED(CONFIG_I2C)
 	retval = hdpvr_register_i2c_adapter(dev);
 	if (retval < 0) {
 		v4l2_err(&dev->v4l2_dev, "i2c adapter register failed\n");
@@ -401,15 +398,24 @@ static int hdpvr_probe(struct usb_interface *interface,
 	client = hdpvr_register_ir_rx_i2c(dev);
 	if (!client) {
 		v4l2_err(&dev->v4l2_dev, "i2c IR RX device register failed\n");
+		retval = -ENODEV;
 		goto reg_fail;
 	}
 
 	client = hdpvr_register_ir_tx_i2c(dev);
 	if (!client) {
 		v4l2_err(&dev->v4l2_dev, "i2c IR TX device register failed\n");
+		retval = -ENODEV;
 		goto reg_fail;
 	}
 #endif
+
+	retval = hdpvr_register_videodev(dev, &interface->dev,
+				    video_nr[atomic_inc_return(&dev_nr)]);
+	if (retval < 0) {
+		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
+		goto reg_fail;
+	}
 
 	/* let the user know what node this device is now attached to */
 	v4l2_info(&dev->v4l2_dev, "device now attached to %s\n",
@@ -417,7 +423,7 @@ static int hdpvr_probe(struct usb_interface *interface,
 	return 0;
 
 reg_fail:
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+#if IS_ENABLED(CONFIG_I2C)
 	i2c_del_adapter(&dev->i2c_adapter);
 #endif
 error:
@@ -449,7 +455,7 @@ static void hdpvr_disconnect(struct usb_interface *interface)
 	mutex_lock(&dev->io_mutex);
 	hdpvr_cancel_queue(dev);
 	mutex_unlock(&dev->io_mutex);
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+#if IS_ENABLED(CONFIG_I2C)
 	i2c_del_adapter(&dev->i2c_adapter);
 #endif
 	video_unregister_device(dev->video_dev);
