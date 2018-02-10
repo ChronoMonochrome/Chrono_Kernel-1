@@ -68,7 +68,6 @@ transport_lookup_cmd_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 		struct se_dev_entry *deve = se_cmd->se_deve;
 
 		deve->total_cmds++;
-		deve->total_bytes += se_cmd->data_length;
 
 		if ((se_cmd->data_direction == DMA_TO_DEVICE) &&
 		    (deve->lun_flags & TRANSPORT_LUNFLAGS_READ_ONLY)) {
@@ -85,8 +84,6 @@ transport_lookup_cmd_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 		else if (se_cmd->data_direction == DMA_FROM_DEVICE)
 			deve->read_bytes += se_cmd->data_length;
 
-		deve->deve_cmds++;
-
 		se_lun = deve->se_lun;
 		se_cmd->se_lun = deve->se_lun;
 		se_cmd->pr_res_key = deve->pr_res_key;
@@ -96,13 +93,6 @@ transport_lookup_cmd_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 	spin_unlock_irqrestore(&se_sess->se_node_acl->device_list_lock, flags);
 
 	if (!se_lun) {
-<<<<<<< HEAD
-		if (read_only) {
-			se_cmd->scsi_sense_reason = TCM_WRITE_PROTECTED;
-			se_cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("TARGET_CORE[%s]: Detected WRITE_PROTECTED LUN"
-=======
 		/*
 		 * Use the se_portal_group->tpg_virt_lun0 to allow for
 		 * REPORT_LUNS, et al to be returned when no active
@@ -110,58 +100,10 @@ transport_lookup_cmd_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 		 */
 		if (unpacked_lun != 0) {
 			pr_err("TARGET_CORE[%s]: Detected NON_EXISTENT_LUN"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" Access for 0x%08x\n",
 				se_cmd->se_tfo->get_fabric_name(),
 				unpacked_lun);
-<<<<<<< HEAD
-#else
-			;
-#endif
-			return -1;
-		} else {
-			/*
-			 * Use the se_portal_group->tpg_virt_lun0 to allow for
-			 * REPORT_LUNS, et al to be returned when no active
-			 * MappedLUN=0 exists for this Initiator Port.
-			 */
-			if (unpacked_lun != 0) {
-				se_cmd->scsi_sense_reason = TCM_NON_EXISTENT_LUN;
-				se_cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("TARGET_CORE[%s]: Detected NON_EXISTENT_LUN"
-					" Access for 0x%08x\n",
-					CMD_TFO(se_cmd)->get_fabric_name(),
-					unpacked_lun);
-#else
-				;
-#endif
-				return -1;
-			}
-			/*
-			 * Force WRITE PROTECT for virtual LUN 0
-			 */
-			if ((se_cmd->data_direction != DMA_FROM_DEVICE) &&
-			    (se_cmd->data_direction != DMA_NONE)) {
-				se_cmd->scsi_sense_reason = TCM_WRITE_PROTECTED;
-				se_cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-				return -1;
-			}
-#if 0
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("TARGET_CORE[%s]: Using virtual LUN0! :-)\n",
-				CMD_TFO(se_cmd)->get_fabric_name());
-#else
-			;
-#endif
-#endif
-			se_lun = se_cmd->se_lun = &se_sess->se_tpg->tpg_virt_lun0;
-			se_cmd->orig_fe_lun = 0;
-			se_cmd->se_orig_obj_ptr = SE_LUN(se_cmd)->lun_se_dev;
-			se_cmd->se_cmd_flags |= SCF_SE_LUN_CMD;
-=======
 			return TCM_NON_EXISTENT_LUN;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		}
 		/*
 		 * Force WRITE PROTECT for virtual LUN 0
@@ -190,20 +132,7 @@ transport_lookup_cmd_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 	spin_unlock_irqrestore(&dev->stats_lock, flags);
 
 	spin_lock_irqsave(&se_lun->lun_cmd_lock, flags);
-<<<<<<< HEAD
-	list_add_tail(&se_cmd->se_lun_list, &se_lun->lun_cmd_list);
-	atomic_set(&T_TASK(se_cmd)->transport_lun_active, 1);
-#if 0
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "Adding ITT: 0x%08x to LUN LIST[%d]\n",
-		CMD_TFO(se_cmd)->get_task_tag(se_cmd), se_lun->unpacked_lun);
-#else
-	;
-#endif
-#endif
-=======
 	list_add_tail(&se_cmd->se_lun_node, &se_lun->lun_cmd_list);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	spin_unlock_irqrestore(&se_lun->lun_cmd_lock, flags);
 
 	return 0;
@@ -235,32 +164,11 @@ int transport_lookup_tmr_lun(struct se_cmd *se_cmd, u32 unpacked_lun)
 	spin_unlock_irqrestore(&se_sess->se_node_acl->device_list_lock, flags);
 
 	if (!se_lun) {
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "TARGET_CORE[%s]: Detected NON_EXISTENT_LUN"
-=======
 		pr_debug("TARGET_CORE[%s]: Detected NON_EXISTENT_LUN"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			" Access for 0x%08x\n",
 			se_cmd->se_tfo->get_fabric_name(),
 			unpacked_lun);
-<<<<<<< HEAD
-#else
-		;
-#endif
-		se_cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-		return -1;
-	}
-	/*
-	 * Determine if the struct se_lun is online.
-	 */
-/* #warning FIXME: Check for LUN_RESET + UNIT Attention */
-	if (se_dev_check_online(se_lun->lun_se_dev) != 0) {
-		se_cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-		return -1;
-=======
 		return -ENODEV;
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	}
 
 	/* Directly associate cmd with se_dev */
@@ -362,17 +270,6 @@ int core_free_device_list_for_node(
 	nacl->device_list = NULL;
 
 	return 0;
-}
-
-void core_dec_lacl_count(struct se_node_acl *se_nacl, struct se_cmd *se_cmd)
-{
-	struct se_dev_entry *deve;
-	unsigned long flags;
-
-	spin_lock_irqsave(&se_nacl->device_list_lock, flags);
-	deve = se_nacl->device_list[se_cmd->orig_fe_lun];
-	deve->deve_cmds--;
-	spin_unlock_irqrestore(&se_nacl->device_list_lock, flags);
 }
 
 void core_update_device_list_access(
@@ -576,16 +473,8 @@ static struct se_port *core_alloc_port(struct se_device *dev)
 
 	spin_lock(&dev->se_port_lock);
 	if (dev->dev_port_count == 0x0000ffff) {
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "Reached dev->dev_port_count =="
-=======
 		pr_warn("Reached dev->dev_port_count =="
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" 0x0000ffff\n");
-#else
-		;
-#endif
 		spin_unlock(&dev->se_port_lock);
 		return ERR_PTR(-ENOSPC);
 	}
@@ -649,19 +538,9 @@ static void core_export_port(
 		__core_alua_attach_tg_pt_gp_mem(tg_pt_gp_mem,
 			dev->t10_alua.default_tg_pt_gp);
 		spin_unlock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "%s/%s: Adding to default ALUA Target Port"
-			" Group: alua/default_tg_pt_gp\n",
-			TRANSPORT(dev)->name, TPG_TFO(tpg)->get_fabric_name());
-#else
-		;
-#endif
-=======
 		pr_debug("%s/%s: Adding to default ALUA Target Port"
 			" Group: alua/default_tg_pt_gp\n",
 			dev->transport->name, tpg->se_tpg_tfo->get_fabric_name());
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	}
 
 	dev->dev_port_count++;
@@ -762,27 +641,9 @@ static u32 se_dev_align_max_sectors(u32 max_sectors, u32 block_size)
 	alignment = max(1ul, PAGE_SIZE / block_size);
 	aligned_max_sectors = rounddown(max_sectors, alignment);
 
-<<<<<<< HEAD
-int se_dev_set_task_timeout(struct se_device *dev, u32 task_timeout)
-{
-	if (task_timeout > DA_TASK_TIMEOUT_MAX) {
-		printk(KERN_ERR "dev[%p]: Passed task_timeout: %u larger then"
-			" DA_TASK_TIMEOUT_MAX\n", dev, task_timeout);
-		return -1;
-	} else {
-		DEV_ATTRIB(dev)->task_timeout = task_timeout;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "dev[%p]: Set SE Device task_timeout: %u\n",
-			dev, task_timeout);
-#else
-		;
-#endif
-	}
-=======
 	if (max_sectors != aligned_max_sectors)
 		pr_info("Rounding down aligned max_sectors from %u to %u\n",
 			max_sectors, aligned_max_sectors);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return aligned_max_sectors;
 }
@@ -791,19 +652,9 @@ int se_dev_set_max_unmap_lba_count(
 	struct se_device *dev,
 	u32 max_unmap_lba_count)
 {
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->max_unmap_lba_count = max_unmap_lba_count;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: Set max_unmap_lba_count: %u\n",
-			dev, DEV_ATTRIB(dev)->max_unmap_lba_count);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.max_unmap_lba_count = max_unmap_lba_count;
 	pr_debug("dev[%p]: Set max_unmap_lba_count: %u\n",
 			dev, dev->dev_attrib.max_unmap_lba_count);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -811,20 +662,10 @@ int se_dev_set_max_unmap_block_desc_count(
 	struct se_device *dev,
 	u32 max_unmap_block_desc_count)
 {
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->max_unmap_block_desc_count = max_unmap_block_desc_count;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: Set max_unmap_block_desc_count: %u\n",
-			dev, DEV_ATTRIB(dev)->max_unmap_block_desc_count);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.max_unmap_block_desc_count =
 		max_unmap_block_desc_count;
 	pr_debug("dev[%p]: Set max_unmap_block_desc_count: %u\n",
 			dev, dev->dev_attrib.max_unmap_block_desc_count);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -832,19 +673,9 @@ int se_dev_set_unmap_granularity(
 	struct se_device *dev,
 	u32 unmap_granularity)
 {
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->unmap_granularity = unmap_granularity;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: Set unmap_granularity: %u\n",
-			dev, DEV_ATTRIB(dev)->unmap_granularity);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.unmap_granularity = unmap_granularity;
 	pr_debug("dev[%p]: Set unmap_granularity: %u\n",
 			dev, dev->dev_attrib.unmap_granularity);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -852,19 +683,9 @@ int se_dev_set_unmap_granularity_alignment(
 	struct se_device *dev,
 	u32 unmap_granularity_alignment)
 {
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->unmap_granularity_alignment = unmap_granularity_alignment;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: Set unmap_granularity_alignment: %u\n",
-			dev, DEV_ATTRIB(dev)->unmap_granularity_alignment);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.unmap_granularity_alignment = unmap_granularity_alignment;
 	pr_debug("dev[%p]: Set unmap_granularity_alignment: %u\n",
 			dev, dev->dev_attrib.unmap_granularity_alignment);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -911,18 +732,8 @@ int se_dev_set_emulate_model_alias(struct se_device *dev, int flag)
 		strncpy(&dev->t10_wwn.model[0],
 			dev->transport->inquiry_prod, 16);
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_dpo = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device Page Out (DPO) Emulation"
-			" bit: %d\n", dev, DEV_ATTRIB(dev)->emulate_dpo);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.emulate_model_alias = flag;
 
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -953,19 +764,9 @@ int se_dev_set_emulate_fua_write(struct se_device *dev, int flag)
 		pr_err("emulate_fua_write not supported for pSCSI\n");
 		return -EINVAL;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_fua_write = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device Forced Unit Access WRITEs: %d\n",
-			dev, DEV_ATTRIB(dev)->emulate_fua_write);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.emulate_fua_write = flag;
 	pr_debug("dev[%p]: SE Device Forced Unit Access WRITEs: %d\n",
 			dev, dev->dev_attrib.emulate_fua_write);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -980,17 +781,7 @@ int se_dev_set_emulate_fua_read(struct se_device *dev, int flag)
 		pr_err("ua read emulated not supported\n");
 		return -EINVAL;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_fua_read = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device Forced Unit Access READs: %d\n",
-			dev, DEV_ATTRIB(dev)->emulate_fua_read);
-#else
-	;
-#endif
-=======
 
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -1010,20 +801,10 @@ int se_dev_set_emulate_write_cache(struct se_device *dev, int flag)
 			" HW reports WriteCacheEnabled, ignoring request\n");
 		return 0;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_write_cache = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device WRITE_CACHE_EMULATION flag: %d\n",
-			dev, DEV_ATTRIB(dev)->emulate_write_cache);
-#else
-	;
-#endif
-=======
 
 	dev->dev_attrib.emulate_write_cache = flag;
 	pr_debug("dev[%p]: SE Device WRITE_CACHE_EMULATION flag: %d\n",
 			dev, dev->dev_attrib.emulate_write_cache);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -1040,19 +821,9 @@ int se_dev_set_emulate_ua_intlck_ctrl(struct se_device *dev, int flag)
 			dev, dev->export_count);
 		return -EINVAL;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device UA_INTRLCK_CTRL flag: %d\n",
-		dev, DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.emulate_ua_intlck_ctrl = flag;
 	pr_debug("dev[%p]: SE Device UA_INTRLCK_CTRL flag: %d\n",
 		dev, dev->dev_attrib.emulate_ua_intlck_ctrl);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return 0;
 }
@@ -1070,19 +841,9 @@ int se_dev_set_emulate_tas(struct se_device *dev, int flag)
 			dev, dev->export_count);
 		return -EINVAL;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_tas = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device TASK_ABORTED status bit: %s\n",
-		dev, (DEV_ATTRIB(dev)->emulate_tas) ? "Enabled" : "Disabled");
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.emulate_tas = flag;
 	pr_debug("dev[%p]: SE Device TASK_ABORTED status bit: %s\n",
 		dev, (dev->dev_attrib.emulate_tas) ? "Enabled" : "Disabled");
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return 0;
 }
@@ -1102,18 +863,9 @@ int se_dev_set_emulate_tpu(struct se_device *dev, int flag)
 		return -ENOSYS;
 	}
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_tpu = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device Thin Provisioning UNMAP bit: %d\n",
-=======
 	dev->dev_attrib.emulate_tpu = flag;
 	pr_debug("dev[%p]: SE Device Thin Provisioning UNMAP bit: %d\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				dev, flag);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1132,18 +884,9 @@ int se_dev_set_emulate_tpws(struct se_device *dev, int flag)
 		return -ENOSYS;
 	}
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->emulate_tpws = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device Thin Provisioning WRITE_SAME: %d\n",
-=======
 	dev->dev_attrib.emulate_tpws = flag;
 	pr_debug("dev[%p]: SE Device Thin Provisioning WRITE_SAME: %d\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				dev, flag);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1178,18 +921,8 @@ int se_dev_set_emulate_rest_reord(struct se_device *dev, int flag)
 			" reordering not implemented\n", dev);
 		return -ENOSYS;
 	}
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->enforce_pr_isids = flag;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device enforce_pr_isids bit: %s\n", dev,
-		(DEV_ATTRIB(dev)->enforce_pr_isids) ? "Enabled" : "Disabled");
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.emulate_rest_reord = flag;
 	pr_debug("dev[%p]: SE Device emulate_rest_reord: %d\n", dev, flag);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -1230,23 +963,9 @@ int se_dev_set_queue_depth(struct se_device *dev, u32 queue_depth)
 		}
 	}
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->queue_depth = dev->queue_depth = queue_depth;
-	if (queue_depth > orig_queue_depth)
-		atomic_add(queue_depth - orig_queue_depth, &dev->depth_left);
-	else if (queue_depth < orig_queue_depth)
-		atomic_sub(orig_queue_depth - queue_depth, &dev->depth_left);
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device TCQ Depth changed to: %u\n",
-=======
 	dev->dev_attrib.queue_depth = dev->queue_depth = queue_depth;
 	pr_debug("dev[%p]: SE Device TCQ Depth changed to: %u\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			dev, queue_depth);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1298,19 +1017,9 @@ int se_dev_set_fabric_max_sectors(struct se_device *dev, u32 fabric_max_sectors)
 	fabric_max_sectors = se_dev_align_max_sectors(fabric_max_sectors,
 						      block_size);
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->max_sectors = max_sectors;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("dev[%p]: SE Device max_sectors changed to %u\n",
-			dev, max_sectors);
-#else
-	;
-#endif
-=======
 	dev->dev_attrib.fabric_max_sectors = fabric_max_sectors;
 	pr_debug("dev[%p]: SE Device max_sectors changed to %u\n",
 			dev, fabric_max_sectors);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	return 0;
 }
 
@@ -1334,18 +1043,9 @@ int se_dev_set_optimal_sectors(struct se_device *dev, u32 optimal_sectors)
 		return -EINVAL;
 	}
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->optimal_sectors = optimal_sectors;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device optimal_sectors changed to %u\n",
-=======
 	dev->dev_attrib.optimal_sectors = optimal_sectors;
 	pr_debug("dev[%p]: SE Device optimal_sectors changed to %u\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			dev, optimal_sectors);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1375,18 +1075,14 @@ int se_dev_set_block_size(struct se_device *dev, u32 block_size)
 		return -EINVAL;
 	}
 
-<<<<<<< HEAD
-	DEV_ATTRIB(dev)->block_size = block_size;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "dev[%p]: SE Device block_size changed to %u\n",
-=======
 	dev->dev_attrib.block_size = block_size;
 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			dev, block_size);
-#else
-	;
-#endif
+
+	if (dev->dev_attrib.max_bytes_per_io)
+		dev->dev_attrib.hw_max_sectors =
+			dev->dev_attrib.max_bytes_per_io / block_size;
+
 	return 0;
 }
 
@@ -1399,27 +1095,6 @@ struct se_lun *core_dev_add_lun(
 	int rc;
 
 	lun_p = core_tpg_pre_addlun(tpg, lun);
-<<<<<<< HEAD
-	if ((IS_ERR(lun_p)) || !(lun_p))
-		return NULL;
-
-	if (dev->dev_flags & DF_READ_ONLY)
-		lun_access = TRANSPORT_LUNFLAGS_READ_ONLY;
-	else
-		lun_access = TRANSPORT_LUNFLAGS_READ_WRITE;
-
-	if (core_tpg_post_addlun(tpg, lun_p, lun_access, dev) < 0)
-		return NULL;
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s_TPG[%u]_LUN[%u] - Activated %s Logical Unit from"
-		" CORE HBA: %u\n", TPG_TFO(tpg)->get_fabric_name(),
-		TPG_TFO(tpg)->tpg_get_tag(tpg), lun_p->unpacked_lun,
-		TPG_TFO(tpg)->get_fabric_name(), hba->hba_id);
-#else
-	;
-#endif
-=======
 	if (IS_ERR(lun_p))
 		return lun_p;
 
@@ -1432,7 +1107,6 @@ struct se_lun *core_dev_add_lun(
 		" CORE HBA: %u\n", tpg->se_tpg_tfo->get_fabric_name(),
 		tpg->se_tpg_tfo->tpg_get_tag(tpg), lun_p->unpacked_lun,
 		tpg->se_tpg_tfo->get_fabric_name(), dev->se_hba->hba_id);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 	/*
 	 * Update LUN maps for dynamically added initiators when
 	 * generate_node_acl is enabled.
@@ -1471,21 +1145,10 @@ int core_dev_del_lun(
 
 	core_tpg_post_dellun(tpg, lun);
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s_TPG[%u]_LUN[%u] - Deactivated %s Logical Unit from"
-		" device object\n", TPG_TFO(tpg)->get_fabric_name(),
-		TPG_TFO(tpg)->tpg_get_tag(tpg), unpacked_lun,
-		TPG_TFO(tpg)->get_fabric_name());
-#else
-	;
-#endif
-=======
 	pr_debug("%s_TPG[%u]_LUN[%u] - Deactivated %s Logical Unit from"
 		" device object\n", tpg->se_tpg_tfo->get_fabric_name(),
 		tpg->se_tpg_tfo->tpg_get_tag(tpg), unpacked_lun,
 		tpg->se_tpg_tfo->get_fabric_name());
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return 0;
 }
@@ -1620,21 +1283,11 @@ int core_dev_add_initiator_node_lun_acl(
 	smp_mb__after_atomic_inc();
 	spin_unlock(&lun->lun_acl_lock);
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s_TPG[%hu]_LUN[%u->%u] - Added %s ACL for "
-		" InitiatorNode: %s\n", TPG_TFO(tpg)->get_fabric_name(),
-		TPG_TFO(tpg)->tpg_get_tag(tpg), unpacked_lun, lacl->mapped_lun,
-=======
 	pr_debug("%s_TPG[%hu]_LUN[%u->%u] - Added %s ACL for "
 		" InitiatorNode: %s\n", tpg->se_tpg_tfo->get_fabric_name(),
 		tpg->se_tpg_tfo->tpg_get_tag(tpg), unpacked_lun, lacl->mapped_lun,
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		(lun_access & TRANSPORT_LUNFLAGS_READ_WRITE) ? "RW" : "RO",
 		lacl->initiatorname);
-#else
-	;
-#endif
 	/*
 	 * Check to see if there are any existing persistent reservation APTPL
 	 * pre-registrations that need to be enabled for this LUN ACL..
@@ -1669,19 +1322,11 @@ int core_dev_del_initiator_node_lun_acl(
 
 	lacl->se_lun = NULL;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s_TPG[%hu]_LUN[%u] - Removed ACL for"
-=======
 	pr_debug("%s_TPG[%hu]_LUN[%u] - Removed ACL for"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" InitiatorNode: %s Mapped LUN: %u\n",
 		tpg->se_tpg_tfo->get_fabric_name(),
 		tpg->se_tpg_tfo->tpg_get_tag(tpg), lun->unpacked_lun,
 		lacl->initiatorname, lacl->mapped_lun);
-#else
-	;
-#endif
 
 	return 0;
 }
@@ -1690,22 +1335,11 @@ void core_dev_free_initiator_node_lun_acl(
 	struct se_portal_group *tpg,
 	struct se_lun_acl *lacl)
 {
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("%s_TPG[%hu] - Freeing ACL for %s InitiatorNode: %s"
-		" Mapped LUN: %u\n", TPG_TFO(tpg)->get_fabric_name(),
-		TPG_TFO(tpg)->tpg_get_tag(tpg),
-		TPG_TFO(tpg)->get_fabric_name(),
-=======
 	pr_debug("%s_TPG[%hu] - Freeing ACL for %s InitiatorNode: %s"
 		" Mapped LUN: %u\n", tpg->se_tpg_tfo->get_fabric_name(),
 		tpg->se_tpg_tfo->tpg_get_tag(tpg),
 		tpg->se_tpg_tfo->get_fabric_name(),
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		lacl->initiatorname, lacl->mapped_lun);
-#else
-	;
-#endif
 
 	kfree(lacl);
 }

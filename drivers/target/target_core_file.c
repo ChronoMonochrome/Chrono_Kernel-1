@@ -30,38 +30,20 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/module.h>
+#include <linux/falloc.h>
 #include <scsi/scsi.h>
 #include <scsi/scsi_host.h>
+#include <asm/unaligned.h>
 
 #include <target/target_core_base.h>
 #include <target/target_core_backend.h>
 
 #include "target_core_file.h"
 
-<<<<<<< HEAD
-#if 1
-#ifdef CONFIG_DEBUG_PRINTK
-#define DEBUG_FD_CACHE(x...) printk(x)
-#else
-#define DEBUG_FD_CACHE(x...)
-#endif
-
-#if 1
-#define DEBUG_FD_FUA(x...) printk(x)
-#else
-#define DEBUG_FD_FUA(x...)
-#endif
-
-static struct se_subsystem_api fileio_template;
-#else
-#define DEBUG_FD_CACHE(x...) ;
-#endif
-=======
 static inline struct fd_dev *FD_DEV(struct se_device *dev)
 {
 	return container_of(dev, struct fd_dev, dev);
 }
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 /*	fd_attach_hba(): (Part of se_subsystem_api_t template)
  *
@@ -81,30 +63,11 @@ static int fd_attach_hba(struct se_hba *hba, u32 host_id)
 
 	hba->hba_ptr = fd_host;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
-		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
-		TARGET_CORE_MOD_VERSION);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
-		" Target Core with TCQ Depth: %d MaxSectors: %u\n",
-		hba->hba_id, fd_host->fd_host_id,
-		atomic_read(&hba->max_queue_depth), FD_MAX_SECTORS);
-#else
-	;
-#endif
-=======
 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
 		TARGET_CORE_MOD_VERSION);
-	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
-		" MaxSectors: %u\n",
-		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
+	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
+		hba->hba_id, fd_host->fd_host_id);
 
 	return 0;
 }
@@ -113,16 +76,8 @@ static void fd_detach_hba(struct se_hba *hba)
 {
 	struct fd_host *fd_host = hba->hba_ptr;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_HBA[%d] - Detached FILEIO HBA: %u from Generic"
-=======
 	pr_debug("CORE_HBA[%d] - Detached FILEIO HBA: %u from Generic"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" Target Core\n", hba->hba_id, fd_host->fd_host_id);
-#else
-	;
-#endif
 
 	kfree(fd_host);
 	hba->hba_ptr = NULL;
@@ -141,15 +96,7 @@ static struct se_device *fd_alloc_device(struct se_hba *hba, const char *name)
 
 	fd_dev->fd_host = fd_host;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "FILEIO: Allocated fd_dev for %p\n", name);
-#else
-	;
-#endif
-=======
 	pr_debug("FILEIO: Allocated fd_dev for %p\n", name);
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 
 	return &fd_dev->dev;
 }
@@ -205,10 +152,7 @@ static int fd_configure_device(struct se_device *dev)
 		struct request_queue *q = bdev_get_queue(inode->i_bdev);
 		unsigned long long dev_size;
 
-		dev->dev_attrib.hw_block_size =
-			bdev_logical_block_size(inode->i_bdev);
-		dev->dev_attrib.hw_max_sectors = queue_max_hw_sectors(q);
-
+		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
 		/*
 		 * Determine the number of bytes from i_size_read() minus
 		 * one (1) logical sector from underlying struct block_device
@@ -216,18 +160,37 @@ static int fd_configure_device(struct se_device *dev)
 		dev_size = (i_size_read(file->f_mapping->host) -
 				       fd_dev->fd_block_size);
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "FILEIO: Using size: %llu bytes from struct"
-=======
 		pr_debug("FILEIO: Using size: %llu bytes from struct"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 			" block_device blocks: %llu logical_block_size: %d\n",
 			dev_size, div_u64(dev_size, fd_dev->fd_block_size),
 			fd_dev->fd_block_size);
-#else
-		;
-#endif
+		/*
+		 * Check if the underlying struct block_device request_queue supports
+		 * the QUEUE_FLAG_DISCARD bit for UNMAP/WRITE_SAME in SCSI + TRIM
+		 * in ATA and we need to set TPE=1
+		 */
+		if (blk_queue_discard(q)) {
+			dev->dev_attrib.max_unmap_lba_count =
+				q->limits.max_discard_sectors;
+			/*
+			 * Currently hardcoded to 1 in Linux/SCSI code..
+			 */
+			dev->dev_attrib.max_unmap_block_desc_count = 1;
+			dev->dev_attrib.unmap_granularity =
+				q->limits.discard_granularity >> 9;
+			dev->dev_attrib.unmap_granularity_alignment =
+				q->limits.discard_alignment;
+			pr_debug("IFILE: BLOCK Discard support available,"
+					" disabled by default\n");
+		}
+		/*
+		 * Enable write same emulation for IBLOCK and use 0xFFFF as
+		 * the smaller WRITE_SAME(10) only has a two-byte block count.
+		 */
+		dev->dev_attrib.max_write_same_len = 0xFFFF;
+
+		if (blk_queue_nonrot(q))
+			dev->dev_attrib.is_nonrot = 1;
 	} else {
 		if (!(fd_dev->fbd_flags & FBDF_HAS_SIZE)) {
 			pr_err("FILEIO: Missing fd_dev_size="
@@ -236,12 +199,28 @@ static int fd_configure_device(struct se_device *dev)
 			goto fail;
 		}
 
-		dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
-		dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
+		fd_dev->fd_block_size = FD_BLOCKSIZE;
+		/*
+		 * Limit UNMAP emulation to 8k Number of LBAs (NoLB)
+		 */
+		dev->dev_attrib.max_unmap_lba_count = 0x2000;
+		/*
+		 * Currently hardcoded to 1 in Linux/SCSI code..
+		 */
+		dev->dev_attrib.max_unmap_block_desc_count = 1;
+		dev->dev_attrib.unmap_granularity = 1;
+		dev->dev_attrib.unmap_granularity_alignment = 0;
+
+		/*
+		 * Limit WRITE_SAME w/ UNMAP=0 emulation to 8k Number of LBAs (NoLB)
+		 * based upon struct iovec limit for vfs_writev()
+		 */
+		dev->dev_attrib.max_write_same_len = 0x1000;
 	}
 
-	fd_dev->fd_block_size = dev->dev_attrib.hw_block_size;
-
+	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
+	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
+	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
 
 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
@@ -252,23 +231,10 @@ static int fd_configure_device(struct se_device *dev)
 
 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
 	fd_dev->fd_queue_depth = dev->queue_depth;
-	/*
-	 * Limit WRITE_SAME w/ UNMAP=0 emulation to 8k Number of LBAs (NoLB)
-	 * based upon struct iovec limit for vfs_writev()
-	 */
-	dev->dev_attrib.max_write_same_len = 0x1000;
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "CORE_FILE[%u] - Added TCM FILEIO Device ID: %u at %s,"
-=======
 	pr_debug("CORE_FILE[%u] - Added TCM FILEIO Device ID: %u at %s,"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 		" %llu total bytes\n", fd_host->fd_host_id, fd_dev->fd_dev_id,
 			fd_dev->fd_dev_name, fd_dev->fd_dev_size);
-#else
-	;
-#endif
 
 	return 0;
 fail:
@@ -512,6 +478,75 @@ fd_execute_write_same(struct se_cmd *cmd)
 }
 
 static sense_reason_t
+fd_do_unmap(struct se_cmd *cmd, void *priv, sector_t lba, sector_t nolb)
+{
+	struct file *file = priv;
+	struct inode *inode = file->f_mapping->host;
+	int ret;
+
+	if (S_ISBLK(inode->i_mode)) {
+		/* The backend is block device, use discard */
+		struct block_device *bdev = inode->i_bdev;
+
+		ret = blkdev_issue_discard(bdev, lba,
+				nolb, GFP_KERNEL, 0);
+		if (ret < 0) {
+			pr_warn("FILEIO: blkdev_issue_discard() failed: %d\n",
+				ret);
+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+		}
+	} else {
+		/* The backend is normal file, use fallocate */
+		struct se_device *se_dev = cmd->se_dev;
+		loff_t pos = lba * se_dev->dev_attrib.block_size;
+		unsigned int len = nolb * se_dev->dev_attrib.block_size;
+		int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
+
+		if (!file->f_op->fallocate)
+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+
+		ret = file->f_op->fallocate(file, mode, pos, len);
+		if (ret < 0) {
+			pr_warn("FILEIO: fallocate() failed: %d\n", ret);
+			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+		}
+	}
+
+	return 0;
+}
+
+static sense_reason_t
+fd_execute_write_same_unmap(struct se_cmd *cmd)
+{
+	struct se_device *se_dev = cmd->se_dev;
+	struct fd_dev *fd_dev = FD_DEV(se_dev);
+	struct file *file = fd_dev->fd_file;
+	sector_t lba = cmd->t_task_lba;
+	sector_t nolb = sbc_get_write_same_sectors(cmd);
+	int ret;
+
+	if (!nolb) {
+		target_complete_cmd(cmd, SAM_STAT_GOOD);
+		return 0;
+	}
+
+	ret = fd_do_unmap(cmd, file, lba, nolb);
+	if (ret)
+		return ret;
+
+	target_complete_cmd(cmd, GOOD);
+	return 0;
+}
+
+static sense_reason_t
+fd_execute_unmap(struct se_cmd *cmd)
+{
+	struct file *file = FD_DEV(cmd->se_dev)->fd_file;
+
+	return sbc_execute_unmap(cmd, fd_do_unmap, file);
+}
+
+static sense_reason_t
 fd_execute_rw(struct se_cmd *cmd)
 {
 	struct scatterlist *sgl = cmd->t_data_sg;
@@ -590,19 +625,8 @@ static ssize_t fd_set_configfs_dev_params(struct se_device *dev,
 				ret = -EINVAL;
 				break;
 			}
-<<<<<<< HEAD
-			snprintf(fd_dev->fd_dev_name, FD_MAX_DEV_NAME,
-					"%s", arg_p);
-			kfree(arg_p);
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "FILEIO: Referencing Path: %s\n",
-=======
 			pr_debug("FILEIO: Referencing Path: %s\n",
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 					fd_dev->fd_dev_name);
-#else
-			;
-#endif
 			fd_dev->fbd_flags |= FBDF_HAS_PATH;
 			break;
 		case Opt_fd_dev_size:
@@ -618,16 +642,8 @@ static ssize_t fd_set_configfs_dev_params(struct se_device *dev,
 						" fd_dev_size=\n");
 				goto out;
 			}
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "FILEIO: Referencing Size: %llu"
-=======
 			pr_debug("FILEIO: Referencing Size: %llu"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 					" bytes\n", fd_dev->fd_dev_size);
-#else
-			;
-#endif
 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
 			break;
 		case Opt_fd_buffered_io:
@@ -638,16 +654,8 @@ static ssize_t fd_set_configfs_dev_params(struct se_device *dev,
 				goto out;
 			}
 
-<<<<<<< HEAD
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "FILEIO: Using buffered I/O"
-=======
 			pr_debug("FILEIO: Using buffered I/O"
->>>>>>> 90aeaae... Merge branch 'lk-3.9' into HEAD
 				" operations for struct fd_dev\n");
-#else
-			;
-#endif
 
 			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
 			break;
@@ -686,17 +694,20 @@ static sector_t fd_get_blocks(struct se_device *dev)
 	 * to handle underlying block_device resize operations.
 	 */
 	if (S_ISBLK(i->i_mode))
-		dev_size = (i_size_read(i) - fd_dev->fd_block_size);
+		dev_size = i_size_read(i);
 	else
 		dev_size = fd_dev->fd_dev_size;
 
-	return div_u64(dev_size, dev->dev_attrib.block_size);
+	return div_u64(dev_size - dev->dev_attrib.block_size,
+		       dev->dev_attrib.block_size);
 }
 
 static struct sbc_ops fd_sbc_ops = {
 	.execute_rw		= fd_execute_rw,
 	.execute_sync_cache	= fd_execute_sync_cache,
 	.execute_write_same	= fd_execute_write_same,
+	.execute_write_same_unmap = fd_execute_write_same_unmap,
+	.execute_unmap		= fd_execute_unmap,
 };
 
 static sense_reason_t
