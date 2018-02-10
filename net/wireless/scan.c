@@ -103,8 +103,6 @@ void __cfg80211_sched_scan_results(struct work_struct *wk)
 
 	mutex_lock(&rdev->sched_scan_mtx);
 
-	request = rdev->sched_scan_req;
-
 	/* we don't have sched_scan_req anymore if the scan is stopping */
 	if (rdev->sched_scan_req)
 		nl80211_send_sched_scan_results(rdev,
