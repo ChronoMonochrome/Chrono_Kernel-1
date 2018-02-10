@@ -285,12 +285,21 @@ return -EPERM;
 	if (type == ACL_TYPE_ACCESS) {
 		umode_t mode = inode->i_mode;
 		struct posix_acl *old_acl = acl;
+<<<<<<< HEAD
 		error = posix_acl_update_mode(inode, &inode->i_mode, &acl);
 
 		if (!acl)
 			posix_acl_release(old_acl);
 		if (error)
 			goto out_release;
+=======
+
+		error = posix_acl_update_mode(inode, &mode, &acl);
+		if (error < 0)
+			goto out_release;
+		if (!acl)
+			posix_acl_release(old_acl);
+>>>>>>> 9857d3575a05... Merge linux-3.10.106 into cm-15.1
 
 		error = gfs2_set_mode(inode, mode);
 		if (error)

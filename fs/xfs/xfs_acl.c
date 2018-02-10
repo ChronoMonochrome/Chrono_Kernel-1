@@ -388,6 +388,7 @@ xfs_xattr_acl_set(struct dentry *dentry, const char *name,
 		goto out_release;
 
 	if (type == ACL_TYPE_ACCESS) {
+<<<<<<< HEAD
 		umode_t mode = inode->i_mode;
 		struct posix_acl *old_acl = acl;
 		error = posix_acl_update_mode(inode, &mode, &acl);
@@ -395,6 +396,18 @@ xfs_xattr_acl_set(struct dentry *dentry, const char *name,
 			posix_acl_release(old_acl);
 		if (error)
 			goto out_release;
+=======
+		umode_t mode;
+		struct posix_acl *old_acl = acl;
+
+		error = posix_acl_update_mode(inode, &mode, &acl);
+
+		if (error)
+			goto out_release;
+		if (!acl)
+			posix_acl_release(old_acl);
+
+>>>>>>> 9857d3575a05... Merge linux-3.10.106 into cm-15.1
 		error = xfs_set_mode(inode, mode);
 		if (error)
 			goto out_release;

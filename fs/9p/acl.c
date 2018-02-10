@@ -332,7 +332,10 @@ return -EPERM;
 		name = POSIX_ACL_XATTR_ACCESS;
 		if (acl) {
 			struct iattr iattr;
+<<<<<<< HEAD
 			struct posix_acl *old_acl = acl;
+=======
+>>>>>>> 9857d3575a05... Merge linux-3.10.106 into cm-15.1
 
 			retval = posix_acl_update_mode(inode, &iattr.ia_mode, &acl);
 			if (retval)
@@ -343,7 +346,10 @@ return -EPERM;
 				 * by the mode bits. So don't
 				 * update ACL.
 				 */
+<<<<<<< HEAD
 				posix_acl_release(old_acl);
+=======
+>>>>>>> 9857d3575a05... Merge linux-3.10.106 into cm-15.1
 				value = NULL;
 				size = 0;
 			}
