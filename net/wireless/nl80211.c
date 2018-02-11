@@ -1126,7 +1126,7 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 portid, u32 seq, int flag
 
 	if (dev->wiphy.flags & WIPHY_FLAG_HAVE_AP_SME &&
 	    dev->wiphy.max_acl_mac_addrs)
-		NLA_PUT_U32(msg, NL80211_ATTR_MAC_ACL_MAX,
+		nla_put_u32(msg, NL80211_ATTR_MAC_ACL_MAX,
 			    dev->wiphy.max_acl_mac_addrs);
 
 	if (dev->wiphy.n_vendor_commands) {
