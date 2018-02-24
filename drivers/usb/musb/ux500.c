@@ -242,7 +242,7 @@ static void musb_notify_idle(unsigned long _musb)
 	unsigned long	flags;
 
 	u8	devctl;
-	dev_dbg(musb->controller, "musb_notify_idle %s\n",
+	pr_err("musb_notify_idle %s\n",
 				otg_state_string(musb->xceiv->state));
 	spin_lock_irqsave(&musb->lock, flags);
 
@@ -277,7 +277,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
 	struct musb	*musb = container_of(nb, struct musb, nb);
 	unsigned long	flags;
 
-	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
+	pr_err("musb_otg_notifications %ld %s\n",
 				event, otg_state_string(musb->xceiv->state));
 	switch (event) {
 
@@ -288,19 +288,19 @@ static int musb_otg_notifications(struct notifier_block *nb,
 		break;
 	case USB_EVENT_ID:
 	case USB_EVENT_RIDA:
-		dev_dbg(musb->controller, "ID GND\n");
+		pr_err("ID GND\n");
 		if (is_otg_enabled(musb)) {
 				ux500_musb_set_vbus(musb, 1);
 		}
 		break;
 
 	case USB_EVENT_VBUS:
-		dev_dbg(musb->controller, "VBUS Connect\n");
+		pr_err("VBUS Connect\n");
 
 		break;
 	case USB_EVENT_RIDB:
 	case USB_EVENT_NONE:
-		dev_dbg(musb->controller, "VBUS Disconnect\n");
+		pr_err("VBUS Disconnect\n");
 		if (is_otg_enabled(musb) && musb->is_host)
 			ux500_musb_set_vbus(musb, 0);
 		else {
@@ -316,7 +316,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
 		wake_unlock(&ux500_usb_wakelock);
 		break;
 	default:
-		dev_dbg(musb->controller, "ID float\n");
+		pr_err("ID float\n");
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
@@ -408,7 +408,7 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 	/* TODO: Check discharge time values for other platforms */
 	if (!is_on)
 		mdelay(200);
-	dev_dbg(musb->controller, "VBUS %s, devctl %02x "
+	pr_err("VBUS %s, devctl %02x "
 		/* otg %3x conf %08x prcm %08x */ "\n",
 		otg_state_string(musb->xceiv->state),
 		musb_readb(musb->mregs, MUSB_DEVCTL));
@@ -424,7 +424,7 @@ static void ux500_musb_try_idle(struct musb *musb, unsigned long timeout)
 	/* Never idle if active, or when VBUS timeout is not set as host */
 	if (musb->is_active || ((musb->a_wait_bcon == 0)
 			&& (musb->xceiv->state == OTG_STATE_A_WAIT_BCON))) {
-		dev_dbg(musb->controller, "%s active, deleting timer\n",
+		pr_err("%s active, deleting timer\n",
 			otg_state_string(musb->xceiv->state));
 		del_timer(&notify_timer);
 		last_timer = jiffies;
@@ -435,14 +435,14 @@ static void ux500_musb_try_idle(struct musb *musb, unsigned long timeout)
 		if (!timer_pending(&notify_timer))
 			last_timer = timeout;
 		else {
-			dev_dbg(musb->controller, "Longer idle timer "
+			pr_err("Longer idle timer "
 						"already pending, ignoring\n");
 			return;
 		}
 	}
 	last_timer = timeout;
 
-	dev_dbg(musb->controller, "%s inactive, for idle timer for %lu ms\n",
+	pr_err("%s inactive, for idle timer for %lu ms\n",
 		otg_state_string(musb->xceiv->state),
 		(unsigned long)jiffies_to_msecs(timeout - jiffies));
 	mod_timer(&notify_timer, timeout);
@@ -493,7 +493,7 @@ static int ux500_musb_init(struct musb *musb)
 	status = otg_register_notifier(musb->xceiv, &musb->nb);
 
 	if (status < 0) {
-		dev_dbg(musb->controller, "notification register failed\n");
+		pr_err("notification register failed\n");
 		goto err1;
 	}
 
