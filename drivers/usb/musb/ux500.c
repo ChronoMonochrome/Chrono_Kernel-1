@@ -499,6 +499,7 @@ static int ux500_musb_init(struct musb *musb)
 
 	setup_timer(&notify_timer, musb_notify_idle, (unsigned long) musb);
 
+	MUSB_HST_MODE(musb);
 	musb_bkp = musb;
 
 	return 0;
