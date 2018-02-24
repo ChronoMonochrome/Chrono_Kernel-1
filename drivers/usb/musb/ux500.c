@@ -32,6 +32,7 @@
 
 #include "musb_core.h"
 
+static struct musb *musb_bkp;
 static void ux500_musb_set_vbus(struct musb *musb, int is_on);
 
 struct ux500_glue {
@@ -498,6 +499,8 @@ static int ux500_musb_init(struct musb *musb)
 
 	setup_timer(&notify_timer, musb_notify_idle, (unsigned long) musb);
 
+	musb_bkp = musb;
+
 	return 0;
 err1:
 	pm_runtime_disable(musb->controller);
@@ -526,6 +529,80 @@ static const struct musb_platform_ops ux500_ops = {
 
 	.enable		= ux500_musb_enable,
 	.configure_endpoints	= ux500_musb_configure_endpoints,
+};
+
+static struct kobject *musb_kobject;
+
+#define ATTR_RW(_name)  \
+        static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
+
+#define ATTR_RO(_name)  \
+        static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
+
+#define ATTR_WO(_name)  \
+        static struct kobj_attribute _name##_interface = __ATTR(_name, 0200, _name##_show, NULL);
+
+static ssize_t mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	switch (musb_bkp->board_mode) {
+	  case MUSB_HOST:
+		return sprintf(buf, "host (%d)\n", musb_bkp->is_host);
+	  case MUSB_PERIPHERAL:
+		return sprintf(buf, "peripheral (%d)\n", musb_bkp->is_host);
+	  case MUSB_OTG:
+		return sprintf(buf, "otg (%d)\n", musb_bkp->is_host);
+	}
+
+	return sprintf(buf, "invalid mode: %d (%d)\n", musb_bkp->board_mode, musb_bkp->is_host);
+}
+
+static ssize_t mode_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int mode = -1;
+
+	if (sysfs_streq(buf, "host"))
+		mode = MUSB_HOST;
+	else if (sysfs_streq(buf, "peripheral"))
+		mode = MUSB_PERIPHERAL;
+	else if (sysfs_streq(buf, "otg"))
+		mode = MUSB_OTG;
+
+	if (mode == -1) {
+		pr_err("%s: invalid inputs, valid are: host, peripheral, otg\n");
+		return -EINVAL;
+	}
+
+	musb_bkp->board_mode = mode;
+	musb_bkp->is_host = (mode != MUSB_PERIPHERAL);
+
+	return count;
+}
+ATTR_RW(mode);
+
+static ssize_t vbus_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", musb_bkp->is_active);
+}
+
+static ssize_t vbus_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	if (sysfs_streq(buf, "0"))
+		ux500_musb_set_vbus(musb_bkp, 0);
+	else
+		ux500_musb_set_vbus(musb_bkp, 1);
+
+	return count;
+}
+ATTR_RW(vbus);
+
+static struct attribute *musb_attrs[] = {
+	&mode_interface.attr,
+	&vbus_interface.attr,
+	NULL,
+};
+
+static struct attribute_group musb_interface_group = {
+	.attrs = musb_attrs,
 };
 
 /**
@@ -606,6 +683,14 @@ static int __init ux500_probe(struct platform_device *pdev)
 	}
 
 	pm_runtime_enable(&pdev->dev);
+
+	musb_kobject = kobject_create_and_add("musb", kernel_kobj);
+	if (!musb_kobject)
+		pr_err("[musb-ux500] Failed to create kobject interface\n");
+
+	ret = sysfs_create_group(musb_kobject, &musb_interface_group);
+	if (ret)
+		kobject_put(musb_kobject);
 
 	return 0;
 err4:
