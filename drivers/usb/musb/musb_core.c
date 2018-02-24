@@ -2021,7 +2021,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	pm_runtime_enable(musb->controller);
 
 	spin_lock_init(&musb->lock);
-	musb->board_mode = plat->mode;
+	musb->board_mode = MUSB_OTG /*plat->mode*/;
 	musb->board_set_power = plat->set_power;
 	musb->min_power = plat->min_power;
 	musb->ops = plat->platform_ops;
