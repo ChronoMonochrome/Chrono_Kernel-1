@@ -2,7 +2,7 @@
 _PATH="$PATH"
 export PATH=/stage1
 
-busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
+busybox mount -t ext4 /dev/block/mmcblk0p8 /ramdisk
 busybox mv /ramdisk/last_boot.txt /ramdisk/last_boot.txt.old
 busybox date >>/ramdisk/last_boot.txt
 exec >>/ramdisk/last_boot.txt 2>&1
