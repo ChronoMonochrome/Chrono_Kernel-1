@@ -77,9 +77,9 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 
 	# since it's pain, load j4fs and param from separate partition
 	busybox insmod /ramdisk/modules/j4fs.ko
-	busybox insmod /ramdisk/modules/param.ko
-
 	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
+
+	busybox insmod /ramdisk/modules/param.ko
 	busybox sh /ramdisk/00recovery
 fi
 
