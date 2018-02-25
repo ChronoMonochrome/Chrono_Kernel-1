@@ -254,7 +254,7 @@ static ssize_t param_store(struct kobject *kobj, struct kobj_attribute *attr, co
 		return -EINVAL;
 	}
 
-	memset(param_str, 0, MAX_PARAM_VALUE_LEN);
+	memset(param_str, 0, MAX_PARAM_NAME_LEN);
 	strncpy(param_str, buf, space_idx);
 	//pr_err("%s: copy %d bytes to char_val from str %s", __func__, buf_len - space_idx - 2, char_val_ptr);
 
