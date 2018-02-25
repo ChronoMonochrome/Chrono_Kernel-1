@@ -36,13 +36,15 @@ static bool initialized = false;
 static int load_lfs_param_value(void);
 static int save_lfs_param_value(void);
 
-static void late_init(void)
-{
-	load_lfs_param_value();
-	initialized = true;
-}
-
 static status_t param_status;
+
+static bool late_init(void)
+{
+	int ret = load_lfs_param_value();
+	initialized = (ret == sizeof(param_status));
+
+	return initialized;
+}
 
 static void set_param_value(int idx, void *value)
 {
@@ -206,8 +208,12 @@ static ssize_t param_show(struct kobject *kobj, struct kobj_attribute *attr, cha
 	signed int value = 0;
 	signed char str_val[PARAM_STRING_SIZE];
 
-	if (!initialized)
-		late_init();
+	if (!initialized) {
+		if (!late_init()) {
+			pr_err("%s: parameters have not been initialized\n", __func__);
+			return -EINVAL;
+		}
+	}
 
 	//get_param_value(__LOAD_TESTKERNEL, &value);
 	//count += sprintf(buf, "%s: %d\n", "__LOAD_TESTKERNEL", value);
@@ -235,8 +241,12 @@ static ssize_t param_store(struct kobject *kobj, struct kobj_attribute *attr, co
 	int buf_len;
 	char param_str[MAX_PARAM_NAME_LEN], char_val[MAX_PARAM_VALUE_LEN], *char_val_ptr;
 
-	if (!initialized)
-		late_init();
+	if (!initialized) {
+		if (!late_init()) {
+			pr_err("%s: parameters have not been initialized\n", __func__);
+			return -EINVAL;
+		}
+	}
 
 	buf_len = strlen(buf);
 
@@ -256,20 +266,15 @@ static ssize_t param_store(struct kobject *kobj, struct kobj_attribute *attr, co
 
 	memset(param_str, 0, MAX_PARAM_NAME_LEN);
 	strncpy(param_str, buf, space_idx);
-	//pr_err("%s: copy %d bytes to char_val from str %s", __func__, buf_len - space_idx - 2, char_val_ptr);
 
 	memset(char_val, 0, MAX_PARAM_VALUE_LEN);
-	strncpy(char_val, char_val_ptr, buf_len - space_idx - 2);
+	strncpy(char_val, char_val_ptr, buf_len - space_idx - 2);	// -2 because of newline and zero symbols
 
 	idx = param_str_to_int(param_str);
 	if (idx < 0) {
 		pr_err("%s: invalid inputs: %s\n", __func__, param_str);
 		return -EINVAL;
 	}
-
-	//pr_err("%s: idx: %d (str: %d)\n", __func__, idx, is_typeof_char(idx));
-
-	//pr_err("%s: write '%s' to '%s'\n", __func__, char_val, param_str);
 
 	if (is_typeof_char(idx)) {
 		set_param_value(idx, &char_val);
