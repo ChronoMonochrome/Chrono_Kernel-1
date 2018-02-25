@@ -1142,6 +1142,45 @@ error1:
 	return J4FS_FAIL;
 }
 
+int __fsd_unlink(j4fs_header *header, char *filename, DWORD *offset)
+{
+	int ret = 1;
+
+	//This j4fs_header cannot be interpreted. It means there are no RW files in this partition(this can happen and this is a normal case) or
+	//this j4fs partition is crashed(this should not happen).
+	if(header->type != J4FS_FILE_TYPE)
+	{
+		// There are no RW files in this partition or this first j4fs_header is crashed. Before we write data of new file, user of j4fs should write j4fs_header of new file.
+		// So, this case should not happen and/or should be repaired.
+		if (*offset == j4fs_rw_start) {
+			j4fs_panic("There are no RW files in this partition or this first RW j4fs_header is crashed. Before we write data of new file, user of j4fs should write j4fs_header of new file. So, this case should not happen and/or should be repaired..");
+			ret = -EINVAL;
+			goto out;
+		}
+		// This j4fs partition is crashed by some abnormal cause. This should not happen and should be repaired.
+		j4fs_panic("this j4fs partition is crashed by some abnormal cause.  This should not happen and should be repaired.");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	// This file was deleted, so read next j4fs_header.
+	if((header->flags&0x1)!=((header->flags&0x2)>>1))
+	{
+		*offset = header->link;
+		ret = 0;
+	}
+
+	// filename is dismatched, so read next file.
+	if(strcmp(filename,header->filename))
+	{
+		*offset = header->link;
+		ret = 0;
+	}
+
+out:
+	return ret;
+}
+
 int fsd_unlink(char *filename)
 {
 	DWORD offset;
@@ -1171,10 +1210,10 @@ int fsd_unlink(char *filename)
 	}
 
 	// the start address of the RW area of the device (partition)
-	offset=j4fs_rw_start;
+	offset = j4fs_rw_start;
 
 	// find object header corresponding to filename
-	while(offset!=0xffffffff)
+	while (offset != 0xffffffff)
 	{
 		// read j4fs_header
 		ret = FlashDevRead(&device_info, offset, J4FS_BASIC_UNIT_SIZE, buf);
@@ -1184,49 +1223,29 @@ int fsd_unlink(char *filename)
 		}
 		header=(j4fs_header *)buf;
 
-		//This j4fs_header cannot be interpreted. It means there are no RW files in this partition(this can happen and this is a normal case) or
-		//this j4fs partition is crashed(this should not happen).
-		if(header->type!=J4FS_FILE_TYPE)
-		{
-			// There are no RW files in this partition or this first j4fs_header is crashed. Before we write data of new file, user of j4fs should write j4fs_header of new file.
-			// So, this case should not happen and/or should be repaired.
-			if(offset==j4fs_rw_start) {
-				j4fs_panic("There are no RW files in this partition or this first RW j4fs_header is crashed. Before we write data of new file, user of j4fs should write j4fs_header of new file. So, this case should not happen and/or should be repaired..");
-				goto error1;
+		ret = __fsd_unlink(header, filename, &offset);
+		if (ret < 0)
+			goto error1;
+
+		if (ret == 0)
+			// not found
+			continue;
+
+		if (ret == 1) {
+			// this file will be deleted
+			header->flags=0x1;
+
+			ret = FlashDevWrite(&device_info, offset, J4FS_BASIC_UNIT_SIZE, buf);
+			if (error(ret)) {
+				J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
+		   		goto error1;
 			}
 
-			// This j4fs partition is crashed by some abnormal cause. This should not happen and should be repaired.
-			j4fs_panic("this j4fs partition is crashed by some abnormal cause.  This should not happen and should be repaired.");
-			goto error1;
-		}
-
-		// This file was deleted, so read next j4fs_header.
-		if((header->flags&0x1)!=((header->flags&0x2)>>1))
-		{
 			offset=header->link;
-			continue;
 		}
-
-		// filename is dismatched, so read next file.
-		if(strcmp(filename,header->filename))
-		{
-			offset=header->link;
-			continue;
-		}
-
-		// this file will be deleted
-		header->flags=0x1;
-
-		ret = FlashDevWrite(&device_info, offset, J4FS_BASIC_UNIT_SIZE, buf);
-		if (error(ret)) {
-			J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
-	   		goto error1;
-		}
-
-		offset=header->link;
 	}
 
-	ret=fsd_reclaim();
+	ret = fsd_reclaim();
 
 	if (error(ret)) {
 		J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
