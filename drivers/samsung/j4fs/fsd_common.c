@@ -82,14 +82,14 @@ int fsd_read(j4fs_ctrl *ctl)
 			j4fs_panic("This j4fs_header cannot be interpreted. So this j4fs partition is crashed by some abnormal cause.  This should not happen and should be repaired.");
 			goto error1;
 		}
-
+/*
 		// This RO file was deleted and RO file should not be deleted. So this j4fs partition is crashed by some abnormal cause.
 		if((header->flags&0x1)!=((header->flags&0x2)>>1))
 		{
 			j4fs_panic("This RO file was deleted and RO file should not be deleted. So this j4fs partition is crashed by some abnormal cause.  This should be repaired.");
 			goto error1;
 		}
-
+*/
 		// File ID is dismatched, so read next file.
 		if(ctl->id && ctl->id!=header->id)
 		{
@@ -1124,25 +1124,21 @@ done:
 
 	fsd_print_meta_data();
 
-#ifdef __KERNEL__
 	kfree(buf);
 #ifdef J4FS_TRANSACTION_LOGGING
 	kfree(transaction);
-#endif
 #endif
 	return buffer_index;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
 #ifdef J4FS_TRANSACTION_LOGGING
 	kfree(transaction);
 #endif
-#endif
 	return J4FS_FAIL;
 }
 
-int __fsd_unlink(j4fs_header *header, char *filename, DWORD *offset)
+int __fsd_unlink(j4fs_header *header, char *filename, DWORD *offset, bool is_ro_area)
 {
 	int ret = 1;
 
@@ -1166,14 +1162,16 @@ int __fsd_unlink(j4fs_header *header, char *filename, DWORD *offset)
 	// This file was deleted, so read next j4fs_header.
 	if((header->flags&0x1)!=((header->flags&0x2)>>1))
 	{
-		*offset = header->link;
+		if (!is_ro_area)
+			*offset = header->link;
 		ret = 0;
 	}
 
 	// filename is dismatched, so read next file.
 	if(strcmp(filename,header->filename))
 	{
-		*offset = header->link;
+		if (!is_ro_area)
+			*offset = header->link;
 		ret = 0;
 	}
 
@@ -1183,30 +1181,48 @@ out:
 
 int fsd_unlink(char *filename)
 {
-	DWORD offset;
+	DWORD offset = 0xB16B00B5, offset_dummy;
 	j4fs_header *header;
-	int ret=-1;
+	int i, ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
-	if(filename==NULL) {
-	#ifdef __KERNEL__
+	if (filename == NULL) {
 		kfree(buf);
-	#endif
 		return 0;
 	}
 
-	if(is_invalid_j4fs_rw_start())
+	if (is_invalid_j4fs_rw_start())
 	{
 		J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error! j4fs_rw_start is invalid(j4fs_rw_start=0x%08x, j4fs_end=0x%08x, ro_j4fs_header_count=0x%08x)\n",
 			__FUNCTION__, __LINE__, j4fs_rw_start, device_info.j4fs_end, ro_j4fs_header_count));
 		j4fs_panic("j4fs_rw_start is invalid");
 		goto error1;
+	}
+
+	for (i = 0; i < ro_j4fs_header_count; i++)
+	{
+		header = &ro_j4fs_header[i];
+
+		ret = __fsd_unlink(header, filename, &offset_dummy, 1 /* is_ro_area */);
+
+		if (ret == 1) {
+			offset = (i>0)?ro_j4fs_header[i-1].link:device_info.j4fs_offset;
+
+			// this file will be deleted
+			header->flags=0x1;
+
+			ret = FlashDevWrite(&device_info, offset, J4FS_BASIC_UNIT_SIZE, buf);
+			if (error(ret)) {
+				J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
+			  		goto error1;
+			}
+
+			//offset = 0xffffffff;
+			goto reclaim;
+			//break;
+		}
 	}
 
 	// the start address of the RW area of the device (partition)
@@ -1223,7 +1239,7 @@ int fsd_unlink(char *filename)
 		}
 		header=(j4fs_header *)buf;
 
-		ret = __fsd_unlink(header, filename, &offset);
+		ret = __fsd_unlink(header, filename, &offset, 0 /* is_ro_area */);
 		if (ret < 0)
 			goto error1;
 
@@ -1237,14 +1253,16 @@ int fsd_unlink(char *filename)
 
 			ret = FlashDevWrite(&device_info, offset, J4FS_BASIC_UNIT_SIZE, buf);
 			if (error(ret)) {
-				J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
+			J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: Error(nErr=0x%08x)\n",__FUNCTION__,__LINE__,ret));
 		   		goto error1;
 			}
 
-			offset=header->link;
+			//offset = 0xffffffff;
+			goto reclaim;
 		}
 	}
 
+reclaim:
 	ret = fsd_reclaim();
 
 	if (error(ret)) {
