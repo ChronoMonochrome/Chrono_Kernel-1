@@ -123,8 +123,6 @@
 #define to_ab8500_fg_device_info(x) container_of((x), \
 	struct ab8500_fg, fg_psy);
 
-extern void (*sec_set_param_value) (int idx, void *value);
-extern void (*sec_get_param_value) (int idx, void *value);
 extern int register_reboot_notifier(struct notifier_block *nb);
 
 extern bool vbus_state;
@@ -3056,8 +3054,7 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 	       switchoff_status);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-	if (sec_get_param_value)
-		sec_get_param_value(__BATT_CAPACITY, &off_status);
+	get_param_value(__BATT_CAPACITY, &off_status);
 #else
 	off_status = ab8500_fg_read_battery_capacity(di);
 #endif
@@ -3085,8 +3082,7 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 			 states[param_charge_state]);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-		if (sec_set_param_value)
-			sec_set_param_value(__BATT_CAPACITY, &offset_null);
+		set_param_value(__BATT_CAPACITY, &offset_null);
 #else
 		ab8500_fg_write_battery_capacity(di, offset_null);
 #endif
@@ -3099,8 +3095,7 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 		       "[FG_DATA] *** Maybe this is a first boot ***\n",
 		       off_status);
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-		if (sec_set_param_value)
-			sec_set_param_value(__BATT_CAPACITY, &offset_null);
+		set_param_value(__BATT_CAPACITY, &offset_null);
 #else
 		ab8500_fg_write_battery_capacity(di, offset_null);
 #endif
@@ -3273,8 +3268,7 @@ static int ab8500_fg_reboot_call(struct notifier_block *self,
 	off_status |= (di->bat->charge_state << OFF_CHARGE_STATE);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-	if (sec_set_param_value)
-		sec_set_param_value(__BATT_CAPACITY, &off_status);
+	set_param_value(__BATT_CAPACITY, &off_status);
 #else
 	ab8500_fg_write_battery_capacity(di, off_status);
 #endif

@@ -46,6 +46,7 @@ static bool late_init(void)
 	return initialized;
 }
 
+/*
 static void set_param_value(int idx, void *value)
 {
 	int i, str_i;
@@ -88,7 +89,7 @@ static void get_param_value(int idx, void *value)
 			}
 		}
 	}
-}
+}*/
 
 static char* param_idx_to_str(int idx)
 {

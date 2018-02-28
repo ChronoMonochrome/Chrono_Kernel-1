@@ -207,12 +207,6 @@ EXPORT_SYMBOL(sec_class);
 struct class *camera_class;
 EXPORT_SYMBOL(camera_class);
 
-void (*sec_set_param_value) (int idx, void *value) = NULL;
-EXPORT_SYMBOL(sec_set_param_value);
-
-void (*sec_get_param_value) (int idx, void *value) = NULL;
-EXPORT_SYMBOL(sec_get_param_value);
-
 u32 sec_bootmode;
 EXPORT_SYMBOL(sec_bootmode);
 
@@ -339,7 +333,7 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 					u8 prerecovery_state = 0;
 					printk(KERN_INFO "%s: clear prerecovery flag=%d\n", __func__,
 					       prerecovery_state);
-					sec_set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
+					set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
 				}
 */
 				mode = reboot_tbl[i].mode;
@@ -364,34 +358,30 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 				default:
 					debug_level = -1;
 				}
-				if (sec_set_param_value && debug_level != -1)
-					sec_set_param_value(__DEBUG_LEVEL, &debug_level);
+				if (debug_level != -1)
+					set_param_value(__DEBUG_LEVEL, &debug_level);
 			}
 		}
 	}
 
 	if (code != SYS_POWER_OFF) {
-		if (sec_get_param_value && sec_set_param_value) {
-			/* in case of RECOVERY mode we set switch_sel
-			 * with default value */
-			sec_get_param_value(__REBOOT_MODE, &temp_mode);
-			if (temp_mode == REBOOT_MODE_RECOVERY)
-				sec_set_param_value(__SWITCH_SEL,
-						    &default_switchsel);
-		}
+		/* in case of RECOVERY mode we set switch_sel
+		 * with default value */
+		get_param_value(__REBOOT_MODE, &temp_mode);
+		if (temp_mode == REBOOT_MODE_RECOVERY)
+			set_param_value(__SWITCH_SEL,
+					    &default_switchsel);
 
 		/* save __REBOOT_MODE, if CMD is NULL then REBOOT_MODE_NONE will be saved */
-		if (sec_set_param_value)
-			sec_set_param_value(__REBOOT_MODE, &mode);
+		set_param_value(__REBOOT_MODE, &mode);
 	}
-	if (sec_get_param_value) {
-		sec_get_param_value(__REBOOT_MODE, &temp_mode);
-		printk(KERN_INFO "%s: __REBOOT_MODE: 0x%x\n",
-			__func__, temp_mode);
-		sec_get_param_value(__SWITCH_SEL, &temp_mode);
-		printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
-			__func__, temp_mode);
-	}
+
+	get_param_value(__REBOOT_MODE, &temp_mode);
+	printk(KERN_INFO "%s: __REBOOT_MODE: 0x%x\n",
+		__func__, temp_mode);
+	get_param_value(__SWITCH_SEL, &temp_mode);
+	printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
+		__func__, temp_mode);
 
 	skip_readonly_param_remount = 0;
 	emergency_remount();

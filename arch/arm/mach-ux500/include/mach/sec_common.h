@@ -72,6 +72,9 @@ int sec_common_init_post(void);
 
 unsigned short sec_common_update_reboot_reason(char mode, const char *cmd);
 
+void get_param_value(int idx, void *value);
+void set_param_value(int idx, void *value);
+
 extern int sec_get_debug_enable(void);
 extern int sec_get_debug_enable_user(void);
 
