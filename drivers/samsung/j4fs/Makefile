@@ -15,7 +15,7 @@ EXTRA_CFLAGS +=  -I$(PRJROOT)/modules/include -I$(KDIR)/drivers/tfsr/Inc -I$(KDI
 
 obj-m := $(MOD_NAME).o
 
-$(MOD_NAME)-y := j4fs_kernel.o llid_kernel.o fsd_common.o
+$(MOD_NAME)-y := j4fs_kernel.o llid_kernel.o fsd_common.o 1.o
 
 else
 
