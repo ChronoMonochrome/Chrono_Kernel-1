@@ -17,10 +17,6 @@
 #include <linux/slab.h>
 #include "j4fs.h"
 
-#ifndef __KERNEL__
-#include <asm/util.h>
-#endif
-
 j4fs_device_info device_info;
 unsigned int j4fs_traceMask=0;
 unsigned int j4fs_PORMask=0;
@@ -63,12 +59,8 @@ int fsd_read(j4fs_ctrl *ctl)
 	j4fs_header *header;
 	int file_exist=0, i;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 	J4FS_T(J4FS_TRACE_FSD,("%s %d\n",__FUNCTION__,__LINE__));
 
@@ -97,13 +89,8 @@ int fsd_read(j4fs_ctrl *ctl)
 		}
 
 		// File ID(inode number) is matched
-		#ifdef __KERNEL__
 		if( ((ctl->index + ctl->count + PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
 			<= ((header->length + PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE) )
-		#else
-		if( ((ctl->index + ctl->count + J4FS_BASIC_UNIT_SIZE-1)/J4FS_BASIC_UNIT_SIZE*J4FS_BASIC_UNIT_SIZE)
-			<= ((header->length + J4FS_BASIC_UNIT_SIZE-1)/J4FS_BASIC_UNIT_SIZE*J4FS_BASIC_UNIT_SIZE) )
-		#endif
 		{
 			matching_offset=(i>0)?ro_j4fs_header[i-1].link:device_info.j4fs_offset;
 			file_length=header->length;
@@ -169,13 +156,8 @@ int fsd_read(j4fs_ctrl *ctl)
 		}
 
 		// File ID is matched. we should read lastest object larger than ctl.index, so go ahead.
-		#ifdef __KERNEL__
 		if( ((ctl->index + ctl->count + PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
 			<= ((header->length + PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE) )
-		#else
-		if( ((ctl->index + ctl->count + J4FS_BASIC_UNIT_SIZE-1)/J4FS_BASIC_UNIT_SIZE*J4FS_BASIC_UNIT_SIZE)
-			<= ((header->length + J4FS_BASIC_UNIT_SIZE-1)/J4FS_BASIC_UNIT_SIZE*J4FS_BASIC_UNIT_SIZE) )
-		#endif
 		{
 			matching_offset=offset;
 			file_length=header->length;
@@ -249,25 +231,19 @@ got_header:
 			len=0;
 		}
 
-	#ifdef __KERNEL__
 		kfree(buf);
-	#endif
 		return count;
 	}
 	else//There is no valid object coressponding to ctl->filename.
 	{
 		memset(ctl->buffer,0xff,ctl->count);
-	#ifdef __KERNEL__
 		kfree(buf);
-	#endif
 		if(file_exist) return ctl->count;
 		return J4FS_NO_FILE;
 	}
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
 
@@ -288,25 +264,14 @@ int fsd_write(j4fs_ctrl *ctl)
 	j4fs_header *header = 0;
 	int ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 #ifdef J4FS_TRANSACTION_LOGGING
-#ifdef __KERNEL__
 	j4fs_transaction *transaction;
 	transaction=kmalloc(J4FS_TRANSACTION_SIZE,GFP_NOFS);
-#else
-	BYTE buf1[J4FS_TRANSACTION_SIZE];
-	j4fs_transaction *transaction=(j4fs_transaction *)buf1;
-#endif
 #endif
 
-#ifdef __KERNEL__
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#endif
 
 	J4FS_T(J4FS_TRACE_FSD,("%s %d: (ino,index)=(%d,0x%08x)\n",__FUNCTION__,__LINE__,ctl->id,ctl->index));
 
@@ -330,11 +295,9 @@ int fsd_write(j4fs_ctrl *ctl)
 	if(ctl->count==0)
 	{
 		J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: count is zero\n",__FUNCTION__, __LINE__));
-	#ifdef __KERNEL__
 		kfree(buf);
 	#ifdef J4FS_TRANSACTION_LOGGING
 		kfree(transaction);
-	#endif
 	#endif
 		return J4FS_SUCCESS;
 	}
@@ -435,9 +398,7 @@ int fsd_write(j4fs_ctrl *ctl)
 					goto error1;
 				}
 
-			#ifdef __KERNEL__
 				kfree(buf);
-			#endif
 				return J4FS_RETRY_WRITE;
 			}
 
@@ -579,11 +540,9 @@ int fsd_write(j4fs_ctrl *ctl)
 					goto error1;
 				}
 
-			#ifdef __KERNEL__
 				kfree(buf);
 			#ifdef J4FS_TRANSACTION_LOGGING
 				kfree(transaction);
-			#endif
 			#endif
 				return J4FS_RETRY_WRITE;
 			}
@@ -981,9 +940,7 @@ int fsd_write(j4fs_ctrl *ctl)
 					goto error1;
 				}
 
-			#ifdef __KERNEL__
 				kfree(buf);
-			#endif
 				return J4FS_RETRY_WRITE;
 			}
 
@@ -1270,15 +1227,11 @@ reclaim:
 		goto error1;
 	}
 
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return 0;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
 
@@ -1295,28 +1248,17 @@ int fsd_reclaim()
 	int ret=-1;
 	int first_unused_area_offset=0xffffffff;
 
-#ifdef __KERNEL__
 	BYTE *buf_mst, *buf_header, *buf_data;
-#else
-	BYTE buf_mst[J4FS_BASIC_UNIT_SIZE], buf_header[J4FS_BASIC_UNIT_SIZE], buf_data[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 
 #ifdef J4FS_TRANSACTION_LOGGING
-#ifdef __KERNEL__
 	j4fs_transaction *transaction;
 	transaction=kmalloc(J4FS_TRANSACTION_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_TRANSACTION_SIZE];
-	j4fs_transaction *transaction=(j4fs_transaction *)buf;
-#endif
 #endif
 
-#ifdef __KERNEL__
 	buf_mst=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
 	buf_header=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
 	buf_data=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#endif
 
 	header=(j4fs_header *)buf_header;
 	mst=(j4fs_mst *)buf_mst;
@@ -1632,13 +1574,11 @@ reclaim_done:
 
 	if(!ro_j4fs_header_count) fsd_read_ro_header();
 
-#ifdef __KERNEL__
 	kfree(buf_mst);
 	kfree(buf_header);
 	kfree(buf_data);
 #ifdef J4FS_TRANSACTION_LOGGING
 	kfree(transaction);
-#endif
 #endif
 
 	J4FS_T(J4FS_TRACE_FSD_RECLAIM,("\n%s %d: Reclaim Done\n",__FUNCTION__,__LINE__));
@@ -1659,13 +1599,11 @@ error1:
 	if(!ro_j4fs_header_count) fsd_read_ro_header();
 	fsd_print_meta_data();
 
-#ifdef __KERNEL__
 	kfree(buf_mst);
 	kfree(buf_header);
 	kfree(buf_data);
 #ifdef J4FS_TRANSACTION_LOGGING
 	kfree(transaction);
-#endif
 #endif
 	return J4FS_FAIL;
 }
@@ -1681,12 +1619,8 @@ int fsd_mark_invalid()
 	j4fs_mst *mst;
 	int ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 	mst=(j4fs_mst *)buf;
 
@@ -1806,16 +1740,12 @@ int fsd_mark_invalid()
 		}
 	}
 
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 
 	return J4FS_SUCCESS;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
 
@@ -1833,12 +1763,8 @@ int fsd_read_ro_header(void)
 	int i;
 	int ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 	ro_j4fs_header_count=0;
 
@@ -1896,15 +1822,11 @@ int fsd_read_ro_header(void)
 	}
 
 	J4FS_T(J4FS_TRACE_FSD_PRINT_META_DATA,("\n====================== %s %d ================================\n", __FUNCTION__,__LINE__));
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_SUCCESS;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 
 }
@@ -1916,12 +1838,8 @@ int fsd_initialize_transaction()
 	DWORD sequence=0,offset=0xffffffff;
 	j4fs_transaction *transaction;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_TRANSACTION_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_TRANSACTION_SIZE];
-#endif
 
 	transaction=(j4fs_transaction *)buf;
 
@@ -1955,15 +1873,11 @@ int fsd_initialize_transaction()
 		if(j4fs_transaction_next_offset>=device_info.j4fs_device_end) j4fs_transaction_next_offset=device_info.j4fs_end+1;
 	}
 
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_SUCCESS;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
 #endif
@@ -1973,12 +1887,8 @@ int fsd_panic()
 	j4fs_mst *mst;
 	int ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(J4FS_BASIC_UNIT_SIZE,GFP_NOFS);
-#else
-	BYTE buf[J4FS_BASIC_UNIT_SIZE];
-#endif
 
 	j4fs_panic=1;
 
@@ -1998,15 +1908,11 @@ int fsd_panic()
    		goto error1;
 	}
 
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_SUCCESS;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
 
@@ -2018,12 +1924,8 @@ int fsd_print_meta_data()
 	int i;
 	int ret=-1;
 
-#ifdef __KERNEL__
 	BYTE *buf;
 	buf=kmalloc(4096,GFP_NOFS);
-#else
-	BYTE buf[4096];
-#endif
 
 	if(!(j4fs_traceMask|J4FS_TRACE_FSD_PRINT_META_DATA)) return 0;
 
@@ -2083,14 +1985,10 @@ int fsd_print_meta_data()
 
 	J4FS_T(J4FS_TRACE_FSD_PRINT_META_DATA,("====================================================================\n"));
 
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_SUCCESS;
 
 error1:
-#ifdef __KERNEL__
 	kfree(buf);
-#endif
 	return J4FS_FAIL;
 }
