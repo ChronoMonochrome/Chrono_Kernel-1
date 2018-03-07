@@ -17,7 +17,6 @@
  *
  */
 
-#ifdef __KERNEL__
 #include <linux/version.h>
 #include <linux/types.h>
 #include <asm/types.h>
@@ -43,28 +42,6 @@
 #endif
 
 #define PRINT printk
-
-#else
-
-#ifndef BYTE
-#define BYTE unsigned char
-#endif
-
-#ifndef WORD
-#define WORD unsigned int
-#endif
-
-#ifndef HWORD
-#define HWORD unsigned int
-#endif
-
-#ifndef DWORD
-#define DWORD unsigned int
-#endif
-
-#define PRINT printf
-
-#endif
 
 /**********************************************************
  * This is porting values
@@ -172,35 +149,18 @@
 
 #define error(ret)	(ret>=J4FS_FAIL)
 
-#ifdef __KERNEL__
 #define j4fs_panic(str)		\
 do {							\
 	J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: "str"\n",__FUNCTION__,__LINE__));	\
 	fsd_panic();		\
 	dump_stack();	\
 } while (0)
-#else
-#define j4fs_panic(str)		\
-do {							\
-	J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: "str"\n",__FUNCTION__,__LINE__));	\
-	fsd_panic();	\
-} while (0)
-#endif
 
-#ifdef __KERNEL__
 #define j4fs_dump(str)		\
 do {							\
 	J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: "str"\n",__FUNCTION__,__LINE__));	\
 	dump_stack();	\
 } while (0)
-#else
-#define j4fs_dump(str)		\
-do {							\
-	J4FS_T(J4FS_TRACE_ALWAYS,("%s %d: "str"\n",__FUNCTION__,__LINE__));	\
-	while(1);	\
-} while (0)
-#endif
-
 
 #define j4fs_check_partition_range(offset)		\
 do {		\
@@ -213,7 +173,6 @@ do {		\
 
 
 
-#ifdef __KERNEL__
 /*
  * Flash data structure of the super block
  */
@@ -259,16 +218,10 @@ struct j4fs_inode_info {
 	struct inode	vfs_inode;
 };
 
-#endif
-
 
 #define J4FS_INIT				1
 #define J4FS_GET_INFO		2
 #define J4FS_EXIT			4
-
-#ifndef __KERNEL__
-#define J4FS_FORMAT		3
-#endif
 
 #define J4FS_FILE_TYPE		0x12345678
 #define J4FS_MAGIC			0x87654321
@@ -363,9 +316,7 @@ typedef struct {
 	DWORD j4fs_device_end;
 	DWORD aux;
 
-#ifdef __KERNEL__
 	struct semaphore grossLock;	/* Gross locking semaphore */
-#endif
 } j4fs_device_info;
 
 
@@ -422,7 +373,6 @@ typedef struct {
 
 extern int j4fs_close(void);
 
-#ifdef __KERNEL__
 extern ino_t j4fs_inode_by_name(struct inode * dir, struct dentry *dentry);
 extern struct inode *j4fs_alloc_inode(struct super_block *sb);
 extern void j4fs_destroy_inode(struct inode *inode);
@@ -456,10 +406,6 @@ static inline struct j4fs_inode_info *J4FS_I(struct inode *inode)
 {
 	return container_of(inode, struct j4fs_inode_info, vfs_inode);
 }
-#else
-extern int j4fs_test(void);
-extern int j4fs_open(void);
-#endif
 
 
 extern int fsd_open(j4fs_ctrl *);
@@ -485,9 +431,4 @@ extern int FlashDevMount(void);
 extern int FlashDevUnmount(void);
 extern int FlashDevSpecial(j4fs_device_info *dev_ptr, DWORD scmd);
 
-#ifdef __KERNEL__
 #define TOUT(p) printk p
-#else
-#define TOUT(p) printf p
-#endif
-
