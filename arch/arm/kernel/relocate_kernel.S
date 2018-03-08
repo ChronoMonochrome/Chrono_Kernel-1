@@ -107,7 +107,7 @@ hardboot:
  *
  * Hope thats ok???
  */
-#if defined(CONFIG_MACH_U8500_LOTUS) || defined(CONFIG_MACH_U8500_PEPPER) || defined(CONFIG_MACH_CODINA)
+#if defined(CONFIG_MACH_U8500_LOTUS) || defined(CONFIG_MACH_U8500_PEPPER) || defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE)
 	MOV	R12, SP
 	STMFD	SP!, {R4,R5,R11,R12,LR,PC}
 	SUB	R11, R12, #4
