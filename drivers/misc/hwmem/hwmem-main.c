@@ -70,14 +70,6 @@ struct hwmem_alloc {
 	void *creator;
 	pid_t creator_tgid;
 #endif /* #ifdef CONFIG_DEBUG_FS */
-	/*
-	 * memory will be dynamically allocated using CMA
-	 */
-	int use_cma;
-	/*
-	 * private data
-	 */
-	void *private_data;
 };
 
 static struct platform_device *hwdev;
@@ -172,70 +164,19 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 	kfree(alloc);
 }
 
-#define DMA_ALLOC_RETRY		10
-static unsigned int cma_total_alloc_size = 0;
-
-static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
-{
-	void* (*dma_alloc_func)(struct device *, size_t size, dma_addr_t*, gfp_t) =
-			&dma_alloc_writecombine;
-	unsigned char *vaddr;
-	dma_addr_t handle;
-	unsigned int retry = 0;
-
-	pr_err("[hwmem] request dma memory creator %s, size %d\n", creator, alloc->size);
-
-	vaddr = NULL;
-
-	if (alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_CACHED)
-		dma_alloc_func = &dma_alloc_nonconsistent;
-
-	do {
-		vaddr = dma_alloc_func(alloc->private_data,
-					alloc->size, &handle, GFP_KERNEL | __GFP_NOWARN);
-		retry++;
-	} while (!vaddr && retry < DMA_ALLOC_RETRY);
-
-
-	if (!vaddr) {
-		pr_err("[hwmem] dma alloc failed for creator=%s size=%ld\n",
-			creator,
-			alloc->size);
-		return -1;
-	}
-
-	alloc->paddr = handle;
-	alloc->kaddr = (void *)vaddr;
-
-	return retry;
-}
-
-static void release_dma_memory(struct hwmem_alloc *alloc)
-{
-	if (alloc->kaddr != NULL) {
-		dma_free_coherent(alloc->private_data, alloc->size,
-				alloc->kaddr, alloc->paddr);
-		alloc->kaddr = NULL;
-	}
-}
-
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
-	int ret = -1, skipped = 0;
+	int ret;
 	pgprot_t pgprot;
-	void *alloc_kaddr;
-	void *vmap_addr = NULL;
-        char creator[KSYM_SYMBOL_LEN];
+	void *alloc_kaddr = NULL;
+	void *vmap_addr;
 
-        if (sprint_symbol(creator, (unsigned long)alloc->creator) < 0)
-                creator[0] = '\0';
-
-	/*
-	 * Don't use CMA for allocations by U8500's Trusted Execution Engine -
-	 * it doesn't seem to like it.
-	 */
-	if (strstr(creator, "tee"))
-		skipped = 1;
+	if (alloc->mem_type->id != HWMEM_MEM_SCATTERED_SYS) {
+		alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
+			alloc->mem_type->allocator_instance, alloc->allocator_hndl);
+		if (IS_ERR(alloc_kaddr))
+			return PTR_ERR(alloc_kaddr);
+	}
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
@@ -249,37 +190,15 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 		}
 		alloc->kaddr = vmap_addr;
 	} else { /* contiguous or protected */
-		if (!skipped) {
-			ret = request_dma_memory(alloc, creator);
-			if (ret >= 0) {
-				alloc->use_cma = 1;
-				pr_err("[cma] succeed to allocate %d bytes after %d attempts\n", alloc->size, ret);
-				cma_total_alloc_size += alloc->size;
-				pr_err("[hwmem] release dma memory (size %d)\n", alloc->size, alloc->size);
-				pr_err("[hwmem] cma_total_alloc_size = %d\n", cma_total_alloc_size);
-			}
-		}
-
+		ret = ioremap_page_range((unsigned long)alloc_kaddr,
+			(unsigned long)alloc_kaddr + alloc->size, alloc->paddr, pgprot);
 		if (ret < 0) {
-			if (!skipped)
-				pr_err("[cma] failed to allocate %d bytes (creator %s)\n", alloc->size, creator);
-			else
-				pr_err("[cma] skipped allocation (creator=%s, size = %d)\n", creator, alloc->size);
-			alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
-				alloc->mem_type->allocator_instance, alloc->allocator_hndl);
-			if (IS_ERR(alloc_kaddr))
-				return PTR_ERR(alloc_kaddr);
-
-			ret = ioremap_page_range((unsigned long)alloc_kaddr,
-				(unsigned long)alloc_kaddr + alloc->size, alloc->paddr, pgprot);
-			if (ret < 0) {
-				dev_warn(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
-								alloc->paddr + alloc->size);
-				return ret;
-			}
-
-			alloc->kaddr = alloc_kaddr;
+			dev_warn(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
+							alloc->paddr + alloc->size);
+			return ret;
 		}
+
+		alloc->kaddr = alloc_kaddr;
 	}
 
 	return 0;
@@ -292,19 +211,10 @@ static void kunmap_alloc(struct hwmem_alloc *alloc)
 
 	if (alloc->mem_type->id == HWMEM_MEM_SCATTERED_SYS)
 		vunmap(alloc->kaddr); /* release virtual mapping obtained by vmap() */
-	else { /* contiguous or protected */
+	else /* contiguous or protected */
+		unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
 
-		if (!alloc->use_cma) {
-			unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
-			alloc->kaddr = NULL;
-		} else {
-			cma_total_alloc_size -= alloc->size;
-			pr_err("[hwmem] release dma memory (size %d)\n", alloc->size);
-			pr_err("[hwmem] cma_total_alloc_size = %d\n", cma_total_alloc_size);
-
-			release_dma_memory(alloc);
-		}
-	}
+	alloc->kaddr = NULL;
 }
 
 static struct hwmem_mem_type_struct *resolve_mem_type(
