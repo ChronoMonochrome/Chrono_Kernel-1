@@ -33,6 +33,7 @@
 #include <linux/bit_spinlock.h>
 #include <linux/rcupdate.h>
 #include <linux/limits.h>
+#include <linux/export.h>
 #include <linux/mutex.h>
 #include <linux/rbtree.h>
 #include <linux/slab.h>
@@ -390,7 +391,6 @@ enum charge_type {
 
 static void mem_cgroup_get(struct mem_cgroup *memcg);
 static void mem_cgroup_put(struct mem_cgroup *memcg);
-static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
 static void drain_all_stock_async(struct mem_cgroup *memcg);
 
 /* Some nice accessors for the vmpressure. */
@@ -781,7 +781,7 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
 		preempt_enable();
 }
 
-static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
 {
 	return container_of(cgroup_subsys_state(cont,
 				mem_cgroup_subsys_id), struct mem_cgroup,
@@ -1072,6 +1072,11 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
 	mz->lru_size[lru] -= 1 << compound_order(page);
 }
 
+void mem_cgroup_lru_del(struct page *page)
+{
+	mem_cgroup_lru_del_list(page, page_lru(page));
+}
+
 /**
  * mem_cgroup_lru_move_lists - account for moving a page between lrus
  * @zone: zone of the page
@@ -1100,25 +1105,15 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
  * Checks whether given mem is same or in the root_mem_cgroup's
  * hierarchy subtree
  */
-bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-				  struct mem_cgroup *memcg)
-{
-	if (root_memcg == memcg)
-		return true;
-	if (!root_memcg->use_hierarchy)
-		return false;
-	return css_is_ancestor(&memcg->css, &root_memcg->css);
-}
-
 static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-				       struct mem_cgroup *memcg)
+		struct mem_cgroup *memcg)
 {
-	bool ret;
+	if (root_memcg != memcg) {
+		return (root_memcg->use_hierarchy &&
+			css_is_ancestor(&memcg->css, &root_memcg->css));
+	}
 
-	rcu_read_lock();
-	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
-	rcu_read_unlock();
-	return ret;
+	return true;
 }
 
 int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
@@ -4483,16 +4478,17 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
 swap_buffers:
 	/* Swap primary and spare array */
 	thresholds->spare = thresholds->primary;
-	/* If all events are unregistered, free the spare array */
-	if (!new) {
-		kfree(thresholds->spare);
-		thresholds->spare = NULL;
-	}
 
 	rcu_assign_pointer(thresholds->primary, new);
 
 	/* To be sure that nobody uses thresholds */
 	synchronize_rcu();
+
+	/* If all events are unregistered, free the spare array */
+	if (!new) {
+		kfree(thresholds->spare);
+		thresholds->spare = NULL;
+	}
 unlock:
 	mutex_unlock(&memcg->thresholds_lock);
 }
@@ -4856,12 +4852,13 @@ static void mem_cgroup_put(struct mem_cgroup *memcg)
 /*
  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
  */
-static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
+struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
 {
 	if (!memcg->res.parent)
 		return NULL;
 	return mem_cgroup_from_res_counter(memcg->res.parent, res);
 }
+EXPORT_SYMBOL(parent_mem_cgroup);
 
 #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
 static void __init enable_swap_cgroup(void)
@@ -4911,7 +4908,7 @@ err_cleanup:
 }
 
 static struct cgroup_subsys_state * __ref
-mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+mem_cgroup_create(struct cgroup *cont)
 {
 	struct mem_cgroup *memcg, *parent;
 	long error = -ENOMEM;
@@ -4975,16 +4972,14 @@ free_out:
 	return ERR_PTR(error);
 }
 
-static int mem_cgroup_pre_destroy(struct cgroup_subsys *ss,
-					struct cgroup *cont)
+static int mem_cgroup_pre_destroy(struct cgroup *cont)
 {
 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
 
 	return mem_cgroup_force_empty(memcg, false);
 }
 
-static void mem_cgroup_destroy(struct cgroup_subsys *ss,
-				struct cgroup *cont)
+static void mem_cgroup_destroy(struct cgroup *cont)
 {
 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
 
@@ -5001,6 +4996,7 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
 
 	if (!ret)
 		ret = register_memsw_files(cont, ss);
+
 	return ret;
 }
 
@@ -5361,9 +5357,8 @@ static void mem_cgroup_clear_mc(void)
 	mem_cgroup_end_move(from);
 }
 
-static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
-				struct cgroup *cgroup,
-				struct cgroup_taskset *tset)
+static int mem_cgroup_can_attach(struct cgroup *cgroup,
+				 struct cgroup_taskset *tset)
 {
 	struct task_struct *p = cgroup_taskset_first(tset);
 	int ret = 0;
@@ -5401,9 +5396,8 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
 	return ret;
 }
 
-static void mem_cgroup_cancel_attach(struct cgroup_subsys *ss,
-				struct cgroup *cgroup,
-				struct cgroup_taskset *tset)
+static void mem_cgroup_cancel_attach(struct cgroup *cgroup,
+				     struct cgroup_taskset *tset)
 {
 	mem_cgroup_clear_mc();
 }
@@ -5552,9 +5546,8 @@ retry:
 	up_read(&mm->mmap_sem);
 }
 
-static void mem_cgroup_move_task(struct cgroup_subsys *ss,
-				struct cgroup *cont,
-				struct cgroup_taskset *tset)
+static void mem_cgroup_move_task(struct cgroup *cont,
+				 struct cgroup_taskset *tset)
 {
 	struct task_struct *p = cgroup_taskset_first(tset);
 	struct mm_struct *mm = get_task_mm(p);
@@ -5568,20 +5561,17 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
 		mem_cgroup_clear_mc();
 }
 #else	/* !CONFIG_MMU */
-static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
-				struct cgroup *cgroup,
-				struct cgroup_taskset *tset)
+static int mem_cgroup_can_attach(struct cgroup *cgroup,
+				 struct cgroup_taskset *tset)
 {
 	return 0;
 }
-static void mem_cgroup_cancel_attach(struct cgroup_subsys *ss,
-				struct cgroup *cgroup,
-				struct cgroup_taskset *tset)
+static void mem_cgroup_cancel_attach(struct cgroup *cgroup,
+				     struct cgroup_taskset *tset)
 {
 }
-static void mem_cgroup_move_task(struct cgroup_subsys *ss,
-				struct cgroup *cont,
-				struct cgroup_taskset *tset)
+static void mem_cgroup_move_task(struct cgroup *cont,
+				 struct cgroup_taskset *tset)
 {
 }
 #endif
