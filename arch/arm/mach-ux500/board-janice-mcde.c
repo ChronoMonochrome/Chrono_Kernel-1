@@ -331,7 +331,7 @@ static void update_mcde_opp(struct device *dev,
 	}
 }
 
-int lcdclk_usr = 1;
+int lcdclk_usr = 0;
 
 int __init init_janice_display_devices(void)
 {
