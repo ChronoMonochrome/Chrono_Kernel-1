@@ -56,8 +56,8 @@
 
 #define VERSION "1.3"
 
-static bool compress_src = true;
-static bool compress_dst = true;
+static int compress_src = 1;
+static int compress_dst = 1;
 
 static LIST_HEAD(bnep_session_list);
 static DECLARE_RWSEM(bnep_session_sem);
@@ -65,24 +65,31 @@ static DECLARE_RWSEM(bnep_session_sem);
 static struct bnep_session *__bnep_get_session(u8 *dst)
 {
 	struct bnep_session *s;
+	struct list_head *p;
 
 	BT_DBG("");
 
-	list_for_each_entry(s, &bnep_session_list, list)
+	list_for_each(p, &bnep_session_list) {
+		s = list_entry(p, struct bnep_session, list);
 		if (!compare_ether_addr(dst, s->eh.h_source))
 			return s;
-
+	}
 	return NULL;
 }
 
 static void __bnep_link_session(struct bnep_session *s)
 {
+	/* It's safe to call __module_get() here because sessions are added
+	   by the socket layer which has to hold the reference to this module.
+	 */
+	__module_get(THIS_MODULE);
 	list_add(&s->list, &bnep_session_list);
 }
 
 static void __bnep_unlink_session(struct bnep_session *s)
 {
 	list_del(&s->list);
+	module_put(THIS_MODULE);
 }
 
 static int bnep_send(struct bnep_session *s, void *data, size_t len)
@@ -117,7 +124,8 @@ static inline void bnep_set_default_proto_filter(struct bnep_session *s)
 }
 #endif
 
-static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data, int len)
+static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data,
+							int len, int *pkt_size)
 {
 	int n;
 
@@ -132,6 +140,8 @@ static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data, int len
 		return -EILSEQ;
 
 	BT_DBG("filter len %d", n);
+
+	*pkt_size = 2 + n;
 
 #ifdef CONFIG_BT_BNEP_PROTO_FILTER
 	n /= 4;
@@ -163,7 +173,8 @@ static int bnep_ctrl_set_netfilter(struct bnep_session *s, __be16 *data, int len
 	return 0;
 }
 
-static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len)
+static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len,
+								int *pkt_size)
 {
 	int n;
 
@@ -178,6 +189,8 @@ static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len)
 		return -EILSEQ;
 
 	BT_DBG("filter len %d", n);
+
+	*pkt_size = 2 + n;
 
 #ifdef CONFIG_BT_BNEP_MC_FILTER
 	n /= (ETH_ALEN * 2);
@@ -224,13 +237,16 @@ static int bnep_ctrl_set_mcfilter(struct bnep_session *s, u8 *data, int len)
 	return 0;
 }
 
-static int bnep_rx_control(struct bnep_session *s, void *data, int len)
+static int bnep_rx_control(struct bnep_session *s, void *data, int len,
+								int *pkt_size)
 {
 	u8  cmd = *(u8 *)data;
 	int err = 0;
 
 	data++;
 	len--;
+
+	*pkt_size = 0;
 
 	switch (cmd) {
 	case BNEP_CMD_NOT_UNDERSTOOD:
@@ -241,15 +257,27 @@ static int bnep_rx_control(struct bnep_session *s, void *data, int len)
 		break;
 
 	case BNEP_FILTER_NET_TYPE_SET:
-		err = bnep_ctrl_set_netfilter(s, data, len);
+		err = bnep_ctrl_set_netfilter(s, data, len, pkt_size);
 		break;
 
 	case BNEP_FILTER_MULTI_ADDR_SET:
-		err = bnep_ctrl_set_mcfilter(s, data, len);
+		err = bnep_ctrl_set_mcfilter(s, data, len, pkt_size);
 		break;
 
-	case BNEP_SETUP_CONN_REQ:
-		err = bnep_send_rsp(s, BNEP_SETUP_CONN_RSP, BNEP_CONN_NOT_ALLOWED);
+	case BNEP_SETUP_CONN_REQ: {
+			u8 uuid_size = *(u8 *)data;
+
+			/* First setup connection should be silently discarded,
+			 * it was already handled when accepting connection.
+			 */
+			if (s->setup_done)
+				err = bnep_send_rsp(s, BNEP_SETUP_CONN_RSP,
+							BNEP_CONN_NOT_ALLOWED);
+			else
+				s->setup_done = 1;
+
+			*pkt_size = 1 + 2 * uuid_size;
+		}
 		break;
 
 	default: {
@@ -262,6 +290,10 @@ static int bnep_rx_control(struct bnep_session *s, void *data, int len)
 		break;
 	}
 
+	if (*pkt_size > 0)
+		/* Add 1 byte for type field */
+		(*pkt_size)++;
+
 	return err;
 }
 
@@ -269,6 +301,7 @@ static int bnep_rx_extension(struct bnep_session *s, struct sk_buff *skb)
 {
 	struct bnep_ext_hdr *h;
 	int err = 0;
+	int pkt_size;
 
 	do {
 		h = (void *) skb->data;
@@ -281,7 +314,7 @@ static int bnep_rx_extension(struct bnep_session *s, struct sk_buff *skb)
 
 		switch (h->type & BNEP_TYPE_MASK) {
 		case BNEP_EXT_CONTROL:
-			bnep_rx_control(s, skb->data, skb->len);
+			bnep_rx_control(s, skb->data, skb->len, &pkt_size);
 			break;
 
 		default:
@@ -321,7 +354,16 @@ static inline int bnep_rx_frame(struct bnep_session *s, struct sk_buff *skb)
 		goto badframe;
 
 	if ((type & BNEP_TYPE_MASK) == BNEP_CONTROL) {
-		bnep_rx_control(s, skb->data, skb->len);
+		int pkt_size = 0;
+
+		bnep_rx_control(s, skb->data, skb->len, &pkt_size);
+
+		if (pkt_size > 0 && (type & BNEP_EXT_HEADER)) {
+			skb_pull(skb, pkt_size);
+			if (bnep_rx_extension(s, skb) < 0)
+				goto badframe;
+		}
+
 		kfree_skb(skb);
 		return 0;
 	}
@@ -485,10 +527,7 @@ static int bnep_session(void *arg)
 		/* RX */
 		while ((skb = skb_dequeue(&sk->sk_receive_queue))) {
 			skb_orphan(skb);
-			if (!skb_linearize(skb))
-				bnep_rx_frame(s, skb);
-			else
-				kfree_skb(skb);
+			bnep_rx_frame(s, skb);
 		}
 
 		if (sk->sk_state != BT_CONNECTED)
@@ -523,7 +562,6 @@ static int bnep_session(void *arg)
 
 	up_write(&bnep_session_sem);
 	free_netdev(dev);
-	module_put_and_exit(0);
 	return 0;
 }
 
@@ -610,11 +648,9 @@ int bnep_add_connection(struct bnep_connadd_req *req, struct socket *sock)
 
 	__bnep_link_session(s);
 
-	__module_get(THIS_MODULE);
 	s->task = kthread_run(bnep_session, s, "kbnepd %s", dev->name);
 	if (IS_ERR(s->task)) {
 		/* Session thread start failed, gotta cleanup. */
-		module_put(THIS_MODULE);
 		unregister_netdev(dev);
 		__bnep_unlink_session(s);
 		err = PTR_ERR(s->task);
@@ -663,13 +699,16 @@ static void __bnep_copy_ci(struct bnep_conninfo *ci, struct bnep_session *s)
 
 int bnep_get_connlist(struct bnep_connlist_req *req)
 {
-	struct bnep_session *s;
+	struct list_head *p;
 	int err = 0, n = 0;
 
 	down_read(&bnep_session_sem);
 
-	list_for_each_entry(s, &bnep_session_list, list) {
+	list_for_each(p, &bnep_session_list) {
+		struct bnep_session *s;
 		struct bnep_conninfo ci;
+
+		s = list_entry(p, struct bnep_session, list);
 
 		__bnep_copy_ci(&ci, s);
 
@@ -734,10 +773,10 @@ static void __exit bnep_exit(void)
 module_init(bnep_init);
 module_exit(bnep_exit);
 
-module_param(compress_src, bool, 0644);
+module_param(compress_src, int, 0644);
 MODULE_PARM_DESC(compress_src, "Compress sources headers");
 
-module_param(compress_dst, bool, 0644);
+module_param(compress_dst, int, 0644);
 MODULE_PARM_DESC(compress_dst, "Compress destination headers");
 
 MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");
