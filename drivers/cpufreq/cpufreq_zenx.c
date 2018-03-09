@@ -633,7 +633,7 @@ static void cpufreq_zenx_idle_end(void)
 	up_read(&pcpu->enable_sem);
 }
 
-static void cpufreq_zenx_hotplug_add_cpu_work(struct work_struct *work)
+static void __cpuinit cpufreq_zenx_hotplug_add_cpu_work(struct work_struct *work)
 {
 	cpumask_t tmp_mask;
 	unsigned int cpu;
