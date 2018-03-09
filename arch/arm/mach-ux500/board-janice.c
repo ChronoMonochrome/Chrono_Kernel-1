@@ -49,6 +49,8 @@
 #include <asm/mach/map.h>
 #include <asm/mach-types.h>
 
+#include <asm/hardware/gic.h>
+
 #include <plat/pincfg.h>
 #include <plat/i2c.h>
 #include <plat/ste_dma40.h>
@@ -158,6 +160,9 @@ static struct cypress_touchkey_platform_data  cypress_touchkey_pdata = {
 };
 #endif
 
+#if defined(CONFIG_NFC_PN544)
+#include <linux/pn544.h>
+#endif
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
 struct yas_platform_data yas_data = {
@@ -2265,10 +2270,11 @@ __setup("board_id=", board_id_setup);
 
 MACHINE_START(JANICE, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
-	.boot_params	= 0x00000100,
+	.atag_offset	= 0x00000100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
+	.handle_irq     = gic_handle_irq,
 	.init_machine	= janice_init_machine,
 	.restart	= ux500_restart,
 MACHINE_END 
