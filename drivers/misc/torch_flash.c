@@ -155,7 +155,7 @@ static void time_expire_work_func(struct work_struct *work)
 }
 #endif
 
-static int __init torch_flash_probe(struct platform_device *pdev)
+static int torch_flash_probe(struct platform_device *pdev)
 {
 
 	torch_debug_msg("------->torch_flash_probe\n");
@@ -193,7 +193,7 @@ static struct platform_driver torch_flash_driver = {
 	},
 };
 
-static int __devinit torch_flash_init(void)
+static int torch_flash_init(void)
 {
 	torch_debug_msg("------->torch_flash_init\n");
 
@@ -211,7 +211,7 @@ static int __devinit torch_flash_init(void)
 	return platform_driver_register(&torch_flash_driver);
 }
 
-static void __exit torch_flash_exit(void)
+static void torch_flash_exit(void)
 {
 	platform_driver_unregister(&torch_flash_driver);
 	class_destroy(torch_class);
