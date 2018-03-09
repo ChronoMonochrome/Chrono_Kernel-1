@@ -89,6 +89,71 @@
 
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
+/* s6e63m0 PRCMU LCDCLK */
+/* 60+++	79872000 unsafe
+ * 60++ 	62400000 unsafe
+ * 60+  	57051428 unsafe
+ * 60   	49920000
+ * 50   	39936000
+ * 45   	36305454
+ * 40   	33280000
+ */
+#include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/db8500-prcmu.h>
+
+#define LCDCLK_SET(clk) prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
+
+struct lcdclk_prop
+{
+	char *name;
+	unsigned int clk;
+};
+
+static struct lcdclk_prop lcdclk_prop[] = {
+  	[0] = {
+		.name = "60++ Hz",
+		.clk = 62400000,
+	},
+  	[1] = {
+		.name = "60+ Hz",
+		.clk = 57051428,
+	},
+	[2] = {
+		.name = "60 Hz",
+		.clk = 49920000,
+	},
+	[3] = {
+		.name = "50 Hz",
+		.clk = 39936000,
+	},
+	[4] = {
+		.name = "45 Hz",
+		.clk = 36305454,
+	},
+	[5] = {
+		.name = "40 Hz",
+		.clk = 33280000,
+	},
+};
+
+/* 
+ * FIXME:
+ * 	is it really needed to use 60++ fps 
+ *      on s6e63m0 to solve screen tearing issue?
+ */
+
+static unsigned int lcdclk_usr = 0; /* 60++ fps */
+
+static void s6e63m0_lcdclk_thread(struct work_struct *s6e63m0_lcdclk_work)
+{
+	msleep(200);
+
+	pr_err("[s6e63m0] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
+
+	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
+}
+static DECLARE_WORK(s6e63m0_lcdclk_work, s6e63m0_lcdclk_thread);
+
 /* to be removed when display works */
 /* #define dev_dbg	dev_info */
 
@@ -1920,6 +1985,47 @@ static struct backlight_ops s6e63m0_backlight_ops  = {
 	.update_status = s6e63m0_set_brightness,
 };
 
+static ssize_t s6e63m0_sysfs_show_lcdclk(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int i;
+	bool matched;
+
+	sprintf(buf, "%sCurrent: %s\n\n", buf, lcdclk_prop[lcdclk_usr].name);
+
+	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
+		if (i == lcdclk_usr)
+			matched = true;
+		else
+			matched = false;
+
+		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
+	}
+
+	return strlen(buf);
+}
+
+static ssize_t s6e63m0_sysfs_store_lcdclk(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t len)
+{
+	int ret, tmp;
+
+	ret = sscanf(buf, "%d", &tmp);
+	if (!ret || (tmp < 0) || (tmp > 5)) {
+		  pr_err("[s6e63m0] Bad cmd\n");
+		  return -EINVAL;
+	}
+
+	lcdclk_usr = tmp;
+
+	schedule_work(&s6e63m0_lcdclk_work);
+
+	return len;
+}
+
+static DEVICE_ATTR(lcdclk, 0644, s6e63m0_sysfs_show_lcdclk, s6e63m0_sysfs_store_lcdclk);
+
 static ssize_t s6e63m0_sysfs_store_lcd_power(struct device *dev,
                                        struct device_attribute *attr,
                                        const char *buf, size_t len)
@@ -3151,7 +3257,7 @@ static int __devinit s6e63m0_mcde_panel_probe(struct mcde_display_device *ddev)
 	ret = device_create_file(&(lcd->ld->dev), &dev_attr_power_reduce);
         if (ret < 0)
                 dev_err(&(ddev->dev), "failed to add acl_set sysfs entries\n");
-	
+
 	ret = device_create_file(&lcd->bd->dev, &dev_attr_auto_brightness);
 	if (ret < 0)
 		dev_err(&lcd->ld->dev, "failed to add sysfs entries\n");
@@ -3161,6 +3267,10 @@ static int __devinit s6e63m0_mcde_panel_probe(struct mcde_display_device *ddev)
 		dev_err(&lcd->ld->dev, "failed to add sysfs entries\n");
 
 	ret = device_create_file(&(ddev->dev), &dev_attr_gamma_mode);
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
+
+	ret = device_create_file(&(ddev->dev), &dev_attr_lcdclk);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
 

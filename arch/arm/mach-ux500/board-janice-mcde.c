@@ -29,7 +29,7 @@
 #include <mach/db8500-regs.h>
 	 
 
-#define PRCMU_DPI_CLK_FREQ	66560000
+#define PRCMU_DPI_CLK_FREQ	49920000
 	 
 #ifdef CONFIG_FB_MCDE
 
@@ -43,9 +43,7 @@ enum {
 
 static int display_initialized_during_boot = (int)false;
 
-#ifndef CONFIG_HAS_EARLYSUSPEND
 static struct ux500_pins *dpi_pins;
-#endif
 
 static struct fb_info *primary_fbi;
 
@@ -85,27 +83,31 @@ static struct mcde_port port0 = {
 	},
 };
 
-#ifndef CONFIG_HAS_EARLYSUSPEND
-static int dpi_display_platform_enable(struct mcde_display_device *ddev)
+int dpi_display_platform_enable(struct mcde_display_device *ddev)
 {
 	int res = 0;
 	dev_info(&ddev->dev, "%s\n", __func__);
+	if (!dpi_pins)
+		return -EINVAL;
+
 	res = ux500_pins_enable(dpi_pins);
 	if (res)
 		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
-	 
-static int dpi_display_platform_disable(struct mcde_display_device *ddev)
+
+int dpi_display_platform_disable(struct mcde_display_device *ddev)
 {
 	int res = 0;
+	if (!dpi_pins)
+		return -EINVAL;
+
 	dev_info(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_disable(dpi_pins);	/* pins disabled to save power */
 	if (res)
 		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
-#endif
 
 static int pri_display_power_on(struct ssg_dpi_display_platform_data *pd, int enable);
 static int pri_display_reset(struct ssg_dpi_display_platform_data *pd);
@@ -329,6 +331,8 @@ static void update_mcde_opp(struct device *dev,
 	}
 }
 
+int lcdclk_usr = 0;
+
 int __init init_janice_display_devices(void)
 {
 	struct mcde_platform_data *pdata = ux500_mcde_device.dev.platform_data;
@@ -373,11 +377,11 @@ int __init init_janice_display_devices(void)
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
 
-	#ifndef CONFIG_HAS_EARLYSUSPEND
 	dpi_pins = ux500_pins_get("mcde-dpi");
-	if (!dpi_pins)
-		return -EINVAL;
-	#endif
+	if (!dpi_pins) {
+		pr_err("%s: couldn't obtain dpi_pins!\n");
+	}
+		//return -EINVAL;
 
 	return ret;
 }
