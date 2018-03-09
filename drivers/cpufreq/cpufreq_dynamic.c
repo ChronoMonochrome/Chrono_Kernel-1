@@ -281,12 +281,12 @@ static void recalculate_freq_limits(void) {
 
 		//find suspend  hard limit
 		pr_debug("current limits: _standby_max_freq_soft: %d, _suspend_max_freq_soft: %d, _suspend_max_freq_hard:%d\n", dbs_tuners_ins._standby_max_freq_soft, dbs_tuners_ins._suspend_max_freq_soft, dbs_tuners_ins._suspend_max_freq_hard);
-		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_boost_ms: %d\n", dbs_tuners_ins.suspend_max_freq, current_power_optimal_freq, current_max_non_oc_freq, policy->max, current_oc_freq_boost_ms);
+		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_boost_ms: %d\n", dbs_tuners_ins.suspend_max_freq, dbs_tuners_ins.power_optimal_freq, dbs_tuners_ins.max_non_oc_freq, policy->max, dbs_tuners_ins.oc_freq_boost_ms);
 		//TODO can't decide which of the two should be first...
-		if (current_max_non_oc_freq && (current_oc_freq_boost_ms == 0 || (current_power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
-			dbs_tuners_ins._suspend_max_freq_hard = current_max_non_oc_freq;
-		else if (current_power_optimal_freq)
-			dbs_tuners_ins._suspend_max_freq_hard = current_power_optimal_freq;
+		if (dbs_tuners_ins.max_non_oc_freq && (dbs_tuners_ins.oc_freq_boost_ms == 0 || (dbs_tuners_ins.power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
+			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
+		else if (dbs_tuners_ins.power_optimal_freq)
+			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.power_optimal_freq;
 		else if (dbs_tuners_ins.suspend_max_freq)
 			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.suspend_max_freq;
 		else
@@ -295,16 +295,16 @@ static void recalculate_freq_limits(void) {
 		//find suspend soft limit
 		if (dbs_tuners_ins.suspend_max_freq)
 			dbs_tuners_ins._suspend_max_freq_soft = dbs_tuners_ins.suspend_max_freq;
-		else if (current_power_optimal_freq)
-			dbs_tuners_ins._suspend_max_freq_soft = current_power_optimal_freq;
+		else if (dbs_tuners_ins.power_optimal_freq)
+			dbs_tuners_ins._suspend_max_freq_soft = dbs_tuners_ins.power_optimal_freq;
 		else
 			dbs_tuners_ins._suspend_max_freq_soft = policy->max;
 
 		//calculate standby soft freq limit
-		if (current_max_non_oc_freq && ((current_max_non_oc_freq < policy->max && current_oc_freq_boost_ms == 0) || current_power_optimal_freq == 0))
-			dbs_tuners_ins._standby_max_freq_soft = current_max_non_oc_freq;
-		else if (current_power_optimal_freq)
-			dbs_tuners_ins._standby_max_freq_soft = current_power_optimal_freq;
+		if (dbs_tuners_ins.max_non_oc_freq && ((dbs_tuners_ins.max_non_oc_freq < policy->max && dbs_tuners_ins.oc_freq_boost_ms == 0) || dbs_tuners_ins.power_optimal_freq == 0))
+			dbs_tuners_ins._standby_max_freq_soft = dbs_tuners_ins.max_non_oc_freq;
+		else if (dbs_tuners_ins.power_optimal_freq)
+			dbs_tuners_ins._standby_max_freq_soft = dbs_tuners_ins.power_optimal_freq;
 		else
 			dbs_tuners_ins._standby_max_freq_soft = policy->max;
 
@@ -315,8 +315,8 @@ static void recalculate_freq_limits(void) {
 		if (dbs_tuners_ins._standby_max_freq_soft > policy->max)
 			dbs_tuners_ins._standby_max_freq_soft = policy->max;
 
-		if (policy->max > current_max_non_oc_freq && current_oc_freq_boost_ms)
-			dbs_tuners_ins._oc_limit = current_oc_freq_boost_ms*num_present_cpus()*(policy->max-current_max_non_oc_freq)/1000;
+		if (policy->max > dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms)
+			dbs_tuners_ins._oc_limit = dbs_tuners_ins.oc_freq_boost_ms*num_present_cpus()*(policy->max-dbs_tuners_ins.max_non_oc_freq)/1000;
 		else
 			dbs_tuners_ins._oc_limit = 0;
 
@@ -592,16 +592,16 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int max_freq_hard = policy->max;
 	unsigned int max_freq_soft = policy->max;
 
-	bool boosted = (current_input_boost_freq > 0) && (ktime_to_us(ktime_get()) < (last_input_time + current_input_boost_us));
+	bool boosted = (dbs_tuners_ins.input_boost_freq > 0) && (ktime_to_us(ktime_get()) < (last_input_time + dbs_tuners_ins.input_boost_us));
 	bool active = !(suspend || standby);
 
 	unsigned int oc_freq_delta = 0;
 
 	unsigned int j;
 
-	if (active && policy->cur > current_max_non_oc_freq && this_dbs_info->oc_boost_cycles) {
+	if (active && policy->cur > dbs_tuners_ins.max_non_oc_freq && this_dbs_info->oc_boost_cycles) {
 		pr_debug("this_dbs_info->oc_boost_cycles = %d", this_dbs_info->oc_boost_cycles);
-		oc_freq_delta = (policy->cur - current_max_non_oc_freq)/1000;
+		oc_freq_delta = (policy->cur - dbs_tuners_ins.max_non_oc_freq)/1000;
 	}
 
 	/*
@@ -690,22 +690,22 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	if (boosted) {
 		unsigned int freq_target;
 	        if (suspend) {
-			if (current_max_non_oc_freq) {
+			if (dbs_tuners_ins.max_non_oc_freq) {
 				//TODO optimize this
 				//this is to avoid a situation where some process is spinning in the background
 				//and a volume key is pressed (or any key that does not cause the screen to turn on)
 				//without this time limit it could leave the cpu constantly spinning at max oc freq
 				//and with it it'll only spin at max_non_oc_freq, which is a "lesser evil"
-				if (current_oc_freq_boost_ms) {
+				if (dbs_tuners_ins.oc_freq_boost_ms) {
 					freq_target = policy->max;
 				} else {
-					freq_target = current_max_non_oc_freq;
+					freq_target = dbs_tuners_ins.max_non_oc_freq;
 					max_freq_hard = freq_target;
 				}
 			} else
 				freq_target = policy->max;
 		} else {
-			freq_target = current_input_boost_freq;
+			freq_target = dbs_tuners_ins.input_boost_freq;
 		}
 		if (policy->cur < freq_target) {
 			pr_debug("Boosting freq from %d to %d, dt=%llu us\n", this_dbs_info->requested_freq, freq_target, ktime_to_us(ktime_get())-last_input_time);
@@ -727,11 +727,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			schedule_work(&input_unboost_work);
 	}
 
-	if (active && current_max_non_oc_freq && current_oc_freq_boost_ms) {
+	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms) {
 		if (this_dbs_info->oc_boost_cycles == 0)
-			max_freq_hard = current_max_non_oc_freq;
+			max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
 		else if (this_dbs_info->oc_boost_cycles < dbs_tuners_ins._oc_limit) {
-			max_freq_soft = current_max_non_oc_freq;
+			max_freq_soft = dbs_tuners_ins.max_non_oc_freq;
 		}
 		if (this_dbs_info->oc_boost_cycles > 0)
 			pr_debug("oc limit: %d (%d), freq_delta: %d, soft: %d, hard: %d",
@@ -771,7 +771,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		} else if (standby) {
 			if (++(this_dbs_info->sampling_up_counter) < dbs_tuners_ins.standby_sampling_up_factor)
 				return;
-		} else if (current_power_optimal_freq && policy->cur >= current_power_optimal_freq) {
+		} else if (dbs_tuners_ins.power_optimal_freq && policy->cur >= dbs_tuners_ins.power_optimal_freq) {
 			//if we're at or above optimal freq, then delay freq increase by high_freq_sampling_up_factor
 			if (++(this_dbs_info->sampling_up_counter) < dbs_tuners_ins.high_freq_sampling_up_factor)
 				return;
@@ -816,7 +816,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 */
 	/* Check for frequency decrease */
 
-	if (max_load < this_dbs_info->down_threshold && (!boosted || policy->cur > current_input_boost_freq)) {
+	if (max_load < this_dbs_info->down_threshold && (!boosted || policy->cur > dbs_tuners_ins.input_boost_freq)) {
 		//calculate minimum freq that can support current workload (load_pct*cur_freq) with load < up_threshold-down_diff
 		min_supporting_freq = (this_dbs_info->requested_freq*max_load)/(dbs_tuners_ins.up_threshold - dbs_tuners_ins.down_differential);
 		cpufreq_frequency_table_target(policy, this_dbs_info->freq_table, min_supporting_freq, CPUFREQ_RELATION_L, &idx);
@@ -942,7 +942,7 @@ static void hotplug_input_event(struct input_handle *handle,
 	if (dbs_tuners_ins._oc_limit)
 		dbs_info->oc_boost_cycles = dbs_tuners_ins._oc_limit*2;
 
-	if (now - last_input_time < current_input_boost_us || policy->cur >= current_input_boost_freq) {
+	if (now - last_input_time < dbs_tuners_ins.input_boost_us || policy->cur >= dbs_tuners_ins.input_boost_freq) {
 		//if input events occur, keep the boost running, just don't flush delayed work
 		pr_debug(" - boost trigger not needed: dt=%llu us, freq=%d MHz\n", now - last_input_time, policy->cur/1000);
 		last_input_time = now;
