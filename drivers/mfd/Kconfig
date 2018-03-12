@@ -713,15 +713,19 @@ config LIVEOPP_CUSTOM_BOOTUP_FREQ
 
 config LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN
 	int "LiveOPP bootup min freq"
+	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
 	default 200000
 
 config LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX
 	int "LiveOPP bootup max freq"
-	default 800000
+	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
+	default 1000000 if MACH_JANICE
+	default 800000 if MACH_CODINA
 
 config DB8500_PLLDDR_OC
 	tristate "PLLDDR overclock driver for DB8500 PRCMU Firmware"
 	depends on MFD_DB8500_PRCMU
+	default m
 	help
 	  Select this option to enable support for PLLDDR overclock driver which
 	  supports OC/UC in userspace.

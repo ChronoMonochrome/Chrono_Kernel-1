@@ -97,7 +97,7 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 		return res;
 	}
 
-	#ifdef CONFIG_DB8500_LIVEOPP
+	#ifdef LIVEOPP_CUSTOM_BOOTUP_FREQ
 	policy->min = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN;
 	policy->max = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX;
 	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
