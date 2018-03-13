@@ -92,28 +92,32 @@ static struct mcde_port port0 = {
 				DPI_ACT_LOW_HSYNC |
 				/* DPI_ACT_LOW_DATA_ENABLE | */
 				DPI_ACT_ON_FALLING_EDGE,
-			.lcd_freq = PRCMU_DPI_CLK_SHARP_FREQ
+			.lcd_freq = PRCMU_DPI_CLK_SMD_FREQ
 		},
 	},
 };
 
-static int dpi_display_platform_enable(struct mcde_display_device *ddev)
+int dpi_display_platform_enable(struct mcde_display_device *ddev)
 {
 	int res = 0;
-	dev_info(&ddev->dev, "%s\n", __func__);
+	pr_err("%s\n", __func__);
+	//dev_info(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_enable(dpi_pins);
 	if (res)
-		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+		pr_err("Failure during %s\n", __func__);
+		//dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
 
-static int dpi_display_platform_disable(struct mcde_display_device *ddev)
+int dpi_display_platform_disable(struct mcde_display_device *ddev)
 {
 	int res = 0;
-	dev_info(&ddev->dev, "%s\n", __func__);
+	pr_err("%s\n", __func__);
+	//dev_info(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_disable(dpi_pins);	/* disabled to save power */
 	if (res)
-		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+		pr_err("Failure during %s\n", __func__);
+		//dev_warn(&ddev->dev, "Failure during %s\n", __func__);
 	return res;
 }
 
@@ -135,8 +139,8 @@ struct ssg_dpi_display_platform_data codina_dpi_pri_display_info = {
 	.reset_gpio		= LCD_RESX_CODINA_R0_0,
 	.pwr_gpio		= LCD_PWR_EN_CODINA_R0_0,
 	.bl_ctrl		= false,
-	.power_on_delay		= 5,
-	.reset_delay		= 5,
+	.power_on_delay		= 10,
+	.reset_delay		= 10,
 	.sleep_out_delay	= 120, /* 50ms for WS2401, but 120ms for S6D27A1 */
 
 	.display_off_delay	= 25,
@@ -392,9 +396,9 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 	if (req_ape != requested_qos) {
 		requested_qos = req_ape;
 		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						dev_name(dev), req_ape);
+						(char*)dev_name(dev), req_ape);
 		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						dev_name(dev), req_ddr);
+						(char*)dev_name(dev), req_ddr);
 		pr_info("Requested APE QOS = %d\n", req_ape);
 
 		if (update_first == true) {
@@ -407,7 +411,8 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 	
 }
 
-extern int lcdclk_usr;
+int lcdclk_usr = 0;
+extern unsigned int is_lpm;
 
 int __init init_codina_display_devices(void)
 {
@@ -466,8 +471,8 @@ int __init init_codina_display_devices(void)
 	if (lcd_type == LCD_PANEL_TYPE_SMD){
 		generic_display0.name = LCD_DRIVER_NAME_WS2401;
 		codina_dpi_pri_display_info.video_mode.hsw = 10;
-		codina_dpi_pri_display_info.video_mode.hbp = 1;
-		codina_dpi_pri_display_info.video_mode.hfp = 1;
+		codina_dpi_pri_display_info.video_mode.hbp = 8;
+		codina_dpi_pri_display_info.video_mode.hfp = 8;
 		codina_dpi_pri_display_info.video_mode.vsw = 2;
 		codina_dpi_pri_display_info.video_mode.vbp = 8;
 		codina_dpi_pri_display_info.video_mode.vfp = 18;
