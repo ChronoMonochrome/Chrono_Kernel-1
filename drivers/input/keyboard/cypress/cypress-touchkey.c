@@ -32,7 +32,6 @@
 #include <linux/usb_switcher.h>
 
 #include <mach/board-sec-u8500.h>
-#include <asm/mach-types.h>
 
 #define CYPRESS_GEN		0X00
 #define CYPRESS_FW_VER		0X01
@@ -1191,9 +1190,8 @@ static DEVICE_ATTR(touch_sensitivity, S_IRUGO | S_IWUSR | S_IWGRP, NULL, touch_s
 static DEVICE_ATTR(touchkey_autocal_start, S_IRUGO | S_IWUSR | S_IWGRP, NULL, touch_autocal_testmode);
 
 
-static int __init cypress_touchkey_init(void) 
+static int __init cypress_touchkey_init(void)
 {
-if (board_type == MACH_TYPE_JANICE) {
 	int ret = 0;
 
 	sec_touchkey = device_create(sec_class, NULL, 0, NULL, "sec_touchkey");
@@ -1265,13 +1263,10 @@ if (board_type == MACH_TYPE_JANICE) {
 
 	return ret;
 }
-}
 
 static void __exit cypress_touchkey_exit(void)
 {
-if (board_type == MACH_TYPE_CODINA) {
 	i2c_del_driver(&cypress_touchkey_driver);
-}
 }
 
 late_initcall(cypress_touchkey_init);

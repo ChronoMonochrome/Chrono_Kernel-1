@@ -10,7 +10,7 @@ config SENSORS_LIS3LV02D
 	select INPUT_POLLDEV
 	default n
 	
-config BOARD_CODINA_CHN
+config MACH_CODINA_CHN
 	bool "Codina_chn"
 	help
       Supports Codina_chn boards

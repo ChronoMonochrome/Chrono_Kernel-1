@@ -1099,12 +1099,12 @@ config MACH_SEC_GOLDEN_CHN
 	help
 	  Supports Golden_chn boards
 	  
-config BOARD_JANICE_CHN
+config MACH_JANICE_CHN
 	bool "Janice_chn"
 	help
 	  Supports Janice_chn boards
 	  
-config BOARD_CODINA_CHN
+config MACH_CODINA_CHN
 	bool "Codina_chn"
 	help
 	  Supports Codina_chn boards

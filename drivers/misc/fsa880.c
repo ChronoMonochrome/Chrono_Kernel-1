@@ -665,7 +665,7 @@ static void usb_switch_notify_clients(struct work_struct *work)
 	}
 
 	/* Desktop Dock Support */
-#ifndef  CONFIG_BOARD_CODINA_CHN
+#ifndef  CONFIG_MACH_CODINA_CHN
 /*weichang.dong remove Desktop Dock Support for codina chn 4.1.2  */
 	if (instance->last_event == (USB_SWITCH_CONNECTION_EVENT | EXTERNAL_AV_CABLE)) {
 		if (id == FC_9485) {	

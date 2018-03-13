@@ -60,7 +60,6 @@ extern bool dt2w_use_wakelock;
 #include <linux/list.h>
 #endif
 
-#include <asm/mach-types.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/input/bt404_ts.h>
 #include "zinitix_touch_bt4x3_firmware.h"
@@ -98,7 +97,7 @@ extern bool dt2w_use_wakelock;
  * ESD Protection
  * 0 : no use, when using 3 is recommended
  */
-#if defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA_CHN)
+#if defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA_CHN)
 #define	BT404_ESD_TIMER_INTERVAL		0	/* second */
 #else
 #define	BT404_ESD_TIMER_INTERVAL		2	/* second */
@@ -1681,7 +1680,7 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 							__func__, ret);
 		goto out_esd_start;
 	}
-#if !defined(CONFIG_BOARD_CODINA_EURO) && !defined(CONFIG_BOARD_CODINA_CHN)
+#if !defined(CONFIG_MACH_CODINA_EURO) && !defined(CONFIG_MACH_CODINA_CHN)
 	s16data = (s16 *)(&data->touch_info);
 	data_checksum = 0;
 
@@ -1727,7 +1726,7 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 								__func__);
 			goto out_esd_start;
 		}
-#if !defined(CONFIG_BOARD_CODINA_EURO) && !defined(CONFIG_BOARD_CODINA_CHN)
+#if !defined(CONFIG_MACH_CODINA_EURO) && !defined(CONFIG_MACH_CODINA_CHN)
 		if (data->pdata->panel_type == EX_CLEAR_PANEL) {
 			int i = 0;
 
@@ -2914,7 +2913,7 @@ out:
 
 /* For I8160 - codina_euro_open */
 
-#if defined(CONFIG_BOARD_CODINA_EURO)
+#if defined(CONFIG_MACH_CODINA_EURO)
 
 static void get_fw_ver_bin(void *device_data)
 {
@@ -4603,18 +4602,14 @@ extern int __devinit doubletap2wake_init(void);
 
 static int __devinit bt404_ts_init(void)
 {
-if (board_type == MACH_TYPE_CODINA) {
 	sweep2wake_init();
 	doubletap2wake_init();
 	return i2c_add_driver(&bt404_ts_driver);
 }
-}
 
 static void __exit bt404_ts_exit(void)
 {
-if (board_type == MACH_TYPE_CODINA) {
 	i2c_del_driver(&bt404_ts_driver);
-}
 }
 
 module_init(bt404_ts_init);

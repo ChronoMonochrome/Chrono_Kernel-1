@@ -24,7 +24,6 @@
 #include <linux/mfd/abx500.h>
 #include <linux/slab.h>
 #include <linux/mfd/abx500/ab8500-bm.h>
-#include <asm/mach-types.h>
 
 #include <linux/gpio.h>
 #include <linux/err.h>
@@ -44,7 +43,6 @@
 #include <linux/list.h>
 #include <linux/spinlock.h>
 #include <mach/board-sec-ux500.h>
-#include <asm/mach-types.h>
 #include <mach/sec_param.h>
 #include <linux/kernel.h>
 
@@ -795,8 +793,8 @@ static int ab8500_comp_fg_bat_voltage(struct ab8500_fuelgauge_info *di,
 	if (!di->flags.charging)
 		ab8500_fg_add_i_sample(di, di->inst_curr);
 
-#if 	defined(CONFIG_BOARD_JANICE) || \
-	defined(CONFIG_BOARD_CODINA) || \
+#if defined(CONFIG_MACH_JANICE) || \
+	defined(CONFIG_MACH_CODINA) || \
 	defined(CONFIG_MACH_GAVINI) || \
 	defined(CONFIG_MACH_SEC_GOLDEN) || \
 	defined(CONFIG_MACH_SEC_KYLE) || \
@@ -1129,15 +1127,20 @@ static int ab8500_fg_calc_cap_discharge_fg(struct ab8500_fuelgauge_info *di)
 	} else if (di->bat_cap.permille <= 200 &&
 		di->bat_cap.permille > 100) {
 		di->n_skip_add_sample = 3;
-if (board_type == MACH_TYPE_CODINA || board_type == MACH_TYPE_GOLDEN) { 
+#if defined(CONFIG_MACH_CODINA) || \
+	defined(CONFIG_MACH_SEC_GOLDEN) || \
+	defined(CONFIG_MACH_SEC_KYLE) || \
+	defined(CONFIG_MACH_SEC_RICCO) || \
+	defined(CONFIG_MACH_SEC_SKOMER) || \
+	defined(CONFIG_MACH_SEC_HENDRIX)
 	} else if (di->bat_cap.permille <= 120) {
 		di->n_skip_add_sample = 1;
 	}
-} else {
+#else
 	} else if (di->bat_cap.permille <= 100) {
 		di->n_skip_add_sample = 2;
 	}
-}
+#endif
 	dev_dbg(di->dev, "Using every %d Vbat sample Now on %d loop\n",
 		di->n_skip_add_sample, di->skip_add_sample);
 
@@ -1672,13 +1675,18 @@ static void ab8500_fg_algorithm_discharging(struct ab8500_fuelgauge_info *di)
 
 		ab8500_fg_check_capacity_limits(di, false);
 
-if (board_type != MACH_TYPE_JANICE) { 
+#if defined(CONFIG_MACH_CODINA) || \
+	defined(CONFIG_MACH_SEC_GOLDEN) || \
+	defined(CONFIG_MACH_SEC_KYLE) || \
+	defined(CONFIG_MACH_SEC_RICCO) || \
+	defined(CONFIG_MACH_SEC_SKOMER) || \
+	defined(CONFIG_MACH_SEC_HENDRIX)
 		if (DIV_ROUND_CLOSEST(di->bat_cap.permille, 10) <= 10) {
 			queue_delayed_work(di->fg_wq,
 				&di->fg_periodic_work,
 				10 * HZ);
 		}
-}
+#endif
 		break;
 
 	case AB8500_FG_DISCHARGE_WAKEUP:
@@ -3067,12 +3075,12 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 
 	di->vbat_nom = get_battery_data(di).bat_info->nominal_voltage;
 
-if (board_type == MACH_TYPE_JANICE) {
+#ifdef CONFIG_MACH_JANICE
 	if (system_rev >= JANICE_R0_2) {
 		if (!gpio_get_value(SMD_ON_JANICE_R0_2))
 			di->smd_on = 1;
 	}
-}
+#endif
 	di->reinit_capacity = true;
 	di->init_capacity = true;
 

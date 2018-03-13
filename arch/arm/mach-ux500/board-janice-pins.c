@@ -28,7 +28,6 @@
 #include "board-janice-regulators.h"
 
 #include <asm/io.h>
-#include <asm/mach-types.h>
 
 extern unsigned int system_rev;
 
@@ -369,7 +368,6 @@ static pin_cfg_t janice_gps_rev0_2_pins[] = {
 
 static void __init gps_pins_init(void)
 {
-RUN_ON_JANICE_ONLY
 	gps_dev = device_create(sec_class, NULL, 0, NULL, "gps");
 	if (!gps_dev)
 		pr_err("Failed to create device(gps)!\n");
@@ -400,11 +398,9 @@ RUN_ON_JANICE_ONLY
 		gpio_export_link(gps_dev, "GPS_PWR_EN", EN_GPS_JANICE_R0_0);
 	}
 }
-}
 
 static void __init sdmmc_pins_init(void)
 {
-RUN_ON_JANICE_ONLY
 	u32 value;
 	const void *prcm_gpiocr = __io_address(U8500_PRCMU_BASE) + 0x138;
 
@@ -466,7 +462,6 @@ RUN_ON_JANICE_ONLY
 
 		nmk_config_pins(janice_r0_0_sdmmc, ARRAY_SIZE(janice_r0_0_sdmmc));
 	}
-}
 }
 
 
@@ -882,9 +877,8 @@ static void janice_pins_suspend_force_mux(void)
 }
 
 
-void __init janice_ssg_pins_init(void)
+void __init ssg_pins_init(void)
 {
-RUN_ON_JANICE_ONLY
 	nmk_config_pins(janice_r0_0_pins, ARRAY_SIZE(janice_r0_0_pins));
 	ux500_pins_add(janice_r0_0_lookup_pins, ARRAY_SIZE(janice_r0_0_lookup_pins));
 	gps_pins_init();
@@ -892,5 +886,10 @@ RUN_ON_JANICE_ONLY
 	suspend_set_pins_force_fn(janice_pins_suspend_force,
 				  janice_pins_suspend_force_mux);
 }
+
+int pins_for_u9500(void)
+{
+	/* required by STE code */
+	return 0;
 }
 

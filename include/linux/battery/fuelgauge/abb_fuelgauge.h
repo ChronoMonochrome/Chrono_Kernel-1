@@ -29,6 +29,25 @@
 /* fg_res parameter should be re-calculated
    according to the model and HW revision */
 
+#if defined(CONFIG_MACH_JANICE)
+#define FGRES_HWREV_02			133
+#define FGRES_HWREV_02_CH		133
+#define FGRES_HWREV_03			121
+#define FGRES_HWREV_03_CH		120
+#elif defined(CONFIG_MACH_CODINA) || \
+	defined(CONFIG_MACH_SEC_GOLDEN) || \
+	defined(CONFIG_MACH_SEC_KYLE) || \
+	defined(CONFIG_MACH_SEC_RICCO)
+#define FGRES				130
+#define FGRES_CH			125
+#elif defined(CONFIG_MACH_SEC_SKOMER)
+#define FGRES				143
+#define FGRES_CH			143
+#else
+#define FGRES				130
+#define FGRES_CH			133
+#endif
+
 #define MAGIC_CODE			0x29
 #define MAGIC_CODE_RESET		0x2F
 #define OFF_MAGIC_CODE			25

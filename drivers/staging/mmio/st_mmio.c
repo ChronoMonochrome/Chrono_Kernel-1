@@ -26,7 +26,6 @@
 #include <linux/leds.h>
 #include <linux/bln.h>
 
-#include <asm/mach-types.h>
 #include <mach/board-sec-u8500.h> // Include STE Board Revision
 #include "st_mmio.h"
 
@@ -84,7 +83,13 @@
 /*  Codina VT_CAM_ID can be checked by CAM_VDDIO_1V8 (LDO2)*/
 #define VT_CAM_ID_CHECK_POWER 2
 
-static int VT_CAM_ID = 226;    /* Codina VT_CAM_ID GPIO number*/
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_SEC_HENDRIX)
+#define VT_CAM_ID 226    /* Codina VT_CAM_ID GPIO number*/
+#elif defined(CONFIG_MACH_JANICE)
+#define VT_CAM_ID 66    /* JANICE VT_CAM_ID GPIO number*/
+#else
+#define VT_CAM_ID 66    /*  VT_CAM_ID GPIO number*/
+#endif
 
 #define ON 1  // GPIO Power On
 #define OFF 0 // GPIO Power Off
@@ -720,7 +725,8 @@ static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 	BUG_ON(info == NULL);
 	/* working at MMIO_Camera.cpp */
 	dev_dbg(info->dev, "mmio_cam_pwr_sensor %d\n", on);
-if (board_type == MACH_TYPE_JANICE) {
+
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 
 	if (on)
 	{
@@ -752,7 +758,8 @@ if (board_type == MACH_TYPE_JANICE) {
 		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
 		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
 	}
-} else if (board_type == MACH_TYPE_CODINA) {
+
+#elif defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_CODINA)
 
 	if(on) /* Power On For Gorden */
 	{
@@ -771,6 +778,12 @@ if (board_type == MACH_TYPE_JANICE) {
 
 		if(info->pdata->camera_slot == PRIMARY_CAMERA)
 		{
+#if defined(CONFIG_MACH_SEC_GOLDEN)
+			if(system_rev < GOLDEN_R0_4)
+				SM5103_MainCamera_On(info, on); /* Main Camera Power On */
+			else
+				NCP6914_MainCamera_On(info, on);
+#elif defined(CONFIG_MACH_CODINA)
 			switch (system_rev){
 				case CODINA_TMO_R0_0:
 				case CODINA_TMO_R0_0_A:
@@ -793,9 +806,16 @@ if (board_type == MACH_TYPE_JANICE) {
 				default:
 					break;
 			}
+#endif
 		}
 		else
 		{
+#if defined(CONFIG_MACH_SEC_GOLDEN)
+			if(system_rev < GOLDEN_R0_4)
+				SM5103_SubCamera_On(info, on); /* Sub Camera Power On */
+			else
+				NCP6914_SubCamera_On(info, on);
+#elif defined(CONFIG_MACH_CODINA)
 			switch (system_rev){
 				case CODINA_TMO_R0_0:
 				case CODINA_TMO_R0_0_A:
@@ -818,6 +838,7 @@ if (board_type == MACH_TYPE_JANICE) {
 				default:
 					break;
 			}
+#endif
 		}
 
 		/*
@@ -834,6 +855,12 @@ if (board_type == MACH_TYPE_JANICE) {
 	{
 		if(info->pdata->camera_slot == PRIMARY_CAMERA)
 		{
+#if defined(CONFIG_MACH_SEC_GOLDEN)
+			if(system_rev < GOLDEN_R0_4)
+				SM5103_MainCamera_Off(info, on); /* Main Camera Off */
+			else
+				NCP6914_MainCamera_Off(info, on);
+#elif defined(CONFIG_MACH_CODINA)
 			switch (system_rev){
 				case CODINA_TMO_R0_0:
 				case CODINA_TMO_R0_0_A:
@@ -856,9 +883,16 @@ if (board_type == MACH_TYPE_JANICE) {
 				default:
 					break;
 			}
+#endif
 		}
 		else
 		{
+#if defined(CONFIG_MACH_SEC_GOLDEN)
+			if(system_rev < GOLDEN_R0_4)
+				SM5103_SubCamera_Off(info, on); /* Sub Camera Off for Golden*/
+			else
+				NCP6914_SubCamera_Off(info, on);
+#elif defined(CONFIG_MACH_CODINA)
 			switch (system_rev){
 				case CODINA_TMO_R0_0:
 				case CODINA_TMO_R0_0_A:
@@ -881,6 +915,7 @@ if (board_type == MACH_TYPE_JANICE) {
 				default:
 					break;
 			}
+#endif
 		}
 
 		subPMIC_PowerOff(0x0);
@@ -895,7 +930,166 @@ if (board_type == MACH_TYPE_JANICE) {
 		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
 		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
 	}
-}
+
+#elif defined (CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_SEC_HENDRIX)
+	if(on) /* Power On For Gorden */
+	{		
+		gpio_set_value(PRIMARY_CAMERA_RESET, 0);
+		gpio_set_value(PRIMARY_CAMERA_STBY, 0);
+		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
+		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
+
+		err = info->pdata->power_enable(info->pdata);
+
+		mmio_cam_control_clocks(info, false);		
+
+		mdelay(CLOCK_ENABLE_DELAY);
+
+		subPMIC_PowerOn(0x0);
+
+		if(info->pdata->camera_slot == SECONDARY_CAMERA) 
+		{
+			NCP6914_SubCamera_On(info, on);
+		}
+		else 
+		{
+			/*
+			 * When switching from Primary YUV camera
+			 * sensor sequence operated at .dat file	
+			 */
+
+;
+		}
+
+		/*
+		 * When switching from secondary YUV camera
+		 * to primary Raw Bayer Camera, a hang is observed without the
+		 * below delay. I2C access failure are observed while
+		 * communicating with primary camera sensor indicating camera
+		 * sensor was not powered up correctly.
+		 */
+
+		mdelay(CLOCK_ENABLE_DELAY);
+	}
+	else /* Power Off Sequence for Skomer */
+	{
+		if(info->pdata->camera_slot == SECONDARY_CAMERA) 
+		{
+			NCP6914_SubCamera_Off(info, on);        
+		}
+		else 
+		{
+			/*
+			 * When switching from Primary YUV camera
+			 * sensor sequence operated at .dat file	
+			 */
+
+;
+		}
+
+		subPMIC_PowerOff(0x0);
+
+		mmio_cam_control_clocks(info, false);
+		info->pdata->power_disable(info->pdata);
+
+		mdelay(CLOCK_ENABLE_DELAY);
+
+		gpio_set_value(PRIMARY_CAMERA_RESET, 0);
+		gpio_set_value(PRIMARY_CAMERA_STBY, 0);
+		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
+		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
+	}
+
+#elif defined(CONFIG_MACH_SEC_KYLE)
+
+	if(on)
+	{
+		gpio_set_value(PRIMARY_CAMERA_RESET, 0);
+		gpio_set_value(PRIMARY_CAMERA_STBY, 0);
+		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
+		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
+
+		err = info->pdata->power_enable(info->pdata);
+
+		mmio_cam_control_clocks(info, false);
+
+		mdelay(CLOCK_ENABLE_DELAY);
+
+		subPMIC_PowerOn(0x0);
+
+
+		if(KYLE_ATT_R0_1 == system_rev)
+		{
+
+			if(info->pdata->camera_slot == PRIMARY_CAMERA)
+			{
+				SM5103_MainCamera_On(info, on);
+			}
+			else /* Power On Sub Camera */
+			{
+				SM5103_SubCamera_On(info, on);
+			}
+		} else {
+
+			if(info->pdata->camera_slot == PRIMARY_CAMERA)
+			{
+				NCP6914_MainCamera_On(info, on);
+			}
+			else /* Power On Sub Camera */
+			{
+				NCP6914_SubCamera_On(info, on);
+			}
+		}
+
+
+		/*
+		 * When switching from secondary YUV camera
+		 * to primary Raw Bayer Camera, a hang is observed without the
+		 * below delay. I2C access failure are observed while
+		 * communicating with primary camera sensor indicating camera
+		 * sensor was not powered up correctly.
+		 */
+
+		mdelay(CLOCK_ENABLE_DELAY);
+	}
+	else /* Power Off Sequence for Kyle */
+	{
+
+		if(KYLE_ATT_R0_1 == system_rev)
+		{
+			if (info->pdata->camera_slot == PRIMARY_CAMERA) /* Main Camera Power Off */
+			{
+				SM5103_MainCamera_Off(info, on);
+			}
+			else /* Sub Camera Power Off */
+			{
+				SM5103_SubCamera_Off(info, on);
+			}
+		} else {
+			if (info->pdata->camera_slot == PRIMARY_CAMERA) /* Main Camera Power Off */
+			{
+				NCP6914_MainCamera_Off(info, on);
+			}
+			else /* Sub Camera Power Off */
+			{
+				NCP6914_SubCamera_Off(info, on);
+			}
+
+		}
+		subPMIC_PowerOff(0x0);
+
+		mmio_cam_control_clocks(info, false);
+
+		info->pdata->power_disable(info->pdata);
+
+		mdelay(CLOCK_ENABLE_DELAY);
+
+		gpio_set_value(PRIMARY_CAMERA_RESET, 0);
+		gpio_set_value(PRIMARY_CAMERA_STBY, 0);
+		gpio_set_value(SECONDARY_CAMERA_RESET, 0);
+		gpio_set_value(SECONDARY_CAMERA_STBY, 0);
+	}
+#endif
 	return err;
 }
 
@@ -1434,8 +1628,8 @@ static int mmio_cam_flash_on_off(struct mmio_info *info, int set, int on)
 		Torch_Flash_Off_by_cam();		
 	}
 #endif
-
-if (board_type == MACH_TYPE_JANICE) {
+	
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 	if (lux_val == 100) {
 		gpio_set_value(FLASH_EN, 0);
 		for (i = lux_val; i > 1; i--) {
@@ -1488,7 +1682,10 @@ if (board_type == MACH_TYPE_JANICE) {
 		gpio_set_value(FLASH_EN, 0);
 		gpio_set_value(FLASH_MODE, 0);
 	}
-} else {
+#elif defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_SKOMER) \
+	|| defined(CONFIG_MACH_SEC_HENDRIX) /* RT8515 */
+	mmio_cam_flash_rt8515(lux_val);
+#else /* KTD262 */
 	if(CODINA_R0_0 <= system_rev && system_rev <= CODINA_R0_5) // Codina
 	{
 		mmio_cam_flash_ktd262(lux_val);
@@ -1497,7 +1694,7 @@ if (board_type == MACH_TYPE_JANICE) {
 	{
 		mmio_cam_flash_rt8515(lux_val);
 	}
-}
+#endif
 	return 0;		/* Always success */
 }
 
@@ -2054,11 +2251,14 @@ front_camera_type_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	char camType[128] = {0};
-if (board_type != MACH_TYPE_JANICE) 
+#if defined (CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_SKOMER) \
+	|| defined(CONFIG_MACH_SEC_HENDRIX)
 	strncpy(camType, "SF_SR030PC50_NONE\n" , 128);
-else
+#elif defined CONFIG_MACH_JANICE
 	strncpy(camType, "SLSI_S5K6AAFX_NONE\n" , 128);
-
+#else
+	strncpy(camType, "DB_DB8131M_NONE\n" , 128);
+#endif
 	return sprintf(buf, "%s", camType);
 }
 
@@ -2405,14 +2605,44 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 	/*godin+ */
 
 	/* Function Pointer Mapping */
-if (board_type == MACH_TYPE_JANICE) {
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 	dev_info(info->dev, "NCP6914 Camera Sub-PMIC\n");
 	subPMIC_module_init = NCP6914_subPMIC_module_init;
 	subPMIC_module_exit = NCP6914_subPMIC_module_exit;
 	subPMIC_PowerOn     = NCP6914_subPMIC_PowerOn;
 	subPMIC_PowerOff    = NCP6914_subPMIC_PowerOff;
 	subPMIC_PinOnOff    = NCP6914_subPMIC_PinOnOff;
-} else if (board_type == MACH_TYPE_CODINA) {
+#elif defined(CONFIG_MACH_SEC_GOLDEN)
+	if(GOLDEN_BRINGUP <= system_rev && system_rev < GOLDEN_R0_4)
+	{
+		dev_info(info->dev, "system_rev %d, SM5103 Camera Sub-PMIC\n", system_rev);
+		subPMIC_module_init = SM5103_subPMIC_module_init;
+		subPMIC_module_exit = SM5103_subPMIC_module_exit;
+		subPMIC_PowerOn     = SM5103_subPMIC_PowerOn;
+		subPMIC_PowerOff    = SM5103_subPMIC_PowerOff;
+		subPMIC_PinOnOff    = SM5103_subPMIC_PinOnOff;
+	}
+	else if(GOLDEN_R0_4 <= system_rev)
+	{
+		dev_info(info->dev, "system_rev %d, NCP6914 Camera Sub-PMIC\n", system_rev);
+		subPMIC_module_init = NCP6914_subPMIC_module_init;
+		subPMIC_module_exit = NCP6914_subPMIC_module_exit;
+		subPMIC_PowerOn     = NCP6914_subPMIC_PowerOn;
+		subPMIC_PowerOff    = NCP6914_subPMIC_PowerOff;
+		subPMIC_PinOnOff    = NCP6914_subPMIC_PinOnOff;
+	}
+	else
+	{
+		dev_err(info->dev, "system_rev: %d, Could not find Camera Sub-PMIC\n", system_rev);
+	}
+#elif defined(CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_SEC_HENDRIX)
+	dev_info(info->dev, "system_rev %d, NCP6914 Camera Sub-PMIC\n", system_rev);
+	subPMIC_module_init = NCP6914_subPMIC_module_init;
+	subPMIC_module_exit = NCP6914_subPMIC_module_exit;
+	subPMIC_PowerOn     = NCP6914_subPMIC_PowerOn;
+	subPMIC_PowerOff    = NCP6914_subPMIC_PowerOff;
+	subPMIC_PinOnOff    = NCP6914_subPMIC_PinOnOff;
+#elif defined(CONFIG_MACH_CODINA)
 	switch (system_rev){
 		case CODINA_TMO_R0_0:
 		case CODINA_TMO_R0_0_A:
@@ -2446,7 +2676,25 @@ if (board_type == MACH_TYPE_JANICE) {
 			dev_err(info->dev, "system_rev: %d, Could not find Camera Sub-PMIC\n", system_rev);
 			break;
 	}
-}
+
+#elif defined(CONFIG_MACH_SEC_KYLE)
+
+	if(KYLE_ATT_R0_1 == system_rev) {
+		dev_info(info->dev, "system_rev %d, SM5103 Camera Sub-PMIC\n", system_rev);
+		subPMIC_module_init = SM5103_subPMIC_module_init;
+		subPMIC_module_exit = SM5103_subPMIC_module_exit;
+		subPMIC_PowerOn 	= SM5103_subPMIC_PowerOn;
+		subPMIC_PowerOff	= SM5103_subPMIC_PowerOff;
+		subPMIC_PinOnOff	= SM5103_subPMIC_PinOnOff;
+	} else {
+		dev_info(info->dev, "system_rev %d, NCP6914 Camera Sub-PMIC\n", system_rev);
+		subPMIC_module_init = NCP6914_subPMIC_module_init;
+		subPMIC_module_exit = NCP6914_subPMIC_module_exit;
+		subPMIC_PowerOn 	= NCP6914_subPMIC_PowerOn;
+		subPMIC_PowerOff	= NCP6914_subPMIC_PowerOff;
+		subPMIC_PinOnOff	= NCP6914_subPMIC_PinOnOff;
+	}
+#endif
 
 	sec_camera_gpio_init();
 	subPMIC_module_init();
@@ -2455,7 +2703,7 @@ if (board_type == MACH_TYPE_JANICE) {
 	cam_clock_state = 0;
 	vt_id = 0;  /* Global variable for (VT_CAM_ID) value*/
 
-#if defined(CONFIG_BOARD_CODINA) || defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE)
 	/*Check fromt camera VT_CAM_ID*/
 	check_VT_CAM_ID(VT_CAM_ID_CHECK_POWER);
 #endif
@@ -2553,8 +2801,6 @@ static struct platform_driver mmio_driver = {
  */
 static int __init mmio_init(void)
 {
-	if (board_type == MACH_TYPE_JANICE)
-		VT_CAM_ID = 66;
 	return platform_driver_register(&mmio_driver);
 }
 

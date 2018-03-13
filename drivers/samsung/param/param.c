@@ -160,13 +160,8 @@ static void param_set_default(void)
 	param_status.param_int_list.param_list[16].ident = __PARAM_INT_14;
 
 	param_status.param_str_list[0].ident = __VERSION;
-	if (strstr(CONFIG_CMDLINE, "janice")) {
-		strlcpy(param_status.param_str_list[0].value,
-			"I9070XXLXXX", PARAM_STRING_SIZE);
-	} else {
-		strlcpy(param_status.param_str_list[0].value,
-                        "I8160XXLXXX", PARAM_STRING_SIZE);
-	}
+	strlcpy(param_status.param_str_list[0].value,
+			VERSION_LINE, PARAM_STRING_SIZE);
 	param_status.param_str_list[1].ident = __CMDLINE;
 	strlcpy(param_status.param_str_list[1].value,
 			PRODUCTION, PARAM_STRING_SIZE);

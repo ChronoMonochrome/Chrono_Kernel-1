@@ -395,7 +395,7 @@ static enum power_supply_property ab8500_charger_usb_props[] = {
 
 extern vbus_state;
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 extern void cypress_touchkey_change_thd(bool vbus_status);
 static void (*cypress_touchkey_ta_status)(bool vbus_status);
 extern void mxt224e_ts_change_vbus_state(bool vbus_status);
@@ -1700,7 +1700,7 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 		return ret;
 
 	if (enable) {
-#if defined(CONFIG_BOARD_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) 
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) 
 		msleep(100);
 #endif
 
@@ -3013,7 +3013,7 @@ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
 }
 #endif
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 /*TODO: Add some header*/
 static void ab8500_charger_tsp_vbus_notify_work(struct work_struct *work)
 {
@@ -4388,7 +4388,7 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 	INIT_WORK(&di->usb_state_changed_work,
 		ab8500_charger_usb_state_changed_work);
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 	INIT_WORK(&di->tsp_vbus_notify_work,
 		ab8500_charger_tsp_vbus_notify_work);
 #endif

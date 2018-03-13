@@ -37,7 +37,6 @@
 #include <linux/earlysuspend.h>
 #endif
 
-#include <asm/mach-types.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
 #include <video/mcde_display.h>
@@ -238,7 +237,7 @@ static const u8 DCS_CMD_SEQ_S6D27A1_ORIENT_180[] = {
 extern bool power_off_charging;
 extern u32 sec_bootmode;
 
-#if defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA)
+#if defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA)
 extern u32 sec_lpm_bootmode;
 #endif
 static int s6d27a1_write_dcs_sequence(struct s6d27a1_dpi *lcd, const u8 *p_seq);
@@ -782,7 +781,7 @@ static void esd_work_func(struct work_struct *work)
 {
 	struct s6d27a1_dpi *lcd = container_of(work,
 					struct s6d27a1_dpi, esd_work);
-#if defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA)
+#if defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA)
 	if (lcd->esd_enable && !lcd->esd_processing && !sec_lpm_bootmode
 							&& (sec_bootmode != 2)) {
 #else
@@ -809,7 +808,7 @@ static void esd_work_func(struct work_struct *work)
 static irqreturn_t esd_interrupt_handler(int irq, void *data)
 {
 	struct s6d27a1_dpi *lcd = data;
-#if defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA)
+#if defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA)
 	if (lcd->esd_enable && !lcd->esd_processing && !sec_lpm_bootmode
 								&& (sec_bootmode != 2)) {
 #else
@@ -1639,16 +1638,12 @@ static struct mcde_display_driver s6d27a1_dpi_mcde __refdata = {
 
 static int __init s6d27a1_dpi_init(void)
 {
-RUN_ON_CODINA_ONLY
-	return mcde_display_driver_register(&s6d27a1_dpi_mcde);
-}
+	return mcde_display_driver_register(&s6d27a1_dpi_mcde);;
 }
 
 static void __exit s6d27a1_dpi_exit(void)
 {
-RUN_ON_CODINA_ONLY
 	mcde_display_driver_unregister(&s6d27a1_dpi_mcde);
-}
 }
 
 module_init(s6d27a1_dpi_init);

@@ -60,7 +60,7 @@
 #define DEBUG_LEVEL_MID	(0x494d)
 #define DEBUG_LEVEL_HIGH	(0x4948)
 
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA)
 extern u32 sec_lpm_bootmode;
 #endif
 
@@ -74,7 +74,5 @@ unsigned short sec_common_update_reboot_reason(char mode, const char *cmd);
 
 extern int sec_get_debug_enable(void);
 extern int sec_get_debug_enable_user(void);
-
-extern int display_initialized_during_boot;
 
 #endif /* __SEC_COMMON_H__ */

@@ -16,7 +16,7 @@
 #include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/time.h>
 #include <linux/hwmon.h>
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/delay.h>
 #endif
@@ -27,14 +27,14 @@
 #define RTC_CTRL 0x0B
 #define RTC_ALARM_ENABLE 0x4
 
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 #define AB8500_RTC_CALIBRATION 0x0E
 #define AB8500_RTC_PCUT_FLAG_TIME 0x15
 #define PCUT_CTR_AND_STATUS 0x12
 #define PRCM_USE_PCUT 0x0DC0
 #endif
 static struct device *sysctrl_dev;
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 static bool use_pcut_registers = false;
 #endif
 
@@ -161,7 +161,7 @@ void ab8500_restart(u16 reset_code)
 #else
 	reason = reset_code;
 #endif
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 	/*
 	 * RTC Pcut Flag time register can only hold 7 bits so u16 reason can
      * only contain 15 bits. Warn if MSB bit is used since it will
@@ -251,7 +251,7 @@ void ab8500_restart(u16 reset_code)
 	/* Setting the parameters to AB8500 WD*/
 	ab8500_sysctrl_write(AB8500_MAINWDOGCTRL, 0xFF, (AB8500_ENABLE_WD |
 		AB8500_WD_RESTART_ON_EXPIRE | AB8500_KICK_WD));
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 
 	mdelay(1000);
 	printk(KERN_ERR "Restart via WD expiry failed -- System halted\n");
@@ -363,7 +363,7 @@ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
 		}
 	}
 	
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 	use_pcut_registers = (prcmu_tcdm_read(PRCM_USE_PCUT) & 0x01);
 	if (use_pcut_registers) {
 		/* Clear the registers being used for reset reason */

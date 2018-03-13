@@ -106,7 +106,7 @@ and you can find right values for PLLDIV and PWM_PERIOD_DEFAULT
 ************************************************************************************************/
 #endif
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 #define PWM_PLLDIV_DEFAULT		0x02
 #define PWM_FREQ_DEFAULT		0x00
 #define PWM_PERIOD_DEFAULT		0x77

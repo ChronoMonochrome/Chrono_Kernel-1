@@ -459,7 +459,7 @@ static char *ab8500_chargalg_supplied_to[] = {
 	"ab8500_fg",
 };
 
-struct ab8500_charger_platform_data codina_ab8500_charger_plat_data = {
+struct ab8500_charger_platform_data ab8500_charger_plat_data = {
 	.supplied_to = ab8500_charger_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_charger_supplied_to),
 	.autopower_cfg = true,
@@ -467,17 +467,17 @@ struct ab8500_charger_platform_data codina_ab8500_charger_plat_data = {
 	.usb_enabled = true,
 };
 
-struct ab8500_btemp_platform_data codina_ab8500_btemp_plat_data = {
+struct ab8500_btemp_platform_data ab8500_btemp_plat_data = {
 	.supplied_to = ab8500_btemp_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_btemp_supplied_to),
 };
 
-struct ab8500_fg_platform_data codina_ab8500_fg_plat_data = {
+struct ab8500_fg_platform_data ab8500_fg_plat_data = {
 	.supplied_to = ab8500_fg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_fg_supplied_to),
 };
 
-struct ab8500_chargalg_platform_data codina_ab8500_chargalg_plat_data = {
+struct ab8500_chargalg_platform_data ab8500_chargalg_plat_data = {
 	.supplied_to = ab8500_chargalg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_chargalg_supplied_to),
 };
@@ -534,7 +534,7 @@ static const struct ab8500_bm_charger_parameters chg = {
 #endif
 };
 
-struct ab8500_bm_data codina_ab8500_bm_data = {
+struct ab8500_bm_data ab8500_bm_data = {
 	.temp_under		= -5,
 	.temp_low		= 0,
 	.temp_high		= 40,

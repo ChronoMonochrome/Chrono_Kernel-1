@@ -43,7 +43,6 @@ extern struct device *gps_dev;
 extern struct class *sec_class;
 
 void sec_cam_init(void);
-void __init codina_ssg_pins_init(void);
-void __init janice_ssg_pins_init(void);
-int sec_jack_get_det_level(struct platform_device *pdev);
+void __init ssg_pins_init(void);
+
 #endif /* __BOARD_SEC_UX500_H__ */

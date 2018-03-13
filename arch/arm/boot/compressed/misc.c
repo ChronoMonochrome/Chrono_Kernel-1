@@ -27,6 +27,7 @@ unsigned int __machine_arch_type;
 #include <asm/string.h>
 #include <asm/setup.h>
 
+
 static void putstr(const char *ptr);
 extern void error(char *x);
 
@@ -188,23 +189,6 @@ int strcmp(const char *cs, const char *ct)
 	return 0;
 }
 
-char *strstr(const char *s1, const char *s2)
-{
-        size_t l1, l2;
-
-        l2 = strlen(s2);
-        if (!l2)
-                return (char *)s1;
-        l1 = strlen(s1);
-        while (l1 >= l2) {
-                l1--;
-                if (!memcmp(s1, s2, l2))
-                        return (char *)s1;
-                s1++;
-        }
-        return NULL;
-}
-
 /*
  * gzip declarations
  */
@@ -249,11 +233,7 @@ decompress_kernel(unsigned long output_start, unsigned long free_mem_ptr_p,
 	output_data		= (unsigned char *)output_start;
 	free_mem_ptr		= free_mem_ptr_p;
 	free_mem_end_ptr	= free_mem_ptr_end_p;
-	if (strstr(CONFIG_CMDLINE, "codina")) {
-		__machine_arch_type	= MACH_TYPE_CODINA;
-	} else {
-		__machine_arch_type     = MACH_TYPE_JANICE;
-	}
+	__machine_arch_type	= arch_id;
 
 	arch_decomp_setup();
 

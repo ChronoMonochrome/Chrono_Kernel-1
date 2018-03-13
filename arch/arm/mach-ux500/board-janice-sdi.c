@@ -25,7 +25,6 @@
 #include "devices-db8500.h"
 #include <mach/board-sec-u8500.h>
 
-#include <asm/mach-types.h>
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
 
@@ -63,16 +62,16 @@ static struct wlan_mem_prealloc wlan_mem_array[PREALLOC_WLAN_SEC_NUM] = {
 	{NULL, (WLAN_SECTION_SIZE_3 + PREALLOC_WLAN_SECTION_HEADER)}
 };
 
-void *janice_wlan_static_scan_buf0;
-void *janice_wlan_static_scan_buf1;
+void *wlan_static_scan_buf0;
+void *wlan_static_scan_buf1;
 static void *brcm_wlan_mem_prealloc(int section, unsigned long size)
 {
 	if (section == PREALLOC_WLAN_SEC_NUM)
 		return wlan_static_skb;
 	if (section == WLAN_STATIC_SCAN_BUF0)
-		return janice_wlan_static_scan_buf0;
+		return wlan_static_scan_buf0;
 	if (section == WLAN_STATIC_SCAN_BUF1)
-		return janice_wlan_static_scan_buf1;
+		return wlan_static_scan_buf1;
 	if ((section < 0) || (section > PREALLOC_WLAN_SEC_NUM))
 		return NULL;
 
@@ -110,11 +109,11 @@ static int brcm_init_wlan_mem(void)
 		if (!wlan_mem_array[i].mem_ptr)
 			goto err_mem_alloc;
 	}
-	janice_wlan_static_scan_buf0 = kmalloc (65536, GFP_KERNEL);
-	if(!janice_wlan_static_scan_buf0)
+	wlan_static_scan_buf0 = kmalloc (65536, GFP_KERNEL);
+	if(!wlan_static_scan_buf0)
 		goto err_mem_alloc;
-	janice_wlan_static_scan_buf1 = kmalloc (65536, GFP_KERNEL);
-	if(!janice_wlan_static_scan_buf1)
+	wlan_static_scan_buf1 = kmalloc (65536, GFP_KERNEL);
+	if(!wlan_static_scan_buf1)
 		goto err_mem_alloc;
 
 #ifdef CONFIG_DEBUG_PRINTK
@@ -142,7 +141,7 @@ static int brcm_init_wlan_mem(void)
 
 
 /* Reset pl18x controllers */
-void janice_ux500_sdi_reset(struct device *dev)
+void ux500_sdi_reset(struct device *dev)
 {
 	struct amba_device *amba_dev =
 		container_of(dev, struct amba_device, dev);
@@ -176,7 +175,7 @@ void janice_ux500_sdi_reset(struct device *dev)
  * SDI0 (SD/MMC card)
  */
 #ifdef CONFIG_STE_DMA40
-struct stedma40_chan_cfg janice_sdi0_dma_cfg_rx = {
+struct stedma40_chan_cfg sdi0_dma_cfg_rx = {
         .mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
 	.src_dev_type = DB8500_DMA_DEV1_SD_MMC0_RX,
@@ -215,12 +214,12 @@ static struct mmci_platform_data ssg_sdi0_data = {
 
 #ifdef CONFIG_STE_DMA40
 	.dma_filter	= stedma40_filter,
-	.dma_rx_param	= &janice_sdi0_dma_cfg_rx,
+	.dma_rx_param	= &sdi0_dma_cfg_rx,
 	.dma_tx_param	= &sdi0_dma_cfg_tx,
 #endif
 };
 
-static void __init janice_sdi0_configure(void)
+static void __init sdi0_configure(void)
 {
 	/* only one revision for now */
 }
@@ -286,7 +285,7 @@ static struct mmci_platform_data ssg_sdi1_data = {
 //	.pm_flags	= MMC_PM_KEEP_POWER,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-	.reset		= janice_ux500_sdi_reset,
+	.reset		= ux500_sdi_reset,
 	.status = sdi1_card_status,
 #ifdef CONFIG_STE_DMA40
 	.dma_filter	= stedma40_filter,
@@ -301,7 +300,7 @@ static struct mmci_platform_data ssg_sdi1_data = {
  * SDI2 (POPed eMMC)
  */
 #ifdef CONFIG_STE_DMA40
-struct stedma40_chan_cfg janice_sdi2_dma_cfg_rx = {
+struct stedma40_chan_cfg sdi2_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
 	.src_dev_type = DB8500_DMA_DEV28_SD_MM2_RX,
@@ -344,11 +343,11 @@ static struct mmci_platform_data ssg_sdi2_data = {
 //	.pm_flags	= MMC_PM_KEEP_POWER,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
-	.reset		= janice_ux500_sdi_reset,
+	.reset		= ux500_sdi_reset,
 //	.suspend_resume_handler	= suspend_resume_handler_sdi2,
 #ifdef CONFIG_STE_DMA40
 	.dma_filter	= stedma40_filter,
-	.dma_rx_param	= &janice_sdi2_dma_cfg_rx,
+	.dma_rx_param	= &sdi2_dma_cfg_rx,
 	.dma_tx_param	= &sdi2_dma_cfg_tx,
 #endif
 };
@@ -566,7 +565,7 @@ static void janice_sdi2_init(void)
 /* BCM code uses a fixed name */
 extern void u8500_sdio_detect_card(void);
 
-int janice_u8500_wifi_power(int on, int flag)
+int u8500_wifi_power(int on, int flag)
 {
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: WLAN Power %s, flag %d\n",
@@ -596,9 +595,8 @@ int janice_u8500_wifi_power(int on, int flag)
 	return 0;
 }
 
-static int __init janice_ssg_sdi_init(void)
+static int __init ssg_sdi_init(void)
 {
-RUN_ON_JANICE_ONLY
 	int ret;
 
 	/* v2 has a new version of this block that need to be forced */
@@ -611,7 +609,7 @@ RUN_ON_JANICE_ONLY
 
 	if ((sec_debug_settings & SEC_DBG_STM_VIA_SD_OPTS) == 0) {
 		/* not tracing via SDI0 pins, so can enable SDI0 */
-		janice_sdi0_configure();
+		sdi0_configure();
 		db8500_add_sdi0(&ssg_sdi0_data, periphid);
 	}
 
@@ -626,11 +624,10 @@ RUN_ON_JANICE_ONLY
 
 	return 0;
 }
-}
 
 
-fs_initcall(janice_ssg_sdi_init);
+fs_initcall(ssg_sdi_init);
 
 /*BCM*/
-EXPORT_SYMBOL (janice_u8500_wifi_power);
+EXPORT_SYMBOL (u8500_wifi_power);
 

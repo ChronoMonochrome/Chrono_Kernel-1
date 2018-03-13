@@ -48,9 +48,9 @@ obj-$(CONFIG_MCDE)		+= board-mcde.o
 obj-$(CONFIG_U5500_MMIO)	+= board-u5500-mmio.o
 obj-$(CONFIG_U8500_MMIO)	+= board-sec-mmio.o
 obj-$(CONFIG_MACH_SAMSUNG_U8500)	+= board-pins-sleep-force.o board-mop500-msp.o
-obj-$(CONFIG_BOARD_JANICE)		+= board-janice-pins.o board-janice.o board-janice-regulators.o \
+obj-$(CONFIG_MACH_JANICE)		+= board-janice-pins.o board-janice.o board-janice-regulators.o \
 					    board-janice-bm.o board-janice-sdi.o
-ifeq ($(CONFIG_BOARD_JANICE), y)
+ifeq ($(CONFIG_MACH_JANICE), y)
 board-mcde-objs			+= board-janice-mcde.o
 endif
 obj-$(CONFIG_MACH_GAVINI)		+= board-gavini-pins.o board-gavini.o board-gavini-regulators.o \
@@ -59,19 +59,19 @@ ifeq ($(CONFIG_MACH_GAVINI), y)
 board-mcde-objs			+= board-gavini-mcde.o
 endif
 
-ifeq ($(CONFIG_BOARD_CODINA_EURO), y)
-obj-$(CONFIG_BOARD_CODINA_EURO)		+= board-codina-pins.o board-codina_eur.o board-codina-regulators.o \
+ifeq ($(CONFIG_MACH_CODINA_EURO), y)
+obj-$(CONFIG_MACH_CODINA_EURO)		+= board-codina-pins.o board-codina_eur.o board-codina-regulators.o \
 					   board-mop500-wlan.o board-codina-bm.o board-codina-battery.o board-codina-sdi.o
 else
-ifeq ($(CONFIG_BOARD_CODINA_CHN), y)
-obj-$(CONFIG_BOARD_CODINA_CHN)		+= board-codina-pins.o board-codina_eur.o board-codina-regulators.o \
+ifeq ($(CONFIG_MACH_CODINA_CHN), y)
+obj-$(CONFIG_MACH_CODINA_CHN)		+= board-codina-pins.o board-codina_eur.o board-codina-regulators.o \
 					   board-mop500-wlan.o board-codina-bm.o board-codina-battery.o board-codina-sdi.o
 else
-obj-$(CONFIG_BOARD_CODINA)		+= board-codina-pins.o board-codina.o board-codina-regulators.o \
+obj-$(CONFIG_MACH_CODINA)		+= board-codina-pins.o board-codina.o board-codina-regulators.o \
 					   board-mop500-wlan.o board-codina-bm.o board-codina-battery.o board-codina-sdi.o
 endif
 endif
-ifeq ($(CONFIG_BOARD_CODINA), y)
+ifeq ($(CONFIG_MACH_CODINA), y)
 board-mcde-objs			+= board-codina-mcde.o
 endif
 

@@ -165,7 +165,7 @@ static struct clkops ab8500_sysclk_ops = {
 
 static int ab_ulpclk_enable(struct clk *clk)
 {
-if (strstr(CONFIG_CMDLINE, "codina")) {
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE)
 	/*
 	 * Request AB ULP PLL so that prcmu firmware can not disable it in deep sleep
 	 * 0002-u8500-clock-Request-AB-ULP-PLL-for-FM-radio.patch
@@ -181,7 +181,9 @@ if (strstr(CONFIG_CMDLINE, "codina")) {
 	usleep_range(8000, 9000);
 	
 	return 0;
-} else {
+
+#else 
+
 	int err;
 
 	if (clk->regulator == NULL) {
@@ -215,12 +217,12 @@ enable_error:
 regulator_enable_error:
 	return err;
 
-}
+#endif	
 }
 
 static void ab_ulpclk_disable(struct clk *clk)
 {
-if (strstr(CONFIG_CMDLINE, "codina")) {
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE)
 	int err;
 	err = ab8500_sysctrl_clear(AB8500_SYSULPCLKCTRL1,
 		AB8500_SYSULPCLKCTRL1_ULPCLKREQ);	
@@ -229,7 +231,7 @@ if (strstr(CONFIG_CMDLINE, "codina")) {
 		pr_err("clock: %s failed to disable %s.\n", __func__, clk->name);
 		
 	return;
-} else {
+#else
 	int err;
 	err = ab8500_sysctrl_clear(AB8500_SYSULPCLKCTRL1,
 		AB8500_SYSULPCLKCTRL1_ULPCLKREQ);	
@@ -243,7 +245,7 @@ if (strstr(CONFIG_CMDLINE, "codina")) {
 
 out_err:
 	pr_err("clock: %s failed to disable %s.\n", __func__, clk->name);
-}
+#endif
 }
 
 static struct clkops ab_ulpclk_ops = {
@@ -577,12 +579,11 @@ static int clkout0_enable(struct clk *clk)
 	r = regulator_enable(clk->regulator);
 	if (r)
 		goto regulator_failed;
-
-if (strstr(CONFIG_CMDLINE, "janice")) {
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 	r = prcmu_config_clkout(0, PRCMU_CLKSRC_ACLK, 8);
-} else {
+#else
 	r = prcmu_config_clkout(0, PRCMU_CLKSRC_CLK38M, 4);
-}
+#endif
 	if (r)
 		goto config_failed;
 	r = nmk_config_pin(GPIO227_CLKOUT1, false);
@@ -591,11 +592,11 @@ if (strstr(CONFIG_CMDLINE, "janice")) {
 	return r;
 
 gpio_failed:
-if (strstr(CONFIG_CMDLINE, "janice")) {
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 	(void)prcmu_config_clkout(0, PRCMU_CLKSRC_ACLK, 0);
-} else {
+#else
 	(void)prcmu_config_clkout(0, PRCMU_CLKSRC_CLK38M, 0);
-}
+#endif
 config_failed:
 	(void)regulator_disable(clk->regulator);
 regulator_failed:
@@ -609,11 +610,11 @@ static void clkout0_disable(struct clk *clk)
 	r = nmk_config_pin((GPIO227_GPIO | PIN_OUTPUT_LOW), false);
 	if (r)
 		goto disable_failed;
-if (strstr(CONFIG_CMDLINE, "janice")) {
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
 	(void)prcmu_config_clkout(0, PRCMU_CLKSRC_ACLK, 0);
-} else {
+#else
 	(void)prcmu_config_clkout(0, PRCMU_CLKSRC_CLK38M, 0);
-}
+#endif
 	(void)regulator_disable(clk->regulator);
 	return;
 

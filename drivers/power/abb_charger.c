@@ -34,8 +34,6 @@
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/mfd/abx500/ux500_chargalg.h>
 #include <linux/timer.h>
-#include <asm/mach-types.h>
-
 
 #ifdef CONFIG_USB_SWITCHER
 #include <linux/usb_switcher.h>
@@ -340,7 +338,7 @@ static enum power_supply_property ab8500_charger_usb_props[] = {
 
 bool vbus_state = 0;
 EXPORT_SYMBOL(vbus_state);
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 extern void cypress_touchkey_change_thd(bool vbus_status);
 static void (*cypress_touchkey_ta_status)(bool vbus_status);
 extern void mxt224e_ts_change_vbus_state(bool vbus_status);
@@ -1467,9 +1465,9 @@ VBUS and MUIC cannot detect cable. So charging will be disabled\n");
 
 	if (enable) {
 
-if (board_type == MACH_TYPE_CODINA) {
+#ifdef CONFIG_MACH_CODINA
 		msleep(100);
-}
+#endif
 		/* Check if USB is connected */
 		if (!di->usb.charger_connected) {
 			pr_err("[ABB-Charger] USB charger not connected\n");
@@ -2180,8 +2178,8 @@ static void ab8500_charger_tsp_vbus_notify_work(struct work_struct *work)
 {
 	struct ab8500_charger *di = container_of(work,
 		struct ab8500_charger, tsp_vbus_notify_work);
-#ifdef CONFIG_BOARD_JANICE
-if (board_type == MACH_TYPE_JANICE) {
+
+#ifdef CONFIG_MACH_JANICE
 	cypress_touchkey_ta_status = cypress_touchkey_change_thd;
 	mxt224e_ts_vbus_state = mxt224e_ts_change_vbus_state;
 
@@ -2197,7 +2195,7 @@ if (board_type == MACH_TYPE_JANICE) {
 
 	if (mxt224e_ts_vbus_state)
 		mxt224e_ts_vbus_state(vbus_state);
-}
+
 #endif
 }
 

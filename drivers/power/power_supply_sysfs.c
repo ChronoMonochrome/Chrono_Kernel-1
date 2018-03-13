@@ -11,7 +11,6 @@
  *  You may use this code as per GPL version 2
  */
 
-#include <asm/mach-types.h>
 #include <linux/ctype.h>
 #include <linux/power_supply.h>
 #include <linux/slab.h>
@@ -160,7 +159,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(energy_avg),
 	POWER_SUPPLY_ATTR(capacity),
 	POWER_SUPPLY_ATTR(capacity_level),
-	#if defined(CONFIG_BOARD_JANICE) || 	defined(CONFIG_BOARD_CODINA) || 	defined(CONFIG_MACH_GAVINI)
+	#if defined(CONFIG_MACH_JANICE) || 	defined(CONFIG_MACH_CODINA) || 	defined(CONFIG_MACH_GAVINI)
 	POWER_SUPPLY_ATTR(capacity_level_raw),
 	#endif
 	POWER_SUPPLY_ATTR(temp),
