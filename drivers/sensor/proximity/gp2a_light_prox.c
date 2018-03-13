@@ -56,7 +56,6 @@
 
 #ifdef GP2A_DEBUG
 #define gp2a_dbg(_fmt, ...)	\
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "GP2A_DEBUG: " _fmt "\n", ## __VA_ARGS__)
 #else
 #define gp2a_dbg(_fmt, ...)
@@ -121,9 +120,6 @@
 #define GP2A_POWER_ON		1
 
 static bool proximity_enable;
-#else
-	;
-#endif
 
 #if defined(CONFIG_AB5500_GPADC)
 static const int adc_table[9] = {

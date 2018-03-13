@@ -728,11 +728,7 @@ static int EXT_I2C_ACK(u32 delay)
 	EXT_I2C_SCL_LOW;
 	/* udelay(delay); */
 	if (ack)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "EXT_I2C No ACK\n");
-#else
-		;
-#endif
 
 	return ack;
 }
@@ -863,11 +859,7 @@ int get_touchkey_firmware(char *version)
 
 	}
 	return -1;
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("%s F/W version: 0x%x, Module version:0x%x\n",__FUNCTION__, version[1],version[2]); */
-#else
-	/* ;
-#endif
 }
 
 /* =========================================================================
@@ -888,11 +880,7 @@ void ErrorTrap(unsigned char bErrorNumber)
 	/* If Power Cycle programming, turn off the target */
 	RemoveTargetVDD();
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\r\nErrorTrap: errorNumber: %d\n", bErrorNumber);
-#else
-	;
-#endif
 
 	/* TODO: write retry code or some processing. */
 	return;
@@ -933,11 +921,7 @@ int ISSP_main(void)
 	}
 
 	/* Initialize the Host & Target for ISSP operations */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fXRESInitializeTargetForISSP Start\n");
-#else
-	;
-#endif
 
 	/* INTLOCK(); */
 	local_save_flags(flags);
@@ -961,18 +945,10 @@ int ISSP_main(void)
 #endif				/* RESET_MODE */
 
 #if 0				/* issp_test_2010 block */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("fXRESInitializeTargetForISSP END\n");
-#else
-	;
-#endif
 
 	/* Run the SiliconID Verification, and proceed according to result. */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("fVerifySiliconID START\n");
-#else
-	;
-#endif
 #endif
 
 	/* INTLOCK(); */
@@ -987,18 +963,10 @@ int ISSP_main(void)
 
 	/* INTFREE(); */
 	local_irq_restore(flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("fVerifySiliconID END\n"); // issp_test_2010 block */
-#else
-	/* ;
-#endif
 
 	/* Bulk-Erase the Device. */
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("fEraseTarget START\n"); // issp_test_2010 block */
-#else
-	/* ;
-#endif
 	/* INTLOCK(); */
 	local_irq_save(flags);
 	fIsError = fEraseTarget();
@@ -1008,31 +976,19 @@ int ISSP_main(void)
 	}
 	/* INTFREE(); */
 	local_irq_restore(flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("fEraseTarget END\n"); // issp_test_2010 block */
-#else
-	/* ;
-#endif
 
 	/*==============================================================//
 	// Program Flash blocks with predetermined data. In the final application
 	// this data should come from the HEX output of PSoC Designer. */
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Program Flash Blocks Start\n"); */
-#else
-	/* ;
-#endif
 
 	iChecksumData = 0;	/* Calculte the device checksum as you go */
 	for (bBankCounter = 0; bBankCounter < NUM_BANKS; bBankCounter++) {	/* PTJ: NUM_BANKS should be 1 for Krypton */
 		local_irq_save(flags);
 		for (iBlockCounter = 0; iBlockCounter < BLOCKS_PER_BANK;
 		     iBlockCounter++) {
-#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("Program Loop : iBlockCounter %d \n",iBlockCounter); */
-#else
-			/* ;
-#endif
 			/* INTLOCK(); */
 			/* local_irq_save(flags); */
 
@@ -1074,21 +1030,13 @@ int ISSP_main(void)
 		local_irq_restore(flags);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("\r\n Program Flash Blocks End\n"); */
-#else
-	/* ;
-#endif
 
 #if 1				/* security start */
 	/* =======================================================//
 	// Program security data into target PSoC. In the final application this
 	// data should come from the HEX output of PSoC Designer. */
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Program security data START\n"); */
-#else
-	/* ;
-#endif
 	/* INTLOCK(); */
 	local_irq_save(flags);
 	for (bBankCounter = 0; bBankCounter < NUM_BANKS; bBankCounter++) {
@@ -1121,11 +1069,7 @@ int ISSP_main(void)
 	/* INTFREE(); */
 	local_irq_restore(flags);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Program security data END\n"); */
-#else
-	/* ;
-#endif
 
 	/*==============================================================//
 	//PTJ: Do READ-SECURITY after SECURE
@@ -1148,11 +1092,7 @@ int ISSP_main(void)
 #endif
 	/* INTFREE(); */
 	local_irq_restore(flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Load security data END\n"); */
-#else
-	/* ;
-#endif
 #endif				/* security end */
 
 	/*=======================================================//
@@ -1171,11 +1111,7 @@ int ISSP_main(void)
 	/* INTFREE(); */
 	local_irq_restore(flags);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Checksum : iChecksumTarget (0x%X)\n", (unsigned char)iChecksumTarget); */
-#else
-	/* ;
-#endif
 	/* printk  ("Checksum : iChecksumData (0x%X)\n", (unsigned char)iChecksumData); */
 
 	if ((unsigned short)(iChecksumTarget & 0xffff) !=
@@ -1183,11 +1119,7 @@ int ISSP_main(void)
 		ErrorTrap(VERIFY_ERROR);
 		return fIsError;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Doing Checksum END\n"); */
-#else
-	/* ;
-#endif
 
 	/* *** SUCCESS ***
 	// At this point, the Target has been successfully Initialize, ID-Checked,
@@ -1198,11 +1130,7 @@ int ISSP_main(void)
 	local_irq_enable();
 	ReStartTarget();	/* Touch IC Reset. */
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("ReStartTarget\n"); */
-#else
-	/* ;
-#endif
 
 	return 0;
 }
