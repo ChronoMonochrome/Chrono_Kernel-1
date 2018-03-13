@@ -1582,22 +1582,6 @@ static const struct file_operations debugfs_mcde_channel_dump_fops = {
 	.write = debugfs_mcde_channel_write,
 };
 
-extern struct work_struct mcde_restart_work;
-extern atomic_t force_restart;
-
-static int debugfs_force_reset_write(struct file *filp,
-	const char __user *buf,
-	size_t count, loff_t *f_pos)
-{
-	printk(KERN_ALERT, "Force reset issued.\n");
-
-	atomic_set(&force_restart, true);
-	queue_work(system_long_wq, &mcde_restart_work);
-
-	*f_pos += count;
-	return count;
-}
-
 static int debugfs_mcde_dump_write(struct file *filp,
 	const char __user *buf,
 	size_t count, loff_t *f_pos)
@@ -1628,11 +1612,6 @@ static int debugfs_mcde_dump_write(struct file *filp,
 	*f_pos += count;
 	return count;
 }
-
-static const struct file_operations debugfs_force_reset_fops = {
-	.owner = THIS_MODULE,
-	.write = debugfs_force_reset_write,
-};
 
 static const struct file_operations debugfs_mcde_dump_fops = {
 	.owner = THIS_MODULE,
@@ -1740,9 +1719,6 @@ static void create_mcde_files(struct dentry *dentry)
 {
 	debugfs_create_file("get_dump", S_IWUSR | S_IWGRP, dentry,
 			/* context */ &mcde, &debugfs_mcde_dump_fops);
-
-	debugfs_create_file("force_reset", S_IWUSR | S_IWGRP, dentry,
-			/* context */ &mcde, &debugfs_force_reset_fops);
 }
 
 static struct channel_info *find_chnl(u8 chnl_id)
