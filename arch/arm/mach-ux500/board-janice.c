@@ -71,10 +71,6 @@
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
 
-#if defined(CONFIG_NFC_PN544)
-#include <linux/pn544.h>
-#endif
-
 #include <video/mcde_display.h>
 
 #ifdef CONFIG_DB8500_MLOADER
