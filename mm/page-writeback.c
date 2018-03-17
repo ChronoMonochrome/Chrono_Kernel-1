@@ -873,7 +873,7 @@ static void global_update_bandwidth(unsigned long thresh,
 				    unsigned long now)
 {
 	static DEFINE_SPINLOCK(dirty_lock);
-	static unsigned long update_time = INITIAL_JIFFIES;
+	static unsigned long update_time;
 
 	/*
 	 * check locklessly first to optimize away locking for the most time
