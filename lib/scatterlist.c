@@ -495,7 +495,7 @@ static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
  *   true if @miter contains the valid mapping.  false if end of sg
  *   list is reached.
  */
-bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
+static bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
 {
 	sg_miter_stop(miter);
 
@@ -513,7 +513,6 @@ bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
 
 	return true;
 }
-EXPORT_SYMBOL(sg_miter_skip);
 
 /**
  * sg_miter_next - proceed mapping iterator to the next mapping
