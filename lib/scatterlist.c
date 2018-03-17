@@ -49,9 +49,12 @@ EXPORT_SYMBOL(sg_next);
  **/
 int sg_nents(struct scatterlist *sg)
 {
-	int nents;
-	for (nents = 0; sg; sg = sg_next(sg))
+	int nents = 0;
+	while (sg) {
 		nents++;
+		sg = sg_next(sg);
+	}
+
 	return nents;
 }
 EXPORT_SYMBOL(sg_nents);
