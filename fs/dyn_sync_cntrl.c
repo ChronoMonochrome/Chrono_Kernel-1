@@ -27,6 +27,8 @@
 #define DYN_FSYNC_VERSION_MAJOR 1
 #define DYN_FSYNC_VERSION_MINOR 2
 
+extern void sync_filesystems(int wait);
+
 /*
  * fsync_mutex protects dyn_fsync_active during early suspend / late resume
  * transitions

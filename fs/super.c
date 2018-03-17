@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/super.c
  *
@@ -20,7 +23,7 @@
  *  Heavily rewritten for 'one fs - one tree' dcache architecture. AV, Mar 2000
  */
 
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/acct.h>
 #include <linux/blkdev.h>
@@ -398,9 +401,9 @@ void generic_shutdown_super(struct super_block *sb)
 			sop->put_super(sb);
 
 		if (!list_empty(&sb->s_inodes)) {
-			printk("VFS: Busy inodes after unmount of %s. "
-			   "Self-destruct in 5 seconds.  Have a nice day...\n",
-			   sb->s_id);
+//			printk("VFS: Busy inodes after unmount of %s. "
+//			   "Self-destruct in 5 seconds.  Have a nice day...\n",
+;
 		}
 	}
 	spin_lock(&sb_lock);
@@ -729,8 +732,14 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
 		return -EBUSY;
 
 #ifdef CONFIG_BLOCK
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (!(flags & MS_RDONLY) && bdev_read_only(sb->s_bdev))
 		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 #endif
 
 	if (flags & MS_RDONLY)
@@ -823,7 +832,7 @@ static void do_emergency_remount(struct work_struct *work)
 		__put_super(p);
 	spin_unlock(&sb_lock);
 	kfree(work);
-	printk("Emergency Remount complete\n");
+;
 }
 
 void emergency_remount(void)
@@ -1214,8 +1223,8 @@ int freeze_super(struct super_block *sb)
 	if (sb->s_op->freeze_fs) {
 		ret = sb->s_op->freeze_fs(sb);
 		if (ret) {
-			printk(KERN_ERR
-				"VFS:Filesystem freeze failed\n");
+//			printk(KERN_ERR
+;
 			sb->s_frozen = SB_UNFROZEN;
 			smp_wmb();
 			wake_up(&sb->s_wait_unfrozen);
@@ -1250,8 +1259,8 @@ int thaw_super(struct super_block *sb)
 	if (sb->s_op->unfreeze_fs) {
 		error = sb->s_op->unfreeze_fs(sb);
 		if (error) {
-			printk(KERN_ERR
-				"VFS:Filesystem thaw failed\n");
+//			printk(KERN_ERR
+;
 			sb->s_frozen = SB_FREEZE_TRANS;
 			up_write(&sb->s_umount);
 			return error;

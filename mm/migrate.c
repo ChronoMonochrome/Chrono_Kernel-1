@@ -13,7 +13,7 @@
  */
 
 #include <linux/migrate.h>
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/swap.h>
 #include <linux/swapops.h>
 #include <linux/pagemap.h>
@@ -984,7 +984,6 @@ int migrate_pages(struct list_head *from,
 {
 	int retry = 1;
 	int nr_failed = 0;
-	int nr_succeeded = 0;
 	int pass = 0;
 	struct page *page;
 	struct page *page2;
@@ -1011,7 +1010,6 @@ int migrate_pages(struct list_head *from,
 				retry++;
 				break;
 			case 0:
-				nr_succeeded++;
 				break;
 			default:
 				/* Permanent failure */
@@ -1022,10 +1020,6 @@ int migrate_pages(struct list_head *from,
 	}
 	rc = 0;
 out:
-	if (nr_succeeded)
-		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
-	if (nr_failed)
-		count_vm_events(PGMIGRATE_FAIL, nr_failed);
 	if (!swapwrite)
 		current->flags &= ~PF_SWAPWRITE;
 

