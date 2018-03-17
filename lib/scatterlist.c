@@ -248,8 +248,7 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
 	unsigned int left;
 
 #ifndef ARCH_HAS_SG_CHAIN
-	if (WARN_ON_ONCE(nents > max_ents))
-		return -EINVAL;
+	BUG_ON(nents > max_ents);
 #endif
 
 	memset(table, 0, sizeof(*table));
