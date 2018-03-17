@@ -6,7 +6,7 @@
  * This source code is licensed under the GNU General Public License,
  * Version 2. See the file COPYING for more details.
  */
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/scatterlist.h>
 #include <linux/highmem.h>
@@ -247,14 +247,12 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
 	struct scatterlist *sg, *prv;
 	unsigned int left;
 
-	memset(table, 0, sizeof(*table));
-
-	if (nents == 0)
-		return -EINVAL;
 #ifndef ARCH_HAS_SG_CHAIN
 	if (WARN_ON_ONCE(nents > max_ents))
 		return -EINVAL;
 #endif
+
+	memset(table, 0, sizeof(*table));
 
 	left = nents;
 	prv = NULL;
@@ -451,7 +449,9 @@ void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
 {
 	memset(miter, 0, sizeof(struct sg_mapping_iter));
 
-	__sg_page_iter_start(&miter->piter, sgl, nents, 0);
+	miter->__sg = sgl;
+	miter->__nents = nents;
+	miter->__offset = 0;
 	WARN_ON(!(flags & (SG_MITER_TO_SG | SG_MITER_FROM_SG)));
 	miter->__flags = flags;
 }
@@ -477,35 +477,36 @@ EXPORT_SYMBOL(sg_miter_start);
  */
 bool sg_miter_next(struct sg_mapping_iter *miter)
 {
+	unsigned int off, len;
+
+	/* check for end and drop resources from the last iteration */
+	if (!miter->__nents)
+		return false;
+
 	sg_miter_stop(miter);
 
-	/*
-	 * Get to the next page if necessary.
-	 * __remaining, __offset is adjusted by sg_miter_stop
-	 */
-	if (!miter->__remaining) {
-		struct scatterlist *sg;
-		unsigned long pgoffset;
-
-		if (!__sg_page_iter_next(&miter->piter))
+	/* get to the next sg if necessary.  __offset is adjusted by stop */
+	while (miter->__offset == miter->__sg->length) {
+		if (--miter->__nents) {
+			miter->__sg = sg_next(miter->__sg);
+			miter->__offset = 0;
+		} else
 			return false;
-
-		sg = miter->piter.sg;
-		pgoffset = miter->piter.sg_pgoffset;
-
-		miter->__offset = pgoffset ? 0 : sg->offset;
-		miter->__remaining = sg->offset + sg->length -
-				(pgoffset << PAGE_SHIFT) - miter->__offset;
-		miter->__remaining = min_t(unsigned long, miter->__remaining,
-					   PAGE_SIZE - miter->__offset);
 	}
-	miter->page = miter->piter.page;
-	miter->consumed = miter->length = miter->__remaining;
+
+	/* map the next page */
+	off = miter->__sg->offset + miter->__offset;
+	len = miter->__sg->length - miter->__offset;
+
+	miter->page = nth_page(sg_page(miter->__sg), off >> PAGE_SHIFT);
+	off &= ~PAGE_MASK;
+	miter->length = min_t(unsigned int, len, PAGE_SIZE - off);
+	miter->consumed = miter->length;
 
 	if (miter->__flags & SG_MITER_ATOMIC)
-		miter->addr = kmap_atomic(miter->page, KM_BIO_SRC_IRQ) + miter->__offset;
+		miter->addr = kmap_atomic(miter->page) + off;
 	else
-		miter->addr = kmap(miter->page) + miter->__offset;
+		miter->addr = kmap(miter->page) + off;
 
 	return true;
 }
@@ -531,14 +532,13 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
 	/* drop resources from the last iteration */
 	if (miter->addr) {
 		miter->__offset += miter->consumed;
-		miter->__remaining -= miter->consumed;
 
 		if (miter->__flags & SG_MITER_TO_SG)
 			flush_kernel_dcache_page(miter->page);
 
 		if (miter->__flags & SG_MITER_ATOMIC) {
 			WARN_ON(!irqs_disabled());
-			kunmap_atomic(miter->addr, KM_BIO_SRC_IRQ);
+			kunmap_atomic(miter->addr);
 		} else
 			kunmap(miter->page);
 
