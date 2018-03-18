@@ -9,7 +9,6 @@
  *
  *  DMA uncached mapping support.
  */
-#include <linux/bootmem.h>
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/gfp.h>
@@ -163,8 +162,6 @@ static u64 get_coherent_dma_mask(struct device *dev)
 	u64 mask = (u64)DMA_BIT_MASK(32);
 
 	if (dev) {
-		unsigned long max_dma_pfn;
-
 		mask = dev->coherent_dma_mask;
 
 		/*
@@ -176,8 +173,6 @@ static u64 get_coherent_dma_mask(struct device *dev)
 			return 0;
 		}
 
-		max_dma_pfn = min(max_pfn, arm_dma_pfn_limit);
-
 		/*
 		 * If the mask allows for more memory than we can address,
 		 * and we actually have that much memory, then fail the
@@ -185,7 +180,7 @@ static u64 get_coherent_dma_mask(struct device *dev)
 		 */
 		if (sizeof(mask) != sizeof(dma_addr_t) &&
 		    mask > (dma_addr_t)~0 &&
-		    dma_to_pfn(dev, ~0) > max_dma_pfn) {
+		    dma_to_pfn(dev, ~0) > arm_dma_pfn_limit) {
 			dev_warn(dev, "Coherent DMA mask %#llx is larger than dma_addr_t allows\n",
 				 mask);
 			dev_warn(dev, "Driver did not use or check the return value from dma_set_coherent_mask()?\n");
@@ -197,7 +192,7 @@ static u64 get_coherent_dma_mask(struct device *dev)
 		 * fits within the allowable addresses which we can
 		 * allocate.
 		 */
-		if (dma_to_pfn(dev, mask) < max_dma_pfn) {
+		if (dma_to_pfn(dev, mask) < arm_dma_pfn_limit) {
 			dev_warn(dev, "Coherent DMA mask %#llx (pfn %#lx-%#lx) covers a smaller range of system memory than the DMA zone pfn 0x0-%#lx\n",
 				 mask,
 				 dma_to_pfn(dev, 0), dma_to_pfn(dev, mask) + 1,
