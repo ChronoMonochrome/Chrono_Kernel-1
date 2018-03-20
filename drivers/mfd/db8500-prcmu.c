@@ -1160,6 +1160,8 @@ struct liveopp_arm_table
 	u8 	varm_raw;
 	u8  	vbbx_raw;
 	bool	enable;
+	int	ddr_opp;
+	int	ape_opp;
 };
 
 /* 
@@ -1195,286 +1197,26 @@ struct liveopp_arm_table
 #define PLLARM_MAXOPP			0x0001011A
 #define PLLARM_FREQ100OPP		0x00050168
 
-struct mutex liveopp_lock;
-
-static unsigned int last_arm_idx = 0;
+static unsigned int prev1_arm_idx = 0, prev_arm_idx = 0, current_arm_idx = 0;
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static int liveopp_start = 0;
 #endif
 
-// DDR OC code starts here
-
-/*
- * Original PRCMU registers frequency
- */
-
-#define PERX_ORIG_CLK 159744
-#define MCDE_ORIG_CLK 159744
-#define ACLK_ORIG_CLK 199680
-#define SIACLK_ORIG_CLK 399360
-#define SVACLK_ORIG_CLK 399360
-#define DMACLK_ORIG_CLK 199680
-
-static bool ddr_oc_on_suspend = false; // set true if needed to schedule DDR OC on suspend
-
-static u32 pending_pllddr_val; // scheduled PLLDDR value
-static int pllddr_oc_delay_us = 100; // delay between graduate PLLDDR changing
-static bool is_suspend = false;
-static bool sdmmc_is_calibrated = false, 
-	    perx_is_calibrated = false, 
-	    pllddr_is_calibrated = false;
-static bool ddr_clocks_boost = false;
-static struct wake_lock pllddr_oc_lock;
-
-struct prcmu_regs_table
-{
-	u32 reg;
-	u32 boost_value;
-	u32 unboost_value;
-	char *name;
-};
-
-/*
- * PRCMU registers table
- * Registers above are depends on PLLDDR
- */
-
-static struct prcmu_regs_table prcmu_regs[] = {
-      // PRCMU reg            | Boost val   | Unboost val|      Name     
-	{PRCMU_ACLK_REG,	0x184,       0x184,	       "aclk"},
-	{PRCMU_SVACLK_REG,	0x002,       0x002,	     "svaclk"},
-	{PRCMU_SIACLK_REG,	0x002,       0x002,	     "siaclk"}, 
-	{PRCMU_PER1CLK_REG,	0x186,       0x186,	    "per1clk"},
-	{PRCMU_PER2CLK_REG,	0x186,       0x186,	    "per2clk"},
-	{PRCMU_PER3CLK_REG,	0x186,       0x186,	    "per3clk"},
-	{PRCMU_PER5CLK_REG,	0x186,       0x186,	    "per5clk"},
-	{PRCMU_PER6CLK_REG,	0x186,       0x186,	    "per6clk"},
-	{PRCMU_APEATCLK_REG,	0x004,       0x004,	   "apeatclk"},
-	{PRCMU_APETRACECLK_REG,	0x005,       0x005,	"apetraceclk"},
-	{PRCMU_MCDECLK_REG,	0x185,       0x185,	    "mcdeclk"},
-	{PRCMU_DMACLK_REG,	0x184,       0x184,          "dmaclk"},
-};
-
-enum { 
-      ACLK,
-      SVACLK,
-      SIACLK,
-      PER1CLK,
-      PER2CLK,
-      PER3CLK,
-      PER5CLK,
-      PER6CLK,
-      APEATCLK,
-      APETRACECLK,
-      MCDECLK,
-      DMACLK,
-} clkddr;
-
-static int db8500_prcmu_get_ape_opp(void);
-
-static void ddr_cross_clocks_boost(bool state)
-{
-	int i, val;
-	u32 old_val, new_val;
-	int new_divider, old_divider, base;
-	
-	// Set APE100/DDR100 to avoid calculating values of PRCMU registers 
-	// for different OPP states
-	
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-			"PLLDDR_OC", PRCMU_QOS_MAX_VALUE);
-	
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-			"PLLDDR_OC", PRCMU_QOS_MAX_VALUE);
-	
-	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
-		old_val = readl(prcmu_base + prcmu_regs[i].reg);
-		
-		new_val = state ? prcmu_regs[i].boost_value :
-				prcmu_regs[i].unboost_value;
-			
-		if ((!old_val) || (old_val == new_val)) continue;
-	
-		old_divider = old_val & 0xf;
-		new_divider = new_val & 0xf;
-			
-		if (!new_divider) {
-			pr_err("[PLLDDR] bad divider, %s:%s:%#05x:\n", __func__, 
-					    prcmu_regs[i].name,
-					    new_val);
-				continue;
-		}
-
-		base = old_val ^ old_divider;
-
-		new_val = base | new_divider;
-			
-		pr_err("[PLLDDR] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
-							      old_val, new_val);
-	
-		for (val = old_val;
-		    (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
-		    (new_val > old_val) ? val++ : val--)  {
-			      writel_relaxed(val, prcmu_base + prcmu_regs[i].reg);
-			      udelay(200);
-		}
-	}
-	
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE);
-	
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE);
-}
-
-static int pllarm_freq(u32 raw);
-
-static u32 tmp_val; // this value is used if do_oc_ddr was aborted on PLLDDR calibration
-
-static void do_oc_ddr(int new_val_)
-{
-	u32 old_val_, val;
-	u8 sdmmc_val_base;
-	int mcdeclk_is_enabled = 0, sdmmcclk_is_enabled = 0;
-	int pllddr_freq;
-	int sdmmc_old_divider, sdmmc_new_divider,
-	    mcde_new_divider, perx_new_divider,
-#if 0
-	    dma_new_divider, // used for ACLK and DMACLK since its orig. values are same
-#endif
-	    sxa_new_divider; // used for SIACLK and SVACLK;
-	    
-	old_val_ = readl(prcmu_base + PRCMU_PLLDDR_REG);
-  
-	pllddr_freq = pllarm_freq(new_val_);
-		
-	if (!perx_is_calibrated) {
-		// Recalibrate DMACLK and ACLK
-		
-#if 0
-		dma_new_divider = (pllddr_freq - (pllddr_freq % DMACLK_ORIG_CLK)) / DMACLK_ORIG_CLK;
-		if (pllddr_freq % DMACLK_ORIG_CLK) dma_new_divider++;
-		if (dma_new_divider > 15) dma_new_divider = 15;
-		
-		prcmu_regs[DMACLK].boost_value = dma_new_divider;
-		prcmu_regs[ACLK].boost_value = dma_new_divider;
-#endif
-	  
-		// Recalibrate SIACLK and SVACLK
-		
-		sxa_new_divider = (pllddr_freq - (pllddr_freq % SIACLK_ORIG_CLK)) / SIACLK_ORIG_CLK;
-		if (pllddr_freq % SIACLK_ORIG_CLK) sxa_new_divider++;
-		if (sxa_new_divider > 15) sxa_new_divider = 15;
-
-		prcmu_regs[SIACLK].boost_value = sxa_new_divider;
-		prcmu_regs[SVACLK].boost_value = sxa_new_divider;
-	  
-		// Recalibrate PER1CLK-PER6CLK
-		perx_new_divider = (pllddr_freq - (pllddr_freq % PERX_ORIG_CLK)) / PERX_ORIG_CLK;
-		if (pllddr_freq % PERX_ORIG_CLK) perx_new_divider++;
-		if (perx_new_divider > 15) perx_new_divider = 15;
-		prcmu_regs[PER1CLK].boost_value = perx_new_divider;
-		prcmu_regs[PER2CLK].boost_value = perx_new_divider;
-		prcmu_regs[PER3CLK].boost_value = perx_new_divider;
-		prcmu_regs[PER5CLK].boost_value = perx_new_divider;
-		prcmu_regs[PER6CLK].boost_value = perx_new_divider;
-
-		// Recalibrate MCDE clk
-		mcde_new_divider = (pllddr_freq - (pllddr_freq % MCDE_ORIG_CLK)) / MCDE_ORIG_CLK;
-		if (pllddr_freq % MCDE_ORIG_CLK) mcde_new_divider++;
-		if (mcde_new_divider > 15) mcde_new_divider = 15;
-		prcmu_regs[MCDECLK].boost_value = mcde_new_divider;
-		
-		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
-		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
-		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			return;
-		}
-		
-		pr_err("[PLLDDR] recalibrating PERXCLK and MCDECLK\n");
-		ddr_cross_clocks_boost(1); // apply settings above
-		perx_is_calibrated = true;
-		udelay(50);
-	}
-		
-	if (!sdmmc_is_calibrated) {
-		sdmmc_old_divider = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x0f;
-		sdmmc_new_divider = (pllddr_freq - (pllddr_freq % 100000)) / 100000;
-		if (pllddr_freq % 100000) sdmmc_new_divider++;
-		if (sdmmc_new_divider > 15) sdmmc_new_divider = 15;
-			
-		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
-		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
-		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			return;
-		}
-			
-		if (sdmmc_new_divider && (sdmmc_old_divider != sdmmc_new_divider)) {
-			pr_err("[PLLDDR] mmc_clk_div %d -> %d\n", sdmmc_old_divider, sdmmc_new_divider);
-			sdmmc_val_base = readl(prcmu_base + PRCMU_SDMMCCLK_REG) ^ sdmmc_old_divider;
-			writel_relaxed(sdmmc_val_base | sdmmc_new_divider,
-					prcmu_base + PRCMU_SDMMCCLK_REG);
-		}
-		
-		sdmmc_is_calibrated = true;
-		udelay(50);
-	}
-		
-	if (!pllddr_is_calibrated) {
-		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
-		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
-		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
-			return;
-		}
-		
-		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
-		for (val = (tmp_val ? tmp_val : old_val_);
-		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_); 
-		    (new_val_ > old_val_) ? val++ : val--) {
-			if (val == 0x50180) {
-				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
-				sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
-				if (mcdeclk_is_enabled || sdmmcclk_is_enabled) {
-					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
-					tmp_val = val;
-					return;
-				}
-			}
-			//pr_err("[PLLDRR] val=%#010x", val);
-			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
-			udelay(pllddr_oc_delay_us);
-		}
-			
-		pllddr_is_calibrated = true;
-		tmp_val = 0;
-		udelay(50);
-	}
-}
-
-/*--------------------------------------------------------*/
-
 static u32 __read_mostly liveopp_varm_us = 50;
 
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
-//	| CLK            | PLL       | VDD | VBB | Enable 
-	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0},
-	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1},
-	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1},
-	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1},
-	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1},
-	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1},
-	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1},
+//	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
+	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  25,  50},
+	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
+	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100,  50},
+	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1, 100, 100},
+	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},
+	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1, 100, 100},
+	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1, 100, 100},
+	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1, 100, 100},
+	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1, 100, 100},
 };
 
 static const char *armopp_name[] = 
@@ -1661,121 +1403,70 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
-static int power_optimal_idx = 6; /* 800 MHz */
-static int ddr50_cpufreq_idx = 3; /* 500 MHz */
-static int ape50_cpufreq_idx = 1; /* 200 MHz */
-
-static int min_cpufreq_ape_opp = 25;
-static int min_cpufreq_ddr_opp = 25;
-
-static DEFINE_MUTEX(requirements_update_mutex);
-
-extern int get_min_cpufreq(void);
-extern int get_max_cpufreq(void);
-
-// when ape100_mali_threshold is enabled, only GPU can boost APE. 
-// It can save power at the cost of I/O throughput and RAM performance.
-static int ape100_mali_threshold = 0; /* disabled */
-static int ddr100_mali_threshold = 0; /* disabled */
-extern int get_mali_last_utilization(void);
-
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	int min_cpufreq = get_min_cpufreq();
-	
-	int apeopp = min_cpufreq_ape_opp, ddropp = min_cpufreq_ddr_opp;
-	
-	mutex_lock(&requirements_update_mutex);
-	
-	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
-	// or if CPUfreq == max CPUfreq
-	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
-		if (!ddr100_mali_threshold) {
-			ddropp = 100;
-		} else if (get_mali_last_utilization() < ddr100_mali_threshold) {
-			ddropp = min_cpufreq_ddr_opp;
-		}
-		
-		if (!ape100_mali_threshold) {
-			apeopp = 100;
-		} else if (get_mali_last_utilization() < ape100_mali_threshold) {
-			apeopp = min_cpufreq_ape_opp;
-		}
-		
-		goto update_opp;
-	} 
-
-	if (last_arm_idx >= ddr50_cpufreq_idx && 
-			min_cpufreq != liveopp_arm[ddr50_cpufreq_idx].freq_show) {
-		ddropp = (min_cpufreq_ddr_opp > 50) ? min_cpufreq_ddr_opp : 50;
-	} 
-	
-	if (last_arm_idx >= ape50_cpufreq_idx && 
-			min_cpufreq != liveopp_arm[ape50_cpufreq_idx].freq_show) {
-		apeopp = (min_cpufreq_ape_opp > 50) ? min_cpufreq_ape_opp : 50;
-	} 
-update_opp:
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-				"cpufreq",
-				 (signed char) apeopp);
-	
 	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-				"cpufreq",
-				 (signed char) ddropp);
-	
-	mutex_unlock(&requirements_update_mutex);
+					"cpufreq",
+					(signed char)liveopp_arm[current_arm_idx].ddr_opp);
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+					"cpufreq",
+					(signed char)liveopp_arm[current_arm_idx].ape_opp);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
 
-static void liveopp_update_cpuhw(struct liveopp_arm_table table, int last_idx, int next_idx)
+static void liveopp_update_cpuhw(int prev1_idx, int prev_idx, int current_idx, int next_idx)
 {
-	u8 vdd;
-	u8 vbb;
-	u8 update_vdd;
-	u8 update_vbb;
+	struct liveopp_arm_table table;
+	u32 next_pllarm_raw;
+	u8 last_vdd, next_vdd;
+	u8 last_vbb, next_vbb;
+	bool update_vdd, update_vbb;
 
-	mutex_lock(&liveopp_lock);
+	table = liveopp_arm[current_idx];
+	last_vdd = table.varm_raw;
+	last_vbb = table.vbbx_raw;
+	table = liveopp_arm[next_idx];
+	next_vdd = table.varm_raw;
+	next_vbb = table.vbbx_raw;
+	next_pllarm_raw = table.pllarm_raw;
 
-	if (last_idx == next_idx)
-		goto out;
+	update_vdd = last_vdd != next_vdd;
+	update_vbb = last_vbb != next_vbb;
 
-	prcmu_abb_read(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &vdd, 1);
-	prcmu_abb_read(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &vbb, 1);
-
-	update_vdd = (table.varm_raw != vdd) ? 1 : 0;
-	update_vbb = (table.vbbx_raw != vbb) ? 1 : 0;
-
-	if (last_idx < next_idx) {
+	if (current_idx < next_idx) {
+		if (prev1_idx <= prev_idx) // (prev_idx <= current_idx) case of the previous call
+			udelay(5);
 
 		if (update_vbb)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &next_vbb, 1);
 		if (update_vdd)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &next_vdd, 1);
 
 		mb();
 		udelay(liveopp_varm_us);
 
-		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+		db8500_prcmu_writel_relaxed(PRCMU_PLLARM_REG, next_pllarm_raw);
 
-		mb();
-		udelay(5);
+		if (prev1_idx >= prev_idx)
+			udelay(5);
 	} else {
-		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+
+		if (prev_idx <= current_idx) // (current_idx < next_idx) case of the previous call
+			udelay(liveopp_varm_us);
+
+		db8500_prcmu_writel_relaxed(PRCMU_PLLARM_REG, next_pllarm_raw);
 
 		mb();
 		udelay(5);
 
 		if (update_vdd)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &next_vdd, 1);
 		if (update_vbb)
-			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
+			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &next_vbb, 1);
 
-		mb();
-		udelay(liveopp_varm_us);
+		if (prev_idx >= current_idx)
+			udelay(liveopp_varm_us);
 	}
-
-out:
-	mutex_unlock(&liveopp_lock);
 }
 
 #define ATTR_RO(_name)	\
@@ -1877,7 +1568,29 @@ static ssize_t arm_summary_store(struct kobject *kobj, struct kobj_attribute *at
 			}
 		}
 	}
-
+	
+	if (sscanf(buf, "%d apeopp=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].ape_opp = (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}	
+	
+	if (sscanf(buf, "%d ddropp=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].ddr_opp = (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+	
 	if (sscanf(buf, "%d enable=%d", &val1, &val2) == 2) {
 		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 			if (liveopp_arm[i].freq_show == (int)val1) {
@@ -2028,6 +1741,8 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 								     (int)liveopp_arm[_index].varm_raw);
 	sprintf(buf, "%sVbbx(p, n):\t\t%d mV, %d mV (%#04x)\n", buf, vbbp, vbbn, (int)liveopp_arm[_index].vbbx_raw);
 	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable);
+	sprintf(buf, "%sDDR_OPP:\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
+	sprintf(buf, "%sAPE_OPP:\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
 
 	return sprintf(buf, "%s\n", buf);
 }
@@ -2122,6 +1837,31 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 		return count;
 	}
 
+	if (!strncmp(buf, "apeopp=", 7)) {
+		ret = sscanf(&buf[7], "%d", &val);
+		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != -1 && val != -2)) {
+			pr_err("[LiveOPP] Invalid QOS_APE_OPP value. Enter 25, 50 or 100\n");
+			return -EINVAL;
+		}
+
+		liveopp_arm[_index].ape_opp = (signed char)val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ddropp=", 7)) {
+		ret = sscanf(&buf[7], "%d", &val);
+		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != -1 && val != -2)) {
+			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
+			"Enter 25, 50, 100 or 125\n");
+			return -EINVAL;
+		}
+
+		liveopp_arm[_index].ddr_opp = (signed char)val;
+
+		return count;
+	}
+
 	return count;
 }
 
@@ -2147,10 +1887,6 @@ ARM_STEP(arm_step06, 6);
 ARM_STEP(arm_step07, 7);
 ARM_STEP(arm_step08, 8);
 ARM_STEP(arm_step09, 9);
-ARM_STEP(arm_step10, 10);
-ARM_STEP(arm_step11, 11);
-ARM_STEP(arm_step12, 12);
-ARM_STEP(arm_step13, 13);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -2166,59 +1902,6 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
-static void do_oc_ddr_fn(struct work_struct *work);
-static DECLARE_DELAYED_WORK(do_oc_ddr_delayedwork, do_oc_ddr_fn);
-static void do_oc_ddr_fn(struct work_struct *work)
-{
-	if (ddr_oc_on_suspend) {
-		if (!wake_lock_active(&pllddr_oc_lock))
-			wake_lock(&pllddr_oc_lock);
-	}
-	
-	if (!(perx_is_calibrated && sdmmc_is_calibrated && pllddr_is_calibrated)) {
-		do_oc_ddr(pending_pllddr_val);
-		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(100));
-	} else {
-		perx_is_calibrated = false;
-		sdmmc_is_calibrated = false;
-		pllddr_is_calibrated = false;
-		pending_pllddr_val = 0;
-	
-		if (ddr_oc_on_suspend) {
-			if (wake_lock_active(&pllddr_oc_lock))
-				wake_unlock(&pllddr_oc_lock);
-			
-			ddr_oc_on_suspend = false;
-		}
-	}
-}
-
-static struct early_suspend early_suspend;
-
-static unsigned int ddr_oc_delay_ms = 1000;
-module_param(ddr_oc_delay_ms, uint, 0644);
-
-static void pllddr_early_suspend(struct early_suspend *h)
-{
-	is_suspend = true;
-
-	if (pending_pllddr_val && ddr_oc_on_suspend) {
-		pr_err("[PLLDDR] pending_pllddr_val=%#010x\n", pending_pllddr_val);
-		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(ddr_oc_delay_ms));
-	}
-}
-
-static void pllddr_late_resume(struct early_suspend *h)
-{
-	is_suspend = false;
-	
-	if (pending_pllddr_val && ddr_oc_on_suspend) {
-		cancel_delayed_work(&do_oc_ddr_delayedwork);
-		if (wake_lock_active(&pllddr_oc_lock))
-			wake_unlock(&pllddr_oc_lock);
-	}
-}
-
 static ssize_t varm_delay_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
 {
 	return sprintf(buf, "%u usecs\n", liveopp_varm_us);
@@ -2232,286 +1915,11 @@ static ssize_t varm_delay_store(struct kobject *kobj, struct kobj_attribute *att
 }
 ATTR_RW(varm_delay);
 
-static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t prcmu_mcdeclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
 {
-	u32 val;
-	val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	return sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
+	return sprintf(buf, "%d\n", prcmu_is_mcdeclk_on());
 }
-
-static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	u32 new_val, old_val;
-	int old_divider, new_divider;
-	int ret = 0;
-	
-	ret = sscanf(buf, "%x", &new_val);
-		
-	if (!ret) {
-		pr_err("[PLLDDR] invalid_input\n");
-		return -EINVAL;
-	}
-	
-	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	old_divider = (old_val & 0x00FF0000) >> 16;
-	new_divider = (new_val & 0x00FF0000) >> 16;
-	
-	if (new_divider != old_divider) {
-		pr_err("[PLLDDR] invalid divider\n");
-		return -EINVAL;
-	}
-	
-	pending_pllddr_val = new_val;
-
-	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
-	
-	return count;
-}
-ATTR_RW(pllddr);
-
-static ssize_t pllddr_oc_on_suspend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
- 
-	if (pending_pllddr_val)
-		sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
-							pllarm_freq(pending_pllddr_val));
-	return strlen(buf);
-}
-
-static ssize_t pllddr_oc_on_suspend_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	u32 old_val, tmp_val;
-	int old_divider, new_divider;
-	int ret = 0;
-	ret = sscanf(buf, "%x", &tmp_val);
-		
-	if (!ret)
-		return -EINVAL;
-	
-	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	old_divider = (old_val & 0x00FF0000) >> 16;
-	new_divider = (tmp_val & 0x00FF0000) >> 16;
-	
-	if (new_divider != old_divider)
-		return -EINVAL;
-	
-	ddr_oc_on_suspend = true;
-	pending_pllddr_val = tmp_val;
-
-	pr_err("[PLLDDR] pending_pllddr_val = %#010x \n", pending_pllddr_val);
-	
-	return count;
-}
-ATTR_RW(pllddr_oc_on_suspend);
-
-static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", pllddr_oc_delay_us);
-}
-
-static ssize_t pllddr_oc_delay_us_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int ret, val;
-	
-	ret = sscanf(buf, "%d", &val);
-		
-	if (!ret)
-		return -EINVAL;
-	
-	pllddr_oc_delay_us = val;
-	
-	return count;
-}
-ATTR_RW(pllddr_oc_delay_us);
-
-static int pllddr_cross_clk_freq(int pllddr_freq, u32 reg_raw)
-{
-	int reg_freq, reg_div;
-	
-	reg_div = reg_raw & 0xf;
-	if (!reg_div) reg_div = reg_raw & 0x10;
-	if (!reg_div) return 0;
-	reg_freq = (pllddr_freq - (pllddr_freq % reg_div)) / reg_div;
-	
-	return reg_freq;
-}
-
-static ssize_t pllddr_cross_clocks_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	u32 pllddr_value, reg_value;
-	int i, pllddr_freq;
-	
-	pllddr_value = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	pllddr_freq = pllarm_freq(pllddr_value);
-
-	sprintf(buf, "Clocks boost: %s\n", ddr_clocks_boost ? "on" : "off");
-
-	sprintf(buf, "%sPLLDDR: %d kHz\n\n", buf, pllddr_freq);
-	
-	sprintf(buf, "%sBoost settings (OPP100)\n", buf);
-	
-	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
-	  
-		sprintf(buf, "%s%s=%#05x   (%d kHz)\n", buf, prcmu_regs[i].name, 
-		        prcmu_regs[i].boost_value, pllddr_cross_clk_freq(pllddr_freq,
-									 prcmu_regs[i].boost_value));
-	}
-	
-	sprintf(buf, "%s\nCurrent clocks\n", buf);
-	
-	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
-
-		reg_value = readl(prcmu_base + prcmu_regs[i].reg);
-		sprintf(buf, "%s%s=%#05x   (%d kHz)\n", buf, prcmu_regs[i].name, 
-			reg_value,     pllddr_cross_clk_freq(pllddr_freq, reg_value));
-	}
-
-	return strlen(buf);
-}
-
-static ssize_t pllddr_cross_clocks_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int i, len;
-
-	u32 val;
-	
-	if (!strncmp(&buf[0], "on", 2)) {
-		ddr_clocks_boost = true;
-		ddr_cross_clocks_boost(ddr_clocks_boost);
-	}
-	
-	if (!strncmp(&buf[0], "off", 3)) {
-		ddr_clocks_boost = false;
-		ddr_cross_clocks_boost(ddr_clocks_boost);
-	}
-	
-	
-	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
-		len = strlen(prcmu_regs[i].name);
-	  
-		if (!strncmp(&buf[0], prcmu_regs[i].name, len)) {
-			if (!sscanf(&buf[len + 1], "%x", &val))
-				  goto invalid_input;
-			
-			prcmu_regs[i].boost_value = val;
-			
-			return count;
-		}
-	}
-
-	return count;
-	
-invalid_input:
-	pr_err("LiveOPP: invalid input in %s", __func__);
-	return -EINVAL;
-}
-ATTR_RW(pllddr_cross_clocks);
-
-static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	sprintf(buf, "min cpufreq=%d\ndef. min apeopp=%d\ndef. min ddropp=%d\n"
-		     "pow_opt_idx=%d (%d kHz)\n"
-		     "ddr50_cpufreq_idx=%d (%d kHz)\n"
-		     "ape50_cpufreq_idx=%d (%d kHz)\n"
-		     "ape100_mali_threshold=%d%s\n"
-		     "ddr100_mali_threshold=%d%s\n",
-		get_min_cpufreq(),
-		min_cpufreq_ape_opp, 
-		min_cpufreq_ddr_opp,
-		power_optimal_idx, liveopp_arm[power_optimal_idx].freq_show,
-		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show,
-		ape50_cpufreq_idx, liveopp_arm[ape50_cpufreq_idx].freq_show,
-		ape100_mali_threshold, ape100_mali_threshold ? "" : " (disabled)",
-		ddr100_mali_threshold, ddr100_mali_threshold ? "" : " (disabled)");
-	
-	return strlen(buf);
-}
-
-static ssize_t prcmu_qos_performance_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int ret, val;
-	
-	if (!strncmp(buf, "apeopp=", 7)) {
-		ret = sscanf(&buf[7], "%d", &val);
-		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != 0 && val != -1 && val != -2)) {
-			pr_err("[LiveOPP] Invalid QOS_APE_OPP value. Enter 25, 50 or 100\n");
-			return -EINVAL;
-		}
-
-		min_cpufreq_ape_opp = val;
-
-		return count;
-	}
-
-	if (!strncmp(buf, "ddropp=", 7)) {
-		ret = sscanf(&buf[7], "%d", &val);
-		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != 0 && val != -1 && val != -2)) {
-			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
-			"Enter 25, 50, 100\n");
-			return -EINVAL;
-		}
-
-		min_cpufreq_ddr_opp = val;
-
-		return count;
-	}
-	
-	if (!strncmp(buf, "pow_opt_idx=", 12)) {
-		ret = sscanf(&buf[12], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		power_optimal_idx = val;
-
-		return count;
-	}
-	
-	if (!strncmp(buf, "ape50_cpufreq_idx=", 18)) {
-		ret = sscanf(&buf[18], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		ape50_cpufreq_idx = val;
-
-		return count;
-	}
-	
-	if (!strncmp(buf, "ddr50_cpufreq_idx=", 18)) {
-		ret = sscanf(&buf[18], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		ddr50_cpufreq_idx = val;
-
-		return count;
-	}
-
-	if (!strncmp(buf, "ape100_mali_threshold=", 22)) {
-		ret = sscanf(&buf[22], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		ape100_mali_threshold = val;
-
-		return count;
-	}
-	
-	if (!strncmp(buf, "ddr100_mali_threshold=", 22)) {
-		ret = sscanf(&buf[22], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		ddr100_mali_threshold = val;
-
-		return count;
-	}
-	
-	return count;
-}
-ATTR_RW(prcmu_qos_performance);
+ATTR_RO(prcmu_mcdeclk);
 
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
@@ -2536,15 +1944,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step07_interface.attr,
 	&arm_step08_interface.attr,
 	&arm_step09_interface.attr,
-	&arm_step10_interface.attr,
-	&arm_step11_interface.attr, 
-	&arm_step12_interface.attr, 
-	&arm_step13_interface.attr, 
-	&pllddr_interface.attr,
-	&pllddr_oc_delay_us_interface.attr,
-	&pllddr_cross_clocks_interface.attr,
-	&pllddr_oc_on_suspend_interface.attr,
-	&prcmu_qos_performance_interface.attr,
+	&prcmu_mcdeclk_interface.attr,
 	NULL,
 };
 
@@ -2631,7 +2031,7 @@ static unsigned long arm_get_rate(void)
 	/*  catch early access */
 	BUG_ON(!freq_table);
 
-	rate = freq_table[last_arm_idx].frequency;
+	rate = freq_table[current_arm_idx].frequency;
 
 	return rate * 1000;
 }
@@ -2664,7 +2064,6 @@ static int arm_set_rate(unsigned long rate)
 {
 	unsigned long frequency = rate / 1000;
 	int i;
-	bool tmp = false;
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 	if (!liveopp_start)
@@ -2679,21 +2078,22 @@ static int arm_set_rate(unsigned long rate)
 	BUG_ON(!freq_table);
 
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-		// TODO: optimize this
-		if (!tmp) {
-			tmp = (frequency == freq_table[i].frequency);
-		}
-		if (tmp && liveopp_arm[i].enable) {
-			
-			liveopp_update_cpuhw(liveopp_arm[i],
-						last_arm_idx,
-						i);
-			last_arm_idx = i;
-			schedule_work(&requirements_update_work);
-			tmp = false;
+		if (frequency != freq_table[i].frequency)
+			continue;
 
+		if (current_arm_idx == i) {
 			break;
 		}
+
+		if (liveopp_arm[i].enable) {
+			liveopp_update_cpuhw(prev1_arm_idx, prev_arm_idx, current_arm_idx, i);
+			prev1_arm_idx = prev_arm_idx;
+			prev_arm_idx = current_arm_idx;
+			current_arm_idx = i;
+			schedule_work(&requirements_update_work);
+		}
+
+		break;
 	}
 
 	return 0;
@@ -5340,23 +4740,6 @@ static int __init late(void)
 	}
 	pr_info("[LiveOPP] Initialized: v%s\n", LIVEOPP_VER);
 	
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE)) {
-		pr_err("pcrm_qos_add APE failed\n");
-	}
-	
-	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
-			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE)) {
-		pr_err("pcrm_qos_add DDR failed\n");
-	}
-	
-	wake_lock_init(&pllddr_oc_lock, WAKE_LOCK_IDLE, "PLLDDR_OC");
-	
-	early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	early_suspend.suspend = pllddr_early_suspend;
-	early_suspend.resume = pllddr_late_resume;
-
-	register_early_suspend(&early_suspend);
 	#endif /* CONFIG_DB8500_LIVEOPP */
 
 #ifdef ENABLE_FTRACE_BY_DEFAULT
@@ -5401,9 +4784,6 @@ struct prcmu_fops_register_data *__init db8500_prcmu_early_init(void)
 	if (reset_status_copy & DB8500_SEC_PRCM_RESET_STATUS_APE_SOFTWARE_RESET)
 		reset_code_copy = readw(tcdm_base + PRCM_SW_RST_REASON);
 
-	#ifdef CONFIG_DB8500_LIVEOPP
-	mutex_init(&liveopp_lock);
-	#endif
 	tcdm_base_bkp = __io_address(U8500_PRCMU_TCDM_BASE);
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
@@ -5790,7 +5170,7 @@ static void  db8500_prcmu_update_freq(void *pdata)
 						armopp_name[db8500_prcmu_get_arm_opp()],
 						i, 
 						pllclk);
-			last_arm_idx = i;
+			current_arm_idx = i;
 		}
 
 		switch (liveopp_arm[i].freq_show) {
