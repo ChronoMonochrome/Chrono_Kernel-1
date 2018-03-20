@@ -4,7 +4,7 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -379,6 +379,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-common \
+                  -fno-strict-aliasing \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
@@ -389,7 +390,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -mfpu=vfpv3-fp16 \
 		  -mfloat-abi=hard \
 		  -mhard-float \
-		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
 		  -ftree-parallelize-loops=2 \
 		  -fcx-limited-range \
@@ -401,10 +401,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
                   -floop-nest-optimize \
                   -floop-strip-mine \
                   -floop-parallelize-all \
-		  -flto \
-		  -ffat-lto-objects \
-		  -fuse-linker-plugin \
-		  -fno-toplevel-reorder \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param l1-cache-size=32 \
@@ -484,7 +480,7 @@ asm-generic:
 
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help %docs check% coccicheck \
-			 include/linux/version.h headers_% \
+			 include/linux/version.h headers_% archheaders archscripts \
 			 kernelrelease kernelversion %src-pkg
 
 config-targets := 0
@@ -600,6 +596,8 @@ endif # $(dot-config)
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
 
+KBUILD_CFLAGS += $(call cc-disable-warning,maybe-uninitialized,)
+
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
@@ -635,6 +633,8 @@ ifndef CONFIG_FUNCTION_TRACER
 KBUILD_CFLAGS	+= -fomit-frame-pointer
 endif
 endif
+
+KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
 
 ifdef CONFIG_DEBUG_INFO
 KBUILD_CFLAGS	+= -g
