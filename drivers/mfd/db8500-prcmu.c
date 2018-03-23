@@ -1208,15 +1208,15 @@ static u32 __read_mostly liveopp_varm_us = 50;
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 //	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
 	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  25,  50},
-	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100,  50},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  50,  50},
+/*	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},*/
+	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100, 100},
 	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},
+/*	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},*/
 	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1, 100, 100},
 	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1, 100, 100},
-	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1, 100, 100},
-	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1, 100, 100},
+/*	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1, 100, 100},
+	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1, 100, 100},*/
 };
 
 static const char *armopp_name[] = 
@@ -1883,11 +1883,12 @@ ARM_STEP(arm_step02, 2);
 ARM_STEP(arm_step03, 3);
 ARM_STEP(arm_step04, 4);
 ARM_STEP(arm_step05, 5);
+/*
 ARM_STEP(arm_step06, 6);
 ARM_STEP(arm_step07, 7);
 ARM_STEP(arm_step08, 8);
 ARM_STEP(arm_step09, 9);
-
+*/
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
 {
