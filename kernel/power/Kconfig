@@ -367,6 +367,3 @@ config PM_GENERIC_DOMAINS_RUNTIME
 config CPU_PM
 	bool
 	depends on SUSPEND || CPU_IDLE
-
-config DVFS_LIMIT
-       bool "DVFS frequency limitation feature"
