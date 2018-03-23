@@ -1181,32 +1181,6 @@ config CMDLINE_FORCE
 	  command-line options your boot loader passes to the kernel.
 endchoice
 
-config CMDLINE_CUSTOM_PARAMETERS
-	bool "CMDLINE_CUSTOM_PARAMETERS"
-	depends on ARCH_U8500
-	depends on CMDLINE_EXTEND
-	depends on CMDLINE_OVERRIDE_HWMEM || ( CMDLINE_OVERRIDE_HWMEM && CMDLINE_OVERRIDE_RAMCONSOLE )
-	default n
-
-config CMDLINE_OVERRIDE_HWMEM
-	bool "CMDLINE_OVERRIDE_HWMEM"
-
-config CMDLINE_OVERRIDE_HWMEM_STRING
-	depends on CMDLINE_OVERRIDE_HWMEM
-	string "Override the HWMEM size passed by bootloader"
-	default ""
-
-config CMDLINE_OVERRIDE_RAMCONSOLE
-	depends on CMDLINE_OVERRIDE_HWMEM
-	bool "CMDLINE_OVERRIDE_RAMCONSOLE"
-
-config CMDLINE_OVERRIDE_RAMCONSOLE_STRING
-	string "Override the cmdline parameters to disable the RAM console"
-	depends on CMDLINE_OVERRIDE_RAMCONSOLE
-	default ""
-	help
-	  Say "mem=383M@384M" here to disable RAM console and free up its resources.
-
 config XIP_KERNEL
 	bool "Kernel Execute-In-Place from ROM"
 	depends on !ZBOOT_ROM

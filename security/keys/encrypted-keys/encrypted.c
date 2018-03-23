@@ -130,7 +130,7 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
 /*
  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
  *
- * key-type:= "trusted:" | "encrypted:"
+ * key-type:= "trusted:" | "user:"
  * desc:= master-key description
  *
  * Verify that 'key-type' is valid and that 'desc' exists. On key update,
@@ -184,10 +184,12 @@ static int datablob_parse(char *datablob, const char **format,
 	int key_format;
 	char *p, *keyword;
 
-	p = strsep(&datablob, " \t");
-	if (!p)
+	keyword = strsep(&datablob, " \t");
+	if (!keyword) {
+		pr_info("encrypted_key: insufficient parameters specified\n");
 		return ret;
-	key_cmd = match_token(p, key_tokens, args);
+	}
+	key_cmd = match_token(keyword, key_tokens, args);
 
 	/* Get optional format: default | ecryptfs */
 	p = strsep(&datablob, " \t");
@@ -208,38 +210,59 @@ static int datablob_parse(char *datablob, const char **format,
 		break;
 	}
 
-	if (!*master_desc)
+	if (!*master_desc) {
+		pr_info("encrypted_key: master key parameter is missing\n");
 		goto out;
+	}
 
-	if (valid_master_desc(*master_desc, NULL) < 0)
+	if (valid_master_desc(*master_desc, NULL) < 0) {
+		pr_info("encrypted_key: master key parameter \'%s\' "
+			"is invalid\n", *master_desc);
 		goto out;
+	}
 
 	if (decrypted_datalen) {
 		*decrypted_datalen = strsep(&datablob, " \t");
-		if (!*decrypted_datalen)
+		if (!*decrypted_datalen) {
+			pr_info("encrypted_key: keylen parameter is missing\n");
 			goto out;
+		}
 	}
 
 	switch (key_cmd) {
 	case Opt_new:
-		if (!decrypted_datalen)
+		if (!decrypted_datalen) {
+			pr_info("encrypted_key: keyword \'%s\' not allowed "
+				"when called from .update method\n", keyword);
 			break;
+		}
 		ret = 0;
 		break;
 	case Opt_load:
-		if (!decrypted_datalen)
+		if (!decrypted_datalen) {
+			pr_info("encrypted_key: keyword \'%s\' not allowed "
+				"when called from .update method\n", keyword);
 			break;
+		}
 		*hex_encoded_iv = strsep(&datablob, " \t");
-		if (!*hex_encoded_iv)
+		if (!*hex_encoded_iv) {
+			pr_info("encrypted_key: hex blob is missing\n");
 			break;
+		}
 		ret = 0;
 		break;
 	case Opt_update:
-		if (decrypted_datalen)
+		if (decrypted_datalen) {
+			pr_info("encrypted_key: keyword \'%s\' not allowed "
+				"when called from .instantiate method\n",
+				keyword);
 			break;
+		}
 		ret = 0;
 		break;
 	case Opt_err:
+		pr_info("encrypted_key: keyword \'%s\' not recognized\n",
+			keyword);
 		break;
 	}
 out:
@@ -270,34 +293,9 @@ static char *datablob_format(struct encrypted_key_payload *epayload,
 	/* convert the hex encoded iv, encrypted-data and HMAC to ascii */
 	bufp = &ascii_buf[len];
 	for (i = 0; i < (asciiblob_len - len) / 2; i++)
-		bufp = pack_hex_byte(bufp, iv[i]);
+		bufp = hex_byte_pack(bufp, iv[i]);
 out:
 	return ascii_buf;
-}
-
-/*
- * request_trusted_key - request the trusted key
- *
- * Trusted keys are sealed to PCRs and other metadata. Although userspace
- * manages both trusted/encrypted key-types, like the encrypted key type
- * data, trusted key type data is not visible decrypted from userspace.
- */
-static struct key *request_trusted_key(const char *trusted_desc,
-				       u8 **master_key, size_t *master_keylen)
-{
-	struct trusted_key_payload *tpayload;
-	struct key *tkey;
-
-	tkey = request_key(&key_type_trusted, trusted_desc, NULL);
-	if (IS_ERR(tkey))
-		goto error;
-
-	down_read(&tkey->sem);
-	tpayload = rcu_dereference(tkey->payload.data);
-	*master_key = tpayload->key;
-	*master_keylen = tpayload->key_len;
-error:
-	return tkey;
 }
 
 /*
@@ -316,7 +314,7 @@ static struct key *request_user_key(const char *master_desc, u8 **master_key,
 		goto error;
 
 	down_read(&ukey->sem);
-	upayload = rcu_dereference(ukey->payload.data);
+	upayload = ukey->payload.data;
 	*master_key = upayload->data;
 	*master_keylen = upayload->datalen;
 error:
@@ -445,11 +443,19 @@ static struct key *request_master_key(struct encrypted_key_payload *epayload,
 	} else
 		goto out;
 
-	if (IS_ERR(mkey))
-		pr_info("encrypted_key: key %s not found",
-			epayload->master_desc);
-	if (mkey)
-		dump_master_key(*master_key, *master_keylen);
+	if (IS_ERR(mkey)) {
+		int ret = PTR_ERR(mkey);
+
+		if (ret == -ENOTSUPP)
+			pr_info("encrypted_key: key %s not supported",
+				epayload->master_desc);
+		else
+			pr_info("encrypted_key: key %s not found",
+				epayload->master_desc);
+		goto out;
+	}
+
+	dump_master_key(*master_key, *master_keylen);
 out:
 	return mkey;
 }
@@ -661,11 +667,19 @@ static int encrypted_key_decrypt(struct encrypted_key_payload *epayload,
 		return -EINVAL;
 
 	hex_encoded_data = hex_encoded_iv + (2 * ivsize) + 2;
-	hex2bin(epayload->iv, hex_encoded_iv, ivsize);
-	hex2bin(epayload->encrypted_data, hex_encoded_data, encrypted_datalen);
+	ret = hex2bin(epayload->iv, hex_encoded_iv, ivsize);
+	if (ret < 0)
+		return -EINVAL;
+	ret = hex2bin(epayload->encrypted_data, hex_encoded_data,
+		      encrypted_datalen);
+	if (ret < 0)
+		return -EINVAL;
 
 	hmac = epayload->format + epayload->datablob_len;
-	hex2bin(hmac, hex_encoded_data + (encrypted_datalen * 2), HASH_SIZE);
+	ret = hex2bin(hmac, hex_encoded_data + (encrypted_datalen * 2),
+		      HASH_SIZE);
+	if (ret < 0)
+		return -EINVAL;
 
 	mkey = request_master_key(epayload, &master_key, &master_keylen);
 	if (IS_ERR(mkey))
@@ -796,7 +810,7 @@ static int encrypted_instantiate(struct key *key, const void *data,
 		goto out;
 	}
 
-	rcu_assign_pointer(key->payload.data, epayload);
+	rcu_assign_keypointer(key, epayload);
 out:
 	kfree(datablob);
 	return ret;
@@ -860,7 +874,7 @@ static int encrypted_update(struct key *key, const void *data, size_t datalen)
 	memcpy(new_epayload->payload_data, epayload->payload_data,
 	       epayload->payload_datalen);
 
-	rcu_assign_pointer(key->payload.data, new_epayload);
+	rcu_assign_keypointer(key, new_epayload);
 	call_rcu(&epayload->rcu, encrypted_rcu_free);
 out:
 	kfree(buf);

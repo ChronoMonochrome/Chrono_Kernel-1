@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * ecryptfs_format.c: helper functions for the encrypted key type
  *

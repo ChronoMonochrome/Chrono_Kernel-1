@@ -335,7 +335,7 @@ int noirqdebug_setup(char *str)
 }
 
 __setup("noirqdebug", noirqdebug_setup);
-module_param(noirqdebug, bool, 0644);
+module_param(noirqdebug, int, 0644);
 MODULE_PARM_DESC(noirqdebug, "Disable irq lockup detection when true");
 
 static int __init irqfixup_setup(char *str)

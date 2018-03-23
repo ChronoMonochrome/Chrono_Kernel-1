@@ -660,6 +660,8 @@ static char *ab8500_battery_supplied_to[] = {
 	"ab8500_chargalg",
 };
 
+extern unsigned int bootmode;
+
 /*
 	To create a bunch of /sys entries for DFMS application. We need a dummy power supply so we can have an entry /sys/class/power_supply 
 	without breaking all the for_each_class calls in the rest of the charging.
@@ -668,6 +670,9 @@ static char *ab8500_battery_supplied_to[] = {
 */
 int make_dfms_battery_device (void)
 {
+	if (bootmode != 2)
+		return 0;
+
 	charger_extra_sysfs.polling_queue = create_singlethread_workqueue("ab8500_charging_monitor");
 	INIT_DELAYED_WORK_DEFERRABLE(&charger_extra_sysfs.polling_work,ab8500_charger_polling_periodic_work);
 	charger_extra_sysfs.btemp_psy.name = "battery";
@@ -771,6 +776,9 @@ static int charging_readproc(char *page, char **start, off_t off,
 
 void register_charging_i2c_dev(struct device * dev) /* todo add destructor call for caller */
 {
+	if (bootmode != 2)
+		return;
+
 	dev_info(dev, "%s %d\n", __func__, __LINE__);
 	if (!charger_extra_sysfs.dev) {
 		charger_extra_sysfs.dev = dev ;

@@ -412,15 +412,7 @@ static int pcrlock(const int pcrnum)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	ret = my_get_random(hash, SHA1_DIGEST_SIZE);
 	if (ret < 0)
 		return ret;
@@ -787,7 +779,10 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
 			opt->pcrinfo_len = strlen(args[0].from) / 2;
 			if (opt->pcrinfo_len > MAX_PCRINFO_SIZE)
 				return -EINVAL;
-			hex2bin(opt->pcrinfo, args[0].from, opt->pcrinfo_len);
+			res = hex2bin(opt->pcrinfo, args[0].from,
+				      opt->pcrinfo_len);
+			if (res < 0)
+				return -EINVAL;
 			break;
 		case Opt_keyhandle:
 			res = strict_strtoul(args[0].from, 16, &handle);
@@ -799,12 +794,18 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
 		case Opt_keyauth:
 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
 				return -EINVAL;
-			hex2bin(opt->keyauth, args[0].from, SHA1_DIGEST_SIZE);
+			res = hex2bin(opt->keyauth, args[0].from,
+				      SHA1_DIGEST_SIZE);
+			if (res < 0)
+				return -EINVAL;
 			break;
 		case Opt_blobauth:
 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
 				return -EINVAL;
-			hex2bin(opt->blobauth, args[0].from, SHA1_DIGEST_SIZE);
+			res = hex2bin(opt->blobauth, args[0].from,
+				      SHA1_DIGEST_SIZE);
+			if (res < 0)
+				return -EINVAL;
 			break;
 		case Opt_migratable:
 			if (*args[0].from == '0')
@@ -868,7 +869,9 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
 		p->blob_len = strlen(c) / 2;
 		if (p->blob_len > MAX_BLOB_SIZE)
 			return -EINVAL;
-		hex2bin(p->blob, c, p->blob_len);
+		ret = hex2bin(p->blob, c, p->blob_len);
+		if (ret < 0)
+			return -EINVAL;
 		ret = getoptions(datablob, p, o);
 		if (ret < 0)
 			return ret;
@@ -990,7 +993,7 @@ out:
 	kfree(datablob);
 	kfree(options);
 	if (!ret)
-		rcu_assign_pointer(key->payload.data, payload);
+		rcu_assign_keypointer(key, payload);
 	else
 		kfree(payload);
 	return ret;
@@ -1017,15 +1020,7 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
 	int ret = 0;
 
 	if (!p->migratable)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (datalen <= 0 || datalen > 32767 || !data)
 		return -EINVAL;
 
@@ -1072,7 +1067,7 @@ return -EPERM;
 			goto out;
 		}
 	}
-	rcu_assign_pointer(key->payload.data, new_p);
+	rcu_assign_keypointer(key, new_p);
 	call_rcu(&p->rcu, trusted_rcu_free);
 out:
 	kfree(datablob);

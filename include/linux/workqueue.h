@@ -16,6 +16,7 @@ struct workqueue_struct;
 
 struct work_struct;
 typedef void (*work_func_t)(struct work_struct *work);
+void delayed_work_timer_fn(unsigned long __data);
 
 /*
  * The first word is the work queue pointer and the flags rolled into
@@ -124,12 +125,14 @@ struct execute_work {
 
 #define __DELAYED_WORK_INITIALIZER(n, f) {			\
 	.work = __WORK_INITIALIZER((n).work, (f)),		\
-	.timer = TIMER_INITIALIZER(NULL, 0, 0),			\
+	.timer = TIMER_INITIALIZER(delayed_work_timer_fn,	\
+				0, (unsigned long)&(n)),	\
 	}
 
 #define __DEFERRED_WORK_INITIALIZER(n, f) {			\
 	.work = __WORK_INITIALIZER((n).work, (f)),		\
-	.timer = TIMER_DEFERRED_INITIALIZER(NULL, 0, 0),	\
+	.timer = TIMER_DEFERRED_INITIALIZER(delayed_work_timer_fn, \
+				0, (unsigned long)&(n)),	\
 	}
 
 #define DECLARE_WORK(n, f)					\
@@ -207,18 +210,24 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
 	do {							\
 		INIT_WORK(&(_work)->work, (_func));		\
 		init_timer(&(_work)->timer);			\
+		(_work)->timer.function = delayed_work_timer_fn;\
+		(_work)->timer.data = (unsigned long)(_work);	\
 	} while (0)
 
 #define INIT_DELAYED_WORK_ONSTACK(_work, _func)			\
 	do {							\
 		INIT_WORK_ONSTACK(&(_work)->work, (_func));	\
 		init_timer_on_stack(&(_work)->timer);		\
+		(_work)->timer.function = delayed_work_timer_fn;\
+		(_work)->timer.data = (unsigned long)(_work);	\
 	} while (0)
 
 #define INIT_DELAYED_WORK_DEFERRABLE(_work, _func)		\
 	do {							\
 		INIT_WORK(&(_work)->work, (_func));		\
 		init_timer_deferrable(&(_work)->timer);		\
+		(_work)->timer.function = delayed_work_timer_fn;\
+		(_work)->timer.data = (unsigned long)(_work);	\
 	} while (0)
 
 /**
@@ -282,7 +291,7 @@ enum {
 	 */
 	WQ_POWER_EFFICIENT	= 1 << 6,
 
-	WQ_DYING		= 1 << 7, /* internal: workqueue is draining */
+	WQ_DRAINING		= 1 << 7, /* internal: workqueue is draining */
 	WQ_RESCUER		= 1 << 8, /* internal: workqueue has rescuer */
 
 	WQ_MAX_ACTIVE		= 512,	  /* I like 512, better ideas? */
@@ -409,6 +418,7 @@ extern int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
 			struct delayed_work *work, unsigned long delay);
 
 extern void flush_workqueue(struct workqueue_struct *wq);
+extern void drain_workqueue(struct workqueue_struct *wq);
 extern void flush_scheduled_work(void);
 
 extern int schedule_work(struct work_struct *work);
@@ -464,21 +474,6 @@ static inline bool __cancel_delayed_work(struct delayed_work *work)
 	if (ret)
 		work_clear_pending(&work->work);
 	return ret;
-}
-
-/* Obsolete. use cancel_delayed_work_sync() */
-static inline __deprecated
-void cancel_rearming_delayed_workqueue(struct workqueue_struct *wq,
-					struct delayed_work *work)
-{
-	cancel_delayed_work_sync(work);
-}
-
-/* Obsolete. use cancel_delayed_work_sync() */
-static inline __deprecated
-void cancel_rearming_delayed_work(struct delayed_work *work)
-{
-	cancel_delayed_work_sync(work);
 }
 
 #ifndef CONFIG_SMP

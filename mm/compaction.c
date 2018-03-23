@@ -902,6 +902,13 @@ unsigned long compaction_suitable(struct zone *zone, int order)
 static int compact_zone(struct zone *zone, struct compact_control *cc)
 {
 	int ret;
+
+	if (unlikely(zone == NULL || cc == NULL)) {
+		pr_err("%s: zone == %s, cc == %n", __func__, (zone != NULL ? "*" : "NULL"), (cc != NULL ? "*" : "NULL"));
+		return -ENOMEM;
+	}
+
+
 	unsigned long start_pfn = zone->zone_start_pfn;
 	unsigned long end_pfn = zone->zone_start_pfn + zone->spanned_pages;
 
@@ -987,10 +994,7 @@ out:
 	return ret;
 }
 
-#ifndef CONFIG_COMPACTION_RETRY
-static
-#endif
-unsigned long compact_zone_order(struct zone *zone,
+static unsigned long compact_zone_order(struct zone *zone,
 				 int order, gfp_t gfp_mask,
 				 bool sync, bool *contended)
 {

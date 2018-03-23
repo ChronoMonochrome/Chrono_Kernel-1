@@ -110,14 +110,6 @@ unsigned long dirty_balance_reserve __read_mostly;
 int percpu_pagelist_fraction;
 gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
 
-#ifdef CONFIG_COMPACTION_RETRY_DEBUG
-static inline void show_buddy_info(void);
-#else
-static inline void show_buddy_info(void)
-{
-}
-#endif
-
 #ifdef CONFIG_PM_SLEEP
 /*
  * The following functions are used by the suspend/hibernate code to temporarily
@@ -147,18 +139,11 @@ void pm_restrict_gfp_mask(void)
 	gfp_allowed_mask &= ~GFP_IOFS;
 }
 
-static bool pm_suspending(void)
+bool pm_suspended_storage(void)
 {
 	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
 		return false;
 	return true;
-}
-
-#else
-
-static bool pm_suspending(void)
-{
-	return false;
 }
 #endif /* CONFIG_PM_SLEEP */
 
@@ -2084,10 +2069,23 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
 
 static inline int
 should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+				unsigned long did_some_progress,
 				unsigned long pages_reclaimed)
 {
 	/* Do not loop if specifically requested */
 	if (gfp_mask & __GFP_NORETRY)
+		return 0;
+
+	/* Always retry if specifically requested */
+	if (gfp_mask & __GFP_NOFAIL)
+		return 1;
+
+	/*
+	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
+	 * making forward progress without invoking OOM. Suspend also disables
+	 * storage devices so kswapd will not help. Bail if we are suspending.
+	 */
+	if (!did_some_progress && pm_suspended_storage())
 		return 0;
 
 	/*
@@ -2108,22 +2106,8 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
 		return 1;
 
-	/*
-	 * Don't let big-order allocations loop unless the caller
-	 * explicitly requests that.
-	 */
-	if (gfp_mask & __GFP_NOFAIL)
-		return 1;
-
 	return 0;
 }
-
-#ifdef CONFIG_COMPACTION_RETRY
-extern unsigned long compact_zone_order(struct zone *zone,
-                                 int order, gfp_t gfp_mask,
-                                 bool sync);
-
-#endif
 
 static inline struct page *
 __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
@@ -2132,10 +2116,6 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 	int migratetype)
 {
 	struct page *page;
-#ifdef CONFIG_COMPACTION_RETRY
-	struct zoneref *z;
-	struct zone *zone;
-#endif
 
 	/* Acquire the OOM killer lock for the zones in zonelist */
 	if (!try_set_zonelist_oom(zonelist, gfp_mask)) {
@@ -2154,32 +2134,6 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 		preferred_zone, migratetype);
 	if (page)
 		goto out;
-
-#ifdef CONFIG_COMPACTION_RETRY
-	/*
-	 * When we reach here, we already tried direct reclaim.
-	 * Therefore it might be possible that we have enough
-	 * free memory but extremely fragmented.
-	 * So we give it a last chance to try memory compaction and get pages.
-	 */
-	if (order) {
-		pr_info("reclaim before oom : retry compaction.\n");
-		show_buddy_info();
-
-		for_each_zone_zonelist_nodemask(zone, z, zonelist,
-					high_zoneidx, nodemask)
-			compact_zone_order(zone, -1, gfp_mask, true);
-
-		show_buddy_info();
-		pr_info("reclaim :end\n");
-		page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL,
-			nodemask, order, zonelist, high_zoneidx,
-			ALLOC_WMARK_HIGH|ALLOC_CPUSET,
-			preferred_zone, migratetype);
-		if (page)
-			goto out;
-	}
-#endif
 
 	if (!(gfp_mask & __GFP_NOFAIL)) {
 		/* The OOM killer will not help higher order allocs */
@@ -2441,9 +2395,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	int alloc_flags;
 	unsigned long pages_reclaimed = 0;
 	unsigned long did_some_progress;
-#ifdef CONFIG_ANDROID_WIP
-	unsigned long start_tick = jiffies;
-#endif
 	bool sync_migration = false;
 	bool deferred_compaction = false;
 	bool contended_compaction = false;
@@ -2519,7 +2470,6 @@ rebalance:
 	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
 		goto nopage;
 
-#ifdef CONFIG_DIRECT_RECLAIM_ALLOW_COMPACTION
 	/*
 	 * Try direct compaction. The first pass is asynchronous. Subsequent
 	 * attempts after direct reclaim are synchronous
@@ -2534,7 +2484,6 @@ rebalance:
 					&did_some_progress);
 	if (page)
 		goto got_pg;
-#endif /* CONFIG_DIRECT_RECLAIM_ALLOW_COMPACTION */
 	sync_migration = true;
 
 	/*
@@ -2559,22 +2508,15 @@ rebalance:
 	/*
 	 * If we failed to make any progress reclaiming, then we are
 	 * running out of options and have to consider going OOM
-	 * ANDROID_WIP: If we are looping more than 1 second, consider OOM
 	 */
-#ifdef CONFIG_ANDROID_WIP
-#define SHOULD_CONSIDER_OOM !did_some_progress || time_after(jiffies, start_tick + HZ)
-#else
-#define SHOULD_CONSIDER_OOM !did_some_progress
-#endif
-	if (SHOULD_CONSIDER_OOM) {
+	if (!did_some_progress) {
 		if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
 			if (oom_killer_disabled)
 				goto nopage;
-#ifdef CONFIG_ANDROID_WIP
-			if (did_some_progress)
-				pr_info("time's up : calling "
-						"__alloc_pages_may_oom\n");
-#endif
+			/* Coredumps can quickly deplete all memory reserves */
+			if ((current->flags & PF_DUMPCORE) &&
+			    !(gfp_mask & __GFP_NOFAIL))
+				goto nopage;
 			page = __alloc_pages_may_oom(gfp_mask, order,
 					zonelist, high_zoneidx,
 					nodemask, preferred_zone,
@@ -2602,19 +2544,12 @@ rebalance:
 
 			goto restart;
 		}
-
-		/*
-		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
-		 * prevent reclaim making forward progress without
-		 * invoking OOM. Bail if we are suspending
-		 */
-		if (pm_suspending())
-			goto nopage;
 	}
 
 	/* Check if we should retry the allocation */
 	pages_reclaimed += did_some_progress;
-	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
+	if (should_alloc_retry(gfp_mask, order, did_some_progress,
+						pages_reclaimed)) {
 		/* Wait for some write requests to complete then retry */
 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
 		goto rebalance;
@@ -3127,37 +3062,6 @@ void show_free_areas(unsigned int filter)
 
 	show_swap_cache_info();
 }
-
-#ifdef CONFIG_COMPACTION_RETRY_DEBUG
-void show_buddy_info(void)
-{
-	struct zone *zone;
-	unsigned long nr[MAX_ORDER], flags, order, total = 0;
-	char buf[256];
-	int len;
-
-	for_each_populated_zone(zone) {
-
-		if (skip_free_areas_node(SHOW_MEM_FILTER_NODES,
-					zone_to_nid(zone)))
-			continue;
-		show_node(zone);
-		len = sprintf(buf, "%s: ", zone->name);
-
-		spin_lock_irqsave(&zone->lock, flags);
-		for (order = 0; order < MAX_ORDER; order++) {
-			nr[order] = zone->free_area[order].nr_free;
-			total += nr[order] << order;
-		}
-		spin_unlock_irqrestore(&zone->lock, flags);
-		for (order = 0; order < MAX_ORDER; order++)
-			len += sprintf(buf + len, "%lu*%lukB ",
-					nr[order], K(1UL) << order);
-		len += sprintf(buf + len, "= %lukB", K(total));
-		pr_err("%s\n", buf);
-	}
-}
-#endif
 
 static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
 {

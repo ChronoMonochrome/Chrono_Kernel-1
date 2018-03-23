@@ -182,6 +182,40 @@
  * AUDIT_UNUSED_BITS is updated if need be. */
 #define AUDIT_UNUSED_BITS	0x07FFFC00
 
+/* AUDIT_FIELD_COMPARE rule list */
+#define AUDIT_COMPARE_UID_TO_OBJ_UID	1
+#define AUDIT_COMPARE_GID_TO_OBJ_GID	2
+#define AUDIT_COMPARE_EUID_TO_OBJ_UID	3
+#define AUDIT_COMPARE_EGID_TO_OBJ_GID	4
+#define AUDIT_COMPARE_AUID_TO_OBJ_UID	5
+#define AUDIT_COMPARE_SUID_TO_OBJ_UID	6
+#define AUDIT_COMPARE_SGID_TO_OBJ_GID	7
+#define AUDIT_COMPARE_FSUID_TO_OBJ_UID	8
+#define AUDIT_COMPARE_FSGID_TO_OBJ_GID	9
+
+#define AUDIT_COMPARE_UID_TO_AUID	10
+#define AUDIT_COMPARE_UID_TO_EUID	11
+#define AUDIT_COMPARE_UID_TO_FSUID	12
+#define AUDIT_COMPARE_UID_TO_SUID	13
+
+#define AUDIT_COMPARE_AUID_TO_FSUID	14
+#define AUDIT_COMPARE_AUID_TO_SUID	15
+#define AUDIT_COMPARE_AUID_TO_EUID	16
+
+#define AUDIT_COMPARE_EUID_TO_SUID	17
+#define AUDIT_COMPARE_EUID_TO_FSUID	18
+
+#define AUDIT_COMPARE_SUID_TO_FSUID	19
+
+#define AUDIT_COMPARE_GID_TO_EGID	20
+#define AUDIT_COMPARE_GID_TO_FSGID	21
+#define AUDIT_COMPARE_GID_TO_SGID	22
+
+#define AUDIT_COMPARE_EGID_TO_FSGID	23
+#define AUDIT_COMPARE_EGID_TO_SGID	24
+#define AUDIT_COMPARE_SGID_TO_FSGID	25
+
+#define AUDIT_MAX_FIELD_COMPARE		AUDIT_COMPARE_SGID_TO_FSGID
 
 /* Rule fields */
 				/* These are useful when checking the
@@ -223,6 +257,9 @@
 #define AUDIT_PERM	106
 #define AUDIT_DIR	107
 #define AUDIT_FILETYPE	108
+#define AUDIT_OBJ_UID	109
+#define AUDIT_OBJ_GID	110
+#define AUDIT_FIELD_COMPARE	111
 
 #define AUDIT_ARG0      200
 #define AUDIT_ARG1      (AUDIT_ARG0+1)
@@ -416,22 +453,35 @@ extern int audit_classify_arch(int arch);
 /* These are defined in auditsc.c */
 				/* Public API */
 extern int  audit_alloc(struct task_struct *task);
-extern void audit_free(struct task_struct *task);
-extern void audit_syscall_entry(int arch,
-				int major, unsigned long a0, unsigned long a1,
-				unsigned long a2, unsigned long a3);
+extern void __audit_free(struct task_struct *task);
+extern void __audit_syscall_entry(int arch,
+				  int major, unsigned long a0, unsigned long a1,
+				  unsigned long a2, unsigned long a3);
 extern void __audit_syscall_exit(int ret_success, long ret_value);
 extern void __audit_getname(const char *name);
 extern void audit_putname(const char *name);
 extern void __audit_inode(const char *name, const struct dentry *dentry);
 extern void __audit_inode_child(const struct dentry *dentry,
 				const struct inode *parent);
+extern void __audit_seccomp(unsigned long syscall, long signr, int code);
 extern void __audit_ptrace(struct task_struct *t);
 
 static inline int audit_dummy_context(void)
 {
 	void *p = current->audit_context;
 	return !p || *(int *)p;
+}
+static inline void audit_free(struct task_struct *task)
+{
+	if (unlikely(task->audit_context))
+		__audit_free(task);
+}
+static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
+				       unsigned long a1, unsigned long a2,
+				       unsigned long a3)
+{
+	if (unlikely(!audit_dummy_context()))
+		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
 }
 static inline void audit_syscall_exit(void *pt_regs)
 {
@@ -458,6 +508,12 @@ static inline void audit_inode_child(const struct dentry *dentry,
 }
 void audit_core_dumps(long signr);
 
+static inline void audit_seccomp(unsigned long syscall, long signr, int code)
+{
+	if (unlikely(!audit_dummy_context()))
+		__audit_seccomp(syscall, signr, code);
+}
+
 static inline void audit_ptrace(struct task_struct *t)
 {
 	if (unlikely(!audit_dummy_context()))
@@ -473,13 +529,12 @@ extern int  audit_set_loginuid(struct task_struct *task, uid_t loginuid);
 #define audit_get_sessionid(t) ((t)->sessionid)
 extern void audit_log_task_context(struct audit_buffer *ab);
 extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
-extern void __audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, mode_t mode);
-extern int audit_bprm(struct linux_binprm *bprm);
-extern void audit_socketcall(int nargs, unsigned long *args);
-extern int audit_sockaddr(int len, void *addr);
+extern void __audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, umode_t mode);
+extern int __audit_bprm(struct linux_binprm *bprm);
+extern void __audit_socketcall(int nargs, unsigned long *args);
+extern int __audit_sockaddr(int len, void *addr);
 extern void __audit_fd_pair(int fd1, int fd2);
-extern int audit_set_macxattr(const char *name);
-extern void __audit_mq_open(int oflag, mode_t mode, struct mq_attr *attr);
+extern void __audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr);
 extern void __audit_mq_sendrecv(mqd_t mqdes, size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout);
 extern void __audit_mq_notify(mqd_t mqdes, const struct sigevent *notification);
 extern void __audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat);
@@ -499,12 +554,29 @@ static inline void audit_fd_pair(int fd1, int fd2)
 	if (unlikely(!audit_dummy_context()))
 		__audit_fd_pair(fd1, fd2);
 }
-static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, mode_t mode)
+static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, umode_t mode)
 {
 	if (unlikely(!audit_dummy_context()))
 		__audit_ipc_set_perm(qbytes, uid, gid, mode);
 }
-static inline void audit_mq_open(int oflag, mode_t mode, struct mq_attr *attr)
+static inline int audit_bprm(struct linux_binprm *bprm)
+{
+	if (unlikely(!audit_dummy_context()))
+		return __audit_bprm(bprm);
+	return 0;
+}
+static inline void audit_socketcall(int nargs, unsigned long *args)
+{
+	if (unlikely(!audit_dummy_context()))
+		__audit_socketcall(nargs, args);
+}
+static inline int audit_sockaddr(int len, void *addr)
+{
+	if (unlikely(!audit_dummy_context()))
+		return __audit_sockaddr(len, addr);
+	return 0;
+}
+static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
 {
 	if (unlikely(!audit_dummy_context()))
 		__audit_mq_open(oflag, mode, attr);
@@ -562,6 +634,7 @@ extern int audit_signals;
 #define audit_inode(n,d) do { (void)(d); } while (0)
 #define audit_inode_child(i,p) do { ; } while (0)
 #define audit_core_dumps(i) do { ; } while (0)
+#define audit_seccomp(i,s,c) do { ; } while (0)
 #define auditsc_get_stamp(c,t,s) (0)
 #define audit_get_loginuid(t) (-1)
 #define audit_get_sessionid(t) (-1)
@@ -572,7 +645,6 @@ extern int audit_signals;
 #define audit_socketcall(n,a) ((void)0)
 #define audit_fd_pair(n,a) ((void)0)
 #define audit_sockaddr(len, addr) ({ 0; })
-#define audit_set_macxattr(n) do { ; } while (0)
 #define audit_mq_open(o,m,a) ((void)0)
 #define audit_mq_sendrecv(d,l,p,t) ((void)0)
 #define audit_mq_notify(d,n) ((void)0)
@@ -613,10 +685,16 @@ extern void		    audit_log_untrustedstring(struct audit_buffer *ab,
 						      const char *string);
 extern void		    audit_log_d_path(struct audit_buffer *ab,
 					     const char *prefix,
-					     struct path *path);
+					     const struct path *path);
 extern void		    audit_log_key(struct audit_buffer *ab,
 					  char *key);
 extern void		    audit_log_lost(const char *message);
+#ifdef CONFIG_SECURITY
+extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
+#else
+#define audit_log_secctx(b,s) do { ; } while (0)
+#endif
+
 extern int		    audit_update_lsm_rules(void);
 
 				/* Private API (for audit.c only) */
@@ -639,6 +717,7 @@ extern int audit_enabled;
 #define audit_log_untrustedstring(a,s) do { ; } while (0)
 #define audit_log_d_path(b, p, d) do { ; } while (0)
 #define audit_log_key(b, k) do { ; } while (0)
+#define audit_log_secctx(b,s) do { ; } while (0)
 #define audit_enabled 0
 #endif
 #endif
