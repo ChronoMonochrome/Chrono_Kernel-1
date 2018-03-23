@@ -132,7 +132,7 @@ struct ssg_dpi_display_platform_data janice_dpi_pri_display_info = {
 	.display_off_delay	= 25,
 	.sleep_in_delay		= 120,
 
-	.video_mode.xres	= 480, 
+	.video_mode.xres	= 480,
 	.video_mode.yres	= 800,
 	.video_mode.hsw		= 2,
 	.video_mode.hbp		= 16 - 2,	/* -2 to allow for starting at end of hsw not start of hsw */
@@ -355,7 +355,14 @@ int __init init_janice_display_devices(void)
 	 */
 	janice_dpi_pri_display_info.video_mode.pixclock /=
 						port0.phy.dpi.clock_div;
-
+/*
+	janice_dpi_pri_display_info.video_mode.hsw = 10;
+	janice_dpi_pri_display_info.video_mode.hbp = 8;
+	janice_dpi_pri_display_info.video_mode.hfp = 8;
+	janice_dpi_pri_display_info.video_mode.vsw = 2;
+	janice_dpi_pri_display_info.video_mode.vbp = 8;
+	janice_dpi_pri_display_info.video_mode.vfp = 18;
+*/
 	/* MCDE pixelfetchwtrmrk levels per overlay */
 	{
 #if 1 /* 16 bit overlay */
