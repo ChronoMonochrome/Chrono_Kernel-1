@@ -1943,9 +1943,9 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step04_interface.attr,
 	&arm_step05_interface.attr,
 	&arm_step06_interface.attr,
-	&arm_step07_interface.attr,
+/*	&arm_step07_interface.attr,
 	&arm_step08_interface.attr,
-	&arm_step09_interface.attr,
+	&arm_step09_interface.attr,*/
 	&prcmu_mcdeclk_interface.attr,
 	NULL,
 };
