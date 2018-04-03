@@ -188,11 +188,11 @@ static void mxt224e_ponkey_thread(struct work_struct *mxt224e_ponkey_work)
 
 	pr_err("[TSP] %s fn\n", __func__);
 
-	ab8500_ponkey_emulator(1);	/* press */
+	ab8500_ponkey_emulator(KEY_POWER, 1);	/* press */
 
 	msleep(100);
 
-	ab8500_ponkey_emulator(0);	/* release */
+	ab8500_ponkey_emulator(KEY_POWER, 0);	/* release */
 
 	waking_up = false;
 }
