@@ -7,7 +7,6 @@
 **     TouchSense Kernel Module main entry-point.
 **
 ** Portions Copyright (c) 2008-2010 Immersion Corporation. All Rights Reserved.
-**          Copyright (c) 2014 Davide Pianca <kingbabasula@gmail.com>
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -74,8 +73,6 @@ static struct vibrator {
 	struct work_struct work;
 	bool running;
 } vibdata;
-
-unsigned long pwm_val = 10;
 
 /* Uncomment the next line to enable debug prints */
 /* #define	IMMVIBE_DEBUG */
@@ -254,7 +251,7 @@ static void janice_vibrator_enable(struct timed_output_dev *dev, int value)
 			/* PWM generation mode */
 			immvibe_i2c_write(isa_data->client, HCTRL0, 0x91);
 			/* Duty 0x64 == nForce 90 */
-			immvibe_i2c_write(isa_data->client, HCTRL5, pwm_val);
+			immvibe_i2c_write(isa_data->client, HCTRL5, 0x64);
 
 			vibdata.running = true;
 		} else
@@ -316,7 +313,7 @@ int init_tspdrv_module(void)
 	DbgRecorderInit(());
 
 	ImmVibeSPI_ForceOut_Initialize();
-       VibeOSKernelLinuxInitTimer();
+    VibeOSKernelLinuxInitTimer();
 
 	/* Get and concatenate device name and initialize data buffer */
 	g_cchDeviceName = 0;
@@ -714,12 +711,6 @@ static int __devinit immvibe_i2c_probe(struct i2c_client* client, const struct i
 	ret = init_tspdrv_module();
 	if (ret) {
 		viberr("%s():Error initializing tspdrv", __func__);
-		goto out_tspdrv_init_failed;
-	}
-
-	ret = create_sysfs();
-	if (ret) {
-		pr_err("Failed to create sysfs interface", ret);
 		goto out_tspdrv_init_failed;
 	}
 
