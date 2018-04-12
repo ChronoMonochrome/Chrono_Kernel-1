@@ -29,7 +29,7 @@
 #include <mach/db8500-regs.h>
 	 
 
-#define PRCMU_DPI_CLK_FREQ	66560000
+#define PRCMU_DPI_CLK_FREQ	49920000
 	 
 #ifdef CONFIG_FB_MCDE
 
@@ -330,6 +330,8 @@ static void update_mcde_opp(struct device *dev,
 		pr_info("Requested APE QOS = %d\n", req_ape);
 	}
 }
+
+int lcdclk_usr = 0;
 
 int __init init_janice_display_devices(void)
 {
