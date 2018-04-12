@@ -97,7 +97,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-static int dpi_display_platform_enable(struct mcde_display_device *ddev)
+int dpi_display_platform_enable(struct mcde_display_device *ddev)
 {
 	int res = 0;
 	dev_info(&ddev->dev, "%s\n", __func__);
@@ -107,7 +107,7 @@ static int dpi_display_platform_enable(struct mcde_display_device *ddev)
 	return res;
 }
 
-static int dpi_display_platform_disable(struct mcde_display_device *ddev)
+int dpi_display_platform_disable(struct mcde_display_device *ddev)
 {
 	int res = 0;
 	dev_info(&ddev->dev, "%s\n", __func__);
