@@ -89,6 +89,65 @@
 
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
+/* s6e63m0 PRCMU LCDCLK */
+/* 60+++	79872000 unsafe
+ * 60++ 	62400000 unsafe
+ * 60+  	57051428 unsafe
+ * 60   	49920000
+ * 50   	39936000
+ * 45   	36305454
+ * 40   	33280000
+ */
+#include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/db8500-prcmu.h>
+
+#define LCDCLK_SET(clk) prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
+
+struct lcdclk_prop
+{
+	char *name;
+	unsigned int clk;
+};
+
+static struct lcdclk_prop lcdclk_prop[] = {
+  	[0] = {
+		.name = "60++ Hz",
+		.clk = 62400000,
+	},
+  	[1] = {
+		.name = "60+ Hz",
+		.clk = 57051428,
+	},
+	[2] = {
+		.name = "60 Hz",
+		.clk = 49920000,
+	},
+	[3] = {
+		.name = "50 Hz",
+		.clk = 39936000,
+	},
+	[4] = {
+		.name = "45 Hz",
+		.clk = 36305454,
+	},
+	[5] = {
+		.name = "40 Hz",
+		.clk = 33280000,
+	},
+};
+
+static unsigned int lcdclk_usr = 0; /* 60++ fps */
+
+static void s6e63m0_lcdclk_thread(struct work_struct *s6e63m0_lcdclk_work)
+{
+	msleep(200);
+
+	pr_err("[s6e63m0] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
+
+	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
+}
+static DECLARE_WORK(s6e63m0_lcdclk_work, s6e63m0_lcdclk_thread);
+
 /* to be removed when display works */
 /* #define dev_dbg	dev_info */
 
@@ -192,57 +251,6 @@ static unsigned int illumination_val = ILLUMINATION_MIN;
 /* cocafe: Night Mode and Sunlight Mode */
 static bool night_mode = false;
 static bool sunlight_mode = false;
-
-/* cocafe: S6E63M0 PRCMU LCDCLK */
-/* 60+++ 	79872000	unsafe
- * 60++		66560000	unsafe
- * 60+		57051428	unsafe
- * 60		49920000
- * 50		39936000
- * 45		36305454
- * 40		33280000
- */
-#include <linux/mfd/dbx500-prcmu.h>
-#include <linux/mfd/db8500-prcmu.h>
-
-#define LCDCLK_SET(clk)		prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
-
-struct lcdclk_prop
-{
-	char *name;
-	unsigned int clk;
-};
-
-static struct lcdclk_prop lcdclk_prop[] = {
-	[0] = {
-		.name = "60Hz",
-		.clk = 49920000,
-	},
-	[1] = {
-		.name = "50Hz",
-		.clk = 39936000,
-	},
-	[2] = {
-		.name = "45Hz",
-		.clk = 36305454,
-	},
-	[3] = {
-		.name = "40Hz",
-		.clk = 33280000,
-	},
-};
-
-static unsigned int lcdclk_usr = 0;	/* 60fps */
-
-static void s6e63m0_lcdclk_thread(struct work_struct *s6e6m0_lcdclk_work)
-{
-	msleep(200);
-
-	pr_err("[S6E63M0] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
-
-	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
-}
-static DECLARE_WORK(s6e63m0_lcdclk_work, s6e63m0_lcdclk_thread);
 
 #ifdef SMART_DIMMING
 #define LDI_MTP_LENGTH 21
@@ -1260,11 +1268,11 @@ unsigned short *Gen_gamma_table(struct s6e63m0 *lcd)
 
 	/* for debug */
 	#if 0
-;
+		printk("%s lcd->bl : %d ",__func__,lcd->bl);
 		for(i=3;i<((gen_table_max*2)+3);i+=2) {
-;
+			printk("0x%x ",s6e63m0_22_gamma_table[i]);
 		}
-;
+		printk("\n");
 	#endif
 
 	if (R_req) {
@@ -1660,8 +1668,8 @@ static void s6e63mo_read_mtp_info(struct s6e63m0 *lcd)
 				(u8 *)(&(lcd->smart.MTP)), LDI_MTP_LENGTH);
 
 	for(i=0;i<LDI_MTP_LENGTH;i++) {
-//		printk("[S6E63M0] MainMTPData [%d] : %02x\n", i,
-;
+		printk("[S6E63M0] MainMTPData [%d] : %02x\n", i,
+				((char*)&(lcd->smart.MTP))[i]);
 	}
 
 	Smart_dimming_init(&(lcd->smart));
@@ -1675,8 +1683,8 @@ static void s6e63mo_mtp_from_boot(struct s6e63m0 *lcd, char *mtp)
 	memcpy(&(lcd->smart.MTP), mtp, LDI_MTP_LENGTH);
 
 	for (i = 0; i < LDI_MTP_LENGTH; i++) {
-//		printk("[S6E63M0] MainMTPData [%d] %02x\n", i,
-;
+		printk("[S6E63M0] MainMTPData [%d] %02x\n", i,
+				((char *)&(lcd->smart.MTP))[i]);
 	}
 	Smart_dimming_init(&(lcd->smart));
 }
@@ -1702,7 +1710,7 @@ static int update_brightness(struct s6e63m0 *lcd, u8 force)
 	if ((force) || ((lcd->ldi_state) &&
 				(lcd->current_brightness != lcd->bl))) {
 
-;
+	printk("[S6E63M0] Brightness: %d BL: %d\n", bl, lcd->bl);
 
 		ret = s6e63m0_set_elvss(lcd);
 		if (ret) {
@@ -1920,6 +1928,47 @@ static struct backlight_ops s6e63m0_backlight_ops  = {
 	.update_status = s6e63m0_set_brightness,
 };
 
+static ssize_t s6e63m0_sysfs_show_lcdclk(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int i;
+	bool matched;
+
+	sprintf(buf, "%sCurrent: %s\n\n", buf, lcdclk_prop[lcdclk_usr].name);
+
+	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
+		if (i == lcdclk_usr)
+			matched = true;
+		else
+			matched = false;
+
+		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
+	}
+
+	return strlen(buf);
+}
+
+static ssize_t s6e63m0_sysfs_store_lcdclk(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t len)
+{
+	int ret, tmp;
+
+	ret = sscanf(buf, "%d", &tmp);
+	if (!ret || (tmp < 0) || (tmp > 5)) {
+		  pr_err("[s6e63m0] Bad cmd\n");
+		  return -EINVAL;
+	}
+
+	lcdclk_usr = tmp;
+
+	schedule_work(&s6e63m0_lcdclk_work);
+
+	return len;
+}
+
+static DEVICE_ATTR(lcdclk, 0644, s6e63m0_sysfs_show_lcdclk, s6e63m0_sysfs_store_lcdclk);
+
 static ssize_t s6e63m0_sysfs_store_lcd_power(struct device *dev,
                                        struct device_attribute *attr,
                                        const char *buf, size_t len)
@@ -2090,7 +2139,7 @@ static ssize_t s6e63m0_sysfs_store_gamma_mode(struct device *dev,
 	if (lcd->ldi_state)
 	{
 		if((lcd->current_brightness == lcd->bl) && (lcd->current_gamma_mode == lcd->gamma_mode))
-;
+			printk("there is no gamma_mode & brightness changed\n");
 		else
 			s6e63m0_gamma_ctl(lcd);
 	}
@@ -2211,6 +2260,12 @@ err:
 	
 }
 
+static bool s6d = 0;
+bool is_s6d(void)
+{
+	return s6d;
+}
+
 static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
@@ -2260,7 +2315,6 @@ static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 	pr_info("[S6E63M0] LCD ID [%#04X]\n", lcd_id[1]);
 //	pr_info("[S6E63M0] smart dimming lcd id: %#04X\n", SMART_MTP_PANEL_ID);
 //	if (lcd_id[1] >= SMART_MTP_PANEL_ID) {
-#ifdef CONFIG_RAM_CONSOLE
 		if (!is_load_mtp_offset) {
 		#if 0
 			s6e63mo_read_mtp_info(lcd);
@@ -2269,7 +2323,6 @@ static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 		#endif
 			is_load_mtp_offset =  1;
 		}
-#endif
 //	}
 	#endif
 
@@ -2534,44 +2587,6 @@ static ssize_t mcde_chnl_store(struct kobject *kobj, struct kobj_attribute *attr
 }
 
 ATTR_RW(mcde_chnl);
-
-static ssize_t lcd_clk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	int i;
-	bool matched;
-
-	sprintf(buf, "Current: %s\n\n", lcdclk_prop[lcdclk_usr].name);
-
-	for (i = 0; i <= 3; i++) {
-		if (i == lcdclk_usr)
-			matched = true;
-		else
-			matched = false;
-
-		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
-	}
-
-	return strlen(buf);
-}
-
-static ssize_t lcd_clk_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int ret, tmp;
-
-	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < 0) || (tmp > 3)) {
-		pr_err("[S6E63M0] Bad cmd\n");
-		return -EINVAL;
-	}
-
-	lcdclk_usr = tmp;
-
-	schedule_work(&s6e63m0_lcdclk_work);
-
-	return count;
-}
-
-ATTR_RW(lcd_clk);
 
 static ssize_t illumination_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2862,9 +2877,7 @@ static ssize_t main_G_store(struct kobject *kobj, struct kobj_attribute *attr, c
 
 		G_val = buf_val;
 		G_req = true;
-
 		s6e63m0_gamma_ctl(lcd);
-
 		pr_info("[S6E63M0] [G] %#04X -> %#04X\n", buf_G, s6e63m0_22_gamma_table[G_OFFSET]);
 	} else {
 		pr_info("[S6E63M0] invalid input\n");
@@ -3009,7 +3022,6 @@ ATTR_RW(sunlight_mode);
 
 static struct attribute *s6e63m0_panel_attrs[] = {
 	&lcd_id_interface.attr, 
-	&lcd_clk_interface.attr, 
 	&elvss_table_interface.attr, 
 	&mcde_chnl_interface.attr, 
 	&illumination_interface.attr, 
@@ -3153,7 +3165,7 @@ static int __devinit s6e63m0_mcde_panel_probe(struct mcde_display_device *ddev)
 	ret = device_create_file(&(lcd->ld->dev), &dev_attr_power_reduce);
         if (ret < 0)
                 dev_err(&(ddev->dev), "failed to add acl_set sysfs entries\n");
-	
+
 	ret = device_create_file(&lcd->bd->dev, &dev_attr_auto_brightness);
 	if (ret < 0)
 		dev_err(&lcd->ld->dev, "failed to add sysfs entries\n");
@@ -3163,6 +3175,10 @@ static int __devinit s6e63m0_mcde_panel_probe(struct mcde_display_device *ddev)
 		dev_err(&lcd->ld->dev, "failed to add sysfs entries\n");
 
 	ret = device_create_file(&(ddev->dev), &dev_attr_gamma_mode);
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
+
+	ret = device_create_file(&(ddev->dev), &dev_attr_lcdclk);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
 

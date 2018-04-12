@@ -33,8 +33,6 @@
 #include <video/mcde.h>
 #include <video/nova_dsilink.h>
 
-#include "../b2r2/b2r2_core.h"
-
 #include "mcde_regs.h"
 #include "mcde_struct.h"
 #include "mcde_hw.h"
@@ -100,7 +98,6 @@ static void mcde_underflow_function(struct work_struct *ptr);
 #define MCDE_UNDERFLOW_WORKQUEUE "mcde_underflow_workqueue"
 static struct workqueue_struct *mcde_underflow_workqueue;
 static struct work_struct mcde_underflow_work;
-static bool regulator_disabled;
 
 struct mcde_rectangle {
 	int x;
@@ -109,10 +106,6 @@ struct mcde_rectangle {
 	int h;
 };
 #endif
-
-struct work_struct mcde_restart_work;
-atomic_t force_restart;
-static DECLARE_WAIT_QUEUE_HEAD(regulator_disable_waitq);
 
 u8 *mcdeio;
 u8 num_channels;
@@ -843,8 +836,8 @@ static void handle_dsi_irq(struct mcde_chnl_state *chnl)
 	if ((events & DSILINK_IRQ_MISSING_DATA) &&
 					chnl->state == CHNLSTATE_RUNNING) {
 		chnl->force_restart_frame_cnt = 0;
-		atomic_set(&force_restart, true);
-		queue_work(system_long_wq, &mcde_restart_work);
+		atomic_set(&chnl->force_restart, true);
+		queue_work(system_long_wq, &chnl->restart_work);
 		dev_warn(&mcde_dev->dev, "Force restart - missing DATA\n");
 	}
 }
@@ -897,21 +890,12 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 			trace_err(irq_status);
 #ifdef MCDE_DPI_UNDERFLOW
 		if (irq_status & MCDE_RISERR_FUARIS_MASK) {
-				dev_warn(&mcde_dev->dev, "FIFO A underflow interrupt detected!!\n");
-				if (MCDE_PORTTYPE_DPI == channels[MCDE_CHNL_A].port.type) {
-					mcde_wfld(MCDE_CRA0, FLOEN, false);
-					dev_warn(&mcde_dev->dev, "FIFO A underflow\n");
-					mcde_wfld(MCDE_IMSCERR, FUAIM, 0);
-					mcde_underflow_handler();
-				}
+				mcde_wfld(MCDE_CRA0, FLOEN, false);
+				dev_warn(&mcde_dev->dev, "FIFO A underflow\n");
+				mcde_wfld(MCDE_IMSCERR, FUAIM, 0);
+				mcde_underflow_handler();
 			}
 #endif
-			if (irq_status & MCDE_MISERR_SCHBLCKDMIS_MASK) {
-				atomic_set(&force_restart, true);
-				queue_work(system_long_wq, &mcde_restart_work);
-				dev_err(&mcde_dev->dev, "Scheduler blocked\n");
-				mcde_wfld(MCDE_IMSCERR, SCHBLCKDIM, false);
-			}
 			dev_err(&mcde_dev->dev, "error=%.8x\n", irq_status);
 			mcde_wreg(MCDE_RISERR, irq_status);
 		}
@@ -1401,23 +1385,12 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 	}
 
 	if (port->type == MCDE_PORTTYPE_DPI) {
-#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
-		if (lcdclk_usr != -1) {
-			pr_err("[MCDE] Rebasing LCDCLK...\n");
-			schedule_work(&lcdclk_work);
-		}
-#endif
-		
 		if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
-						port->phy.dpi.lcd_freq))
+							port->phy.dpi.lcd_freq))
 			dev_warn(&mcde_dev->dev, "Could not set lcd freq"
-				" to %d\n", port->phy.dpi.lcd_freq);
-					
+					" to %d\n", port->phy.dpi.lcd_freq);
 		WARN_ON_ONCE(clk_set_rate(chnl->clk_dpi,
-					port->phy.dpi.lcd_freq));
-#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
-		pr_err("[MCDE] rebased LCDCLK to %d Hz\n", port->phy.dpi.lcd_freq);
-#endif		
+						port->phy.dpi.lcd_freq));
 		WARN_ON_ONCE(clk_enable(chnl->clk_dpi));
 	}
 
@@ -3889,95 +3862,6 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 						ovly->idx, ovly->chnl->id);
 }
 
-static int regulator_notify(struct notifier_block *self, unsigned long action,
-		void *dev);
-
-static struct notifier_block regulator_nb = {
-	 .notifier_call = regulator_notify,
-};
-
-static int regulator_notify(struct notifier_block *self, unsigned long action,
-		void *dev)
-{
-	switch (action) {
-	case REGULATOR_EVENT_FORCE_DISABLE: /* Intentional */
-	case REGULATOR_EVENT_DISABLE:
-		regulator_disabled = true;
-		wake_up_all(&regulator_disable_waitq);
-		break;
-	default:
-		break;
-	}
-	return NOTIFY_OK;
-}
-
-static void work_mcde_restart(struct work_struct *ptr)
-{
-	if (atomic_cmpxchg(&force_restart, true, false)) {
-		int i;
-		long rem_jiffies;
-		bool chnl_used[16] = {false};
-
-		dev_warn(&mcde_dev->dev, "%s. Restart MCDE + B2R2\n", __func__);
-		mcde_lock(__func__, __LINE__); /* Take the MCDE lock */
-
-		/*
-		 * Take a regulator reference to make sure the power is not
-		 * terminated to early.
-		 */
-		regulator_enable(regulator_mcde_epod);
-		regulator_disabled = false;
-
-		for (i = 0; i < num_channels; i++) {
-			struct mcde_chnl_state *chnl = &channels[i];
-
-			chnl_used[i] = chnl->state != CHNLSTATE_SUSPEND &&
-					chnl->state != CHNLSTATE_IDLE;
-		}
-		disable_mcde_hw(true, false); /* Stops all channels */
-		(void)b2r2_core_reset_hold();
-
-		/*
-		 * Disable own reference. Should be the last one and therefore
-		 * cut the power.
-		 */
-		regulator_disable(regulator_mcde_epod);
-
-		rem_jiffies = wait_event_timeout(regulator_disable_waitq,
-				regulator_disabled, msecs_to_jiffies(3000));
-
-		BUG_ON(!rem_jiffies);
-
-		usleep_range(1000, 1500);
-		/*
-		 * Turn on power again. Take a reference to avoid second
-		 * power down during re-start.
-		 */
-		regulator_enable(regulator_mcde_epod);
-
-		(void)b2r2_core_reset_release();
-		(void)enable_mcde_hw();
-
-		/* Restart the previously stopped channels */
-		for (i = 0; i < num_channels; i++) {
-			struct mcde_chnl_state *chnl = &channels[i];
-
-			if (chnl_used[i]) {
-				if (!chnl->formatter_updated)
-					update_channel_static_registers(chnl);
-				_mcde_chnl_update(chnl, false);
-			}
-		}
-		regulator_disable(regulator_mcde_epod);
-
-		/* Re-enable interrupt */
-		mcde_wfld(MCDE_IMSCERR, SCHBLCKDIM, true);
-
-		mcde_unlock(__func__, __LINE__);
-		dev_warn(&mcde_dev->dev, "%s. Restart done\n", __func__);
-	}
-}
-
 static void work_chnl_restart(struct work_struct *ptr)
 {
 	struct mcde_chnl_state *chnl =
@@ -4020,8 +3904,6 @@ static int init_clocks_and_power(struct platform_device *pdev)
 			regulator_mcde_epod = NULL;
 			return ret;
 		}
-		(void)regulator_register_notifier(regulator_mcde_epod,
-				&regulator_nb);
 	} else {
 		dev_warn(&pdev->dev, "%s: No mcde regulator id supplied\n",
 								__func__);
@@ -4088,7 +3970,6 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 	if (regulator_vana)
 		regulator_put(regulator_vana);
 	regulator_put(regulator_mcde_epod);
-	(void)regulator_unregister_notifier(regulator_mcde_epod, &regulator_nb);
 	regulator_put(regulator_esram_epod);
 }
 
@@ -4270,7 +4151,7 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_suspend(dev, dummy);
 	if (ret < 0) {
 		dev_err(dev, "mcde_suspend() failed ret=%d\n", ret);
-;
+		printk(KERN_INFO "mcde_suspend() failed ret=%d\n", ret);
 		goto suspend_failed;
 	}
 
@@ -4280,11 +4161,11 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_resume(dev);
 	if (ret == 0) {
 		dev_info(dev, "%s: mcde recovered\n", __func__);
-;
+		printk(KERN_INFO "%s: mcde recovered\n", __func__);
 	}
 	else {
 		dev_err(dev, "mcde_resume() failed ret=%d\n", ret);
-;
+		printk(KERN_INFO "mcde_resume() failed ret=%d\n", ret);
 	}
 
 	update_area.x = 0;
@@ -4294,12 +4175,12 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_chnl_update(chnl, &update_area, 0 /* tripple_buffer */);
 	if (ret < 0) {
 		dev_err(dev, "mcde_chnl_update() failed ret=%d\n", ret);
-;
+		printk(KERN_INFO "mcde_chnl_update() failed ret=%d\n", ret);
 	}
 
 suspend_failed:
 	dev_vdbg(dev, "%s: resume b2r2\n", __func__);
-;
+	printk(KERN_INFO "%s: resume b2r2\n", __func__);
 	/* args are not used, always returns 0 */
 	b2r2_resume(NULL);
 #endif
@@ -4360,7 +4241,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	}
 	INIT_WORK(&mcde_underflow_work, &mcde_underflow_function);
 #endif
-	INIT_WORK(&mcde_restart_work, work_mcde_restart);
 	ret = init_clocks_and_power(pdev);
 	if (ret < 0) {
 		dev_warn(&pdev->dev, "%s: init_clocks_and_power failed\n"
@@ -4460,6 +4340,41 @@ static int mcde_suspend(struct platform_device *pdev, pm_message_t state)
 	return ret;
 }
 #endif
+
+extern struct fb_info* get_primary_display_fb_info(void);
+
+static int set_mcde_enable(const char *val, struct kernel_param *kp)
+{
+        struct fb_info *fbi;
+        struct mcde_fb *mfb;
+
+        fbi = get_primary_display_fb_info();
+        mfb = to_mcde_fb(fbi);
+
+	if (sysfs_streq(val, "0")) {
+		if (mfb->early_suspend.suspend)
+			mfb->early_suspend.suspend(&mfb->early_suspend);
+	} else {
+		if (mfb->early_suspend.resume)
+			mfb->early_suspend.resume(&mfb->early_suspend);
+	}
+
+	return 0;
+}
+module_param_call(mcde_enable, set_mcde_enable, param_get_int, &mcde_is_enabled, 0644);
+
+int dpi_display_platform_enable(struct mcde_display_device *ddev);
+int dpi_display_platform_disable(struct mcde_display_device *ddev);
+
+static int set_platform_mcde_enable(const char *val, struct kernel_param *kp)
+{
+	if (sysfs_streq(val, "0"))
+		dpi_display_platform_disable(NULL);
+	else
+		dpi_display_platform_enable(NULL);
+	return 0;
+}
+module_param_call(platform_mcde_enable, set_platform_mcde_enable, NULL, NULL, 0200);
 
 static struct platform_driver mcde_driver = {
 	.probe = mcde_probe,
