@@ -104,13 +104,11 @@ mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
 }
 EXPORT_SYMBOL(mempool_create);
 
-static mempool_t *__mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
-				   mempool_free_t *free_fn, void *pool_data,
-				   int node_id, size_t mempool_bytes)
+mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+			mempool_free_t *free_fn, void *pool_data, int node_id)
 {
 	mempool_t *pool;
-
-	pool = kmalloc_node(mempool_bytes, GFP_KERNEL | __GFP_ZERO, node_id);
+	pool = kmalloc_node(sizeof(*pool), GFP_KERNEL | __GFP_ZERO, node_id);
 	if (!pool)
 		return NULL;
 	pool->elements = kmalloc_node(min_nr * sizeof(void *),
@@ -126,19 +124,9 @@ static mempool_t *__mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
 	pool->alloc = alloc_fn;
 	pool->free = free_fn;
 
-	return pool;
-}
-
-mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
-			       mempool_free_t *free_fn, void *pool_data,
-			       int node_id)
-{
-	mempool_t *pool;
-
-	pool = __mempool_create(min_nr, alloc_fn, free_fn, pool_data, node_id,
-				sizeof(*pool));
-
-	/* Pre-allocate the guaranteed number of buffers */
+	/*
+	 * First pre-allocate the guaranteed number of buffers.
+	 */
 	if (mempool_fill(pool, GFP_KERNEL)) {
 		mempool_destroy(pool);
 		return NULL;
