@@ -2260,6 +2260,12 @@ err:
 	
 }
 
+static bool s6d = 0;
+bool is_s6d(void)
+{
+	return s6d;
+}
+
 static int __devinit s6e63m0_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
