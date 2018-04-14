@@ -387,3 +387,6 @@ config SPEEDUP_KEYRESUME
 	default y
 	---help---
 	  Speed up system resume
+
+config DVFS_LIMIT
+	bool "DVFS frequency limitation feature"
