@@ -16,6 +16,12 @@
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/ab8500-ponkey.h>
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
 
 /* Ponkey time control bits */
 #define AB5500_MCB		0x2F
@@ -138,10 +144,18 @@ static void pcut_disable(struct work_struct *work)
 	abx500_set(dev, AB8500_RTC, PCUT_CTR_AND_STATUS, 0);
 }
 
+extern int pm_suspend_state;
+void request_suspend_state(suspend_state_t new_state);
+
 /* AB8500 gives us an interrupt when ONKEY is held */
 static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 {
 	struct ab8500_ponkey_info *info = data;
+
+	if (pm_suspend_state != 0 && irq == info->irq_dbr) {
+		pr_err("%s: request wake up\n", __func__);
+		request_suspend_state(0);
+	}
 
 	if (irq == info->irq_dbf) {
 		if (info->pcut_wa)
@@ -199,6 +213,17 @@ void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_key
 {
 	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
 	p_info->idev->keybit[BIT_WORD(new_keycode)] = BIT_MASK(new_keycode);
+}
+
+void abb_ponkey_unmap_all_keys(unsigned long *keys, unsigned int array_len)
+{
+	int i;	
+
+	for (i = 0; i < array_len; i++){
+		p_info->idev->keybit[BIT_WORD(keys[i])] = (unsigned long)NULL;
+	}
+
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
 }
 
 void abb_ponkey_unmap_power_key(unsigned long old_keycode)
@@ -376,6 +401,26 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 	if (ret) {
 		kobject_put(abb_ponkey_kobject);
 	}
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+	// This is the input device we need to register
+	// with sweep2wake!
+	sweep2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
+	printk("s2w: registered input_dev\n");
+#else
+	;
+#endif
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	// This is the input device we need to register
+	// with doubletap2wake!
+	doubletap2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
+	printk("dt2w: registered input_dev\n");
+#else
+	;
+#endif
+#endif
 
 	return 0;
 
