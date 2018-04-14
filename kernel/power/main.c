@@ -25,6 +25,9 @@
 
 DEFINE_MUTEX(pm_mutex);
 
+static bool debug_mask = false;
+module_param(debug_mask, bool, 0644);
+
 #ifdef CONFIG_PM_SLEEP
 
 /* Routines for PM-transition notifications */
