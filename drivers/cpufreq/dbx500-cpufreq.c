@@ -97,15 +97,18 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 		return res;
 	}
 
-	#ifdef CONFIG_DB8500_LIVEOPP
-	policy->min = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN;
-	policy->max = CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX;
-	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
-	#else
+#ifdef CONFIG_DB8500_LIVEOPP
+	policy->min = 200 * 1000;
+#ifdef CONFIG_MACH_JANICE
+	policy->max = 1000 * 1000;
+#else
+	policy->max = 800 * 1000;
+#endif // CONFIG_MACH_JANICE
+#else
 	policy->min = policy->cpuinfo.min_freq;
 	policy->max = policy->cpuinfo.max_freq;
+#endif
 	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
-	#endif
 
 	for (i = 0; freq_table[i].frequency != policy->cur; i++)
 		;
