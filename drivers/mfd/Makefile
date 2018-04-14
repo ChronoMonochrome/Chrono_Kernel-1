@@ -83,6 +83,7 @@ obj-$(CONFIG_AB8500_DENC)	+= ab8500-denc.o
 obj-$(CONFIG_AB8500_GPADC)	+= ab8500-gpadc.o
 obj-$(CONFIG_DBX500_PRCMU)      += dbx500-prcmu.o
 obj-$(CONFIG_MFD_DB8500_PRCMU)	+= db8500-prcmu.o
+obj-$(CONFIG_DB8500_PLLDDR_OC)	+= pllddr.o
 obj-$(CONFIG_MFD_DBX540_PRCMU)  += dbx540-prcmu.o
 # ab8500-i2c need to come after db8500-prcmu (which provides the channel)
 obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
