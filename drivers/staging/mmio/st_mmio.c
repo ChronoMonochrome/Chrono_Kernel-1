@@ -94,10 +94,25 @@
 #define ON 1  // GPIO Power On
 #define OFF 0 // GPIO Power Off
 
+#define TRACE_THIS(fmt, ...) \
+        pr_err("st_mmio: %s: enter: " pr_fmt(fmt) "\n", __func__, ##__VA_ARGS__)
+
 int vt_id;    // Global variable  (VT_CAM_ID) value
 int vendorID; // Global variable for 5M SOC Camera vendor ID
 int assistive_mode;
 int burning_mode = 0;
+
+static bool rearcam_force_lux_val = 1;
+module_param(rearcam_force_lux_val, bool, 0644);
+
+static bool rearcam_force_flash_mode = 1;
+module_param(rearcam_force_flash_mode, bool, 0644);
+
+static unsigned int rearcam_flash_mode = 100;
+module_param(rearcam_flash_mode, uint, 0644);
+
+static unsigned int rearcam_lux_val = 5;
+module_param(rearcam_lux_val, uint, 0644);
 
 #if defined (CONFIG_TORCH_FLASH)
 extern int Torch_Flash_mode;
@@ -174,7 +189,7 @@ struct mmio_info {
 
 void sec_camera_gpio_init(void)
 {
-	printk(KERN_DEBUG "camera_gpio_init \n");
+;
 
 	gpio_request(PRIMARY_CAMERA_STBY, "PRI_CAM_STB"); /* GPIO PIN Request*/
 	gpio_request(PRIMARY_CAMERA_RESET, "PRI_CAM_RST"); /* GPIO PIN Request*/
@@ -214,8 +229,8 @@ static struct mmio_info *info;
 
 static int mmio_cam_gpio_pin_control(int pin, int on)
 {
-	printk(KERN_DEBUG "mmio_cam_gpio_pin_control pin : %d , state %d\n",
-			pin, on);
+//	printk(KERN_DEBUG "mmio_cam_gpio_pin_control pin : %d , state %d\n",
+;
 
 	gpio_set_value(pin, on);
 	return 0;		/* Always success */
@@ -223,8 +238,8 @@ static int mmio_cam_gpio_pin_control(int pin, int on)
 
 static int mmio_cam_power_pin_control(int pin, int on)
 {
-	printk(KERN_DEBUG "mmio_cam_power_pin_control pin : %d , state %d\n",
-			pin, on);
+//	printk(KERN_DEBUG "mmio_cam_power_pin_control pin : %d , state %d\n",
+;
 	subPMIC_PinOnOff(pin, on);
 	return 0;		/* Always success */
 }
@@ -958,7 +973,7 @@ static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 			 * sensor sequence operated at .dat file	
 			 */
 
-			printk(KERN_DEBUG "Nothing to do at PRIMARY Camera\n");
+;
 		}
 
 		/*
@@ -984,7 +999,7 @@ static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 			 * sensor sequence operated at .dat file	
 			 */
 
-			printk(KERN_DEBUG "Nothing to do at PRIMARY Camera\n");
+;
 		}
 
 		subPMIC_PowerOff(0x0);
@@ -1545,7 +1560,7 @@ void mmio_cam_flash_rt8515(int lux_val)
 {
 	int i;
 	#if defined(CONFIG_MACH_SEC_SKOMER)
-	printk(KERN_DEBUG "mmio_cam_flash_rt8515, Control Value = [%d]\n", lux_val);
+;
 	#endif
 
 	if(0 < lux_val && lux_val <= 16)  /* Flash mode -> Static Brightness */
@@ -1578,13 +1593,14 @@ void mmio_cam_flash_rt8515(int lux_val)
 		gpio_set_value(FLASH_MODE, 0);
 	}
 	#if defined(CONFIG_MACH_SEC_SKOMER)
-	printk(KERN_DEBUG "End of Setting Value for Flash \n");	
+;
 	#endif
 }
 
 void mmio_cam_flash_ktd262(int lux_val)
 {
 	int i;
+	TRACE_THIS("lux_val=%d", lux_val);
 
 	if(lux_val > 0 && lux_val <= 16) /* Flash mode */
 	{ 
@@ -1618,83 +1634,48 @@ void mmio_cam_flash_ktd262(int lux_val)
 	}
 }
 
-static int mmio_cam_flash_on_off(struct mmio_info *info, int set, int on)
+static inline int get_lux_from_lux_val(int lux_val)
 {
-	int i = 0;
-	int lux_val = on;
+	return lux_val % 100;
+}
+
+static inline int get_mode_from_lux_val(int lux_val)
+{
+	return lux_val - (lux_val % 100);
+}
+
+static int mmio_cam_flash_on_off(struct mmio_info *info, int set, int orig_lux_val)
+{
+	int mode, lux_val, new_lux_val;
+
+	new_lux_val = 0;
+
+	mode = get_mode_from_lux_val(orig_lux_val); // obtain flash mode
+	lux_val = get_lux_from_lux_val(orig_lux_val); // obtain actual lux value
+
+	TRACE_THIS("set=%d, orig_lux_val=%d", set, orig_lux_val);
 
 #if defined (CONFIG_TORCH_FLASH)
 	if (Torch_Flash_mode == 1) {
-		Torch_Flash_Off_by_cam();		
+		Torch_Flash_Off_by_cam();
 	}
 #endif
-	
-#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_GAVINI)
-	if (lux_val == 100) {
-		gpio_set_value(FLASH_EN, 0);
-		for (i = lux_val; i > 1; i--) {
-			gpio_set_value(FLASH_MODE, 1);
-			udelay(1);
-			gpio_set_value(FLASH_MODE, 0);
-			udelay(1);
-		}
-		gpio_set_value(FLASH_MODE, 1);
-		msleep(2);
-	} else if (lux_val > 0 && lux_val <= 16) {  /*flash mode*/
-		gpio_set_value(FLASH_EN, 1);
-		if (lux_val >= 2) {
-			udelay(20);
-			for (i = 0; i < lux_val ; i++) {
-				gpio_set_value(FLASH_MODE, 0);
-				udelay(1);
-				gpio_set_value(FLASH_MODE, 1);
-				udelay(1);
-			}
-		}
-	} else if (lux_val > 100) {  /*movie mode*/
-		gpio_set_value(FLASH_EN, 0);
 
-		/*MAX current  * 79%( if set  3) = Flash current*/
-		for (i = 0; i < set; i++) {
-			gpio_set_value(FLASH_MODE, 0);
-			udelay(1);
-			gpio_set_value(FLASH_MODE, 1);
-			udelay(1);
-		}
-		msleep(1);
+	// if lux_val == 0, don't override it
+	if (lux_val > 0) {
+		if (likely(rearcam_force_lux_val))
+			new_lux_val += rearcam_lux_val;
+		else
+			new_lux_val += lux_val;
+	}
 
-		for (i = 0; i < 20; i++) { /* register 3*/
-			gpio_set_value(FLASH_MODE, 0);
-			udelay(1);
-			gpio_set_value(FLASH_MODE, 1);
-			udelay(1);
-		}
-		msleep(1);
-		/* Flash current  * ratio  = movie current*/
-		for (i = 0; i < lux_val - 100; i++) {
-			gpio_set_value(FLASH_MODE, 0);
-			udelay(1);
-			gpio_set_value(FLASH_MODE, 1);
-			udelay(1);
-		}
+	if (likely(rearcam_force_flash_mode))
+		new_lux_val += rearcam_flash_mode;
+	else
+		new_lux_val += mode; // preserve mode
 
-	} else {
-		gpio_set_value(FLASH_EN, 0);
-		gpio_set_value(FLASH_MODE, 0);
-	}
-#elif defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_SKOMER) \
-	|| defined(CONFIG_MACH_SEC_HENDRIX) /* RT8515 */
-	mmio_cam_flash_rt8515(lux_val);
-#else /* KTD262 */
-	if(CODINA_R0_0 <= system_rev && system_rev <= CODINA_R0_5) // Codina
-	{
-		mmio_cam_flash_ktd262(lux_val);
-	}
-	else // Codina TMO
-	{
-		mmio_cam_flash_rt8515(lux_val);
-	}
-#endif
+	mmio_cam_flash_ktd262(new_lux_val);
+
 	return 0;		/* Always success */
 }
 
@@ -1902,6 +1883,9 @@ static long mmio_ioctl(struct file *filp, u32 cmd,
 					ret = -EFAULT;
 					break;
 				}
+
+				TRACE_THIS("MMIO_CAM_FLASH_SET_MODE mode=%d", mode);
+
 				if (assistive_mode == 0)
 					ret = mmio_cam_flash_set_mode(info, mode);
 			}
@@ -1917,6 +1901,9 @@ static long mmio_ioctl(struct file *filp, u32 cmd,
 					ret = -EFAULT;
 					break;
 				}
+
+				TRACE_THIS("MMIO_CAM_FLASH_ON_OFF on=%d", on);
+
 				if (assistive_mode == 0)
 					ret = mmio_cam_flash_on_off(info, 3, on);
 			}
@@ -2008,7 +1995,7 @@ static int mmio_release(struct inode *node, struct file *filp)
 {
 	struct mmio_info *info = filp->private_data;
 	BUG_ON(info == NULL);
-	printk(KERN_DEBUG "mmio_release\n");
+;
 
 	mutex_lock(&info->lock);
 	if (info->trace_buffer) {
@@ -2284,6 +2271,8 @@ rear_flash_enable_show(struct device *dev,
 
 static void toggle_rearcam_flash(bool on)
 {
+	TRACE_THIS(" on=%d", on);
+
 	if (!on) {
 		if (burning_mode) {
 			burning_mode = 0;
@@ -2292,9 +2281,6 @@ static void toggle_rearcam_flash(bool on)
 
 		assistive_mode = 0;
 		mmio_cam_flash_on_off(info, 3, 0);
-		#if defined(CONFIG_MACH_SEC_SKOMER)
-		printk(KERN_DEBUG "rear_flash_enable_store, Control Value = [0]\n");
-		#endif
 	} else {
 		if (burning_mode) {
 			burning_mode = 0;
@@ -2305,20 +2291,13 @@ static void toggle_rearcam_flash(bool on)
 		}
 
 		assistive_mode = 1;
-#if defined CONFIG_MACH_GAVINI
-		mmio_cam_flash_on_off(info, 2, (100+5));
-#else
-		mmio_cam_flash_on_off(info, 3, (100+3));
-		#if defined(CONFIG_MACH_SEC_SKOMER)
-		printk(KERN_DEBUG "rear_flash_enable_store, Control Value = [100+3]\n");
-		#endif
-#endif
+		mmio_cam_flash_on_off(info, 3, rearcam_flash_mode + rearcam_lux_val);
 	}
 }
 
 static ssize_t
 rear_flash_enable_store(struct device *dev,
-		struct device_attribute *attr, char *buf, size_t size)
+		struct device_attribute *attr, const char *buf, size_t size)
 {
 	toggle_rearcam_flash(buf[0] == '1');
 
@@ -2336,6 +2315,8 @@ static ssize_t
 rear_flash_burning_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
+	TRACE_THIS("on=%s", buf[0]);
+
 	/* Enable/Disable camera rear flash gpio directly */
 
 	if (buf[0] == '0') {
@@ -2350,7 +2331,7 @@ rear_flash_burning_store(struct device *dev,
 		if (assistive_mode) {
 			assistive_mode = 0;
 			mmio_cam_flash_on_off(info, 3, 0);
-			
+
 			/* For safety */
 			msleep(1000);
 		}
@@ -2371,6 +2352,8 @@ static enum led_brightness st_mmio_led_get_brightness(struct led_classdev *led_c
 
 static void st_mmio_led_set_brightness(struct led_classdev *led_cdev, enum led_brightness brightness)
 {
+	TRACE_THIS("brightness=%d", brightness);
+
 	if((int)brightness)
 	{
 		toggle_rearcam_flash(true);
@@ -2441,8 +2424,8 @@ void sec_cam_init(void)
 	if (IS_ERR(cam_dev))
 		pr_err("Failed to create device(sec_cam)!\n");
 	if (device_create_file(cam_dev, &dev_attr_camtype) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Flash device
@@ -2450,8 +2433,8 @@ void sec_cam_init(void)
 	if (IS_ERR(flash_dev))
 		pr_err("Failed to create device(flash_dev)!\n");
 	if (device_create_file(flash_dev, &dev_attr_enable) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_enable.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Front camera device
@@ -2460,8 +2443,8 @@ void sec_cam_init(void)
 		pr_err("Failed to create device(cam_dev_front)!\n");
 
 	if (device_create_file(cam_dev_front, &dev_attr_front_camtype) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_front_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Rear camera device
@@ -2470,36 +2453,36 @@ void sec_cam_init(void)
 		pr_err("Failed to create device(cam_dev_rear)!\n");
 
 	if(device_create_file(cam_dev_rear, &dev_attr_rear_camtype) < 0){ // Rear camera type
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
 	if(device_create_file(cam_dev_rear, &dev_attr_rear_flash) < 0){ // Rear camera Flash
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_flash.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
     }
 
 	if (device_create_file(cam_dev_rear, &dev_attr_burning_led) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_burning_led.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     if(device_create_file(cam_dev_rear, &dev_attr_rear_vendorid) <0){ // Vendor ID
-        printk(KERN_DEBUG "%s: failed to create device file, %s\n", 
-                __func__, dev_attr_rear_vendorid.attr.name);
+//        printk(KERN_DEBUG "%s: failed to create device file, %s\n", 
+;
     }
 
     // Camera flash device
 	cam_dev_flash = device_create(camera_class, NULL, 0, NULL, "flash");
 
 	if (device_create_file(cam_dev_flash, &dev_attr_rear_flash) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_flash.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
     }
 
 	if (device_create_file(cam_dev_flash, &dev_attr_burning_led) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_burning_led.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 }
 
@@ -2520,7 +2503,7 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 	int err = 0;
 	int i;
 	int ret;
-	printk(KERN_INFO "%s\n", __func__);
+;
 	/* Initialize private data. */
 	info = kzalloc(sizeof(struct mmio_info), GFP_KERNEL);
 	if (!info) {
@@ -2736,7 +2719,7 @@ void check_VT_CAM_ID(int pin)
 	vt_id = gpio_get_value(VT_CAM_ID); /* GET GPIO pin value*/
 
 	/* Print out VT_CAM_ID GPIO Value - kernel log*/
-	printk(KERN_INFO "VT_CAM_ID = %d\n", vt_id);
+;
 
 	mmio_cam_power_pin_control(pin, OFF); /* Power PIN Off*/
 
