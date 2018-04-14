@@ -303,6 +303,7 @@ extern unsigned int sec_debug_settings;
 #define TXS0206_EN_CODINA_R0_0		87
 #define NFC_EN_CODINA_R0_0		88
 #define HOME_KEY_CODINA_R0_0		91
+#define HOME_KEY_CODINA_R0_5		172
 #define VOL_DOWN_CODINA_R0_0		92
 #define LCD_DETECT_CODINA_R0_0		93
 #define TSP_LDO_ON1_CODINA_R0_0		94
