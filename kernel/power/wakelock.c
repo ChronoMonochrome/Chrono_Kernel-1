@@ -22,6 +22,9 @@
 #ifdef CONFIG_WAKELOCK_STAT
 #include <linux/proc_fs.h>
 #endif
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 #include "power.h"
 
 enum {
@@ -47,10 +50,10 @@ static int current_event_num;
 struct workqueue_struct *suspend_work_queue;
 struct wake_lock main_wake_lock;
 suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
-static struct wake_lock unknown_wakeup;
-static struct wake_lock suspend_backoff_lock;
+//static struct wake_lock unknown_wakeup;
+//static struct wake_lock suspend_backoff_lock;
 
-#define SUSPEND_BACKOFF_THRESHOLD	10
+#define SUSPEND_BACKOFF_THRESHOLD	20
 #define SUSPEND_BACKOFF_INTERVAL	10000
 
 static unsigned suspend_short_count;
@@ -266,11 +269,11 @@ long has_wake_lock(int type)
 	return ret;
 }
 
-static void suspend_backoff(void)
+static void suspend_backoff(int wakeups)
 {
-	pr_info("suspend: too many immediate wakeups, back off\n");
-	wake_lock_timeout(&suspend_backoff_lock,
-			  msecs_to_jiffies(SUSPEND_BACKOFF_INTERVAL));
+	pr_err("suspend: too many immediate wakeups (%d), back off\n", wakeups);
+	//wake_lock_timeout(&suspend_backoff_lock,
+	//		  msecs_to_jiffies(SUSPEND_BACKOFF_INTERVAL));
 }
 
 static void suspend(struct work_struct *work)
@@ -286,7 +289,12 @@ static void suspend(struct work_struct *work)
 	}
 
 	entry_event_num = current_event_num;
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active)
+		sys_sync();
+#else
 	sys_sync();
+#endif
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("suspend: enter suspend\n");
 	getnstimeofday(&ts_entry);
@@ -306,7 +314,7 @@ static void suspend(struct work_struct *work)
 		++suspend_short_count;
 
 		if (suspend_short_count == SUSPEND_BACKOFF_THRESHOLD) {
-			suspend_backoff();
+			suspend_backoff(suspend_short_count);
 			suspend_short_count = 0;
 		}
 	} else {
@@ -321,7 +329,7 @@ static void suspend(struct work_struct *work)
 	*/
 
 	/* delay 5 seconds to enter standby again, by kevin, 2012-3-7 15:07 */
-	wake_lock_timeout(&unknown_wakeup, HZ * 5);
+	//wake_lock_timeout(&unknown_wakeup, HZ * 5);
 }
 static DECLARE_WORK(suspend_work, suspend);
 
@@ -584,9 +592,9 @@ static int __init wakelocks_init(void)
 #endif
 	wake_lock_init(&main_wake_lock, WAKE_LOCK_SUSPEND, "main");
 	wake_lock(&main_wake_lock);
-	wake_lock_init(&unknown_wakeup, WAKE_LOCK_SUSPEND, "unknown_wakeups");
-	wake_lock_init(&suspend_backoff_lock, WAKE_LOCK_SUSPEND,
-		       "suspend_backoff");
+	//wake_lock_init(&unknown_wakeup, WAKE_LOCK_SUSPEND, "unknown_wakeups");
+	//wake_lock_init(&suspend_backoff_lock, WAKE_LOCK_SUSPEND,
+	//	       "suspend_backoff");
 
 #ifdef CONFIG_EARLYSUSPEND_DELAY
 	wake_lock_init(&ealysuspend_delay_work, WAKE_LOCK_SUSPEND, "suspend_delay");
@@ -624,8 +632,8 @@ err_platform_device_register:
 #ifdef CONFIG_EARLYSUSPEND_DELAY
 	wake_lock_destroy(&ealysuspend_delay_work);
 #endif
-	wake_lock_destroy(&suspend_backoff_lock);
-	wake_lock_destroy(&unknown_wakeup);
+	//wake_lock_destroy(&suspend_backoff_lock);
+	//wake_lock_destroy(&unknown_wakeup);
 	wake_lock_destroy(&main_wake_lock);
 #ifdef CONFIG_WAKELOCK_STAT
 	wake_lock_destroy(&deleted_wake_locks);
@@ -645,8 +653,8 @@ static void  __exit wakelocks_exit(void)
 	destroy_workqueue(suspend_work_queue);
 	platform_driver_unregister(&power_driver);
 	platform_device_unregister(&power_device);
-	wake_lock_destroy(&suspend_backoff_lock);
-	wake_lock_destroy(&unknown_wakeup);
+	//wake_lock_destroy(&suspend_backoff_lock);
+	//wake_lock_destroy(&unknown_wakeup);
 	wake_lock_destroy(&main_wake_lock);
 #ifdef CONFIG_WAKELOCK_STAT
 	wake_lock_destroy(&deleted_wake_locks);

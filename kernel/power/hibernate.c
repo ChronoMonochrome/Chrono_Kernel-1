@@ -9,7 +9,7 @@
  * This file is released under the GPLv2.
  */
 
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/suspend.h>
 #include <linux/syscalls.h>
 #include <linux/reboot.h>
@@ -28,6 +28,9 @@
 #include <linux/ctype.h>
 #include <linux/genhd.h>
 #include <scsi/scsi_scan.h>
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include "power.h"
 
@@ -488,8 +491,14 @@ int hibernation_restore(int platform_mode)
 	error = dpm_suspend_start(PMSG_QUIESCE);
 	if (!error) {
 		error = resume_target_kernel(platform_mode);
-		dpm_resume_end(PMSG_RECOVER);
+		/*
+		 * The above should either succeed and jump to the new kernel,
+		 * or return with an error. Otherwise things are just
+		 * undefined, so let's be paranoid.
+		 */
+		BUG_ON(!error);
 	}
+	dpm_resume_end(PMSG_RECOVER);
 	pm_restore_gfp_mask();
 	ftrace_start();
 	resume_console();
@@ -623,9 +632,12 @@ int hibernate(void)
 	if (error)
 		goto Exit;
 
-	printk(KERN_INFO "PM: Syncing filesystems ... ");
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active)
+		sys_sync();
+#else
 	sys_sync();
-	printk("done.\n");
+#endif
 
 	error = freeze_processes();
 	if (error)
@@ -658,6 +670,10 @@ int hibernate(void)
 
  Thaw:
 	thaw_processes();
+
+	/* Don't bother checking whether freezer_test_done is true */
+	freezer_test_done = false;
+
  Free_bitmaps:
 	free_basic_memory_bitmaps();
  Exit:
@@ -786,10 +802,8 @@ static int software_resume(void)
 		goto close_finish;
 
 	error = create_basic_memory_bitmaps();
-	if (error) {
-		usermodehelper_enable();
+	if (error)
 		goto close_finish;
-	}
 
 	pr_debug("PM: Preparing processes for restore.\n");
 	error = freeze_processes();
