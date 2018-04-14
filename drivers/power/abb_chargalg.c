@@ -820,7 +820,11 @@ static void ab8500_chargalg_stop_charging(struct ab8500_chargalg *di)
 	di->maintenance_chg = false;
 	cancel_delayed_work(&di->chargalg_wd_work);
 	power_supply_changed(&di->chargalg_psy);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Charging is Stop\n"); 
+#else
+	;
+#endif
 	charging_stats = CHARGING_STOPPED;
 }
 
@@ -845,7 +849,11 @@ static void ab8500_chargalg_hold_charging(struct ab8500_chargalg *di)
 	di->maintenance_chg = false;
 	cancel_delayed_work(&di->chargalg_wd_work);
 	power_supply_changed(&di->chargalg_psy);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Charging is Pause\n"); 
+#else
+	;
+#endif
 	charging_stats = CHARGING_PAUSED;
 }
 
@@ -863,7 +871,11 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 {
 	switch (di->chg_info.charger_type) {
 	case AC_CHG:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Charging is started by AC Type charger\n");	
+#else
+		;
+#endif
 		dev_dbg(di->dev,
 			"AC parameters: Vset %d, Ich %d\n", vset, iset);
 		ab8500_chargalg_usb_en(di, false, 0, 0);
@@ -873,7 +885,11 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 		break;
 
 	case USB_CHG:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Charging is started by USB Type charger\n");	
+#else
+		;
+#endif
 		dev_dbg(di->dev,
 			"USB parameters: Vset %d, Ich %d\n", vset, iset);
 		ab8500_chargalg_ac_en(di, false, 0, 0);
@@ -1212,6 +1228,10 @@ static void handle_maxim_chg_curr(struct ab8500_chargalg *di)
 	}
 }
 
+unsigned int is_charger_present = false;
+EXPORT_SYMBOL(is_charger_present);
+module_param_named(is_charger_present, is_charger_present, uint, 0644);
+
 static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 {
 	struct power_supply *psy;
@@ -1220,6 +1240,7 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 	union power_supply_propval ret;
 	int i, j;
 	bool psy_found = false;
+	bool is_charger = false;
 
 	psy = (struct power_supply *)data;
 	ext = dev_get_drvdata(dev);
@@ -1275,15 +1296,19 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 			break ;
 
 		case POWER_SUPPLY_PROP_PRESENT:
-			if (!ret.intval && (ext->type == POWER_SUPPLY_TYPE_MAINS || 
-				ext->type == POWER_SUPPLY_TYPE_USB) && 
-				(di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG)) {
+			is_charger = (ext->type == POWER_SUPPLY_TYPE_MAINS ||
+                                ext->type == POWER_SUPPLY_TYPE_USB) &&
+                                (di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG);
+			if (!ret.intval && is_charger) {
 			      if (eoc_blink_ongoing) {
 					if (eoc_blink_timeout_sec)
 	                                        cancel_delayed_work(&eoc_blink_stop_work);
                                         schedule_delayed_work(&eoc_blink_stop_work, 0);
                                         eoc_blink_ongoing = false;
                                 }
+				is_charger_present = false;
+			} else if (ret.intval && is_charger) {
+				is_charger_present = true;
 			}
 			switch (ext->type) {
 			case POWER_SUPPLY_TYPE_BATTERY:
