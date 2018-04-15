@@ -632,6 +632,9 @@ static int get_cpufreq_level(unsigned int freq, unsigned int *level, int req_typ
 	int i = 0;
 	unsigned int table_length = 0;
 
+	if (!dvfs_enabled)
+		return -EINVAL;
+
 	table = cpufreq_frequency_get_table(0);
 	if (!table) {
 		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
@@ -673,6 +676,14 @@ static ssize_t cpufreq_max_limit_show(struct kobject *kobj,
 					struct kobj_attribute *attr,
 					char *buf)
 {
+	struct cpufreq_policy *policy;
+	if (!dvfs_enabled) {
+		policy = cpufreq_cpu_get(0);
+		pr_err("%s: returning fake output %d since dvfs_enabled is OFF\n", __func__, policy->max);
+
+		return sprintf(buf, "%d\n", policy->max);
+	}
+
 	return sprintf(buf, "%d\n", cpufreq_max_limit_val);
 }
 
@@ -684,6 +695,11 @@ static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
 	unsigned int cpufreq_level;
 	ssize_t ret = -EINVAL;
 	int cpu;
+
+	if (!dvfs_enabled) {
+		pr_err("%s: ignoring input since dvfs_enabled is OFF\n", __func__);
+		return 0;
+	}
 
 	if (sscanf(buf, "%d", &val) != 1) {
 		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
@@ -744,6 +760,14 @@ static ssize_t cpufreq_min_limit_show(struct kobject *kobj,
 					struct kobj_attribute *attr,
 					char *buf)
 {
+	struct cpufreq_policy *policy;
+	if (!dvfs_enabled) {
+		policy = cpufreq_cpu_get(0);
+		pr_err("%s: returning fake output %d since dvfs_enabled is OFF\n", __func__, policy->min);
+
+		return sprintf(buf, "%d\n", policy->min);
+	}
+
 	return sprintf(buf, "%d\n", cpufreq_min_limit_val);
 }
 
@@ -755,6 +779,11 @@ static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
 	unsigned int cpufreq_level;
 	ssize_t ret = -EINVAL;
 	int cpu;
+
+	if (!dvfs_enabled) {
+		pr_err("%s: ignoring input since dvfs_enabled is OFF\n", __func__);
+		return 0;
+	}
 
 	if (sscanf(buf, "%d", &val) != 1) {
 		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
@@ -832,9 +861,11 @@ static struct attribute * g[] = {
 #endif
 #endif
 #ifdef CONFIG_DVFS_LIMIT
+//#if 0
 	&cpufreq_table_attr.attr,
 	&cpufreq_max_limit_attr.attr,
 	&cpufreq_min_limit_attr.attr,
+//#endif
 #endif /* CONFIG_DVFS_LIMIT */
 	NULL,
 };
