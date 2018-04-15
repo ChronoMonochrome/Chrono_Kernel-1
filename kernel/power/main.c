@@ -563,12 +563,18 @@ enum dvfs_lock_request_type {
 	DVFS_MAX_LOCK_REQ,
 };
 
+bool dvfs_enabled = 0;
+module_param(dvfs_enabled, bool, 0644);
+
 static int dvfs_cpufreq_notifier(struct notifier_block *nb,
 				 unsigned long event, void *data)
 {
 	struct cpufreq_policy *policy = data;
 	struct cpufreq_frequency_table *table;
 	unsigned int table_length = 0;
+
+	if (!dvfs_enabled)
+		return NOTIFY_DONE;
 
 	if (event != CPUFREQ_ADJUST)
 		return NOTIFY_DONE;
@@ -577,7 +583,7 @@ static int dvfs_cpufreq_notifier(struct notifier_block *nb,
 	if (!table) {
 		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
 			__func__);
-		return -EINVAL;
+		return NOTIFY_DONE;
 	}
 
 	/* Get frequency table length */
