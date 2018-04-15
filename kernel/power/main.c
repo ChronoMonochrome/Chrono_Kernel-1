@@ -566,6 +566,12 @@ enum dvfs_lock_request_type {
 bool dvfs_enabled = 0;
 module_param(dvfs_enabled, bool, 0644);
 
+int cpufreq_max_val_old = -1;
+module_param(cpufreq_max_val_old, int, 0644);
+
+int cpufreq_max_val_updated = false;
+module_param(cpufreq_max_val_updated, int, 0644);
+
 static int dvfs_cpufreq_notifier(struct notifier_block *nb,
 				 unsigned long event, void *data)
 {
@@ -591,10 +597,27 @@ static int dvfs_cpufreq_notifier(struct notifier_block *nb,
 
 	/* Update cpufreq policy max value */
 	if (cpufreq_max_limit_val != -1 && policy->max > cpufreq_max_limit_val) {
+		if (cpufreq_max_val_updated) {
+			cpufreq_max_val_old = policy->max;
+			cpufreq_max_val_updated = 0;
+		}
+
 		policy->max = cpufreq_max_limit_val;
 	} else if (cpufreq_max_limit_val == -1) {
-		policy->max = table[table_length-1].frequency;
+		if (cpufreq_max_val_updated < 2) {
+			if (cpufreq_max_val_old > 0)
+				policy->max = cpufreq_max_val_old;
+			else
+#ifdef CONFIG_MACH_JANICE
+				policy->max = 1000000;
+#else
+				policy->max = 800000;
+#endif
+			cpufreq_max_val_updated++;
+		}
 	}
+
+	//pr_err("%s: policy->max = %d\n", __func__, policy->max);
 
 	return NOTIFY_DONE;
 }
