@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/proc_fs.h>
 #include <linux/nsproxy.h>
 #include <linux/sched.h>
@@ -26,9 +23,6 @@ static const struct proc_ns_operations *ns_entries[] = {
 #endif
 #ifdef CONFIG_IPC_NS
 	&ipcns_operations,
-#endif
-#ifdef CONFIG_PID_NS
-	&pidns_operations,
 #endif
 	&mntns_operations,
 };

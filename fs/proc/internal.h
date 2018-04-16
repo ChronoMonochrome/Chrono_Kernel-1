@@ -10,12 +10,15 @@
  */
 
 #include <linux/proc_fs.h>
+struct  ctl_table_header;
 
 extern struct proc_dir_entry proc_root;
 #ifdef CONFIG_PROC_SYSCTL
 extern int proc_sys_init(void);
+extern void sysctl_head_put(struct ctl_table_header *head);
 #else
 static inline void proc_sys_init(void) { }
+static inline void sysctl_head_put(struct ctl_table_header *head) { }
 #endif
 #ifdef CONFIG_NET
 extern int proc_net_init(void);
@@ -122,6 +125,7 @@ void pde_put(struct proc_dir_entry *pde);
 
 int proc_fill_super(struct super_block *);
 struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
+int proc_remount(struct super_block *sb, int *flags, char *data);
 
 /*
  * These are generic /proc routines that use the internal
