@@ -3263,10 +3263,6 @@ static void s6e63m0_mcde_panel_late_resume(struct early_suspend *earlysuspend)
 	dpi_display_platform_enable(lcd);
 	s6e63m0_mcde_panel_resume(lcd->ddev);
 
-	if (lcdclk_usr != 0) {
-		pr_err("[S6E63M0] Rebasing LCDCLK...\n");
-		schedule_work(&s6e63m0_lcdclk_work);
-	}
 }
 #endif
 
