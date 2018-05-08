@@ -742,7 +742,7 @@ static int cypress_touchkey_suspend(struct device *dev)
 	int ret;
 
 #if defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
-	if (is_bln_wakelock_active() && !touchkey_suspended)
+	if (is_bln_enabled() && !touchkey_suspended)
 		return 0;
 #endif
 	touchkey_suspended = true;
@@ -762,7 +762,7 @@ static int cypress_touchkey_suspend(struct device *dev)
 static int cypress_touchkey_resume(struct device *dev)
 {
 #if defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
-	if (is_bln_wakelock_active() || touchkey_suspended)
+	if (is_bln_enabled() || touchkey_suspended)
 		return 0;
 #endif
 	struct i2c_client *client = to_i2c_client(dev);
