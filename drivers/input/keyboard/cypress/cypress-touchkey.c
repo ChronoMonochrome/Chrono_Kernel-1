@@ -496,6 +496,68 @@ static int cypress_touchkey_led_off(struct cypress_touchkey_info *info)
 	return ret;
 }
 */
+
+#if 0
+//#include <linux/leds.h>
+#include <linux/bln.h>
+
+/* should NOT be there... */
+#include <linux/syscalls.h>
+
+#define BTN_BACKLIGHT_INTERFACE "/sys/class/leds/button-backlight/brightness"
+
+static int btn_bln_toggle(const char enable)
+{
+	/*
+	 * Chrono: The below code is a huge hack.
+	 * Backlight must be handled directly by LED device,
+	 * rather than through sysfs.
+	 */
+	int fd = sys_open(BTN_BACKLIGHT_INTERFACE, O_WRONLY, 0);
+
+	if (fd >= 0) {
+		sys_write(fd, &enable, 1);
+		sys_close(fd);
+	} else
+		pr_err("Failed to enable button backlight");
+	//btn_led_set_brightness(&btn_led_classdev, LED_FULL);
+	return 0;
+}
+
+static int btn_bln_enable(int led_mask)
+{
+	btn_bln_toggle(1);
+	//btn_led_set_brightness(&btn_led_classdev, LED_OFF);
+	return 0;
+}
+
+static int btn_bln_disable(int led_mask)
+{
+	btn_bln_toggle(0);
+	//btn_led_set_brightness(&btn_led_classdev, LED_OFF);
+	return 0;
+}
+
+static int btn_bln_power_on(void)
+{
+	return 0;
+}
+
+static int btn_bln_power_off(void)
+{
+	return 0;
+}
+
+
+static struct bln_implementation btn_bln = {
+	.enable    = btn_bln_enable,
+	.disable   = btn_bln_disable,
+	.power_on  = btn_bln_power_on,
+	.power_off = btn_bln_power_off,
+	.led_count = 1
+};
+#endif
+
 static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 				  const struct i2c_device_id *id)
 {
@@ -625,6 +687,9 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 		goto err_req_irq;
 	}
 #endif
+
+	/* Register BLN device */
+	//register_bln_implementation(&btn_bln);
 
 	ret = request_threaded_irq(client->irq, NULL, cypress_touchkey_interrupt,
 				   IRQF_TRIGGER_RISING, client->dev.driver->name, info);
