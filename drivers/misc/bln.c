@@ -51,6 +51,11 @@ bool is_bln_wakelock_active(void) {
 	return wake_lock_active(&bln_wake_lock);
 }
 EXPORT_SYMBOL(is_bln_wakelock_active);
+
+bool is_bln_enabled(void) {
+	return bln_enabled;
+}
+EXPORT_SYMBOL(is_bln_enabled);
 #endif
 
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
