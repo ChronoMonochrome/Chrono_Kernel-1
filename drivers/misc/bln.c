@@ -573,11 +573,7 @@ void register_bln_implementation(struct bln_implementation *imp)
 	//TODO: more checks
 	if (imp) {
 		bln_imp = imp;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "Registered BLN: button-backlight\n");
-#else
-		;
-#endif
+		printk(KERN_ERR "Registered BLN: button-backlight\n");
 	}
 }
 EXPORT_SYMBOL(register_bln_implementation);
@@ -587,11 +583,7 @@ void register_bln_implementation_flash(struct bln_implementation *imp)
 	//TODO: more checks
 	if(imp){
 		bln_imp_flash = imp;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "Registered BLN: rearcam-flash\n");
-#else
-		;
-#endif
+		printk(KERN_ERR "Registered BLN: rearcam-flash\n");
 	}
 }
 EXPORT_SYMBOL(register_bln_implementation_flash);
