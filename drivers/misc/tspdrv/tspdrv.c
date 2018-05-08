@@ -220,7 +220,7 @@ static void janice_vibrator_enable(struct timed_output_dev *dev, int value)
 
 	mutex_lock(&vibdata.lock);
 
-	pr_err("%s: value = %d\n", __func__, value);
+	//pr_err("%s: value = %d\n", __func__, value);
 
 	/* cancel previous timer and set GPIO according to value */
 	hrtimer_cancel(&vibdata.timer);
