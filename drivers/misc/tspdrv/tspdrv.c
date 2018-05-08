@@ -262,9 +262,7 @@ static void janice_vibrator_enable(struct timed_output_dev *dev, int value)
 			immvibe_i2c_write(isa_data->client, HCTRL5, pwm_val);
 
 			vibdata.running = true;
-		} else
-			pr_info("%s: value = %d, already running, rescheduling timer\n",
-				__func__, value);
+		}
 
 		if (value > 0) {
 			value = value + 30;
