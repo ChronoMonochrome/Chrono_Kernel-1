@@ -39,4 +39,5 @@ void bln_enable_backlights(int mask, int mode);
 void bln_disable_backlights(int mask, int mode);
 int get_led_mask(void);
 int gen_all_leds_mask(void);
+bool is_bln_wakelock_active(void);
 #endif
