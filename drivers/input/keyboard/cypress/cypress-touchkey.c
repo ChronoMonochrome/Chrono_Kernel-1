@@ -667,10 +667,12 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	cypress_touchkey_auto_cal(info);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
+#if 0
 	info->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
 	info->early_suspend.suspend = cypress_touchkey_early_suspend;
 	info->early_suspend.resume = cypress_touchkey_late_resume;
 	register_early_suspend(&info->early_suspend);
+#endif
 #endif /* CONFIG_HAS_EARLYSUSPEND */
 
 	info->key_wq = create_singlethread_workqueue("cypress_key_wq");
