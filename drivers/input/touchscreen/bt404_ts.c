@@ -47,6 +47,9 @@
 #include <linux/uaccess.h>
 #include <linux/input/mt.h>
 #include <linux/regulator/consumer.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/machine.h>
+
 #include <linux/wakelock.h>
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 #include <linux/input/sweep2wake.h>
@@ -59,6 +62,20 @@ extern bool dt2w_use_wakelock;
 #ifdef TSP_FACTORY
 #include <linux/list.h>
 #endif
+
+struct regulator {
+        struct device *dev;
+        struct list_head list;
+        int uA_load;
+        int min_uV;
+        int max_uV;
+        char *supply_name;
+        struct device_attribute dev_attr;
+        struct regulator_dev *rdev;
+        int use;
+};
+
+
 
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/input/bt404_ts.h>
@@ -4011,6 +4028,11 @@ static int bt404_ts_probe(struct i2c_client *client,
 			goto err_reg_en_1v8;
 		}
 
+		data->reg_1v8->rdev->constraints->state_mem.enabled = true;
+		data->reg_1v8->rdev->constraints->state_mem.disabled = false;
+		data->reg_3v3->rdev->constraints->state_mem.enabled = true;
+		data->reg_3v3->rdev->constraints->state_mem.disabled = false;
+
 		dev_info(&client->dev, "pmic power control(%d)\n",
 						data->pdata->power_con);
 	}
@@ -4341,12 +4363,18 @@ bool break_suspend_early(bool);
 
 extern int s2w_switch, dt2w_switch;
 
+static bool bt404_enable_suspend = true;
+module_param(bt404_enable_suspend, bool, 0644);
+
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
+
+	if (!bt404_enable_suspend)
+		return 0;
 
 	if (!data->enabled) {
 		dev_err(dev, "%s, already disabled\n", __func__);
@@ -4400,6 +4428,9 @@ static int bt404_ts_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
+
+	if (!bt404_enable_suspend)
+		return 0;
 
 	if (data->enabled) {
 		dev_err(dev, "%s, already enabled\n", __func__);
