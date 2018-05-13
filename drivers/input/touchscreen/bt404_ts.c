@@ -75,7 +75,85 @@ struct regulator {
         int use;
 };
 
+static bool bt404_enable_suspend = true;
+module_param(bt404_enable_suspend, bool, 0644);
 
+static int get_regulator_voltage(const char *id)
+{
+	struct regulator *reg = regulator_get(NULL, id);
+	int ret;
+
+	if (IS_ERR(reg)) {
+		pr_err("%s: failed to get resource %s\n", __func__,
+		       id);
+		return -EINVAL;
+	}
+
+	ret = regulator_get_voltage(reg);
+	regulator_put(reg);
+
+	return ret;
+}
+
+static void set_regulator_voltage(const char *id, int vol_mv)
+{
+	struct regulator *reg = regulator_get(NULL, id);
+
+	if (IS_ERR(reg)) {
+		pr_err("%s: failed to get resource %s\n", __func__,
+		       id);
+		return;
+	}
+
+	regulator_set_voltage(reg, vol_mv * 1000, vol_mv * 1000);
+	regulator_put(reg);
+}
+
+static ssize_t reg_1v8_voltage_read( struct device *dev, struct device_attribute *attr, char *buf )
+{
+	int reg_1v8_voltage = get_regulator_voltage("v-tsp-1.8");
+	return sprintf(buf, "%d\n", (reg_1v8_voltage / 1000));
+}
+
+static ssize_t reg_1v8_voltage_write( struct device *dev, struct device_attribute *attr, const char *buf, size_t size )
+{
+	int reg_1v8_voltage;
+	if (sscanf(buf, "%d", &reg_1v8_voltage) == 1) {
+		if ((reg_1v8_voltage < 700) || (reg_1v8_voltage > 2000))
+			goto err;
+
+		pr_err("%s: %d mV\n", __func__, reg_1v8_voltage);
+
+		set_regulator_voltage("v-tsp-1.8", reg_1v8_voltage);
+	}
+
+err:
+	pr_err("%s: invalid input: %d mV\n", __func__, reg_1v8_voltage);
+	return size;
+}
+
+static ssize_t reg_3v3_voltage_read( struct device *dev, struct device_attribute *attr, char *buf )
+{
+	int reg_3v3_voltage = get_regulator_voltage("v-tsp-3.3");;
+	return sprintf(buf, "%d\n", (reg_3v3_voltage / 1000));
+}
+
+static ssize_t reg_3v3_voltage_write( struct device *dev, struct device_attribute *attr, const char *buf, size_t size )
+{
+	int reg_3v3_voltage;
+	if (sscanf(buf, "%d", &reg_3v3_voltage) == 1) {
+		if ((reg_3v3_voltage < 700) || (reg_3v3_voltage > 2000))
+			goto err;
+
+		pr_err("%s: %d mV\n", __func__, reg_3v3_voltage);
+
+		set_regulator_voltage("v-tsp-3.3", reg_3v3_voltage);
+	}
+
+err:
+	pr_err("%s: invalid input: %d mV\n", __func__, reg_3v3_voltage);
+	return size;
+}
 
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/input/bt404_ts.h>
@@ -3798,11 +3876,15 @@ static struct attribute_group touchkey_attr_group = {
 static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, cmd_store);
 static DEVICE_ATTR(cmd_status, S_IRUGO, cmd_status_show, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, cmd_result_show, NULL);
+static DEVICE_ATTR(reg_1v8_voltage, 0644, reg_1v8_voltage_read, reg_1v8_voltage_write);
+static DEVICE_ATTR(reg_3v3_voltage, 0644, reg_3v3_voltage_read, reg_3v3_voltage_write);
 
 static struct attribute *touchscreen_attributes[] = {
 	&dev_attr_cmd.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
+	&dev_attr_reg_1v8_voltage.attr,
+	&dev_attr_reg_3v3_voltage.attr,
 	NULL,
 };
 
@@ -4028,11 +4110,14 @@ static int bt404_ts_probe(struct i2c_client *client,
 			goto err_reg_en_1v8;
 		}
 
+		//reg_3v3_bkp = data->reg_3v3;
+		//reg_1v8_bkp = data->reg_1v8;
+/*
 		data->reg_1v8->rdev->constraints->state_mem.enabled = true;
 		data->reg_1v8->rdev->constraints->state_mem.disabled = false;
 		data->reg_3v3->rdev->constraints->state_mem.enabled = true;
 		data->reg_3v3->rdev->constraints->state_mem.disabled = false;
-
+*/
 		dev_info(&client->dev, "pmic power control(%d)\n",
 						data->pdata->power_con);
 	}
@@ -4362,9 +4447,6 @@ static int last_suspend_skipped = 0, last_resume_skipped = 0;
 bool break_suspend_early(bool);
 
 extern int s2w_switch, dt2w_switch;
-
-static bool bt404_enable_suspend = true;
-module_param(bt404_enable_suspend, bool, 0644);
 
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
