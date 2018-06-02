@@ -458,10 +458,8 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
 {
 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
 						it.alarm.alarmtimer);
-	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
-		if (posix_timer_event(ptr, 0) != 0)
-			ptr->it_overrun++;
-	}
+	if (posix_timer_event(ptr, 0) != 0)
+		ptr->it_overrun++;
 
 	/* Re-add periodic timers */
 	if (ptr->it.alarm.interval.tv64) {
