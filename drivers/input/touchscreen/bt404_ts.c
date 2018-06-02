@@ -4447,7 +4447,6 @@ out:
 extern bool is_bln_wakelock_active(void);
 extern bool is_dt2w_wakelock_active(void);
 extern bool is_s2w_wakelock_active(void);
-extern unsigned int is_charger_present;
 
 static bool is_suspend = false;
 static bool should_break_suspend_early = false; // flag, that determines whether suspend/resume of bt404
@@ -4461,9 +4460,7 @@ inline bool break_suspend_early(bool suspend)
 	 ret = prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia")||
 		is_bln_wakelock_active() 				||
 		is_s2w_wakelock_active()				||
-		is_dt2w_wakelock_active()				||
-		is_charger_present;
-
+		is_dt2w_wakelock_active();
 	 if (suspend) {
 		 last_suspend_skipped = ret;
 	 } else {
@@ -4499,8 +4496,7 @@ void should_break_suspend_early_check_fn(struct work_struct *work)
 		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia")||
                 is_bln_wakelock_active()                                 ||
                 is_s2w_wakelock_active()                                 ||
-                is_dt2w_wakelock_active()                                ||
-                is_charger_present;
+                is_dt2w_wakelock_active();
 
 
 	if (dt2w_switch || s2w_switch) {

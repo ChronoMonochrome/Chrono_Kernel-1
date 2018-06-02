@@ -27,6 +27,8 @@ extern struct class *sec_class;
 extern u32 sec_lpm_bootmode;
 #endif
 
+extern int charger_mode;
+
 struct charger_extra_sysfs
 {
 	struct device *dev;	
@@ -670,8 +672,9 @@ extern unsigned int bootmode;
 */
 int make_dfms_battery_device (void)
 {
-	if (bootmode != 2)
-		return 0;
+	pr_err("%s: charger_mode=%d\n", __func__, charger_mode);
+	if (charger_mode == 0)
+		return;
 
 	charger_extra_sysfs.polling_queue = create_singlethread_workqueue("ab8500_charging_monitor");
 	INIT_DELAYED_WORK_DEFERRABLE(&charger_extra_sysfs.polling_work,ab8500_charger_polling_periodic_work);
@@ -776,7 +779,8 @@ static int charging_readproc(char *page, char **start, off_t off,
 
 void register_charging_i2c_dev(struct device * dev) /* todo add destructor call for caller */
 {
-	if (bootmode != 2)
+	pr_err("%s: charger_mode=%d\n", __func__, charger_mode);
+	if (charger_mode == 0)
 		return;
 
 	dev_info(dev, "%s %d\n", __func__, __LINE__);
