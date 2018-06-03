@@ -103,8 +103,8 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 	 * address if LOMEM region is enough to contain the whole HWMEM.
 	 * otherwise map hwmem to VMALLOC region.
 	 */
-	if (__phys_to_virt(region_end) > __phys_to_virt(region_paddr)
-	    && __phys_to_virt(region_end) < (unsigned long)high_memory) {
+	if (region_end > region_paddr
+	    && region_end < virt_to_phys(high_memory)) {
 		instance->region_kaddr = phys_to_virt(region_paddr);
 		pr_info("hwmem: %s map to LOMEM, start: 0x%p, end: 0x%p\n",
 			name,
@@ -261,11 +261,7 @@ static int init_alloc_list(struct instance *instance)
 	struct alloc *alloc;
 
 	if (PAGE_SIZE >= SZ_64M) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "CONA: PAGE_SIZE >= 64MiB\n");
-#else
-		;
-#endif
 		return -ENOMSG;
 	}
 
