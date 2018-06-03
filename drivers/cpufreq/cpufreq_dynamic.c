@@ -249,9 +249,9 @@ static struct dbs_tuners {
 	unsigned int _oc_limit;
 	unsigned int _standby_threshold_freq;
 } dbs_tuners_ins = {
-	.input_boost_freq = 400000,
-	.input_boost_us = 100*1000,
-	.power_optimal_freq = 800000,
+	.input_boost_freq = 800000,
+	.input_boost_us = 300*1000,
+	.power_optimal_freq = 0,
 	.high_freq_sampling_up_factor = 2,
 
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
@@ -259,20 +259,20 @@ static struct dbs_tuners {
 	.ignore_nice = 1,
 	.io_is_busy = 20*128/100,
 	.standby_delay_factor = 1,
-	.standby_threshold_freq = 100000,
+	.standby_threshold_freq = 0,
 
 	.sampling_rate = 2*HZ/100,
 	.sampling_down_factor = 2,
-	.sampling_down_factor_relax_khz = 400000,
-	.max_non_oc_freq = 0,
-	.oc_freq_boost_ms = 0,
+        .sampling_down_factor_relax_khz = 0,
+        .max_non_oc_freq = 0,
+        .oc_freq_boost_ms = 0,
 
 	.standby_sampling_rate = 3*HZ/100,
 	.standby_sampling_up_factor = 5,
 
 	.suspend_sampling_rate = 5*HZ/100,
 	.suspend_sampling_up_factor = 5,
-	.suspend_max_freq = 600000,
+	.suspend_max_freq = 800000,
 };
 
 static unsigned int delay;
