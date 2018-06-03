@@ -26,18 +26,10 @@ retry:
 			udelay(100);
 			goto retry;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SUN4V: tod_get() timed out.\n");
-#else
-		;
-#endif
 		return 0;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "SUN4V: tod_get() not supported.\n");
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -61,18 +53,10 @@ retry:
 			udelay(100);
 			goto retry;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SUN4V: tod_set() timed out.\n");
-#else
-		;
-#endif
 		return -EAGAIN;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "SUN4V: tod_set() not supported.\n");
-#else
-	;
-#endif
 	return -EOPNOTSUPP;
 }
 

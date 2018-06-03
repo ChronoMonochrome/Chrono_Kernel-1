@@ -14,6 +14,7 @@
 #include <linux/rtc.h>
 #include <linux/bcd.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 
 #define DRV_VERSION "0.6"
 
@@ -305,12 +306,8 @@ static int rs5c_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 		buf &= ~RS5C_CTRL1_AALE;
 
 	if (i2c_smbus_write_byte_data(client, addr, buf) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: can't update alarm\n",
 			rs5c->rtc->name);
-#else
-		;
-#endif
 		status = -EIO;
 	} else
 		rs5c->regs[RS5C_REG_CTRL1] = buf;
@@ -403,12 +400,8 @@ static int rs5c_set_alarm(struct device *dev, struct rtc_wkalrm *t)
 		addr = RS5C_ADDR(RS5C_REG_CTRL1);
 		buf[0] = rs5c->regs[RS5C_REG_CTRL1] | RS5C_CTRL1_AALE;
 		if (i2c_smbus_write_byte_data(client, addr, buf[0]) < 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: can't enable alarm\n",
 				rs5c->rtc->name);
-#else
-			;
-#endif
 		rs5c->regs[RS5C_REG_CTRL1] = buf[0];
 	}
 
@@ -696,18 +689,7 @@ static struct i2c_driver rs5c372_driver = {
 	.id_table	= rs5c372_id,
 };
 
-static __init int rs5c372_init(void)
-{
-	return i2c_add_driver(&rs5c372_driver);
-}
-
-static __exit void rs5c372_exit(void)
-{
-	i2c_del_driver(&rs5c372_driver);
-}
-
-module_init(rs5c372_init);
-module_exit(rs5c372_exit);
+module_i2c_driver(rs5c372_driver);
 
 MODULE_AUTHOR(
 		"Pavel Mironchik <pmironchik@optifacio.net>, "
