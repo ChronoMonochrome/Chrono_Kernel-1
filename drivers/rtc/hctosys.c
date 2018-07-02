@@ -24,12 +24,7 @@
 
 int rtc_hctosys_ret = -ENODEV;
 
-/* make it possible to update a 2nd rtc */
-void __attribute__((weak)) rtc_hctohc(struct rtc_time tm)
-{
-}
-
-static int __init rtc_hctosys(void)
+int rtc_hctosys(void)
 {
 	int err = -ENODEV;
 	struct rtc_time tm;
@@ -59,11 +54,6 @@ static int __init rtc_hctosys(void)
 		goto err_invalid;
 	}
 
-	if(tm.tm_year < 100) {
-		tm.tm_year += 13;
-		rtc_set_time(rtc, &tm);
-	}
-
 	rtc_tm_to_time(&tm, &tv.tv_sec);
 
 	do_settimeofday(&tv);
@@ -79,7 +69,6 @@ err_invalid:
 err_read:
 	rtc_class_close(rtc);
 
-	rtc_hctohc(tm);
 err_open:
 	rtc_hctosys_ret = err;
 

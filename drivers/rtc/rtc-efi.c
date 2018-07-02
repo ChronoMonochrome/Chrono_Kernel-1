@@ -142,11 +142,7 @@ static int efi_set_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
 	 */
 	status = efi.set_wakeup_time((efi_bool_t)wkalrm->enabled, &eft);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "write status is %d\n", (int)status);
-#else
-	;
-#endif
 
 	return status == EFI_SUCCESS ? 0 : -EINVAL;
 }
@@ -217,7 +213,6 @@ static struct platform_driver efi_rtc_driver = {
 		.name = "rtc-efi",
 		.owner = THIS_MODULE,
 	},
-	.probe = efi_rtc_probe,
 	.remove = __exit_p(efi_rtc_remove),
 };
 
