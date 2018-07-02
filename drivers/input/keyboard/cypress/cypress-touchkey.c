@@ -28,6 +28,7 @@
 #include <linux/mutex.h>
 #include <linux/workqueue.h>
 #include <linux/leds.h>
+#include <linux/bln.h>
 #endif
 #include <linux/usb_switcher.h>
 
@@ -163,11 +164,18 @@ static void cypress_touchkey_brightness_set
 		return;
 
 	info->brightness = brightness;
-
-	if (info->current_status && !touchkey_update_status)
+	if (
+#if !defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
+		info->current_status &&
+#endif
+		!touchkey_update_status)
 		queue_work(info->led_wq, &info->led_work);
 	else
-		dev_notice(&info->client->dev, "%s under suspend status or FW updating\n", __func__);
+		dev_notice(&info->client->dev, "%s under"
+#if !defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
+				"suspend status or"
+#endif
+				"FW updating\n", __func__);
 }
 #endif
 
@@ -496,6 +504,65 @@ static int cypress_touchkey_led_off(struct cypress_touchkey_info *info)
 	return ret;
 }
 */
+
+#if 0
+/* should NOT be there... */
+#include <linux/syscalls.h>
+
+#define BTN_BACKLIGHT_INTERFACE "/sys/class/leds/button-backlight/brightness"
+
+static int btn_bln_toggle(const char enable)
+{
+	/*
+	 * Chrono: The below code is a huge hack.
+	 * Backlight must be handled directly by LED device,
+	 * rather than through sysfs.
+	 */
+	int fd = sys_open(BTN_BACKLIGHT_INTERFACE, O_WRONLY, 0);
+
+	if (fd >= 0) {
+		sys_write(fd, &enable, 1);
+		sys_close(fd);
+	} else
+		pr_err("Failed to enable button backlight");
+	//btn_led_set_brightness(&btn_led_classdev, LED_FULL);
+	return 0;
+}
+
+static int btn_bln_enable(int led_mask)
+{
+	btn_bln_toggle(1);
+	//btn_led_set_brightness(&btn_led_classdev, LED_OFF);
+	return 0;
+}
+
+static int btn_bln_disable(int led_mask)
+{
+	btn_bln_toggle(0);
+	//btn_led_set_brightness(&btn_led_classdev, LED_OFF);
+	return 0;
+}
+
+static int btn_bln_power_on(void)
+{
+	return 0;
+}
+
+static int btn_bln_power_off(void)
+{
+	return 0;
+}
+
+
+static struct bln_implementation btn_bln = {
+	.enable    = btn_bln_enable,
+	.disable   = btn_bln_disable,
+	.power_on  = btn_bln_power_on,
+	.power_off = btn_bln_power_off,
+	.led_count = 1
+};
+#endif
+
 static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 				  const struct i2c_device_id *id)
 {
@@ -626,6 +693,9 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	}
 #endif
 
+	/* Register BLN device */
+	//register_bln_implementation(&btn_bln);
+
 	ret = request_threaded_irq(client->irq, NULL, cypress_touchkey_interrupt,
 				   IRQF_TRIGGER_RISING, client->dev.driver->name, info);
 	if (ret < 0) {
@@ -663,21 +733,38 @@ static int __devexit cypress_touchkey_remove(struct i2c_client *client)
 }
 
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
+static bool touchkey_suspended = false;
+
 static int cypress_touchkey_suspend(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct cypress_touchkey_info *info = i2c_get_clientdata(client);
-	int ret = 0;
+	struct i2c_client *client;
+	struct cypress_touchkey_info *info;
+	int ret;
+
+#if defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
+	if (is_bln_enabled() && !touchkey_suspended)
+		return 0;
+#endif
+	touchkey_suspended = true;
+
+	client = to_i2c_client(dev);
+	info = i2c_get_clientdata(client);
+	ret = 0;
 
 	FUNC_CALLED;
 
 	disable_irq(info->irq);
 	cypress_touchkey_con_hw(info, false);
+
 	return ret;
 }
 
 static int cypress_touchkey_resume(struct device *dev)
 {
+#if defined(CONFIG_GENERIC_BLN_USE_WAKELOCK)
+	if (is_bln_enabled() || touchkey_suspended)
+		return 0;
+#endif
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cypress_touchkey_info *info = i2c_get_clientdata(client);
 	int ret = 0;
@@ -690,6 +777,7 @@ static int cypress_touchkey_resume(struct device *dev)
 	FUNC_CALLED;
 	enable_irq(info->irq);
 
+	touchkey_suspended = false;
 	return ret;
 }
 #endif
@@ -701,7 +789,7 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 	info = container_of(h, struct cypress_touchkey_info, early_suspend);
 	cypress_touchkey_suspend(&info->client->dev);
 
-	#ifdef CONFIG_LEDS_CLASS
+	#if defined(CONFIG_LEDS_CLASS)
 	info->current_status = 0;
 	#endif
 }
@@ -712,8 +800,9 @@ static void cypress_touchkey_late_resume(struct early_suspend *h)
 	info = container_of(h, struct cypress_touchkey_info, early_suspend);
 	cypress_touchkey_resume(&info->client->dev);
 
-	#ifdef CONFIG_LEDS_CLASS
+	#if defined(CONFIG_LEDS_CLASS)
 	/*led sysfs write led value before resume process is not executed */
+
 	info->current_status = 1;
 	queue_work(info->led_wq, &info->led_work);
 	#endif

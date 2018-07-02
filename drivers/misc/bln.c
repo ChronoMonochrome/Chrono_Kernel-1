@@ -51,6 +51,11 @@ bool is_bln_wakelock_active(void) {
 	return wake_lock_active(&bln_wake_lock);
 }
 EXPORT_SYMBOL(is_bln_wakelock_active);
+
+bool is_bln_enabled(void) {
+	return bln_enabled;
+}
+EXPORT_SYMBOL(is_bln_enabled);
 #endif
 
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
@@ -573,11 +578,7 @@ void register_bln_implementation(struct bln_implementation *imp)
 	//TODO: more checks
 	if (imp) {
 		bln_imp = imp;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "Registered BLN: button-backlight\n");
-#else
-		;
-#endif
+		printk(KERN_ERR "Registered BLN: button-backlight\n");
 	}
 }
 EXPORT_SYMBOL(register_bln_implementation);
@@ -587,11 +588,7 @@ void register_bln_implementation_flash(struct bln_implementation *imp)
 	//TODO: more checks
 	if(imp){
 		bln_imp_flash = imp;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "Registered BLN: rearcam-flash\n");
-#else
-		;
-#endif
+		printk(KERN_ERR "Registered BLN: rearcam-flash\n");
 	}
 }
 EXPORT_SYMBOL(register_bln_implementation_flash);
