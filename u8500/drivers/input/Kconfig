@@ -1,2 +1,3 @@
 source "u8500/drivers/input/keyboard/Kconfig"
+source "u8500/drivers/input/misc/Kconfig"
 source "u8500/drivers/input/touchscreen/Kconfig"

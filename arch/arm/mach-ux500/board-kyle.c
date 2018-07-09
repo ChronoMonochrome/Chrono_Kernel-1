@@ -769,7 +769,7 @@ static struct i2c_board_info __initdata kyle_r0_1_gpio_i2c7_devices[] = {
 #endif
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button kyle_r0_0_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2045,7 +2045,7 @@ static void __init kyle_init_machine(void)
 	mop500_msp_init();		/* generic for now */
 	kyle_uart_init();
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&kyle_gpio_keys_device);
 #endif
 

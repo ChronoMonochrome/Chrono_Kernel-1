@@ -39,7 +39,7 @@
 #include <linux/spi/stm_msp.h>
 #include <plat/gpio-nomadik.h>
 
-#ifdef CONFIG_TOUCHSCREEN_ATMEL_MXT224E
+#ifdef CONFIG_TOUCHSCREEN_ATMEL_MXT224E_U8500
 #include <linux/input/mxt224e.h>
 #elif CONFIG_TOUCHSCREEN_ATMEL_MXT224S
 #include <linux/input/mxt224s.h>
@@ -1775,7 +1775,7 @@ static struct i2c_board_info __initdata golden_bringup_gpio_i2c9_devices[] = {
 	},
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button golden_bringup_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -3136,7 +3136,7 @@ static void __init golden_init_machine(void)
 	mop500_wlan_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&golden_gpio_keys_device);
 #endif
 

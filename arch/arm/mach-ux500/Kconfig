@@ -198,7 +198,7 @@ config UX500_DEBUG_UART
 
 config UX500_GPIO_KEYS
         bool "Use gpio-keys for proximity and hal sensors"
-        depends on KEYBOARD_GPIO
+        depends on KEYBOARD_GPIO_U8500
         help
 	  Add proximity and hal sensors as a gpio keyboard.
 

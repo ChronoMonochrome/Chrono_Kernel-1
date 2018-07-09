@@ -475,7 +475,7 @@ static struct usb_switch fsa880_data =	{
 };
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E)
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E_U8500)
 /*static struct charging_status_callbacks {
 	void	(*tsp_set_charging_cable) (int type);
 } charging_cbs;
@@ -760,7 +760,7 @@ static struct i2c_board_info __initdata janice_r0_2_i2c2_devices[] = {
 };
 
 static struct i2c_board_info __initdata janice_r0_0_i2c3_devices[] = {
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E)
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E_U8500)
 	{
 		I2C_BOARD_INFO(MXT224_DEV_NAME, 0x4A),
 		.platform_data	= &mxt224_data,
@@ -954,7 +954,7 @@ static struct i2c_board_info __initdata janice_r0_2_gpio_i2c8_devices[] = {
 #endif
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button janice_r0_0_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2132,7 +2132,7 @@ static void __init janice_init_machine(void)
 	janice_mpl_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&janice_gpio_keys_device);
 #endif
 

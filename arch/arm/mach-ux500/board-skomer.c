@@ -1141,7 +1141,7 @@ static struct i2c_board_info __initdata skomer_bringup_gpio_i2c9_devices[] = {
 	},
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button skomer_bringup_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2618,7 +2618,7 @@ static void __init skomer_init_machine(void)
 	mop500_wlan_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	if (system_rev == SKOMER_R0_2)
         platform_device_register(&skomer_r02_gpio_keys_device);
     else

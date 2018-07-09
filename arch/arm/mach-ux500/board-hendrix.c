@@ -807,7 +807,7 @@ static struct i2c_board_info __initdata skomer_bringup_gpio_i2c9_devices[] = {
 	},
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button skomer_bringup_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2154,7 +2154,7 @@ static void __init hendrix_init_machine(void)
 	mop500_wlan_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&skomer_gpio_keys_device);
 #endif
 

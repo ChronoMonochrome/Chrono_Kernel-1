@@ -544,7 +544,7 @@ static struct usb_switch fsa880_data =	{
 };
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E)
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT224E_U8500)
 /*static struct charging_status_callbacks {
 	void	(*tsp_set_charging_cable) (int type);
 } charging_cbs;
@@ -1109,7 +1109,7 @@ static struct i2c_board_info __initdata gavini_r0_0_c_gpio_i2c9_devices[] = {
 
 };
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button gavini_r0_0_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2380,7 +2380,7 @@ static void __init gavini_init_machine(void)
 	gavini_mpl_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&gavini_gpio_keys_device);
 #endif
 

@@ -445,7 +445,7 @@ static struct usb_switch fsa880_data =	{
 };
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404)
+#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404_U8500)
 /* Configuration settings for Zinitix controller (BT404). 0x1D0 registers. */
 const struct bt404_ts_reg_data reg_data[] = {
 	/*{value, valid} */
@@ -930,7 +930,7 @@ static struct platform_device codina_gpio_i2c7_pdata = {
 };
 
 static struct i2c_board_info __initdata codina_r0_0_gpio_i2c7_devices[] = {
-#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404)
+#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404_U8500)
 	{
 		I2C_BOARD_INFO(BT404_ISP_DEVICE, 0x50),
 		.platform_data	= &bt404_ts_pdata,
@@ -939,7 +939,7 @@ static struct i2c_board_info __initdata codina_r0_0_gpio_i2c7_devices[] = {
 };
 
 static struct i2c_board_info __initdata codina_r0_0_i2c3_devices[] = {
-#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404)
+#if defined(CONFIG_TOUCHSCREEN_ZINITIX_BT404_U8500)
 	{
 		I2C_BOARD_INFO(BT404_TS_DEVICE, 0x20),
 		.platform_data	= &bt404_ts_pdata,
@@ -1101,7 +1101,7 @@ static struct i2c_board_info __initdata codina_r0_0_gpio_i2c8_devices[] = {
 };
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 struct gpio_keys_button codina_r0_0_gpio_keys[] = {
 	{
 	.code = KEY_HOMEPAGE,		/* input event code (KEY_*, SW_*) */
@@ -2481,7 +2481,7 @@ static void __init codina_init_machine(void)
 
 	ssg_pins_init();
 
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404_U8500
 	bt404_ts_init();
 #endif
 
@@ -2495,7 +2495,7 @@ static void __init codina_init_machine(void)
 	mop500_wlan_init();
 #endif
 
-#ifdef CONFIG_KEYBOARD_GPIO
+#ifdef CONFIG_KEYBOARD_GPIO_U8500
 	platform_device_register(&codina_gpio_keys_device);
 #endif
 
