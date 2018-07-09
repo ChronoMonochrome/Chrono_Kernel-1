@@ -135,7 +135,13 @@ obj-$(CONFIG_USB_GADGET)	+= usb/
 endif
 obj-$(CONFIG_SERIO)		+= input/serio/
 obj-$(CONFIG_GAMEPORT)		+= input/gameport/
+
 obj-$(CONFIG_INPUT)		+= input/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_INPUT)		+= ../u8500/drivers/input/
+endif
+
 obj-$(CONFIG_I2O)		+= message/
 
 ifdef CONFIG_ARCH_U8500

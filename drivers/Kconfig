@@ -54,6 +54,10 @@ source "drivers/telephony/Kconfig"
 
 source "drivers/input/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/input/Kconfig"
+endif
+
 source "drivers/char/Kconfig"
 
 if ARCH_U8500
