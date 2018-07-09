@@ -15,48 +15,11 @@
 #include <linux/list.h>
 #include <linux/spinlock.h>
 #include <linux/device.h>
-#include <linux/sysdev.h>
 #include <linux/timer.h>
 #include <linux/err.h>
 #include <linux/ctype.h>
 #include <linux/leds.h>
 #include "leds.h"
-#ifdef CONFIG_GENERIC_BLN
-#include <linux/bln.h>
-
-struct led_classdev *bln_led_cdev;
-
-static int led_bln_enable(int led_mask)
-{
-	led_set_brightness(bln_led_cdev, bln_led_cdev->max_brightness);
-	return 0;
-}
-
-static int led_bln_disable(int led_mask)
-{
-	led_set_brightness(bln_led_cdev, LED_OFF);
-	return 0;
-}
-
-static int led_bln_power_on(void)
-{
-	return 0;
-}
-
-static int led_bln_power_off(void)
-{
-	return 0;
-}
-
-static struct bln_implementation led_bln = {
-	.enable    = led_bln_enable,
-	.disable   = led_bln_disable,
-	.power_on  = led_bln_power_on,
-	.power_off = led_bln_power_off,
-	.led_count = 1
-};
-
-#endif
 
 static struct class *leds_class;
 
@@ -147,50 +110,6 @@ static void led_timer_function(unsigned long data)
 	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
 }
 
-static void led_stop_software_blink(struct led_classdev *led_cdev)
-{
-	/* deactivate previous settings */
-	del_timer_sync(&led_cdev->blink_timer);
-	led_cdev->blink_delay_on = 0;
-	led_cdev->blink_delay_off = 0;
-}
-
-static void led_set_software_blink(struct led_classdev *led_cdev,
-				   unsigned long delay_on,
-				   unsigned long delay_off)
-{
-	int current_brightness;
-
-	current_brightness = led_get_brightness(led_cdev);
-	if (current_brightness)
-		led_cdev->blink_brightness = current_brightness;
-	if (!led_cdev->blink_brightness)
-		led_cdev->blink_brightness = led_cdev->max_brightness;
-
-	if (led_get_trigger_data(led_cdev) &&
-	    delay_on == led_cdev->blink_delay_on &&
-	    delay_off == led_cdev->blink_delay_off)
-		return;
-
-	led_stop_software_blink(led_cdev);
-
-	led_cdev->blink_delay_on = delay_on;
-	led_cdev->blink_delay_off = delay_off;
-
-	/* never on - don't blink */
-	if (!delay_on)
-		return;
-
-	/* never off - just set to brightness */
-	if (!delay_off) {
-		led_set_brightness(led_cdev, led_cdev->blink_brightness);
-		return;
-	}
-
-	mod_timer(&led_cdev->blink_timer, jiffies + 1);
-}
-
-
 /**
  * led_classdev_suspend - suspend an led_classdev.
  * @led_cdev: the led_classdev to suspend.
@@ -266,20 +185,8 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
 	led_trigger_set_default(led_cdev);
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Registered led device: %s\n",
 			led_cdev->name);
-#else
-	;
-#endif
-
-#ifdef CONFIG_GENERIC_BLN
-	if (strcmp(led_cdev, "button-backlight"))
-	{
-		bln_led_cdev = led_cdev;
-		register_bln_implementation(&led_bln);
-	}
-#endif
 
 	return 0;
 }
@@ -310,32 +217,6 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
 	up_write(&leds_list_lock);
 }
 EXPORT_SYMBOL_GPL(led_classdev_unregister);
-
-void led_blink_set(struct led_classdev *led_cdev,
-		   unsigned long *delay_on,
-		   unsigned long *delay_off)
-{
-	del_timer_sync(&led_cdev->blink_timer);
-
-	if (led_cdev->blink_set &&
-	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
-		return;
-
-	/* blink with 1 Hz as default if nothing specified */
-	if (!*delay_on && !*delay_off)
-		*delay_on = *delay_off = 500;
-
-	led_set_software_blink(led_cdev, *delay_on, *delay_off);
-}
-EXPORT_SYMBOL(led_blink_set);
-
-void led_brightness_set(struct led_classdev *led_cdev,
-			enum led_brightness brightness)
-{
-	led_stop_software_blink(led_cdev);
-	led_cdev->brightness_set(led_cdev, brightness);
-}
-EXPORT_SYMBOL(led_brightness_set);
 
 static int __init leds_init(void)
 {

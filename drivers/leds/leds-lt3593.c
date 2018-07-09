@@ -24,6 +24,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 
 struct lt3593_led_data {
 	struct led_classdev cdev;
@@ -88,12 +89,8 @@ static int __devinit create_lt3593_led(const struct gpio_led *template,
 
 	/* skip leds on GPIOs that aren't available */
 	if (!gpio_is_valid(template->gpio)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: skipping unavailable LT3593 LED at gpio %d (%s)\n",
 				KBUILD_MODNAME, template->gpio, template->name);
-#else
-		;
-#endif
 		return 0;
 	}
 
@@ -123,12 +120,8 @@ static int __devinit create_lt3593_led(const struct gpio_led *template,
 	if (ret < 0)
 		goto err;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: registered LT3593 LED '%s' at GPIO %d\n",
 		KBUILD_MODNAME, template->name, template->gpio);
-#else
-	;
-#endif
 
 	return 0;
 
@@ -206,21 +199,9 @@ static struct platform_driver lt3593_led_driver = {
 	},
 };
 
-MODULE_ALIAS("platform:leds-lt3593");
-
-static int __init lt3593_led_init(void)
-{
-	return platform_driver_register(&lt3593_led_driver);
-}
-
-static void __exit lt3593_led_exit(void)
-{
-	platform_driver_unregister(&lt3593_led_driver);
-}
-
-module_init(lt3593_led_init);
-module_exit(lt3593_led_exit);
+module_platform_driver(lt3593_led_driver);
 
 MODULE_AUTHOR("Daniel Mack <daniel@caiaq.de>");
 MODULE_DESCRIPTION("LED driver for LT3593 controllers");
 MODULE_LICENSE("GPL");
+MODULE_ALIAS("platform:leds-lt3593");
