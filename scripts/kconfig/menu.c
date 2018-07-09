@@ -365,9 +365,9 @@ void menu_finalize(struct menu *parent)
 						  "values not supported");
 				if (prop->menu == menu)
 					continue;
-				if (prop->type == P_PROMPT &&
+				/*if (prop->type == P_PROMPT &&
 				    prop->menu->parent->sym != sym)
-					prop_warn(prop, "choice value used outside its choice group");
+					prop_warn(prop, "choice value used outside its choice group");*/
 			}
 			/* Non-tristate choice values of tristate choices must
 			 * depend on the choice being set to Y. The choice
