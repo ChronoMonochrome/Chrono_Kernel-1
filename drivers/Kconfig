@@ -18,7 +18,13 @@ source "drivers/block/Kconfig"
 
 # misc before ide - BLK_DEV_SGIIOC4 depends on SGI_IOC4
 
+if ARCH_U8500
+source "u8500/drivers/misc/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/misc/Kconfig"
+endif
 
 source "drivers/ide/Kconfig"
 
