@@ -145,7 +145,7 @@ EXPORT_SYMBOL(gps_dev);
 
 int hats_state = 0;
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 
 static struct resource ram_console_resource = {
 	.name = "ram_console",
@@ -174,7 +174,7 @@ static int __init ram_console_setup(char *p)
 
 __setup("mem_ram_console=", ram_console_setup);
 
-#endif /* CONFIG_ANDROID_RAM_CONSOLE */
+#endif /* CONFIG_ANDROID_RAM_CONSOLE_U8500 */
 
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
@@ -3099,7 +3099,7 @@ static void __init golden_init_machine(void)
 
 	sec_common_init_early();
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 	if (ram_console_device.num_resources == 1)
 		platform_device_register(&ram_console_device);
 #endif

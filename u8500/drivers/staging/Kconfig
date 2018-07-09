@@ -1,0 +1,11 @@
+source "u8500/drivers/staging/android/Kconfig"
+
+source "u8500/drivers/staging/cg2900/Kconfig"
+
+#source "u8500/drivers/staging/cw1200/Kconfig"
+
+source "u8500/drivers/staging/mmio/Kconfig"
+
+source "u8500/drivers/staging/nmf-cm/Kconfig"
+
+source "u8500/drivers/staging/camera_flash/Kconfig"

@@ -234,6 +234,10 @@ source "drivers/xen/Kconfig"
 
 source "drivers/staging/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/staging/Kconfig"
+endif
+
 source "drivers/platform/Kconfig"
 
 if ARCH_U8500

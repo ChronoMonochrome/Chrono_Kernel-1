@@ -138,7 +138,7 @@ EXPORT_SYMBOL(use_ab8505_iddet);
 struct device *gps_dev;
 EXPORT_SYMBOL(gps_dev);
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 
 static struct resource ram_console_resource = {
 	.name = "ram_console",
@@ -167,7 +167,7 @@ static int __init ram_console_setup(char *p)
 
 __setup("mem_ram_console=", ram_console_setup);
 
-#endif /* CONFIG_ANDROID_RAM_CONSOLE */
+#endif /* CONFIG_ANDROID_RAM_CONSOLE_U8500 */
 
 #ifdef CONFIG_KEXEC_HARDBOOT
 static struct resource kexec_hardboot_resources[] = {
@@ -2434,7 +2434,7 @@ static void __init codina_init_machine(void)
 	kexec_hardboot_reserve();
 #endif
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 	if (ram_console_device.num_resources == 1)
 		platform_device_register(&ram_console_device);
 #endif

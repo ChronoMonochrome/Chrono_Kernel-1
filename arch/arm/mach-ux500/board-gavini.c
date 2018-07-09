@@ -125,7 +125,7 @@ EXPORT_SYMBOL(is_cable_attached);
 struct device *gps_dev = NULL;
 EXPORT_SYMBOL(gps_dev);
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 static struct resource ram_console_resource = {
 	.name = "ram_console",
 	.flags = IORESOURCE_MEM,
@@ -153,7 +153,7 @@ static int __init ram_console_setup(char *p)
 
 __setup("mem_ram_console=", ram_console_setup);
 
-#endif // CONFIG_ANDROID_RAM_CONSOLE
+#endif // CONFIG_ANDROID_RAM_CONSOLE_U8500
 #if defined(CONFIG_KEYBOARD_CYPRESS_TOUCH)
 static struct cypress_touchkey_platform_data  cypress_touchkey_pdata = {
 	.gpio_scl = TOUCHKEY_SCL_GAVINI_R0_0,
@@ -2338,7 +2338,7 @@ static void __init gavini_init_machine(void)
 
 	sec_common_init_early() ;
 
-#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_U8500
 	if (ram_console_device.num_resources == 1)
 		platform_device_register(&ram_console_device);
 #endif

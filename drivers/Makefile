@@ -246,6 +246,11 @@ obj-$(CONFIG_BCMA)		+= bcma/
 obj-$(CONFIG_VHOST_NET)		+= vhost/
 obj-$(CONFIG_VLYNQ)		+= vlynq/
 obj-$(CONFIG_STAGING)		+= staging/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_STAGING)		+= ../u8500/drivers/staging/
+endif
+
 obj-y				+= platform/
 obj-y				+= ieee802154/
 #common clk code
