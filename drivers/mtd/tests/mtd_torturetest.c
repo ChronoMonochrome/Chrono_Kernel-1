@@ -46,7 +46,7 @@ static int pgcnt;
 module_param(pgcnt, int, S_IRUGO);
 MODULE_PARM_DESC(pgcnt, "number of pages per eraseblock to torture (0 => all)");
 
-static int dev;
+static int dev = -EINVAL;
 module_param(dev, int, S_IRUGO);
 MODULE_PARM_DESC(dev, "MTD device number to use");
 
@@ -105,23 +105,15 @@ static inline int erase_eraseblock(int ebnum)
 	ei.addr = addr;
 	ei.len  = mtd->erasesize;
 
-	err = mtd->erase(mtd, &ei);
+	err = mtd_erase(mtd, &ei);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while erasing EB %d\n", err, ebnum);
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (ei.state == MTD_ERASE_FAILED) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "some erase error occurred at EB %d\n",
 		       ebnum);
-#else
-		;
-#endif
 		return -EIO;
 	}
 
@@ -135,7 +127,7 @@ static inline int erase_eraseblock(int ebnum)
 static inline int check_eraseblock(int ebnum, unsigned char *buf)
 {
 	int err, retries = 0;
-	size_t read = 0;
+	size_t read;
 	loff_t addr = ebnum * mtd->erasesize;
 	size_t len = mtd->erasesize;
 
@@ -145,71 +137,43 @@ static inline int check_eraseblock(int ebnum, unsigned char *buf)
 	}
 
 retry:
-	err = mtd->read(mtd, addr, len, &read, check_buf);
-	if (err == -EUCLEAN)
-#ifdef CONFIG_DEBUG_PRINTK
+	err = mtd_read(mtd, addr, len, &read, check_buf);
+	if (mtd_is_bitflip(err))
 		printk(PRINT_PREF "single bit flip occurred at EB %d "
 		       "MTD reported that it was fixed.\n", ebnum);
-#else
-		;
-#endif
 	else if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while reading EB %d, "
 		       "read %zd\n", err, ebnum, read);
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (read != len) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "failed to read %zd bytes from EB %d, "
 		       "read only %zd, but no error reported\n",
 		       len, ebnum, read);
-#else
-		;
-#endif
 		return -EIO;
 	}
 
 	if (memcmp(buf, check_buf, len)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "read wrong data from EB %d\n", ebnum);
-#else
-		;
-#endif
 		report_corrupt(check_buf, buf);
 
 		if (retries++ < RETRIES) {
 			/* Try read again */
 			yield();
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "re-try reading data from EB %d\n",
 			       ebnum);
-#else
-			;
-#endif
 			goto retry;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "retried %d times, still errors, "
 			       "give-up\n", RETRIES);
-#else
-			;
-#endif
 			return -EINVAL;
 		}
 	}
 
 	if (retries != 0)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "only attempt number %d was OK (!!!)\n",
 		       retries);
-#else
-		;
-#endif
 
 	return 0;
 }
@@ -217,7 +181,7 @@ retry:
 static inline int write_pattern(int ebnum, void *buf)
 {
 	int err;
-	size_t written = 0;
+	size_t written;
 	loff_t addr = ebnum * mtd->erasesize;
 	size_t len = mtd->erasesize;
 
@@ -225,23 +189,15 @@ static inline int write_pattern(int ebnum, void *buf)
 		addr = (ebnum + 1) * mtd->erasesize - pgcnt * pgsize;
 		len = pgcnt * pgsize;
 	}
-	err = mtd->write(mtd, addr, len, &written, buf);
+	err = mtd_write(mtd, addr, len, &written, buf);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while writing EB %d, written %zd"
 		      " bytes\n", err, ebnum, written);
-#else
-		;
-#endif
 		return err;
 	}
 	if (written != len) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "written only %zd bytes of %zd, but no error"
 		       " reported\n", written, len);
-#else
-		;
-#endif
 		return -EIO;
 	}
 
@@ -253,115 +209,66 @@ static int __init tort_init(void)
 	int err = 0, i, infinite = !cycles_count;
 	int bad_ebs[ebcnt];
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "Warning: this program is trying to wear out your "
 	       "flash, stop it if this is not wanted.\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
+
+	if (dev < 0) {
+		printk(PRINT_PREF "Please specify a valid mtd-device via module paramter\n");
+		printk(KERN_CRIT "CAREFUL: This test wipes all data on the specified MTD device!\n");
+		return -EINVAL;
+	}
+
 	printk(PRINT_PREF "MTD device: %d\n", dev);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "torture %d eraseblocks (%d-%d) of mtd%d\n",
 	       ebcnt, eb, eb + ebcnt - 1, dev);
-#else
-	;
-#endif
 	if (pgcnt)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "torturing just %d pages per eraseblock\n",
 			pgcnt);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "write verify %s\n", check ? "enabled" : "disabled");
-#else
-	;
-#endif
 
 	mtd = get_mtd_device(NULL, dev);
 	if (IS_ERR(mtd)) {
 		err = PTR_ERR(mtd);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot get MTD device\n");
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (mtd->writesize == 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "not NAND flash, assume page size is 512 "
 		       "bytes.\n");
-#else
-		;
-#endif
 		pgsize = 512;
 	} else
 		pgsize = mtd->writesize;
 
 	if (pgcnt && (pgcnt > mtd->erasesize / pgsize || pgcnt < 0)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: invalid pgcnt value %d\n", pgcnt);
-#else
-		;
-#endif
 		goto out_mtd;
 	}
 
 	err = -ENOMEM;
 	patt_5A5 = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!patt_5A5) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out_mtd;
 	}
 
 	patt_A5A = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!patt_A5A) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out_patt_5A5;
 	}
 
 	patt_FF = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!patt_FF) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out_patt_A5A;
 	}
 
 	check_buf = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!check_buf) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out_patt_FF;
 	}
 
@@ -383,27 +290,18 @@ static int __init tort_init(void)
 	 * Check if there is a bad eraseblock among those we are going to test.
 	 */
 	memset(&bad_ebs[0], 0, sizeof(int) * ebcnt);
-	if (mtd->block_isbad) {
+	if (mtd_can_have_bb(mtd)) {
 		for (i = eb; i < eb + ebcnt; i++) {
-			err = mtd->block_isbad(mtd,
-					       (loff_t)i * mtd->erasesize);
+			err = mtd_block_isbad(mtd, (loff_t)i * mtd->erasesize);
 
 			if (err < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "block_isbad() returned %d "
 				       "for EB %d\n", err, i);
-#else
-				;
-#endif
 				goto out;
 			}
 
 			if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("EB %d is bad. Skip it.\n", i);
-#else
-				;
-#endif
 				bad_ebs[i - eb] = 1;
 			}
 		}
@@ -431,12 +329,8 @@ static int __init tort_init(void)
 					continue;
 				err = check_eraseblock(i, patt_FF);
 				if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(PRINT_PREF "verify failed"
 					       " for 0xFF... pattern\n");
-#else
-					;
-#endif
 					goto out;
 				}
 				cond_resched();
@@ -468,14 +362,10 @@ static int __init tort_init(void)
 					patt = patt_A5A;
 				err = check_eraseblock(i, patt);
 				if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(PRINT_PREF "verify failed for %s"
 					       " pattern\n",
 					       ((eb + erase_cycles) & 1) ?
 					       "0x55AA55..." : "0xAA55AA...");
-#else
-					;
-#endif
 					goto out;
 				}
 				cond_resched();
@@ -490,13 +380,9 @@ static int __init tort_init(void)
 			stop_timing();
 			ms = (finish.tv_sec - start.tv_sec) * 1000 +
 			     (finish.tv_usec - start.tv_usec) / 1000;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "%08u erase cycles done, took %lu "
 			       "milliseconds (%lu seconds)\n",
 			       erase_cycles, ms, ms / 1000);
-#else
-			;
-#endif
 			start_timing();
 		}
 
@@ -505,12 +391,8 @@ static int __init tort_init(void)
 	}
 out:
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "finished after %u erase cycles\n",
 	       erase_cycles);
-#else
-	;
-#endif
 	kfree(check_buf);
 out_patt_FF:
 	kfree(patt_FF);
@@ -521,16 +403,8 @@ out_patt_5A5:
 out_mtd:
 	put_mtd_device(mtd);
 	if (err)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d occurred during torturing\n", err);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
-#else
-	;
-#endif
 	return err;
 }
 module_init(tort_init);
@@ -567,18 +441,10 @@ static void report_corrupt(unsigned char *read, unsigned char *written)
 			       &bits) >= 0)
 			pages++;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verify fails on %d pages, %d bytes/%d bits\n",
 	       pages, bytes, bits);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "The following is a list of all differences between"
 	       " what was read from flash and what was expected\n");
-#else
-	;
-#endif
 
 	for (i = 0; i < check_len; i += pgsize) {
 		cond_resched();
@@ -588,21 +454,13 @@ static void report_corrupt(unsigned char *read, unsigned char *written)
 		if (first < 0)
 			continue;
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("-------------------------------------------------------"
 		       "----------------------------------\n");
-#else
-		;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "Page %zd has %d bytes/%d bits failing verify,"
 		       " starting at offset 0x%x\n",
 		       (mtd->erasesize - check_len + i) / pgsize,
 		       bytes, bits, first);
-#else
-		;
-#endif
 
 		offset = first & ~0x7;
 		len = ((first + bytes) | 0x7) + 1 - offset;
@@ -617,54 +475,26 @@ static void print_bufs(unsigned char *read, unsigned char *written, int start,
 	int i = 0, j1, j2;
 	char *diff;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Offset       Read                          Written\n");
-#else
-	;
-#endif
 	while (i < len) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("0x%08x: ", start + i);
-#else
-		;
-#endif
 		diff = "   ";
 		for (j1 = 0; j1 < 8 && i + j1 < len; j1++) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", read[start + i + j1]);
-#else
-			;
-#endif
 			if (read[start + i + j1] != written[start + i + j1])
 				diff = "***";
 		}
 
 		while (j1 < 8) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" ");
-#else
-			;
-#endif
 			j1 += 1;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %s ", diff);
-#else
-		;
-#endif
 
 		for (j2 = 0; j2 < 8 && i + j2 < len; j2++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", written[start + i + j2]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 		i += 8;
 	}
 }

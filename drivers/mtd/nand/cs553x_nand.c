@@ -189,29 +189,17 @@ static int __init cs553x_init_one(int cs, int mmio, unsigned long adr)
 	struct nand_chip *this;
 	struct mtd_info *new_mtd;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Probing CS553x NAND controller CS#%d at %sIO 0x%08lx\n", cs, mmio?"MM":"P", adr);
-#else
-	;
-#endif
 
 	if (!mmio) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "PIO mode not yet implemented for CS553X NAND controller\n");
-#else
-		;
-#endif
 		return -ENXIO;
 	}
 
 	/* Allocate memory for MTD device structure and private data */
 	new_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!new_mtd) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to allocate CS553X NAND MTD device structure.\n");
-#else
-		;
-#endif
 		err = -ENOMEM;
 		goto out;
 	}
@@ -230,11 +218,7 @@ static int __init cs553x_init_one(int cs, int mmio, unsigned long adr)
 	/* map physical address */
 	this->IO_ADDR_R = this->IO_ADDR_W = ioremap(adr, 4096);
 	if (!this->IO_ADDR_R) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ioremap cs553x NAND @0x%08lx failed\n", adr);
-#else
-		;
-#endif
 		err = -EIO;
 		goto out_mtd;
 	}
@@ -253,9 +237,11 @@ static int __init cs553x_init_one(int cs, int mmio, unsigned long adr)
 	this->ecc.hwctl  = cs_enable_hwecc;
 	this->ecc.calculate = cs_calculate_ecc;
 	this->ecc.correct  = nand_correct_data;
+	this->ecc.strength = 1;
 
 	/* Enable the following for a flash based bad block table */
-	this->options = NAND_USE_FLASH_BBT | NAND_NO_AUTOINCR;
+	this->bbt_options = NAND_BBT_USE_FLASH;
+	this->options = NAND_NO_AUTOINCR;
 
 	/* Scan to find existence of the device */
 	if (nand_scan(new_mtd, 1)) {
@@ -293,15 +279,11 @@ static int is_geode(void)
 	return 0;
 }
 
-static const char *part_probes[] = { "cmdlinepart", NULL };
-
 static int __init cs553x_init(void)
 {
 	int err = -ENXIO;
 	int i;
 	uint64_t val;
-	int mtd_parts_nb = 0;
-	struct mtd_partition *mtd_parts = NULL;
 
 	/* If the CPU isn't a Geode GX or LX, abort */
 	if (!is_geode())
@@ -316,11 +298,7 @@ static int __init cs553x_init(void)
 	/* If it doesn't have the NAND controller enabled, abort */
 	rdmsrl(MSR_DIVIL_BALL_OPTS, val);
 	if (val & PIN_OPT_IDE) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CS553x NAND controller: Flash I/O not enabled in MSR_DIVIL_BALL_OPTS.\n");
-#else
-		;
-#endif
 		return -ENXIO;
 	}
 
@@ -335,17 +313,9 @@ static int __init cs553x_init(void)
 	   do mtdconcat etc. if we want to. */
 	for (i = 0; i < NR_CS553X_CONTROLLERS; i++) {
 		if (cs553x_mtd[i]) {
-
 			/* If any devices registered, return success. Else the last error. */
-			mtd_parts_nb = parse_mtd_partitions(cs553x_mtd[i], part_probes, &mtd_parts, 0);
-			if (mtd_parts_nb > 0)
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_NOTICE "Using command line partition definition\n");
-#else
-				;
-#endif
-			mtd_device_register(cs553x_mtd[i], mtd_parts,
-					    mtd_parts_nb);
+			mtd_device_parse_register(cs553x_mtd[i], NULL, NULL,
+						  NULL, 0);
 			err = 0;
 		}
 	}

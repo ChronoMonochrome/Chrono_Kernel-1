@@ -82,6 +82,8 @@ static void ahci_pmp_attach(struct ata_port *ap);
 static void ahci_pmp_detach(struct ata_port *ap);
 static int ahci_softreset(struct ata_link *link, unsigned int *class,
 			  unsigned long deadline);
+static int ahci_pmp_retry_softreset(struct ata_link *link, unsigned int *class,
+			  unsigned long deadline);
 static int ahci_hardreset(struct ata_link *link, unsigned int *class,
 			  unsigned long deadline);
 static void ahci_postreset(struct ata_link *link, unsigned int *class);
@@ -177,6 +179,12 @@ struct ata_port_operations ahci_ops = {
 	.port_stop		= ahci_port_stop,
 };
 EXPORT_SYMBOL_GPL(ahci_ops);
+
+struct ata_port_operations ahci_pmp_retry_srst_ops = {
+	.inherits		= &ahci_ops,
+	.softreset		= ahci_pmp_retry_softreset,
+};
+EXPORT_SYMBOL_GPL(ahci_pmp_retry_srst_ops);
 
 int ahci_em_messages = 1;
 EXPORT_SYMBOL_GPL(ahci_em_messages);
@@ -286,14 +294,10 @@ static ssize_t ahci_read_em_buffer(struct device *dev,
 	/* the count should not be larger than PAGE_SIZE */
 	if (count > PAGE_SIZE) {
 		if (printk_ratelimit())
-#ifdef CONFIG_DEBUG_PRINTK
-			ata_port_printk(ap, KERN_WARNING,
-					"EM read buffer size too large: "
-					"buffer size %u, page size %lu\n",
-					hpriv->em_buf_sz, PAGE_SIZE);
-#else
-			ata_port_;
-#endif
+			ata_port_warn(ap,
+				      "EM read buffer size too large: "
+				      "buffer size %u, page size %lu\n",
+				      hpriv->em_buf_sz, PAGE_SIZE);
 		count = PAGE_SIZE;
 	}
 
@@ -414,83 +418,46 @@ void ahci_save_initial_config(struct device *dev,
 
 	/* some chips have errata preventing 64bit use */
 	if ((cap & HOST_CAP_64) && (hpriv->flags & AHCI_HFLAG_32BIT_ONLY)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can't do 64bit DMA, forcing 32bit\n");
-#else
-		dev_;
-#endif
+		dev_info(dev, "controller can't do 64bit DMA, forcing 32bit\n");
 		cap &= ~HOST_CAP_64;
 	}
 
 	if ((cap & HOST_CAP_NCQ) && (hpriv->flags & AHCI_HFLAG_NO_NCQ)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can't do NCQ, turning off CAP_NCQ\n");
-#else
-		dev_;
-#endif
+		dev_info(dev, "controller can't do NCQ, turning off CAP_NCQ\n");
 		cap &= ~HOST_CAP_NCQ;
 	}
 
 	if (!(cap & HOST_CAP_NCQ) && (hpriv->flags & AHCI_HFLAG_YES_NCQ)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can do NCQ, turning on CAP_NCQ\n");
-#else
-		dev_;
-#endif
+		dev_info(dev, "controller can do NCQ, turning on CAP_NCQ\n");
 		cap |= HOST_CAP_NCQ;
 	}
 
 	if ((cap & HOST_CAP_PMP) && (hpriv->flags & AHCI_HFLAG_NO_PMP)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can't do PMP, turning off CAP_PMP\n");
-#else
-		dev_;
-#endif
+		dev_info(dev, "controller can't do PMP, turning off CAP_PMP\n");
 		cap &= ~HOST_CAP_PMP;
 	}
 
 	if ((cap & HOST_CAP_SNTF) && (hpriv->flags & AHCI_HFLAG_NO_SNTF)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can't do SNTF, turning off CAP_SNTF\n");
-#else
-		dev_;
-#endif
+		dev_info(dev,
+			 "controller can't do SNTF, turning off CAP_SNTF\n");
 		cap &= ~HOST_CAP_SNTF;
 	}
 
 	if (!(cap & HOST_CAP_FBS) && (hpriv->flags & AHCI_HFLAG_YES_FBS)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev,
-			   "controller can do FBS, turning on CAP_FBS\n");
-#else
-		dev_;
-#endif
+		dev_info(dev, "controller can do FBS, turning on CAP_FBS\n");
 		cap |= HOST_CAP_FBS;
 	}
 
 	if (force_port_map && port_map != force_port_map) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, dev, "forcing port_map 0x%x -> 0x%x\n",
-			   port_map, force_port_map);
-#else
-		dev_;
-#endif
+		dev_info(dev, "forcing port_map 0x%x -> 0x%x\n",
+			 port_map, force_port_map);
 		port_map = force_port_map;
 	}
 
 	if (mask_port_map) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_WARNING, dev, "masking port_map 0x%x -> 0x%x\n",
-			   port_map,
-			   port_map & mask_port_map);
-#else
-		dev_;
-#endif
+		dev_warn(dev, "masking port_map 0x%x -> 0x%x\n",
+			port_map,
+			port_map & mask_port_map);
 		port_map &= mask_port_map;
 	}
 
@@ -506,14 +473,9 @@ void ahci_save_initial_config(struct device *dev,
 		 * port_map and let it be generated from n_ports.
 		 */
 		if (map_ports > ahci_nr_ports(cap)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dev_printk(KERN_WARNING, dev,
-				   "implemented port map (0x%x) contains more "
-				   "ports than nr_ports (%u), using nr_ports\n",
-				   port_map, ahci_nr_ports(cap));
-#else
-			dev_;
-#endif
+			dev_warn(dev,
+				 "implemented port map (0x%x) contains more ports than nr_ports (%u), using nr_ports\n",
+				 port_map, ahci_nr_ports(cap));
 			port_map = 0;
 		}
 	}
@@ -521,12 +483,7 @@ void ahci_save_initial_config(struct device *dev,
 	/* fabricate port_map from cap.nr_ports */
 	if (!port_map) {
 		port_map = (1 << ahci_nr_ports(cap)) - 1;
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_WARNING, dev,
-			   "forcing PORTS_IMPL to 0x%x\n", port_map);
-#else
-		dev_;
-#endif
+		dev_warn(dev, "forcing PORTS_IMPL to 0x%x\n", port_map);
 
 		/* write the fixed up value to the PI register */
 		hpriv->saved_port_map = port_map;
@@ -780,6 +737,7 @@ static void ahci_power_down(struct ata_port *ap)
 
 static void ahci_start_port(struct ata_port *ap)
 {
+	struct ahci_host_priv *hpriv = ap->host->private_data;
 	struct ahci_port_priv *pp = ap->private_data;
 	struct ata_link *link;
 	struct ahci_em_priv *emp;
@@ -790,7 +748,8 @@ static void ahci_start_port(struct ata_port *ap)
 	ahci_start_fis_rx(ap);
 
 	/* enable DMA */
-	ahci_start_engine(ap);
+	if (!(hpriv->flags & AHCI_HFLAG_DELAY_ENGINE))
+		ahci_start_engine(ap);
 
 	/* turn on LEDs */
 	if (ap->flags & ATA_FLAG_EM) {
@@ -866,8 +825,8 @@ int ahci_reset_controller(struct ata_host *host)
 					HOST_RESET, 10, 1000);
 
 		if (tmp & HOST_RESET) {
-			dev_printk(KERN_ERR, host->dev,
-				   "controller reset failed (0x%x)\n", tmp);
+			dev_err(host->dev, "controller reset failed (0x%x)\n",
+				tmp);
 			return -EIO;
 		}
 
@@ -879,12 +838,7 @@ int ahci_reset_controller(struct ata_host *host)
 		 */
 		ahci_restore_initial_config(host);
 	} else
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, host->dev,
-			   "skipping global host reset\n");
-#else
-		dev_;
-#endif
+		dev_info(host->dev, "skipping global host reset\n");
 
 	return 0;
 }
@@ -1180,16 +1134,12 @@ static void ahci_dev_config(struct ata_device *dev)
 
 	if (hpriv->flags & AHCI_HFLAG_SECT255) {
 		dev->max_sectors = 255;
-#ifdef CONFIG_DEBUG_PRINTK
-		ata_dev_printk(dev, KERN_INFO,
-			       "SB600 AHCI: limiting to 255 sectors per cmd\n");
-#else
-		ata_dev_;
-#endif
+		ata_dev_info(dev,
+			     "SB600 AHCI: limiting to 255 sectors per cmd\n");
 	}
 }
 
-unsigned int ahci_dev_classify(struct ata_port *ap)
+static unsigned int ahci_dev_classify(struct ata_port *ap)
 {
 	void __iomem *port_mmio = ahci_port_base(ap);
 	struct ata_taskfile tf;
@@ -1203,7 +1153,6 @@ unsigned int ahci_dev_classify(struct ata_port *ap)
 
 	return ata_dev_classify(&tf);
 }
-EXPORT_SYMBOL_GPL(ahci_dev_classify);
 
 void ahci_fill_cmd_slot(struct ahci_port_priv *pp, unsigned int tag,
 			u32 opts)
@@ -1278,15 +1227,6 @@ static int ahci_exec_polled_cmd(struct ata_port *ap, int pmp,
 	ata_tf_to_fis(tf, pmp, is_cmd, fis);
 	ahci_fill_cmd_slot(pp, 0, cmd_fis_len | flags | (pmp << 12));
 
-	/* set port value for softreset of Port Multiplier */
-	if (pp->fbs_enabled && pp->fbs_last_dev != pmp) {
-		tmp = readl(port_mmio + PORT_FBS);
-		tmp &= ~(PORT_FBS_DEV_MASK | PORT_FBS_DEC);
-		tmp |= pmp << PORT_FBS_DEV_OFFSET;
-		writel(tmp, port_mmio + PORT_FBS);
-		pp->fbs_last_dev = pmp;
-	}
-
 	/* issue & wait */
 	writel(1, port_mmio + PORT_CMD_ISSUE);
 
@@ -1309,11 +1249,9 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
 {
 	struct ata_port *ap = link->ap;
 	struct ahci_host_priv *hpriv = ap->host->private_data;
-	struct ahci_port_priv *pp = ap->private_data;
 	const char *reason = NULL;
 	unsigned long now, msecs;
 	struct ata_taskfile tf;
-	bool fbs_disabled = false;
 	int rc;
 
 	DPRINTK("ENTER\n");
@@ -1321,22 +1259,7 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
 	/* prepare for SRST (AHCI-1.1 10.4.1) */
 	rc = ahci_kick_engine(ap);
 	if (rc && rc != -EOPNOTSUPP)
-#ifdef CONFIG_DEBUG_PRINTK
-		ata_link_printk(link, KERN_WARNING,
-				"failed to reset engine (errno=%d)\n", rc);
-#else
-		ata_link_;
-#endif
-
-	/*
-	 * According to AHCI-1.2 9.3.9: if FBS is enable, software shall
-	 * clear PxFBS.EN to '0' prior to issuing software reset to devices
-	 * that is attached to port multiplier.
-	 */
-	if (!ata_is_host_link(link) && pp->fbs_enabled) {
-		ahci_disable_fbs(ap);
-		fbs_disabled = true;
-	}
+		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
 
 	ata_tf_init(link->device, &tf);
 
@@ -1369,12 +1292,7 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
 		 * be trusted.  Treat device readiness timeout as link
 		 * offline.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		ata_link_printk(link, KERN_INFO,
-				"device not ready, treating as offline\n");
-#else
-		ata_link_;
-#endif
+		ata_link_info(link, "device not ready, treating as offline\n");
 		*class = ATA_DEV_NONE;
 	} else if (rc) {
 		/* link occupied, -ENODEV too is an error */
@@ -1383,15 +1301,11 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
 	} else
 		*class = ahci_dev_classify(ap);
 
-	/* re-enable FBS if disabled before */
-	if (fbs_disabled)
-		ahci_enable_fbs(ap);
-
 	DPRINTK("EXIT, class=%u\n", *class);
 	return 0;
 
  fail:
-	ata_link_printk(link, KERN_ERR, "softreset failed (%s)\n", reason);
+	ata_link_err(link, "softreset failed (%s)\n", reason);
 	return rc;
 }
 
@@ -1414,6 +1328,55 @@ static int ahci_softreset(struct ata_link *link, unsigned int *class,
 	return ahci_do_softreset(link, class, pmp, deadline, ahci_check_ready);
 }
 EXPORT_SYMBOL_GPL(ahci_do_softreset);
+
+static int ahci_bad_pmp_check_ready(struct ata_link *link)
+{
+	void __iomem *port_mmio = ahci_port_base(link->ap);
+	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
+	u32 irq_status = readl(port_mmio + PORT_IRQ_STAT);
+
+	/*
+	 * There is no need to check TFDATA if BAD PMP is found due to HW bug,
+	 * which can save timeout delay.
+	 */
+	if (irq_status & PORT_IRQ_BAD_PMP)
+		return -EIO;
+
+	return ata_check_ready(status);
+}
+
+int ahci_pmp_retry_softreset(struct ata_link *link, unsigned int *class,
+				unsigned long deadline)
+{
+	struct ata_port *ap = link->ap;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	int pmp = sata_srst_pmp(link);
+	int rc;
+	u32 irq_sts;
+
+	DPRINTK("ENTER\n");
+
+	rc = ahci_do_softreset(link, class, pmp, deadline,
+			       ahci_bad_pmp_check_ready);
+
+	/*
+	 * Soft reset fails with IPMS set when PMP is enabled but
+	 * SATA HDD/ODD is connected to SATA port, do soft reset
+	 * again to port 0.
+	 */
+	if (rc == -EIO) {
+		irq_sts = readl(port_mmio + PORT_IRQ_STAT);
+		if (irq_sts & PORT_IRQ_BAD_PMP) {
+			ata_link_printk(link, KERN_WARNING,
+					"applying PMP SRST workaround "
+					"and retrying\n");
+			rc = ahci_do_softreset(link, class, 0, deadline,
+					       ahci_check_ready);
+		}
+	}
+
+	return rc;
+}
 
 static int ahci_hardreset(struct ata_link *link, unsigned int *class,
 			  unsigned long deadline)
@@ -1560,8 +1523,7 @@ static void ahci_fbs_dec_intr(struct ata_port *ap)
 	}
 
 	if (fbs & PORT_FBS_DEC)
-		dev_printk(KERN_ERR, ap->host->dev,
-			   "failed to clear device error\n");
+		dev_err(ap->host->dev, "failed to clear device error\n");
 }
 
 static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
@@ -1581,8 +1543,7 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
 		u32 fbs = readl(port_mmio + PORT_FBS);
 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
 
-		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
-		    ata_link_online(&ap->pmp_link[pmp])) {
+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
 			link = &ap->pmp_link[pmp];
 			fbs_need_dec = true;
 		}
@@ -1693,7 +1654,8 @@ static void ahci_port_intr(struct ata_port *ap)
 	if (unlikely(resetting))
 		status &= ~PORT_IRQ_BAD_PMP;
 
-	if (sata_lpm_ignore_phy_events(&ap->link)) {
+	/* if LPM is enabled, PHYRDY doesn't mean anything */
+	if (ap->link.lpm_policy > ATA_LPM_MAX_POWER) {
 		status &= ~PORT_IRQ_PHYRDY;
 		ahci_scr_write(&ap->link, SCR_ERROR, SERR_PHYRDY_CHG);
 	}
@@ -1798,12 +1760,8 @@ irqreturn_t ahci_interrupt(int irq, void *dev_instance)
 		} else {
 			VPRINTK("port %u (no irq)\n", i);
 			if (ata_ratelimit())
-#ifdef CONFIG_DEBUG_PRINTK
-				dev_printk(KERN_WARNING, host->dev,
-					"interrupt on disabled port %u\n", i);
-#else
-				dev_;
-#endif
+				dev_warn(host->dev,
+					 "interrupt on disabled port %u\n", i);
 		}
 
 		handled = 1;
@@ -1954,15 +1912,11 @@ static void ahci_enable_fbs(struct ata_port *ap)
 	writel(fbs | PORT_FBS_EN, port_mmio + PORT_FBS);
 	fbs = readl(port_mmio + PORT_FBS);
 	if (fbs & PORT_FBS_EN) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, ap->host->dev, "FBS is enabled.\n");
-#else
-		dev_;
-#endif
+		dev_info(ap->host->dev, "FBS is enabled\n");
 		pp->fbs_enabled = true;
 		pp->fbs_last_dev = -1; /* initialization */
 	} else
-		dev_printk(KERN_ERR, ap->host->dev, "Failed to enable FBS\n");
+		dev_err(ap->host->dev, "Failed to enable FBS\n");
 
 	ahci_start_engine(ap);
 }
@@ -1990,13 +1944,9 @@ static void ahci_disable_fbs(struct ata_port *ap)
 	writel(fbs & ~PORT_FBS_EN, port_mmio + PORT_FBS);
 	fbs = readl(port_mmio + PORT_FBS);
 	if (fbs & PORT_FBS_EN)
-		dev_printk(KERN_ERR, ap->host->dev, "Failed to disable FBS\n");
+		dev_err(ap->host->dev, "Failed to disable FBS\n");
 	else {
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_INFO, ap->host->dev, "FBS is disabled.\n");
-#else
-		dev_;
-#endif
+		dev_info(ap->host->dev, "FBS is disabled\n");
 		pp->fbs_enabled = false;
 	}
 
@@ -2072,8 +2022,8 @@ static int ahci_port_suspend(struct ata_port *ap, pm_message_t mesg)
 	if (rc == 0)
 		ahci_power_down(ap);
 	else {
-		ata_port_printk(ap, KERN_ERR, "%s (%d)\n", emsg, rc);
-		ahci_start_port(ap);
+		ata_port_err(ap, "%s (%d)\n", emsg, rc);
+		ata_port_freeze(ap);
 	}
 
 	return rc;
@@ -2100,22 +2050,12 @@ static int ahci_port_start(struct ata_port *ap)
 		if (cmd & PORT_CMD_FBSCP)
 			pp->fbs_supported = true;
 		else if (hpriv->flags & AHCI_HFLAG_YES_FBS) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dev_printk(KERN_INFO, dev,
-				   "port %d can do FBS, forcing FBSCP\n",
-				   ap->port_no);
-#else
-			dev_;
-#endif
+			dev_info(dev, "port %d can do FBS, forcing FBSCP\n",
+				 ap->port_no);
 			pp->fbs_supported = true;
 		} else
-#ifdef CONFIG_DEBUG_PRINTK
-			dev_printk(KERN_WARNING, dev,
-				   "port %d is not capable of FBS\n",
-				   ap->port_no);
-#else
-			dev_;
-#endif
+			dev_warn(dev, "port %d is not capable of FBS\n",
+				 ap->port_no);
 	}
 
 	if (pp->fbs_supported) {
@@ -2177,11 +2117,7 @@ static void ahci_port_stop(struct ata_port *ap)
 	/* de-initialize port */
 	rc = ahci_deinit_port(ap, &emsg);
 	if (rc)
-#ifdef CONFIG_DEBUG_PRINTK
-		ata_port_printk(ap, KERN_WARNING, "%s (%d)\n", emsg, rc);
-#else
-		ata_port_;
-#endif
+		ata_port_warn(ap, "%s (%d)\n", emsg, rc);
 }
 
 void ahci_print_info(struct ata_host *host, const char *scc_s)

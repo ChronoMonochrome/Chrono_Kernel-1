@@ -5,5 +5,4 @@
 ptp-y					:= ptp_clock.o ptp_chardev.o ptp_sysfs.o
 obj-$(CONFIG_PTP_1588_CLOCK)		+= ptp.o
 obj-$(CONFIG_PTP_1588_CLOCK_IXP46X)	+= ptp_ixp46x.o
-
-include $(srctree)/scripts/Makefile_build.thumb2
+obj-$(CONFIG_PTP_1588_CLOCK_PCH)	+= ptp_pch.o

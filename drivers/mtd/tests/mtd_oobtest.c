@@ -30,7 +30,7 @@
 
 #define PRINT_PREF KERN_INFO "mtd_oobtest: "
 
-static int dev;
+static int dev = -EINVAL;
 module_param(dev, int, S_IRUGO);
 MODULE_PARM_DESC(dev, "MTD device number to use");
 
@@ -78,23 +78,15 @@ static int erase_eraseblock(int ebnum)
 	ei.addr = addr;
 	ei.len  = mtd->erasesize;
 
-	err = mtd->erase(mtd, &ei);
+	err = mtd_erase(mtd, &ei);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while erasing EB %d\n", err, ebnum);
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (ei.state == MTD_ERASE_FAILED) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "some erase error occurred at EB %d\n",
 		       ebnum);
-#else
-		;
-#endif
 		return -EIO;
 	}
 
@@ -106,11 +98,7 @@ static int erase_whole_device(void)
 	int err;
 	unsigned int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "erasing whole device\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
 			continue;
@@ -119,11 +107,7 @@ static int erase_whole_device(void)
 			return err;
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "erased %u eraseblocks\n", i);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -147,7 +131,7 @@ static int write_eraseblock(int ebnum)
 
 	for (i = 0; i < pgcnt; ++i, addr += mtd->writesize) {
 		set_random_data(writebuf, use_len);
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = use_len;
@@ -155,20 +139,12 @@ static int write_eraseblock(int ebnum)
 		ops.ooboffs   = use_offset;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = writebuf;
-		err = mtd->write_oob(mtd, addr, &ops);
+		err = mtd_write_oob(mtd, addr, &ops);
 		if (err || ops.oobretlen != use_len) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: writeoob failed at %#llx\n",
 			       (long long)addr);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: use_len %d, use_offset %d\n",
 			       use_len, use_offset);
-#else
-			;
-#endif
 			errcnt += 1;
 			return err ? err : -1;
 		}
@@ -184,11 +160,7 @@ static int write_whole_device(void)
 	int err;
 	unsigned int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "writing OOBs of whole device\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
 			continue;
@@ -196,18 +168,10 @@ static int write_whole_device(void)
 		if (err)
 			return err;
 		if (i % 256 == 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "written up to eraseblock %u\n", i);
-#else
-			;
-#endif
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "written %u eraseblocks\n", i);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -220,7 +184,7 @@ static int verify_eraseblock(int ebnum)
 
 	for (i = 0; i < pgcnt; ++i, addr += mtd->writesize) {
 		set_random_data(writebuf, use_len);
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = use_len;
@@ -228,38 +192,26 @@ static int verify_eraseblock(int ebnum)
 		ops.ooboffs   = use_offset;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = readbuf;
-		err = mtd->read_oob(mtd, addr, &ops);
+		err = mtd_read_oob(mtd, addr, &ops);
 		if (err || ops.oobretlen != use_len) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: readoob failed at %#llx\n",
 			       (long long)addr);
-#else
-			;
-#endif
 			errcnt += 1;
 			return err ? err : -1;
 		}
 		if (memcmp(readbuf, writebuf, use_len)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: verify failed at %#llx\n",
 			       (long long)addr);
-#else
-			;
-#endif
 			errcnt += 1;
 			if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "error: too many errors\n");
-#else
-				;
-#endif
 				return -1;
 			}
 		}
 		if (use_offset != 0 || use_len < mtd->ecclayout->oobavail) {
 			int k;
 
-			ops.mode      = MTD_OOB_AUTO;
+			ops.mode      = MTD_OPS_AUTO_OOB;
 			ops.len       = 0;
 			ops.retlen    = 0;
 			ops.ooblen    = mtd->ecclayout->oobavail;
@@ -267,73 +219,45 @@ static int verify_eraseblock(int ebnum)
 			ops.ooboffs   = 0;
 			ops.datbuf    = NULL;
 			ops.oobbuf    = readbuf;
-			err = mtd->read_oob(mtd, addr, &ops);
+			err = mtd_read_oob(mtd, addr, &ops);
 			if (err || ops.oobretlen != mtd->ecclayout->oobavail) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "error: readoob failed at "
 				       "%#llx\n", (long long)addr);
-#else
-				;
-#endif
 				errcnt += 1;
 				return err ? err : -1;
 			}
 			if (memcmp(readbuf + use_offset, writebuf, use_len)) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "error: verify failed at "
 				       "%#llx\n", (long long)addr);
-#else
-				;
-#endif
 				errcnt += 1;
 				if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(PRINT_PREF "error: too many "
 					       "errors\n");
-#else
-					;
-#endif
 					return -1;
 				}
 			}
 			for (k = 0; k < use_offset; ++k)
 				if (readbuf[k] != 0xff) {
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(PRINT_PREF "error: verify 0xff "
 					       "failed at %#llx\n",
 					       (long long)addr);
-#else
-					;
-#endif
 					errcnt += 1;
 					if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 						printk(PRINT_PREF "error: too "
 						       "many errors\n");
-#else
-						;
-#endif
 						return -1;
 					}
 				}
 			for (k = use_offset + use_len;
 			     k < mtd->ecclayout->oobavail; ++k)
 				if (readbuf[k] != 0xff) {
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(PRINT_PREF "error: verify 0xff "
 					       "failed at %#llx\n",
 					       (long long)addr);
-#else
-					;
-#endif
 					errcnt += 1;
 					if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 						printk(PRINT_PREF "error: too "
 						       "many errors\n");
-#else
-						;
-#endif
 						return -1;
 					}
 				}
@@ -352,7 +276,7 @@ static int verify_eraseblock_in_one_go(int ebnum)
 	size_t len = mtd->ecclayout->oobavail * pgcnt;
 
 	set_random_data(writebuf, len);
-	ops.mode      = MTD_OOB_AUTO;
+	ops.mode      = MTD_OPS_AUTO_OOB;
 	ops.len       = 0;
 	ops.retlen    = 0;
 	ops.ooblen    = len;
@@ -360,31 +284,19 @@ static int verify_eraseblock_in_one_go(int ebnum)
 	ops.ooboffs   = 0;
 	ops.datbuf    = NULL;
 	ops.oobbuf    = readbuf;
-	err = mtd->read_oob(mtd, addr, &ops);
+	err = mtd_read_oob(mtd, addr, &ops);
 	if (err || ops.oobretlen != len) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: readoob failed at %#llx\n",
 		       (long long)addr);
-#else
-		;
-#endif
 		errcnt += 1;
 		return err ? err : -1;
 	}
 	if (memcmp(readbuf, writebuf, len)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: verify failed at %#llx\n",
 		       (long long)addr);
-#else
-		;
-#endif
 		errcnt += 1;
 		if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: too many errors\n");
-#else
-			;
-#endif
 			return -1;
 		}
 	}
@@ -397,11 +309,7 @@ static int verify_all_eraseblocks(void)
 	int err;
 	unsigned int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verifying all eraseblocks\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
 			continue;
@@ -409,18 +317,10 @@ static int verify_all_eraseblocks(void)
 		if (err)
 			return err;
 		if (i % 256 == 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "verified up to eraseblock %u\n", i);
-#else
-			;
-#endif
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verified %u eraseblocks\n", i);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -429,13 +329,9 @@ static int is_block_bad(int ebnum)
 	int ret;
 	loff_t addr = ebnum * mtd->erasesize;
 
-	ret = mtd->block_isbad(mtd, addr);
+	ret = mtd_block_isbad(mtd, addr);
 	if (ret)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "block %d is bad\n", ebnum);
-#else
-		;
-#endif
 	return ret;
 }
 
@@ -445,30 +341,18 @@ static int scan_for_bad_eraseblocks(void)
 
 	bbt = kmalloc(ebcnt, GFP_KERNEL);
 	if (!bbt) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "scanning for bad eraseblocks\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt; ++i) {
 		bbt[i] = is_block_bad(i) ? 1 : 0;
 		if (bbt[i])
 			bad += 1;
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "scanned %d eraseblocks, %d are bad\n", i, bad);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -480,39 +364,26 @@ static int __init mtd_oobtest_init(void)
 	struct mtd_oob_ops ops;
 	loff_t addr = 0, addr0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
+
+	if (dev < 0) {
+		printk(PRINT_PREF "Please specify a valid mtd-device via module paramter\n");
+		printk(KERN_CRIT "CAREFUL: This test wipes all data on the specified MTD device!\n");
+		return -EINVAL;
+	}
+
 	printk(PRINT_PREF "MTD device: %d\n", dev);
-#else
-	;
-#endif
 
 	mtd = get_mtd_device(NULL, dev);
 	if (IS_ERR(mtd)) {
 		err = PTR_ERR(mtd);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot get MTD device\n");
-#else
-		;
-#endif
 		return err;
 	}
 
 	if (mtd->type != MTD_NANDFLASH) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "this test requires NAND flash\n");
-#else
-		;
-#endif
 		goto out;
 	}
 
@@ -521,33 +392,21 @@ static int __init mtd_oobtest_init(void)
 	ebcnt = tmp;
 	pgcnt = mtd->erasesize / mtd->writesize;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "MTD device size %llu, eraseblock size %u, "
 	       "page size %u, count of eraseblocks %u, pages per "
 	       "eraseblock %u, OOB size %u\n",
 	       (unsigned long long)mtd->size, mtd->erasesize,
 	       mtd->writesize, ebcnt, pgcnt, mtd->oobsize);
-#else
-	;
-#endif
 
 	err = -ENOMEM;
 	readbuf = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!readbuf) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out;
 	}
 	writebuf = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!writebuf) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
-#else
-		;
-#endif
 		goto out;
 	}
 
@@ -561,11 +420,7 @@ static int __init mtd_oobtest_init(void)
 	vary_offset = 0;
 
 	/* First test: write all OOB, read it back and verify */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "test 1 of 5\n");
-#else
-	;
-#endif
 
 	err = erase_whole_device();
 	if (err)
@@ -585,11 +440,7 @@ static int __init mtd_oobtest_init(void)
 	 * Second test: write all OOB, a block at a time, read it back and
 	 * verify.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "test 2 of 5\n");
-#else
-	;
-#endif
 
 	err = erase_whole_device();
 	if (err)
@@ -602,11 +453,7 @@ static int __init mtd_oobtest_init(void)
 
 	/* Check all eraseblocks */
 	simple_srand(3);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verifying all eraseblocks\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
 			continue;
@@ -614,28 +461,16 @@ static int __init mtd_oobtest_init(void)
 		if (err)
 			goto out;
 		if (i % 256 == 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "verified up to eraseblock %u\n", i);
-#else
-			;
-#endif
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verified %u eraseblocks\n", i);
-#else
-	;
-#endif
 
 	/*
 	 * Third test: write OOB at varying offsets and lengths, read it back
 	 * and verify.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "test 3 of 5\n");
-#else
-	;
-#endif
 
 	err = erase_whole_device();
 	if (err)
@@ -668,11 +503,7 @@ static int __init mtd_oobtest_init(void)
 	vary_offset = 0;
 
 	/* Fourth test: try to write off end of device */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "test 4 of 5\n");
-#else
-	;
-#endif
 
 	err = erase_whole_device();
 	if (err)
@@ -683,7 +514,7 @@ static int __init mtd_oobtest_init(void)
 		addr0 += mtd->erasesize;
 
 	/* Attempt to write off end of OOB */
-	ops.mode      = MTD_OOB_AUTO;
+	ops.mode      = MTD_OPS_AUTO_OOB;
 	ops.len       = 0;
 	ops.retlen    = 0;
 	ops.ooblen    = 1;
@@ -691,35 +522,19 @@ static int __init mtd_oobtest_init(void)
 	ops.ooboffs   = mtd->ecclayout->oobavail;
 	ops.datbuf    = NULL;
 	ops.oobbuf    = writebuf;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "attempting to start write past end of OOB\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "an error is expected...\n");
-#else
-	;
-#endif
-	err = mtd->write_oob(mtd, addr0, &ops);
+	err = mtd_write_oob(mtd, addr0, &ops);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error occurred as expected\n");
-#else
-		;
-#endif
 		err = 0;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: can write past end of OOB\n");
-#else
-		;
-#endif
 		errcnt += 1;
 	}
 
 	/* Attempt to read off end of OOB */
-	ops.mode      = MTD_OOB_AUTO;
+	ops.mode      = MTD_OPS_AUTO_OOB;
 	ops.len       = 0;
 	ops.retlen    = 0;
 	ops.ooblen    = 1;
@@ -727,43 +542,23 @@ static int __init mtd_oobtest_init(void)
 	ops.ooboffs   = mtd->ecclayout->oobavail;
 	ops.datbuf    = NULL;
 	ops.oobbuf    = readbuf;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "attempting to start read past end of OOB\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "an error is expected...\n");
-#else
-	;
-#endif
-	err = mtd->read_oob(mtd, addr0, &ops);
+	err = mtd_read_oob(mtd, addr0, &ops);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error occurred as expected\n");
-#else
-		;
-#endif
 		err = 0;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: can read past end of OOB\n");
-#else
-		;
-#endif
 		errcnt += 1;
 	}
 
 	if (bbt[ebcnt - 1])
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "skipping end of device tests because last "
 		       "block is bad\n");
-#else
-		;
-#endif
 	else {
 		/* Attempt to write off end of device */
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = mtd->ecclayout->oobavail + 1;
@@ -771,35 +566,19 @@ static int __init mtd_oobtest_init(void)
 		ops.ooboffs   = 0;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = writebuf;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "attempting to write past end of device\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "an error is expected...\n");
-#else
-		;
-#endif
-		err = mtd->write_oob(mtd, mtd->size - mtd->writesize, &ops);
+		err = mtd_write_oob(mtd, mtd->size - mtd->writesize, &ops);
 		if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error occurred as expected\n");
-#else
-			;
-#endif
 			err = 0;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: wrote past end of device\n");
-#else
-			;
-#endif
 			errcnt += 1;
 		}
 
 		/* Attempt to read off end of device */
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = mtd->ecclayout->oobavail + 1;
@@ -807,30 +586,14 @@ static int __init mtd_oobtest_init(void)
 		ops.ooboffs   = 0;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = readbuf;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "attempting to read past end of device\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "an error is expected...\n");
-#else
-		;
-#endif
-		err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
+		err = mtd_read_oob(mtd, mtd->size - mtd->writesize, &ops);
 		if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error occurred as expected\n");
-#else
-			;
-#endif
 			err = 0;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: read past end of device\n");
-#else
-			;
-#endif
 			errcnt += 1;
 		}
 
@@ -839,7 +602,7 @@ static int __init mtd_oobtest_init(void)
 			goto out;
 
 		/* Attempt to write off end of device */
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = mtd->ecclayout->oobavail;
@@ -847,35 +610,19 @@ static int __init mtd_oobtest_init(void)
 		ops.ooboffs   = 1;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = writebuf;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "attempting to write past end of device\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "an error is expected...\n");
-#else
-		;
-#endif
-		err = mtd->write_oob(mtd, mtd->size - mtd->writesize, &ops);
+		err = mtd_write_oob(mtd, mtd->size - mtd->writesize, &ops);
 		if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error occurred as expected\n");
-#else
-			;
-#endif
 			err = 0;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: wrote past end of device\n");
-#else
-			;
-#endif
 			errcnt += 1;
 		}
 
 		/* Attempt to read off end of device */
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = mtd->ecclayout->oobavail;
@@ -883,40 +630,20 @@ static int __init mtd_oobtest_init(void)
 		ops.ooboffs   = 1;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = readbuf;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "attempting to read past end of device\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "an error is expected...\n");
-#else
-		;
-#endif
-		err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
+		err = mtd_read_oob(mtd, mtd->size - mtd->writesize, &ops);
 		if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error occurred as expected\n");
-#else
-			;
-#endif
 			err = 0;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: read past end of device\n");
-#else
-			;
-#endif
 			errcnt += 1;
 		}
 	}
 
 	/* Fifth test: write / read across block boundaries */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "test 5 of 5\n");
-#else
-	;
-#endif
 
 	/* Erase all eraseblocks */
 	err = erase_whole_device();
@@ -925,11 +652,7 @@ static int __init mtd_oobtest_init(void)
 
 	/* Write all eraseblocks */
 	simple_srand(11);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "writing OOBs of whole device\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt - 1; ++i) {
 		int cnt = 2;
 		int pg;
@@ -939,7 +662,7 @@ static int __init mtd_oobtest_init(void)
 		addr = (i + 1) * mtd->erasesize - mtd->writesize;
 		for (pg = 0; pg < cnt; ++pg) {
 			set_random_data(writebuf, sz);
-			ops.mode      = MTD_OOB_AUTO;
+			ops.mode      = MTD_OPS_AUTO_OOB;
 			ops.len       = 0;
 			ops.retlen    = 0;
 			ops.ooblen    = sz;
@@ -947,39 +670,27 @@ static int __init mtd_oobtest_init(void)
 			ops.ooboffs   = 0;
 			ops.datbuf    = NULL;
 			ops.oobbuf    = writebuf;
-			err = mtd->write_oob(mtd, addr, &ops);
+			err = mtd_write_oob(mtd, addr, &ops);
 			if (err)
 				goto out;
 			if (i % 256 == 0)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "written up to eraseblock "
 				       "%u\n", i);
-#else
-				;
-#endif
 			cond_resched();
 			addr += mtd->writesize;
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "written %u eraseblocks\n", i);
-#else
-	;
-#endif
 
 	/* Check all eraseblocks */
 	simple_srand(11);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verifying all eraseblocks\n");
-#else
-	;
-#endif
 	for (i = 0; i < ebcnt - 1; ++i) {
 		if (bbt[i] || bbt[i + 1])
 			continue;
 		set_random_data(writebuf, mtd->ecclayout->oobavail * 2);
 		addr = (i + 1) * mtd->erasesize - mtd->writesize;
-		ops.mode      = MTD_OOB_AUTO;
+		ops.mode      = MTD_OPS_AUTO_OOB;
 		ops.len       = 0;
 		ops.retlen    = 0;
 		ops.ooblen    = mtd->ecclayout->oobavail * 2;
@@ -987,61 +698,33 @@ static int __init mtd_oobtest_init(void)
 		ops.ooboffs   = 0;
 		ops.datbuf    = NULL;
 		ops.oobbuf    = readbuf;
-		err = mtd->read_oob(mtd, addr, &ops);
+		err = mtd_read_oob(mtd, addr, &ops);
 		if (err)
 			goto out;
 		if (memcmp(readbuf, writebuf, mtd->ecclayout->oobavail * 2)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: verify failed at %#llx\n",
 			       (long long)addr);
-#else
-			;
-#endif
 			errcnt += 1;
 			if (errcnt > 1000) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(PRINT_PREF "error: too many errors\n");
-#else
-				;
-#endif
 				goto out;
 			}
 		}
 		if (i % 256 == 0)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "verified up to eraseblock %u\n", i);
-#else
-			;
-#endif
 		cond_resched();
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "verified %u eraseblocks\n", i);
-#else
-	;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "finished with %d errors\n", errcnt);
-#else
-	;
-#endif
 out:
 	kfree(bbt);
 	kfree(writebuf);
 	kfree(readbuf);
 	put_mtd_device(mtd);
 	if (err)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d occurred\n", err);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
-#else
-	;
-#endif
 	return err;
 }
 module_init(mtd_oobtest_init);

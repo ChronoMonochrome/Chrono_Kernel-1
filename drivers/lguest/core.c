@@ -82,11 +82,7 @@ static __init int map_switcher(void)
 	 */
 	if (SWITCHER_ADDR + (TOTAL_SWITCHER_PAGES+1)*PAGE_SIZE > FIXADDR_START){
 		err = -ENOMEM;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("lguest: mapping switcher would thwack fixmap\n");
-#else
-		;
-#endif
 		goto free_pages;
 	}
 
@@ -101,11 +97,7 @@ static __init int map_switcher(void)
 				     + (TOTAL_SWITCHER_PAGES+1) * PAGE_SIZE);
 	if (!switcher_vma) {
 		err = -ENOMEM;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("lguest: could not map switcher pages high\n");
-#else
-		;
-#endif
 		goto free_pages;
 	}
 
@@ -119,27 +111,19 @@ static __init int map_switcher(void)
 	pagep = switcher_page;
 	err = map_vm_area(switcher_vma, PAGE_KERNEL_EXEC, &pagep);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("lguest: map_vm_area failed: %i\n", err);
-#else
-		;
-#endif
 		goto free_vma;
 	}
 
 	/*
 	 * Now the Switcher is mapped at the right address, we can't fail!
-	 * Copy in the compiled-in Switcher code (from <arch>_switcher.S).
+	 * Copy in the compiled-in Switcher code (from x86/switcher_32.S).
 	 */
 	memcpy(switcher_vma->addr, start_switcher_text,
 	       end_switcher_text - start_switcher_text);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lguest: mapped switcher at %p\n",
 	       switcher_vma->addr);
-#else
-	;
-#endif
 	/* And we succeeded... */
 	return 0;
 
@@ -187,7 +171,7 @@ static void unmap_switcher(void)
 bool lguest_address_ok(const struct lguest *lg,
 		       unsigned long addr, unsigned long len)
 {
-	return addr+len <= lg->pfn_limit * PAGE_SIZE && (addr+len >= addr);
+	return (addr+len) / PAGE_SIZE < lg->pfn_limit && (addr+len >= addr);
 }
 
 /*
@@ -248,6 +232,13 @@ int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
 			}
 		}
 
+		/*
+		 * All long-lived kernel loops need to check with this horrible
+		 * thing called the freezer.  If the Host is trying to suspend,
+		 * it stops us.
+		 */
+		try_to_freeze();
+
 		/* Check for signals */
 		if (signal_pending(current))
 			return -ERESTARTSYS;
@@ -260,13 +251,6 @@ int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
 		irq = interrupt_pending(cpu, &more);
 		if (irq < LGUEST_IRQS)
 			try_deliver_interrupt(cpu, irq, more);
-
-		/*
-		 * All long-lived kernel loops need to check with this horrible
-		 * thing called the freezer.  If the Host is trying to suspend,
-		 * it stops us.
-		 */
-		try_to_freeze();
 
 		/*
 		 * Just make absolutely sure the Guest is still alive.  One of
@@ -329,12 +313,8 @@ static int __init init(void)
 	int err;
 
 	/* Lguest can't run under Xen, VMI or itself.  It does Tricky Stuff. */
-	if (paravirt_enabled()) {
-#ifdef CONFIG_DEBUG_PRINTK
+	if (get_kernel_rpl() != 0) {
 		printk("lguest is afraid of being a guest\n");
-#else
-		;
-#endif
 		return -EPERM;
 	}
 

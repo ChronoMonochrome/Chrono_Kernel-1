@@ -13,11 +13,11 @@
  * Quick API description:
  *
  * A clock source registers using mISDN_register_clock:
- * 	name = text string to name clock source
+ *	name = text string to name clock source
  *	priority = value to priorize clock sources (0 = default)
  *	ctl = callback function to enable/disable clock source
  *	priv = private pointer of clock source
- * 	return = pointer to clock source structure;
+ *	return = pointer to clock source structure;
  *
  * Note: Callback 'ctl' can be called before mISDN_register_clock returns!
  *       Also it can be called during mISDN_unregister_clock.
@@ -38,6 +38,7 @@
 #include <linux/stddef.h>
 #include <linux/spinlock.h>
 #include <linux/mISDNif.h>
+#include <linux/export.h>
 #include "core.h"
 
 static u_int *debug;
@@ -72,23 +73,15 @@ select_iclock(void)
 	if (lastclock && bestclock != lastclock) {
 		/* last used clock source still exists but changes, disable */
 		if (*debug & DEBUG_CLOCK)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Old clock source '%s' disable.\n",
-				lastclock->name);
-#else
-			;
-#endif
+			       lastclock->name);
 		lastclock->ctl(lastclock->priv, 0);
 	}
 	if (bestclock && bestclock != iclock_current) {
 		/* new clock source selected, enable */
 		if (*debug & DEBUG_CLOCK)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "New clock source '%s' enable.\n",
-				bestclock->name);
-#else
-			;
-#endif
+			       bestclock->name);
 		bestclock->ctl(bestclock->priv, 1);
 	}
 	if (bestclock != iclock_current) {
@@ -105,17 +98,13 @@ struct mISDNclock
 	struct mISDNclock	*iclock;
 
 	if (*debug & (DEBUG_CORE | DEBUG_CLOCK))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s %d\n", __func__, name, pri);
-#else
-		;
-#endif
 	iclock = kzalloc(sizeof(struct mISDNclock), GFP_ATOMIC);
 	if (!iclock) {
 		printk(KERN_ERR "%s: No memory for clock entry.\n", __func__);
 		return NULL;
 	}
-	strncpy(iclock->name, name, sizeof(iclock->name)-1);
+	strncpy(iclock->name, name, sizeof(iclock->name) - 1);
 	iclock->pri = pri;
 	iclock->priv = priv;
 	iclock->ctl = ctl;
@@ -133,22 +122,14 @@ mISDN_unregister_clock(struct mISDNclock *iclock)
 	u_long	flags;
 
 	if (*debug & (DEBUG_CORE | DEBUG_CLOCK))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s %d\n", __func__, iclock->name,
-			iclock->pri);
-#else
-		;
-#endif
+		       iclock->pri);
 	write_lock_irqsave(&iclock_lock, flags);
 	if (iclock_current == iclock) {
 		if (*debug & DEBUG_CLOCK)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
-				"Current clock source '%s' unregisters.\n",
-				iclock->name);
-#else
-			;
-#endif
+			       "Current clock source '%s' unregisters.\n",
+			       iclock->name);
 		iclock->ctl(iclock->priv, 0);
 	}
 	list_del(&iclock->list);
@@ -168,9 +149,9 @@ mISDN_clock_update(struct mISDNclock *iclock, int samples, struct timeval *tv)
 	write_lock_irqsave(&iclock_lock, flags);
 	if (iclock_current != iclock) {
 		printk(KERN_ERR "%s: '%s' sends us clock updates, but we do "
-			"listen to '%s'. This is a bug!\n", __func__,
-			iclock->name,
-			iclock_current ? iclock_current->name : "nothing");
+		       "listen to '%s'. This is a bug!\n", __func__,
+		       iclock->name,
+		       iclock_current ? iclock_current->name : "nothing");
 		iclock->ctl(iclock->priv, 0);
 		write_unlock_irqrestore(&iclock_lock, flags);
 		return;
@@ -203,12 +184,8 @@ mISDN_clock_update(struct mISDNclock *iclock, int samples, struct timeval *tv)
 		iclock_tv.tv_usec = tv_now.tv_usec;
 		iclock_tv_valid = 1;
 		if (*debug & DEBUG_CLOCK)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("Received first clock from source '%s'.\n",
-			    iclock_current ? iclock_current->name : "nothing");
-#else
-			;
-#endif
+			       iclock_current ? iclock_current->name : "nothing");
 	}
 	write_unlock_irqrestore(&iclock_lock, flags);
 }
@@ -238,4 +215,3 @@ mISDN_clock_get(void)
 	return count;
 }
 EXPORT_SYMBOL(mISDN_clock_get);
-

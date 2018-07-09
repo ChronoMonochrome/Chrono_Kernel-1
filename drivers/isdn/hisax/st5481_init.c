@@ -4,13 +4,13 @@
  * Author       Frode Isaksen
  * Copyright    2001 by Frode Isaksen      <fisaksen@bewan.com>
  *              2001 by Kai Germaschewski  <kai.germaschewski@gmx.de>
- * 
+ *
  * This software may be used and distributed according to the terms
  * of the GNU General Public License, incorporated herein by reference.
  *
  */
 
-/* 
+/*
  * TODO:
  *
  * b layer1 delay?
@@ -62,14 +62,10 @@ static int probe_st5481(struct usb_interface *intf,
 	struct hisax_b_if *b_if[2];
 	int retval, i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "st541: found adapter VendorId %04x, ProductId %04x, LEDs %d\n",
-	     le16_to_cpu(dev->descriptor.idVendor),
-	     le16_to_cpu(dev->descriptor.idProduct),
-	     number_of_leds);
-#else
-	;
-#endif
+	       le16_to_cpu(dev->descriptor.idVendor),
+	       le16_to_cpu(dev->descriptor.idProduct),
+	       number_of_leds);
 
 	adapter = kzalloc(sizeof(struct st5481_adapter), GFP_KERNEL);
 	if (!adapter)
@@ -109,7 +105,7 @@ static int probe_st5481(struct usb_interface *intf,
 		b_if[i] = &adapter->bcs[i].b_if;
 
 	if (hisax_register(&adapter->hisax_d_if, b_if, "st5481_usb",
-			protocol) != 0)
+			   protocol) != 0)
 		goto err_b1;
 
 	st5481_start(adapter);
@@ -117,15 +113,15 @@ static int probe_st5481(struct usb_interface *intf,
 	usb_set_intfdata(intf, adapter);
 	return 0;
 
- err_b1:
+err_b1:
 	st5481_release_b(&adapter->bcs[1]);
- err_b:
+err_b:
 	st5481_release_b(&adapter->bcs[0]);
- err_d:
+err_d:
 	st5481_release_d(adapter);
- err_usb:
+err_usb:
 	st5481_release_usb(adapter);
- err:
+err:
 	kfree(adapter);
 	return -EIO;
 }
@@ -138,12 +134,12 @@ static void disconnect_st5481(struct usb_interface *intf)
 {
 	struct st5481_adapter *adapter = usb_get_intfdata(intf);
 
-	DBG(1,"");
+	DBG(1, "");
 
 	usb_set_intfdata(intf, NULL);
 	if (!adapter)
 		return;
-	
+
 	st5481_stop(adapter);
 	st5481_release_b(&adapter->bcs[1]);
 	st5481_release_b(&adapter->bcs[0]);
@@ -161,25 +157,25 @@ static void disconnect_st5481(struct usb_interface *intf)
  * The last 4 bits in the Product Id is set with 4 pins on the chip.
  */
 static struct usb_device_id st5481_ids[] = {
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x0) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x1) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x2) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x3) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x4) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x5) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x6) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x7) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x8) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0x9) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xA) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xB) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xC) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xD) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xE) },
-	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID+0xF) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x0) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x1) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x2) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x3) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x4) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x5) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x6) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x7) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x8) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0x9) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xA) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xB) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xC) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xD) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xE) },
+	{ USB_DEVICE(ST_VENDOR_ID, ST5481_PRODUCT_ID + 0xF) },
 	{ }
 };
-MODULE_DEVICE_TABLE (usb, st5481_ids);
+MODULE_DEVICE_TABLE(usb, st5481_ids);
 
 static struct usb_driver st5481_usb_driver = {
 	.name =		"st5481_usb",
@@ -196,11 +192,7 @@ static int __init st5481_usb_init(void)
 	st5481_debug = debug;
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_st5481: ST5481 USB ISDN driver $Revision: 2.4.2.3 $\n");
-#else
-	;
-#endif
 
 	retval = st5481_d_init();
 	if (retval < 0)
@@ -212,9 +204,9 @@ static int __init st5481_usb_init(void)
 
 	return 0;
 
- out_d_exit:
+out_d_exit:
 	st5481_d_exit();
- out:
+out:
 	return retval;
 }
 

@@ -27,6 +27,7 @@
 #include <linux/kdebug.h>
 #include <linux/reboot.h>
 #include <linux/efi.h>
+#include <linux/module.h>
 
 #define GSMI_SHUTDOWN_CLEAN	0	/* Clean Shutdown */
 /* TODO(mikew@google.com): Tie in HARDLOCKUP_DETECTOR with NMIWDT */
@@ -344,7 +345,8 @@ static efi_status_t gsmi_get_variable(efi_char16_t *name,
 		memcpy(&param, gsmi_dev.param_buf->start, sizeof(param));
 
 		/* The size reported is the min of all of our buffers */
-		*data_size = min(*data_size, gsmi_dev.data_buf->length);
+		*data_size = min_t(unsigned long, *data_size,
+						gsmi_dev.data_buf->length);
 		*data_size = min_t(unsigned long, *data_size, param.data_len);
 
 		/* Copy data back to return buffer. */
@@ -420,7 +422,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
 
 static efi_status_t gsmi_set_variable(efi_char16_t *name,
 				      efi_guid_t *vendor,
-				      unsigned long attr,
+				      u32 attr,
 				      unsigned long data_size,
 				      void *data)
 {
@@ -638,12 +640,8 @@ static int gsmi_shutdown_reason(int reason)
 	if (rc < 0)
 		printk(KERN_ERR "gsmi: Log Shutdown Reason failed\n");
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "gsmi: Log Shutdown Reason 0x%02x\n",
 		       reason);
-#else
-		;
-#endif
 
 	return rc;
 }
@@ -748,11 +746,7 @@ static __init int gsmi_system_valid(void)
 	 * whitewash our board names out of the public driver.
 	 */
 	if (!strncmp(acpi_gbl_FADT.header.oem_table_id, "FACP", 4)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Board is too old\n");
-#else
-		;
-#endif
 		return -ENODEV;
 	}
 
@@ -871,63 +865,38 @@ static __init int gsmi_init(void)
 
 	/* Remove and clean up gsmi if the handshake could not complete. */
 	if (gsmi_dev.handshake_type == -ENXIO) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi version " DRIVER_VERSION
 		       " failed to load\n");
-#else
-		;
-#endif
 		ret = -ENODEV;
 		goto out_err;
 	}
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
-#else
-	;
-#endif
 
 	/* Register in the firmware directory */
 	ret = -ENOMEM;
 	gsmi_kobj = kobject_create_and_add("gsmi", firmware_kobj);
 	if (!gsmi_kobj) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to create firmware kobj\n");
-#else
-		;
-#endif
 		goto out_err;
 	}
 
 	/* Setup eventlog access */
 	ret = sysfs_create_bin_file(gsmi_kobj, &eventlog_bin_attr);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to setup eventlog");
-#else
-		;
-#endif
 		goto out_err;
 	}
 
 	/* Other attributes */
 	ret = sysfs_create_files(gsmi_kobj, gsmi_attrs);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "gsmi: Failed to add attrs");
-#else
-		;
-#endif
-		goto out_err;
+		goto out_remove_bin_file;
 	}
 
-	if (register_efivars(&efivars, &efivar_ops, gsmi_kobj)) {
-#ifdef CONFIG_DEBUG_PRINTK
+	ret = register_efivars(&efivars, &efivar_ops, gsmi_kobj);
+	if (ret) {
 		printk(KERN_INFO "gsmi: Failed to register efivars\n");
-#else
-		;
-#endif
-		goto out_err;
+		goto out_remove_sysfs_files;
 	}
 
 	register_reboot_notifier(&gsmi_reboot_notifier);
@@ -935,9 +904,15 @@ static __init int gsmi_init(void)
 	atomic_notifier_chain_register(&panic_notifier_list,
 				       &gsmi_panic_notifier);
 
+	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
+
 	return 0;
 
- out_err:
+out_remove_sysfs_files:
+	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
+out_remove_bin_file:
+	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
+out_err:
 	kobject_put(gsmi_kobj);
 	gsmi_buf_free(gsmi_dev.param_buf);
 	gsmi_buf_free(gsmi_dev.data_buf);
@@ -957,6 +932,8 @@ static void __exit gsmi_exit(void)
 					 &gsmi_panic_notifier);
 	unregister_efivars(&efivars);
 
+	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
+	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
 	kobject_put(gsmi_kobj);
 	gsmi_buf_free(gsmi_dev.param_buf);
 	gsmi_buf_free(gsmi_dev.data_buf);

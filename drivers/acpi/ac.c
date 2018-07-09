@@ -89,7 +89,7 @@ struct acpi_ac {
 	unsigned long long state;
 };
 
-#define to_acpi_ac(x) container_of(x, struct acpi_ac, charger);
+#define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
 
 #ifdef CONFIG_ACPI_PROCFS_POWER
 static const struct file_operations acpi_ac_fops = {
@@ -296,7 +296,9 @@ static int acpi_ac_add(struct acpi_device *device)
 	ac->charger.properties = ac_props;
 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
 	ac->charger.get_property = get_ac_property;
-	power_supply_register(&ac->device->dev, &ac->charger);
+	result = power_supply_register(&ac->device->dev, &ac->charger);
+	if (result)
+		goto end;
 
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",

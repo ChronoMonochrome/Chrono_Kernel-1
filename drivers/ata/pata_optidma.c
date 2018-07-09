@@ -389,11 +389,7 @@ static int optiplus_with_udma(struct pci_dev *pdev)
 	if (r & 0x80)	/* IDEDIR disabled */
 		ret = 1;
 done:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "UDMA not supported in this configuration.\n");
-#else
-	;
-#endif
 done_nomsg:		/* Wrong chip revision */
 	pci_dev_put(dev1);
 	return ret;
@@ -415,15 +411,9 @@ static int optidma_init_one(struct pci_dev *dev, const struct pci_device_id *id)
 		.port_ops = &optiplus_port_ops
 	};
 	const struct ata_port_info *ppi[] = { &info_82c700, NULL };
-	static int printed_version;
 	int rc;
 
-	if (!printed_version++)
-#ifdef CONFIG_DEBUG_PRINTK
-		dev_printk(KERN_DEBUG, &dev->dev, "version " DRV_VERSION "\n");
-#else
-		dev_;
-#endif
+	ata_print_version_once(&dev->dev, DRV_VERSION);
 
 	rc = pcim_enable_device(dev);
 	if (rc)

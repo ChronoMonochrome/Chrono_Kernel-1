@@ -18,6 +18,7 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/jiffies.h>
+#include <linux/module.h>
 
 #include <asm/types.h>
 
@@ -207,9 +208,9 @@ static int scan_header(struct partition *part)
 		part->sector_map[i] = -1;
 
 	for (i=0, blocks_found=0; i<part->total_blocks; i++) {
-		rc = part->mbd.mtd->read(part->mbd.mtd,
-				i * part->block_size, part->header_size,
-				&retlen, (u_char*)part->header_cache);
+		rc = mtd_read(part->mbd.mtd, i * part->block_size,
+			      part->header_size, &retlen,
+			      (u_char *)part->header_cache);
 
 		if (!rc && retlen != part->header_size)
 			rc = -EIO;
@@ -265,8 +266,8 @@ static int rfd_ftl_readsect(struct mtd_blktrans_dev *dev, u_long sector, char *b
 
 	addr = part->sector_map[sector];
 	if (addr != -1) {
-		rc = part->mbd.mtd->read(part->mbd.mtd, addr, SECTOR_SIZE,
-						&retlen, (u_char*)buf);
+		rc = mtd_read(part->mbd.mtd, addr, SECTOR_SIZE, &retlen,
+			      (u_char *)buf);
 		if (!rc && retlen != SECTOR_SIZE)
 			rc = -EIO;
 
@@ -327,9 +328,8 @@ static void erase_callback(struct erase_info *erase)
 	part->blocks[i].used_sectors = 0;
 	part->blocks[i].erases++;
 
-	rc = part->mbd.mtd->write(part->mbd.mtd,
-		part->blocks[i].offset, sizeof(magic), &retlen,
-		(u_char*)&magic);
+	rc = mtd_write(part->mbd.mtd, part->blocks[i].offset, sizeof(magic),
+		       &retlen, (u_char *)&magic);
 
 	if (!rc && retlen != sizeof(magic))
 		rc = -EIO;
@@ -365,7 +365,7 @@ static int erase_block(struct partition *part, int block)
 	part->blocks[block].state = BLOCK_ERASING;
 	part->blocks[block].free_sectors = 0;
 
-	rc = part->mbd.mtd->erase(part->mbd.mtd, erase);
+	rc = mtd_erase(part->mbd.mtd, erase);
 
 	if (rc) {
 		printk(KERN_ERR PREFIX "erase of region %llx,%llx on '%s' "
@@ -395,9 +395,8 @@ static int move_block_contents(struct partition *part, int block_no, u_long *old
 	if (!map)
 		goto err2;
 
-	rc = part->mbd.mtd->read(part->mbd.mtd,
-		part->blocks[block_no].offset, part->header_size,
-		&retlen, (u_char*)map);
+	rc = mtd_read(part->mbd.mtd, part->blocks[block_no].offset,
+		      part->header_size, &retlen, (u_char *)map);
 
 	if (!rc && retlen != part->header_size)
 		rc = -EIO;
@@ -436,8 +435,8 @@ static int move_block_contents(struct partition *part, int block_no, u_long *old
 			}
 			continue;
 		}
-		rc = part->mbd.mtd->read(part->mbd.mtd, addr,
-			SECTOR_SIZE, &retlen, sector_data);
+		rc = mtd_read(part->mbd.mtd, addr, SECTOR_SIZE, &retlen,
+			      sector_data);
 
 		if (!rc && retlen != SECTOR_SIZE)
 			rc = -EIO;
@@ -473,8 +472,7 @@ static int reclaim_block(struct partition *part, u_long *old_sector)
 	int rc;
 
 	/* we have a race if sync doesn't exist */
-	if (part->mbd.mtd->sync)
-		part->mbd.mtd->sync(part->mbd.mtd);
+	mtd_sync(part->mbd.mtd);
 
 	score = 0x7fffffff; /* MAX_INT */
 	best_block = -1;
@@ -586,8 +584,9 @@ static int find_writable_block(struct partition *part, u_long *old_sector)
 		}
 	}
 
-	rc = part->mbd.mtd->read(part->mbd.mtd, part->blocks[block].offset,
-		part->header_size, &retlen, (u_char*)part->header_cache);
+	rc = mtd_read(part->mbd.mtd, part->blocks[block].offset,
+		      part->header_size, &retlen,
+		      (u_char *)part->header_cache);
 
 	if (!rc && retlen != part->header_size)
 		rc = -EIO;
@@ -618,8 +617,8 @@ static int mark_sector_deleted(struct partition *part, u_long old_addr)
 
 	addr = part->blocks[block].offset +
 			(HEADER_MAP_OFFSET + offset) * sizeof(u16);
-	rc = part->mbd.mtd->write(part->mbd.mtd, addr,
-		sizeof(del), &retlen, (u_char*)&del);
+	rc = mtd_write(part->mbd.mtd, addr, sizeof(del), &retlen,
+		       (u_char *)&del);
 
 	if (!rc && retlen != sizeof(del))
 		rc = -EIO;
@@ -691,8 +690,8 @@ static int do_writesect(struct mtd_blktrans_dev *dev, u_long sector, char *buf, 
 
 	addr = (i + part->header_sectors_per_block) * SECTOR_SIZE +
 		block->offset;
-	rc = part->mbd.mtd->write(part->mbd.mtd,
-		addr, SECTOR_SIZE, &retlen, (u_char*)buf);
+	rc = mtd_write(part->mbd.mtd, addr, SECTOR_SIZE, &retlen,
+		       (u_char *)buf);
 
 	if (!rc && retlen != SECTOR_SIZE)
 		rc = -EIO;
@@ -711,8 +710,8 @@ static int do_writesect(struct mtd_blktrans_dev *dev, u_long sector, char *buf, 
 	part->header_cache[i + HEADER_MAP_OFFSET] = entry;
 
 	addr = block->offset + (HEADER_MAP_OFFSET + i) * sizeof(u16);
-	rc = part->mbd.mtd->write(part->mbd.mtd, addr,
-			sizeof(entry), &retlen, (u_char*)&entry);
+	rc = mtd_write(part->mbd.mtd, addr, sizeof(entry), &retlen,
+		       (u_char *)&entry);
 
 	if (!rc && retlen != sizeof(entry))
 		rc = -EIO;

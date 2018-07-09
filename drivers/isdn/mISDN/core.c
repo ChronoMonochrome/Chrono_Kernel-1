@@ -38,7 +38,7 @@ static void mISDN_dev_release(struct device *dev)
 }
 
 static ssize_t _show_id(struct device *dev,
-				struct device_attribute *attr, char *buf)
+			struct device_attribute *attr, char *buf)
 {
 	struct mISDNdevice *mdev = dev_to_mISDN(dev);
 
@@ -48,7 +48,7 @@ static ssize_t _show_id(struct device *dev,
 }
 
 static ssize_t _show_nrbchan(struct device *dev,
-				struct device_attribute *attr, char *buf)
+			     struct device_attribute *attr, char *buf)
 {
 	struct mISDNdevice *mdev = dev_to_mISDN(dev);
 
@@ -58,7 +58,7 @@ static ssize_t _show_nrbchan(struct device *dev,
 }
 
 static ssize_t _show_d_protocols(struct device *dev,
-				struct device_attribute *attr, char *buf)
+				 struct device_attribute *attr, char *buf)
 {
 	struct mISDNdevice *mdev = dev_to_mISDN(dev);
 
@@ -68,7 +68,7 @@ static ssize_t _show_d_protocols(struct device *dev,
 }
 
 static ssize_t _show_b_protocols(struct device *dev,
-				struct device_attribute *attr, char *buf)
+				 struct device_attribute *attr, char *buf)
 {
 	struct mISDNdevice *mdev = dev_to_mISDN(dev);
 
@@ -78,7 +78,7 @@ static ssize_t _show_b_protocols(struct device *dev,
 }
 
 static ssize_t _show_protocol(struct device *dev,
-				struct device_attribute *attr, char *buf)
+			      struct device_attribute *attr, char *buf)
 {
 	struct mISDNdevice *mdev = dev_to_mISDN(dev);
 
@@ -88,7 +88,7 @@ static ssize_t _show_protocol(struct device *dev,
 }
 
 static ssize_t _show_name(struct device *dev,
-				struct device_attribute *attr, char *buf)
+			  struct device_attribute *attr, char *buf)
 {
 	strcpy(buf, dev_name(dev));
 	return strlen(buf);
@@ -96,7 +96,7 @@ static ssize_t _show_name(struct device *dev,
 
 #if 0 /* hangs */
 static ssize_t _set_name(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
+			 const char *buf, size_t count)
 {
 	int err = 0;
 	char *out = kmalloc(count + 1, GFP_KERNEL);
@@ -136,7 +136,7 @@ static struct device_attribute mISDN_dev_attrs[] = {
 	__ATTR(channelmap,  S_IRUGO,         _show_channelmap,  NULL),
 	__ATTR(nrbchan,     S_IRUGO,         _show_nrbchan,     NULL),
 	__ATTR(name,        S_IRUGO,         _show_name,        NULL),
-/*	__ATTR(name,        S_IRUGO|S_IWUSR, _show_name,       _set_name), */
+/*	__ATTR(name,        S_IRUGO | S_IWUSR, _show_name,      _set_name), */
 	{}
 };
 
@@ -187,7 +187,7 @@ struct mISDNdevice
 *get_mdevice(u_int id)
 {
 	return dev_to_mISDN(class_find_device(&mISDN_class, NULL, &id,
-		_get_mdevice));
+					      _get_mdevice));
 }
 
 static int
@@ -221,7 +221,7 @@ get_free_devid(void)
 
 int
 mISDN_register_device(struct mISDNdevice *dev,
-			struct device *parent, char *name)
+		      struct device *parent, char *name)
 {
 	int	err;
 
@@ -236,12 +236,8 @@ mISDN_register_device(struct mISDNdevice *dev,
 	else
 		dev_set_name(&dev->dev, "mISDN%d", dev->id);
 	if (debug & DEBUG_CORE)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "mISDN_register %s %d\n",
-			dev_name(&dev->dev), dev->id);
-#else
-		;
-#endif
+		       dev_name(&dev->dev), dev->id);
 	err = create_stack(dev);
 	if (err)
 		goto error1;
@@ -268,12 +264,8 @@ EXPORT_SYMBOL(mISDN_register_device);
 void
 mISDN_unregister_device(struct mISDNdevice *dev) {
 	if (debug & DEBUG_CORE)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "mISDN_unregister %s %d\n",
-			dev_name(&dev->dev), dev->id);
-#else
-		;
-#endif
+		       dev_name(&dev->dev), dev->id);
 	/* sysfs_remove_link(&dev->dev.kobj, "device"); */
 	device_del(&dev->dev);
 	dev_set_drvdata(&dev->dev, NULL);
@@ -318,12 +310,8 @@ get_Bprotocol4id(u_int id)
 	u_int	m;
 
 	if (id < ISDN_P_B_START || id > 63) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s id not in range  %d\n",
-		    __func__, id);
-#else
-		;
-#endif
+		       __func__, id);
 		return NULL;
 	}
 	m = 1 << (id & ISDN_P_B_MASK);
@@ -337,21 +325,13 @@ mISDN_register_Bprotocol(struct Bprotocol *bp)
 	struct Bprotocol	*old;
 
 	if (debug & DEBUG_CORE)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s/%x\n", __func__,
-		    bp->name, bp->Bprotocols);
-#else
-		;
-#endif
+		       bp->name, bp->Bprotocols);
 	old = get_Bprotocol4mask(bp->Bprotocols);
 	if (old) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
-		    "register duplicate protocol old %s/%x new %s/%x\n",
-		    old->name, old->Bprotocols, bp->name, bp->Bprotocols);
-#else
-		;
-#endif
+		       "register duplicate protocol old %s/%x new %s/%x\n",
+		       old->name, old->Bprotocols, bp->name, bp->Bprotocols);
 		return -EBUSY;
 	}
 	write_lock_irqsave(&bp_lock, flags);
@@ -367,12 +347,8 @@ mISDN_unregister_Bprotocol(struct Bprotocol *bp)
 	u_long	flags;
 
 	if (debug & DEBUG_CORE)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s/%x\n", __func__, bp->name,
-			bp->Bprotocols);
-#else
-		;
-#endif
+		       bp->Bprotocols);
 	write_lock_irqsave(&bp_lock, flags);
 	list_del(&bp->list);
 	write_unlock_irqrestore(&bp_lock, flags);
@@ -384,12 +360,8 @@ mISDNInit(void)
 {
 	int	err;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Modular ISDN core version %d.%d.%d\n",
-		MISDN_MAJOR_VERSION, MISDN_MINOR_VERSION, MISDN_RELEASE);
-#else
-	;
-#endif
+	       MISDN_MAJOR_VERSION, MISDN_MINOR_VERSION, MISDN_RELEASE);
 	mISDN_init_clock(&debug);
 	mISDN_initstack(&debug);
 	err = class_register(&mISDN_class);
@@ -429,13 +401,8 @@ static void mISDN_cleanup(void)
 	mISDN_timer_cleanup();
 	class_unregister(&mISDN_class);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "mISDNcore unloaded\n");
-#else
-	;
-#endif
 }
 
 module_init(mISDNInit);
 module_exit(mISDN_cleanup);
-

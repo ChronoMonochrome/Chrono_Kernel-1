@@ -81,9 +81,6 @@ static int h1910_device_ready(struct mtd_info *mtd)
 static int __init h1910_init(void)
 {
 	struct nand_chip *this;
-	const char *part_type = 0;
-	int mtd_parts_nb = 0;
-	struct mtd_partition *mtd_parts = 0;
 	void __iomem *nandaddr;
 
 	if (!machine_is_h1900())
@@ -91,22 +88,14 @@ static int __init h1910_init(void)
 
 	nandaddr = ioremap(0x08000000, 0x1000);
 	if (!nandaddr) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap nand flash.\n");
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 
 	/* Allocate memory for MTD device structure and private data */
 	h1910_nand_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!h1910_nand_mtd) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate h1910 NAND MTD device structure.\n");
-#else
-		;
-#endif
 		iounmap((void *)nandaddr);
 		return -ENOMEM;
 	}
@@ -139,35 +128,15 @@ static int __init h1910_init(void)
 
 	/* Scan to find existence of the device */
 	if (nand_scan(h1910_nand_mtd, 1)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "No NAND device - returning -ENXIO\n");
-#else
-		;
-#endif
 		kfree(h1910_nand_mtd);
 		iounmap((void *)nandaddr);
 		return -ENXIO;
 	}
-#ifdef CONFIG_MTD_CMDLINE_PARTS
-	mtd_parts_nb = parse_cmdline_partitions(h1910_nand_mtd, &mtd_parts, "h1910-nand");
-	if (mtd_parts_nb > 0)
-		part_type = "command line";
-	else
-		mtd_parts_nb = 0;
-#endif
-	if (mtd_parts_nb == 0) {
-		mtd_parts = partition_info;
-		mtd_parts_nb = NUM_PARTITIONS;
-		part_type = "static";
-	}
 
 	/* Register the partitions */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
-#else
-	;
-#endif
-	mtd_device_register(h1910_nand_mtd, mtd_parts, mtd_parts_nb);
+	mtd_device_parse_register(h1910_nand_mtd, NULL, NULL, partition_info,
+				  NUM_PARTITIONS);
 
 	/* Return happy */
 	return 0;

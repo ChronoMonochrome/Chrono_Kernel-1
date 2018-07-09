@@ -143,7 +143,7 @@
 
 /*
  * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
- * indirectly acccessed and have a base and length defined by the
+ * indirectly accessed and have a base and length defined by the
  * device tree. The base can be anything; however, we expect the
 #else
 #define ppc4xx_edac_;
@@ -188,7 +188,7 @@ struct ppc4xx_ecc_status {
 
 /* Function Prototypes */
 
-static int ppc4xx_edac_probe(struct platform_device *device)
+static int ppc4xx_edac_probe(struct platform_device *device);
 static int ppc4xx_edac_remove(struct platform_device *device);
 
 /* Global Variables */
@@ -209,7 +209,7 @@ static struct platform_driver ppc4xx_edac_driver = {
 	.remove			= ppc4xx_edac_remove,
 	.driver = {
 		.owner = THIS_MODULE,
-		.name = PPC4XX_EDAC_MODULE_NAME
+		.name = PPC4XX_EDAC_MODULE_NAME,
 		.of_match_table = ppc4xx_edac_match,
 	},
 };
@@ -1076,7 +1076,7 @@ ppc4xx_edac_mc_init(struct mem_ctl_info *mci,
 
 	mci->mod_name		= PPC4XX_EDAC_MODULE_NAME;
 	mci->mod_ver		= PPC4XX_EDAC_MODULE_REVISION;
-	mci->ctl_name		= match->compatible,
+	mci->ctl_name		= ppc4xx_edac_match->compatible,
 	mci->dev_name		= np->full_name;
 
 	/* Initialize callbacks */

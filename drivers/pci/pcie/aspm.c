@@ -76,7 +76,15 @@ static LIST_HEAD(link_list);
 #define POLICY_DEFAULT 0	/* BIOS default setting */
 #define POLICY_PERFORMANCE 1	/* high performance */
 #define POLICY_POWERSAVE 2	/* high power saving */
+
+#ifdef CONFIG_PCIEASPM_PERFORMANCE
+static int aspm_policy = POLICY_PERFORMANCE;
+#elif defined CONFIG_PCIEASPM_POWERSAVE
+static int aspm_policy = POLICY_POWERSAVE;
+#else
 static int aspm_policy;
+#endif
+
 static const char *policy_str[] = {
 	[POLICY_DEFAULT] = "default",
 	[POLICY_PERFORMANCE] = "performance",
@@ -524,13 +532,9 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
 		 */
 		pci_read_config_dword(child, pos + PCI_EXP_DEVCAP, &reg32);
 		if (!(reg32 & PCI_EXP_DEVCAP_RBER) && !aspm_force) {
-#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &child->dev, "disabling ASPM"
 				" on pre-1.1 PCIe device.  You can enable it"
 				" with 'pcie_aspm=force'\n");
-#else
-			dev_;
-#endif
 			return -EINVAL;
 		}
 	}
@@ -578,9 +582,6 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
 {
 	struct pcie_link_state *link;
 	int blacklist = !!pcie_aspm_sanity_check(pdev);
-
-	if (!aspm_support_enabled)
-		return;
 
 	if (!pci_is_pcie(pdev) || pdev->link_state)
 		return;
@@ -797,6 +798,9 @@ void pcie_clear_aspm(struct pci_bus *bus)
 {
 	struct pci_dev *child;
 
+	if (aspm_force)
+		return;
+
 	/*
 	 * Clear any ASPM setup that the firmware has carried out on this bus
 	 */
@@ -968,18 +972,10 @@ static int __init pcie_aspm_disable(char *str)
 		aspm_policy = POLICY_DEFAULT;
 		aspm_disabled = 1;
 		aspm_support_enabled = false;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PCIe ASPM is disabled\n");
-#else
-		;
-#endif
 	} else if (!strcmp(str, "force")) {
 		aspm_force = 1;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "PCIe ASPM is forcedly enabled\n");
-#else
-		;
-#endif
+		printk(KERN_INFO "PCIe ASPM is forcibly enabled\n");
 	}
 	return 1;
 }

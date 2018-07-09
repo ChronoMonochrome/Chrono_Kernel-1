@@ -32,7 +32,6 @@
 #define	E7XXX_REVISION " Ver: 2.0.2"
 #define	EDAC_MOD_STR	"e7xxx_edac"
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define e7xxx_printk(level, fmt, arg...) \
 	edac_printk(level, "e7xxx", fmt, ##arg)
 
@@ -122,9 +121,6 @@ enum e7xxx_chips {
 	E7505,
 	E7205,
 };
-#else
-#define e7xxx_;
-#endif
 
 struct e7xxx_pvt {
 	struct pci_dev *bridge_ck;
@@ -461,13 +457,9 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
 	pvt->remapbase = ((u32) pci_data) << 14;
 	pci_read_config_word(pdev, E7XXX_REMAPLIMIT, &pci_data);
 	pvt->remaplimit = ((u32) pci_data) << 14;
-#ifdef CONFIG_DEBUG_PRINTK
 	e7xxx_printk(KERN_INFO,
 		"tolm = %x, remapbase = %x, remaplimit = %x\n", pvt->tolm,
 		pvt->remapbase, pvt->remaplimit);
-#else
-	e7xxx_;
-#endif
 
 	/* clear any pending errors, or initial state bits */
 	e7xxx_get_error_info(mci, &discard);
@@ -483,20 +475,12 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	e7xxx_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!e7xxx_pci) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
-#else
-		;
-#endif
 	}
 
 	/* get this far and it's successful */
@@ -541,7 +525,7 @@ static void __devexit e7xxx_remove_one(struct pci_dev *pdev)
 	edac_mc_free(mci);
 }
 
-static const struct pci_device_id e7xxx_pci_tbl[] __devinitconst = {
+static DEFINE_PCI_DEVICE_TABLE(e7xxx_pci_tbl) = {
 	{
 	 PCI_VEND_DEV(INTEL, 7205_0), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
 	 E7205},

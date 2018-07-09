@@ -53,11 +53,7 @@ mISDN_open(struct inode *ino, struct file *filep)
 	struct mISDNtimerdev	*dev;
 
 	if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p,%p)\n", __func__, ino, filep);
-#else
-		;
-#endif
 	dev = kmalloc(sizeof(struct mISDNtimerdev) , GFP_KERNEL);
 	if (!dev)
 		return -ENOMEM;
@@ -79,11 +75,7 @@ mISDN_close(struct inode *ino, struct file *filep)
 	struct mISDNtimer	*timer, *next;
 
 	if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p,%p)\n", __func__, ino, filep);
-#else
-		;
-#endif
 	list_for_each_entry_safe(timer, next, &dev->pending, list) {
 		del_timer(&timer->tl);
 		kfree(timer);
@@ -105,18 +97,14 @@ mISDN_read(struct file *filep, char __user *buf, size_t count, loff_t *off)
 	int	ret = 0;
 
 	if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p, %p, %d, %p)\n", __func__,
-			filep, buf, (int)count, off);
-#else
-		;
-#endif
+		       filep, buf, (int)count, off);
 
 	if (list_empty(&dev->expired) && (dev->work == 0)) {
 		if (filep->f_flags & O_NONBLOCK)
 			return -EAGAIN;
 		wait_event_interruptible(dev->wait, (dev->work ||
-		    !list_empty(&dev->expired)));
+						     !list_empty(&dev->expired)));
 		if (signal_pending(current))
 			return -ERESTARTSYS;
 	}
@@ -145,23 +133,15 @@ mISDN_poll(struct file *filep, poll_table *wait)
 	unsigned int		mask = POLLERR;
 
 	if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p, %p)\n", __func__, filep, wait);
-#else
-		;
-#endif
 	if (dev) {
 		poll_wait(filep, &dev->wait, wait);
 		mask = 0;
 		if (dev->work || !list_empty(&dev->expired))
 			mask |= (POLLIN | POLLRDNORM);
 		if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s work(%d) empty(%d)\n", __func__,
-				dev->work, list_empty(&dev->expired));
-#else
-			;
-#endif
+			       dev->work, list_empty(&dev->expired));
 	}
 	return mask;
 }
@@ -181,7 +161,7 @@ dev_expire_timer(unsigned long data)
 static int
 misdn_add_timer(struct mISDNtimerdev *dev, int timeout)
 {
-	int 			id;
+	int			id;
 	u_long			flags;
 	struct mISDNtimer	*timer;
 
@@ -243,12 +223,8 @@ mISDN_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 
 
 	if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s(%p, %x, %lx)\n", __func__,
-		    filep, cmd, arg);
-#else
-		;
-#endif
+		       filep, cmd, arg);
 	mutex_lock(&mISDN_mutex);
 	switch (cmd) {
 	case IMADDTIMER:
@@ -258,12 +234,8 @@ mISDN_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		}
 		id = misdn_add_timer(dev, tout);
 		if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s add %d id %d\n", __func__,
-			    tout, id);
-#else
-			;
-#endif
+			       tout, id);
 		if (id < 0) {
 			ret = id;
 			break;
@@ -277,11 +249,7 @@ mISDN_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 			break;
 		}
 		if (*debug & DEBUG_TIMER)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s del id %d\n", __func__, id);
-#else
-			;
-#endif
 		id = misdn_del_timer(dev, id);
 		if (put_user(id, (int __user *)arg))
 			ret = -EFAULT;
@@ -316,11 +284,7 @@ mISDN_inittimer(u_int *deb)
 	debug = deb;
 	err = misc_register(&mISDNtimer);
 	if (err)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mISDN: Could not register timer device\n");
-#else
-		;
-#endif
 	return err;
 }
 

@@ -99,8 +99,6 @@ static struct mtd_partition partition_info_evb[] = {
 
 #define NUM_PARTITIONS 1
 
-extern int parse_cmdline_partitions(struct mtd_info *master, struct mtd_partition **pparts, const char *mtd_id);
-
 /*
  *	hardware specific access to control-lines
  */
@@ -187,18 +185,12 @@ static int ppchameleonevb_device_ready(struct mtd_info *minfo)
 }
 #endif
 
-const char *part_probes[] = { "cmdlinepart", NULL };
-const char *part_probes_evb[] = { "cmdlinepart", NULL };
-
 /*
  * Main initialization routine
  */
 static int __init ppchameleonevb_init(void)
 {
 	struct nand_chip *this;
-	const char *part_type = 0;
-	int mtd_parts_nb = 0;
-	struct mtd_partition *mtd_parts = 0;
 	void __iomem *ppchameleon_fio_base;
 	void __iomem *ppchameleonevb_fio_base;
 
@@ -208,22 +200,14 @@ static int __init ppchameleonevb_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	ppchameleon_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!ppchameleon_mtd) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate PPChameleon NAND MTD device structure.\n");
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 
 	/* map physical address */
 	ppchameleon_fio_base = ioremap(ppchameleon_fio_pbase, SZ_4M);
 	if (!ppchameleon_fio_base) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("ioremap PPChameleon NAND flash failed\n");
-#else
-		;
-#endif
 		kfree(ppchameleon_mtd);
 		return -EIO;
 	}
@@ -289,28 +273,12 @@ static int __init ppchameleonevb_init(void)
 #endif
 
 	ppchameleon_mtd->name = "ppchameleon-nand";
-	mtd_parts_nb = parse_mtd_partitions(ppchameleon_mtd, part_probes, &mtd_parts, 0);
-	if (mtd_parts_nb > 0)
-		part_type = "command line";
-	else
-		mtd_parts_nb = 0;
-
-	if (mtd_parts_nb == 0) {
-		if (ppchameleon_mtd->size == NAND_SMALL_SIZE)
-			mtd_parts = partition_info_me;
-		else
-			mtd_parts = partition_info_hi;
-		mtd_parts_nb = NUM_PARTITIONS;
-		part_type = "static";
-	}
 
 	/* Register the partitions */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
-#else
-	;
-#endif
-	mtd_device_register(ppchameleon_mtd, mtd_parts, mtd_parts_nb);
+	mtd_device_parse_register(ppchameleon_mtd, NULL, NULL,
+				  ppchameleon_mtd->size == NAND_SMALL_SIZE ?
+					partition_info_me : partition_info_hi,
+				  NUM_PARTITIONS);
 
  nand_evb_init:
 	/****************************
@@ -319,11 +287,7 @@ static int __init ppchameleonevb_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	ppchameleonevb_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!ppchameleonevb_mtd) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate PPChameleonEVB NAND MTD device structure.\n");
-#else
-		;
-#endif
 		if (ppchameleon_fio_base)
 			iounmap(ppchameleon_fio_base);
 		return -ENOMEM;
@@ -332,11 +296,7 @@ static int __init ppchameleonevb_init(void)
 	/* map physical address */
 	ppchameleonevb_fio_base = ioremap(ppchameleonevb_fio_pbase, SZ_4M);
 	if (!ppchameleonevb_fio_base) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("ioremap PPChameleonEVB NAND flash failed\n");
-#else
-		;
-#endif
 		kfree(ppchameleonevb_mtd);
 		if (ppchameleon_fio_base)
 			iounmap(ppchameleon_fio_base);
@@ -402,25 +362,12 @@ static int __init ppchameleonevb_init(void)
 	}
 
 	ppchameleonevb_mtd->name = NAND_EVB_MTD_NAME;
-	mtd_parts_nb = parse_mtd_partitions(ppchameleonevb_mtd, part_probes_evb, &mtd_parts, 0);
-	if (mtd_parts_nb > 0)
-		part_type = "command line";
-	else
-		mtd_parts_nb = 0;
-
-	if (mtd_parts_nb == 0) {
-		mtd_parts = partition_info_evb;
-		mtd_parts_nb = NUM_PARTITIONS;
-		part_type = "static";
-	}
 
 	/* Register the partitions */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
-#else
-	;
-#endif
-	mtd_device_register(ppchameleonevb_mtd, mtd_parts, mtd_parts_nb);
+	mtd_device_parse_register(ppchameleonevb_mtd, NULL, NULL,
+				  ppchameleon_mtd->size == NAND_SMALL_SIZE ?
+				  partition_info_me : partition_info_hi,
+				  NUM_PARTITIONS);
 
 	/* Return happy */
 	return 0;

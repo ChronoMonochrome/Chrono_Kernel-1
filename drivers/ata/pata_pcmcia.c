@@ -68,11 +68,7 @@ static int pcmcia_set_mode(struct ata_link *link, struct ata_device **r_failed_d
 		   the same vendor - check serial */
 		if (memcmp(master->id + ATA_ID_SERNO, slave->id + ATA_ID_SERNO,
 			   ATA_ID_SERNO_LEN) == 0 && master->id[ATA_ID_SERNO] >> 8) {
-#ifdef CONFIG_DEBUG_PRINTK
-			ata_dev_printk(slave, KERN_WARNING, "is a ghost device, ignoring.\n");
-#else
-			ata_dev_;
-#endif
+			ata_dev_warn(slave, "is a ghost device, ignoring\n");
 			ata_dev_disable(slave);
 		}
 	}
@@ -146,12 +142,7 @@ static void pcmcia_8bit_drain_fifo(struct ata_queued_cmd *qc)
 		ioread8(ap->ioaddr.data_addr);
 
 	if (count)
-#ifdef CONFIG_DEBUG_PRINTK
-		ata_port_printk(ap, KERN_WARNING, "drained %d bytes to clear DRQ.\n",
-								count);
-#else
-		ata_port_;
-#endif
+		ata_port_warn(ap, "drained %d bytes to clear DRQ\n", count);
 
 }
 

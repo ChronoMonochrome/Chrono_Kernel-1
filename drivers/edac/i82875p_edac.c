@@ -23,7 +23,6 @@
 #define I82875P_REVISION	" Ver: 2.0.2"
 #define EDAC_MOD_STR		"i82875p_edac"
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define i82875p_printk(level, fmt, arg...) \
 	edac_printk(level, "i82875p", fmt, ##arg)
 
@@ -155,9 +154,6 @@
 enum i82875p_chips {
 	I82875P = 0,
 };
-#else
-#define i82875p_;
-#endif
 
 struct i82875p_pvt {
 	struct pci_dev *ovrfl_pdev;
@@ -441,20 +437,12 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i82875p_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i82875p_pci) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
-#else
-		;
-#endif
 	}
 
 	/* get this far and it's successful */
@@ -481,11 +469,7 @@ static int __devinit i82875p_init_one(struct pci_dev *pdev,
 	int rc;
 
 	debugf0("%s()\n", __func__);
-#ifdef CONFIG_DEBUG_PRINTK
 	i82875p_printk(KERN_INFO, "i82875p init one\n");
-#else
-	i82875p_;
-#endif
 
 	if (pci_enable_device(pdev) < 0)
 		return -EIO;
@@ -527,7 +511,7 @@ static void __devexit i82875p_remove_one(struct pci_dev *pdev)
 	edac_mc_free(mci);
 }
 
-static const struct pci_device_id i82875p_pci_tbl[] __devinitconst = {
+static DEFINE_PCI_DEVICE_TABLE(i82875p_pci_tbl) = {
 	{
 	 PCI_VEND_DEV(INTEL, 82875_0), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
 	 I82875P},

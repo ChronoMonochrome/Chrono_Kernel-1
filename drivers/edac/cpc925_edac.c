@@ -33,7 +33,6 @@
 #define CPC925_EDAC_REVISION	" Ver: 1.0.0"
 #define CPC925_EDAC_MOD_STR	"cpc925_edac"
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define cpc925_printk(level, fmt, arg...) \
 	edac_printk(level, "CPC925", fmt, ##arg)
 
@@ -91,9 +90,7 @@ enum apimask_bits {
 	ECC_MASK_ENABLE = (APIMASK_ECC_UE_H | APIMASK_ECC_CE_H |
 			   APIMASK_ECC_UE_L | APIMASK_ECC_CE_L),
 };
-#else
-#define cpc925_;
-#endif
+#define APIMASK_ADI(n)		CPC925_BIT(((n)+1))
 
 /************************************************************
  *	Processor Interface Exception Register (APIEXCP)
@@ -520,12 +517,8 @@ static int cpc925_mc_find_channel(struct mem_ctl_info *mci, u16 syndrome)
 	if ((syndrome & MESR_ECC_SYN_L_MASK) == 0)
 		return 1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Unexpected syndrome value: 0x%x\n",
 			 syndrome);
-#else
-	cpc925_mc_;
-#endif
 	return 1;
 }
 
@@ -554,103 +547,108 @@ static void cpc925_mc_check(struct mem_ctl_info *mci)
 	cpc925_mc_get_pfn(mci, mear, &pfn, &offset, &csrow);
 
 	if (apiexcp & CECC_EXCP_DETECTED) {
-#ifdef CONFIG_DEBUG_PRINTK
 		cpc925_mc_printk(mci, KERN_INFO, "DRAM CECC Fault\n");
-#else
-		cpc925_mc_;
-#endif
 		channel = cpc925_mc_find_channel(mci, syndrome);
 		edac_mc_handle_ce(mci, pfn, offset, syndrome,
 				  csrow, channel, mci->ctl_name);
 	}
 
 	if (apiexcp & UECC_EXCP_DETECTED) {
-#ifdef CONFIG_DEBUG_PRINTK
 		cpc925_mc_printk(mci, KERN_INFO, "DRAM UECC Fault\n");
-#else
-		cpc925_mc_;
-#endif
 		edac_mc_handle_ue(mci, pfn, offset, csrow, mci->ctl_name);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Dump registers:\n");
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "APIMASK		0x%08x\n",
 		__raw_readl(pdata->vbase + REG_APIMASK_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "APIEXCP		0x%08x\n",
 		apiexcp);
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Scrub Ctrl	0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MSCR_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Scrub Rge Start	0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MSRSR_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Scrub Rge End	0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MSRER_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Scrub Pattern	0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MSPR_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Chk Ctrl		0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MCCR_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Chk Rge End	0x%08x\n",
 		__raw_readl(pdata->vbase + REG_MCRER_OFFSET));
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Err Address	0x%08x\n",
 		mesr);
-#else
-	cpc925_mc_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_mc_printk(mci, KERN_INFO, "Mem Err Syndrome	0x%08x\n",
 		syndrome);
-#else
-	cpc925_mc_;
-#endif
 }
 
 /******************** CPU err device********************************/
+static u32 cpc925_cpu_mask_disabled(void)
+{
+	struct device_node *cpus;
+	struct device_node *cpunode = NULL;
+	static u32 mask = 0;
+
+	/* use cached value if available */
+	if (mask != 0)
+		return mask;
+
+	mask = APIMASK_ADI0 | APIMASK_ADI1;
+
+	cpus = of_find_node_by_path("/cpus");
+	if (cpus == NULL) {
+		cpc925_printk(KERN_DEBUG, "No /cpus node !\n");
+		return 0;
+	}
+
+	while ((cpunode = of_get_next_child(cpus, cpunode)) != NULL) {
+		const u32 *reg = of_get_property(cpunode, "reg", NULL);
+
+		if (strcmp(cpunode->type, "cpu")) {
+			cpc925_printk(KERN_ERR, "Not a cpu node in /cpus: %s\n", cpunode->name);
+			continue;
+		}
+
+		if (reg == NULL || *reg > 2) {
+			cpc925_printk(KERN_ERR, "Bad reg value at %s\n", cpunode->full_name);
+			continue;
+		}
+
+		mask &= ~APIMASK_ADI(*reg);
+	}
+
+	if (mask != (APIMASK_ADI0 | APIMASK_ADI1)) {
+		/* We assume that each CPU sits on it's own PI and that
+		 * for present CPUs the reg property equals to the PI
+		 * interface id */
+		cpc925_printk(KERN_WARNING,
+				"Assuming PI id is equal to CPU MPIC id!\n");
+	}
+
+	of_node_put(cpunode);
+	of_node_put(cpus);
+
+	return mask;
+}
+
 /* Enable CPU Errors detection */
 static void cpc925_cpu_init(struct cpc925_dev_info *dev_info)
 {
 	u32 apimask;
+	u32 cpumask;
 
 	apimask = __raw_readl(dev_info->vbase + REG_APIMASK_OFFSET);
-	if ((apimask & CPU_MASK_ENABLE) == 0) {
-		apimask |= CPU_MASK_ENABLE;
-		__raw_writel(apimask, dev_info->vbase + REG_APIMASK_OFFSET);
+
+	cpumask = cpc925_cpu_mask_disabled();
+	if (apimask & cpumask) {
+		cpc925_printk(KERN_WARNING, "CPU(s) not present, "
+				"but enabled in APIMASK, disabling\n");
+		apimask &= ~cpumask;
 	}
+
+	if ((apimask & CPU_MASK_ENABLE) == 0)
+		apimask |= CPU_MASK_ENABLE;
+
+	__raw_writel(apimask, dev_info->vbase + REG_APIMASK_OFFSET);
 }
 
 /* Disable CPU Errors detection */
@@ -682,23 +680,14 @@ static void cpc925_cpu_check(struct edac_device_ctl_info *edac_dev)
 	if ((apiexcp & CPU_EXCP_DETECTED) == 0)
 		return;
 
+	if ((apiexcp & ~cpc925_cpu_mask_disabled()) == 0)
+		return;
+
 	apimask = __raw_readl(dev_info->vbase + REG_APIMASK_OFFSET);
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "Processor Interface Fault\n"
 				 "Processor Interface register dump:\n");
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "APIMASK		0x%08x\n", apimask);
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "APIEXCP		0x%08x\n", apiexcp);
-#else
-	cpc925_;
-#endif
 
 	edac_device_handle_ue(edac_dev, 0, 0, edac_dev->ctl_name);
 }
@@ -741,36 +730,16 @@ static void cpc925_htlink_check(struct edac_device_ctl_info *edac_dev)
 	      (linkerr & HT_LINKERR_DETECTED)))
 		return;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "HT Link Fault\n"
 				 "HT register dump:\n");
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "Bridge Ctrl			0x%08x\n",
 		      brgctrl);
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "Link Config Ctrl		0x%08x\n",
 		      linkctrl);
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "Error Enum and Ctrl		0x%08x\n",
 		      errctrl);
-#else
-	cpc925_;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	cpc925_printk(KERN_INFO, "Link Error			0x%08x\n",
 		      linkerr);
-#else
-	cpc925_;
-#endif
 
 	/* Clear by write 1 */
 	if (brgctrl & BRGCTRL_DETSERR)
@@ -924,11 +893,7 @@ static int cpc925_get_sdram_scrub_rate(struct mem_ctl_info *mci)
 
 	if (((mscr & MSCR_SCRUB_MOD_MASK) != MSCR_BACKGR_SCRUB) ||
 	    (si == 0)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		cpc925_mc_printk(mci, KERN_INFO, "Scrub mode not enabled\n");
-#else
-		cpc925_mc_;
-#endif
 		bw = 0;
 	} else
 		bw = CPC925_SCRUB_BLOCK_SIZE * 0xFA67 / si;
@@ -1087,28 +1052,16 @@ static int __init cpc925_edac_init(void)
 {
 	int ret = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IBM CPC925 EDAC driver " CPC925_EDAC_REVISION "\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\t(c) 2008 Wind River Systems, Inc\n");
-#else
-	;
-#endif
 
 	/* Only support POLL mode so far */
 	edac_op_state = EDAC_OPSTATE_POLL;
 
 	ret = platform_driver_register(&cpc925_edac_driver);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to register %s\n",
 			CPC925_EDAC_MOD_STR);
-#else
-		;
-#endif
 	}
 
 	return ret;

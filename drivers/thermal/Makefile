@@ -3,5 +3,4 @@
 #
 
 obj-$(CONFIG_THERMAL)		+= thermal_sys.o
-
-include $(srctree)/scripts/Makefile_build.thumb2
+obj-$(CONFIG_SPEAR_THERMAL)		+= spear_thermal.o

@@ -1,7 +1,7 @@
 /*
  *	dscore.c
  *
- * Copyright (c) 2004 Evgeniy Polyakov <johnpol@2ka.mipt.ru>
+ * Copyright (c) 2004 Evgeniy Polyakov <zbr@ioremap.net>
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -260,33 +260,17 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
 
 static inline void ds_print_msg(unsigned char *buf, unsigned char *str, int off)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%45s: %8x\n", str, buf[off]);
-#else
-	;
-#endif
 }
 
 static void ds_dump_status(struct ds_device *dev, unsigned char *buf, int count)
 {
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "0x%x: count=%d, status: ", dev->ep[EP_STATUS], count);
-#else
-	;
-#endif
 	for (i=0; i<count; ++i)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x ", buf[i]);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
-#else
-	;
-#endif
 
 	if (count >= 16) {
 		ds_print_msg(buf, "enable flag", 0);
@@ -314,53 +298,21 @@ static void ds_dump_status(struct ds_device *dev, unsigned char *buf, int count)
 		}
 		ds_print_msg(buf, "Result Register Value: ", i);
 		if (buf[i] & RR_NRS)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "NRS: Reset no presence or ...\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_SH)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SH: short on reset or set path\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_APP)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "APP: alarming presence on reset\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_VPP)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "VPP: 12V expected not seen\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_CMP)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "CMP: compare error\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_CRC)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "CRC: CRC error detected\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_RDP)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "RDP: redirected page\n");
-#else
-			;
-#endif
 		if (buf[i] & RR_EOS)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "EOS: end of search error\n");
-#else
-			;
-#endif
 	}
 }
 
@@ -404,11 +356,7 @@ static int ds_recv_data(struct ds_device *dev, unsigned char *buf, int size)
 		u8 buf[0x20];
 		int count;
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Clearing ep0x%x.\n", dev->ep[EP_DATA_IN]);
-#else
-		;
-#endif
 		usb_clear_halt(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_DATA_IN]));
 
 		count = ds_recv_status_nodump(dev, &st, buf, sizeof(buf));
@@ -420,22 +368,10 @@ static int ds_recv_data(struct ds_device *dev, unsigned char *buf, int size)
 	{
 		int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: count=%d: ", __func__, count);
-#else
-		;
-#endif
 		for (i=0; i<count; ++i)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", buf[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 #endif
 	return count;
@@ -522,32 +458,16 @@ static int ds_wait_status(struct ds_device *dev, struct ds_status *st)
 #if 0
 		if (err >= 0) {
 			int i;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("0x%x: count=%d, status: ", dev->ep[EP_STATUS], err);
-#else
-			;
-#endif
 			for (i=0; i<err; ++i)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("%02x ", buf[i]);
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
-#else
-			;
-#endif
 		}
 #endif
 	} while (!(buf[0x08] & ST_IDLE) && !(err < 0) && ++count < 100);
 
 	if (err >= 16 && st->status & ST_EPOF) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Resetting device after ST_EPOF.\n");
-#else
-		;
-#endif
 		ds_reset_device(dev);
 		/* Always dump the device status. */
 		count = 101;
@@ -994,11 +914,7 @@ static int ds_probe(struct usb_interface *intf,
 
 	dev = kmalloc(sizeof(struct ds_device), GFP_KERNEL);
 	if (!dev) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Failed to allocate new DS9490R structure.\n");
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 	dev->spu_sleep = 0;
@@ -1027,11 +943,7 @@ static int ds_probe(struct usb_interface *intf,
 
 	iface_desc = &intf->altsetting[0];
 	if (iface_desc->desc.bNumEndpoints != NUM_EP-1) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Num endpoints=%d. It is not DS9490R.\n", iface_desc->desc.bNumEndpoints);
-#else
-		;
-#endif
 		err = -EINVAL;
 		goto err_out_clear;
 	}
@@ -1045,14 +957,10 @@ static int ds_probe(struct usb_interface *intf,
 
 		dev->ep[i+1] = endpoint->bEndpointAddress;
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d: addr=%x, size=%d, dir=%s, type=%x\n",
 			i, endpoint->bEndpointAddress, le16_to_cpu(endpoint->wMaxPacketSize),
 			(endpoint->bEndpointAddress & USB_DIR_IN)?"IN":"OUT",
 			endpoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK);
-#else
-		;
-#endif
 #endif
 	}
 
@@ -1094,31 +1002,8 @@ static void ds_disconnect(struct usb_interface *intf)
 	kfree(dev);
 }
 
-static int ds_init(void)
-{
-	int err;
-
-	err = usb_register(&ds_driver);
-	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "Failed to register DS9490R USB device: err=%d.\n", err);
-#else
-		;
-#endif
-		return err;
-	}
-
-	return 0;
-}
-
-static void ds_fini(void)
-{
-	usb_deregister(&ds_driver);
-}
-
-module_init(ds_init);
-module_exit(ds_fini);
+module_usb_driver(ds_driver);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Evgeniy Polyakov <johnpol@2ka.mipt.ru>");
+MODULE_AUTHOR("Evgeniy Polyakov <zbr@ioremap.net>");
 MODULE_DESCRIPTION("DS2490 USB <-> W1 bus master driver (DS9490*)");

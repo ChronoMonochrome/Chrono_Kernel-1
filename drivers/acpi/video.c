@@ -46,7 +46,6 @@
 
 #define PREFIX "ACPI: "
 
-#define ACPI_VIDEO_CLASS		"video"
 #define ACPI_VIDEO_BUS_NAME		"Video Bus"
 #define ACPI_VIDEO_DEVICE_NAME		"Video Device"
 #define ACPI_VIDEO_NOTIFY_SWITCH	0x80
@@ -308,7 +307,7 @@ video_set_cur_state(struct thermal_cooling_device *cooling_dev, unsigned long st
 	return acpi_video_device_lcd_set_level(video, level);
 }
 
-static struct thermal_cooling_device_ops video_cooling_ops = {
+static const struct thermal_cooling_device_ops video_cooling_ops = {
 	.get_max_state = video_get_max_state,
 	.get_cur_state = video_get_cur_state,
 	.set_cur_state = video_set_cur_state,
@@ -390,6 +389,12 @@ static int __init video_set_bqc_offset(const struct dmi_system_id *d)
 	return 0;
 }
 
+static int video_ignore_initial_backlight(const struct dmi_system_id *d)
+{
+	use_bios_initial_backlight = 0;
+	return 0;
+}
+
 static struct dmi_system_id video_dmi_table[] __initdata = {
 	/*
 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
@@ -432,6 +437,30 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
 	 .matches = {
 		DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+		},
+	},
+	{
+	 .callback = video_ignore_initial_backlight,
+	 .ident = "HP Folio 13-2000",
+	 .matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
+		},
+	},
+	{
+	 .callback = video_ignore_initial_backlight,
+	 .ident = "HP Pavilion g6 Notebook PC",
+	 .matches = {
+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
+		},
+	},
+	{
+	 .callback = video_ignore_initial_backlight,
+	 .ident = "HP Pavilion m4",
+	 .matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion m4 Notebook PC"),
 		},
 	},
 	{}
@@ -549,27 +578,29 @@ acpi_video_device_EDID(struct acpi_video_device *device,
  *		1. 	The system BIOS should NOT automatically control the brightness 
  *			level of the LCD when the power changes from AC to DC.
  * Return Value:
- * 		-1	wrong arg.
+ *		-EINVAL	wrong arg.
  */
 
 static int
 acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
 {
-	u64 status = 0;
+	acpi_status status;
 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
 	struct acpi_object_list args = { 1, &arg0 };
 
+	if (!video->cap._DOS)
+		return 0;
 
-	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
-		status = -1;
-		goto Failed;
-	}
+	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1)
+		return -EINVAL;
 	arg0.integer.value = (lcd_flag << 2) | bios_flag;
 	video->dos_setting = arg0.integer.value;
-	acpi_evaluate_object(video->device->handle, "_DOS", &args, NULL);
+	status = acpi_evaluate_object(video->device->handle, "_DOS",
+		&args, NULL);
+	if (ACPI_FAILURE(status))
+		return -EIO;
 
-      Failed:
-	return status;
+	return 0;
 }
 
 /*
@@ -601,7 +632,6 @@ acpi_video_init_brightness(struct acpi_video_device *device)
 	union acpi_object *o;
 	struct acpi_video_device_brightness *br = NULL;
 	int result = -EINVAL;
-	u32 value;
 
 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
@@ -632,12 +662,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
 			printk(KERN_ERR PREFIX "Invalid data\n");
 			continue;
 		}
-		value = (u32) o->integer.value;
-		/* Skip duplicate entries */
-		if (count > 2 && br->levels[count - 1] == value)
-			continue;
-
-		br->levels[count] = value;
+		br->levels[count] = (u32) o->integer.value;
 
 		if (br->levels[count] > max_level)
 			max_level = br->levels[count];
@@ -778,11 +803,7 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
 		device->cap._BQC = 1;
 	else if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCQ",
 				&h_dummy1))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING FW_BUG "_BCQ is used instead of _BQC\n");
-#else
-		;
-#endif
 		device->cap._BCQ = 1;
 	}
 
@@ -923,13 +944,9 @@ static int acpi_video_bus_check(struct acpi_video_bus *video)
 	/* Does this device support video switching? */
 	if (video->cap._DOS || video->cap._DOD) {
 		if (!video->cap._DOS) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING FW_BUG
 				"ACPI(%s) defines _DOD but not _DOS\n",
 				acpi_device_bid(video->device));
-#else
-			;
-#endif
 		}
 		video->flags.multihead = 1;
 		status = 0;
@@ -1361,18 +1378,19 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
 	int status = 0;
 	struct acpi_device *dev;
 
+	/*
+	 * There are systems where video module known to work fine regardless
+	 * of broken _DOD and ignoring returned value here doesn't cause
+	 * any issues later.
+	 */
 	acpi_video_device_enumerate(video);
 
 	list_for_each_entry(dev, &device->children, node) {
 
 		status = acpi_video_bus_get_one_device(dev, video);
-		if (ACPI_FAILURE(status)) {
-#ifdef CONFIG_DEBUG_PRINTK
+		if (status) {
 			printk(KERN_WARNING PREFIX
 					"Can't attach device\n");
-#else
-			;
-#endif
 			continue;
 		}
 	}
@@ -1390,12 +1408,8 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
 					    ACPI_DEVICE_NOTIFY,
 					    acpi_video_device_notify);
 	if (ACPI_FAILURE(status)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 		       "Can't remove video notify handler\n");
-#else
-		;
-#endif
 	}
 	if (device->backlight) {
 		backlight_device_unregister(device->backlight);
@@ -1424,12 +1438,8 @@ static int acpi_video_bus_put_devices(struct acpi_video_bus *video)
 
 		status = acpi_video_bus_put_one_device(dev);
 		if (ACPI_FAILURE(status))
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 			       "hhuuhhuu bug in acpi video driver.\n");
-#else
-			;
-#endif
 
 		if (dev->brightness) {
 			kfree(dev->brightness->levels);
@@ -1471,7 +1481,8 @@ static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
 	case ACPI_VIDEO_NOTIFY_SWITCH:	/* User requested a switch,
 					 * most likely via hotkey. */
 		acpi_bus_generate_proc_event(device, event, 0);
-		keycode = KEY_SWITCHVIDEOMODE;
+		if (!acpi_notifier_call_chain(device, event, 0))
+			keycode = KEY_SWITCHVIDEOMODE;
 		break;
 
 	case ACPI_VIDEO_NOTIFY_PROBE:	/* User plugged in or removed a video
@@ -1501,7 +1512,8 @@ static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
 		break;
 	}
 
-	acpi_notifier_call_chain(device, event, 0);
+	if (event != ACPI_VIDEO_NOTIFY_SWITCH)
+		acpi_notifier_call_chain(device, event, 0);
 
 	if (keycode) {
 		input_report_key(input, keycode, 1);
@@ -1639,15 +1651,11 @@ static int acpi_video_bus_add(struct acpi_device *device)
 				acpi_video_bus_match, NULL,
 				device, NULL);
 	if (status == AE_ALREADY_EXISTS) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING FW_BUG
 			"Duplicate ACPI video bus devices for the"
 			" same VGA controller, please try module "
 			"parameter \"video.allow_duplicates=1\""
 			"if the current driver doesn't work.\n");
-#else
-		;
-#endif
 		if (!allow_duplicates)
 			return -ENODEV;
 	}
@@ -1682,14 +1690,19 @@ static int acpi_video_bus_add(struct acpi_device *device)
 	mutex_init(&video->device_list_lock);
 	INIT_LIST_HEAD(&video->video_device_list);
 
-	acpi_video_bus_get_devices(video, device);
-	acpi_video_bus_start_devices(video);
+	error = acpi_video_bus_get_devices(video, device);
+	if (error)
+		goto err_free_video;
 
 	video->input = input = input_allocate_device();
 	if (!input) {
 		error = -ENOMEM;
-		goto err_stop_video;
+		goto err_put_video;
 	}
+
+	error = acpi_video_bus_start_devices(video);
+	if (error)
+		goto err_free_input_dev;
 
 	snprintf(video->phys, sizeof(video->phys),
 		"%s/video/input0", acpi_device_hid(video->device));
@@ -1711,28 +1724,29 @@ static int acpi_video_bus_add(struct acpi_device *device)
 
 	error = input_register_device(input);
 	if (error)
-		goto err_free_input_dev;
+		goto err_stop_video;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
 	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
 	       video->flags.multihead ? "yes" : "no",
 	       video->flags.rom ? "yes" : "no",
 	       video->flags.post ? "yes" : "no");
-#else
-	;
-#endif
 
 	video->pm_nb.notifier_call = acpi_video_resume;
 	video->pm_nb.priority = 0;
-	register_pm_notifier(&video->pm_nb);
+	error = register_pm_notifier(&video->pm_nb);
+	if (error)
+		goto err_unregister_input_dev;
 
 	return 0;
 
- err_free_input_dev:
-	input_free_device(input);
+ err_unregister_input_dev:
+	input_unregister_device(input);
  err_stop_video:
 	acpi_video_bus_stop_devices(video);
+ err_free_input_dev:
+	input_free_device(input);
+ err_put_video:
 	acpi_video_bus_put_devices(video);
 	kfree(video->attached_array);
  err_free_video:
@@ -1766,6 +1780,7 @@ static int acpi_video_bus_remove(struct acpi_device *device, int type)
 
 static int __init intel_opregion_present(void)
 {
+	int i915 = 0;
 #if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
 	struct pci_dev *dev = NULL;
 	u32 address;
@@ -1778,10 +1793,10 @@ static int __init intel_opregion_present(void)
 		pci_read_config_dword(dev, 0xfc, &address);
 		if (!address)
 			continue;
-		return 1;
+		i915 = 1;
 	}
 #endif
-	return 0;
+	return i915;
 }
 
 int acpi_video_register(void)
@@ -1835,17 +1850,6 @@ EXPORT_SYMBOL(acpi_video_unregister);
 
 static int __init acpi_video_init(void)
 {
-	/*
-	 * Let the module load even if ACPI is disabled (e.g. due to
-	 * a broken BIOS) so that i915.ko can still be loaded on such
-	 * old systems without an AcpiOpRegion.
-	 *
-	 * acpi_video_register() will report -ENODEV later as well due
-	 * to acpi_disabled when i915.ko tries to register itself afterwards.
-	 */
-	if (acpi_disabled)
-		return 0;
-
 	dmi_check_system(video_dmi_table);
 
 	if (intel_opregion_present())

@@ -37,7 +37,6 @@
 
 #define EDAC_MOD_STR      "i5400_edac"
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define i5400_printk(level, fmt, arg...) \
 	edac_printk(level, "i5400", fmt, ##arg)
 
@@ -170,9 +169,6 @@ enum error_mask {
 	EMASK_M28 = 1<<27, /* DIMM-Spare Copy Completed */
 	EMASK_M29 = 1<<28, /* DIMM-Isolation Completed */
 };
-#else
-#define i5400_;
-#endif
 
 /*
  * Names to translate bit error into something useful
@@ -657,13 +653,9 @@ static void i5400_process_nonfatal_error_info(struct mem_ctl_info *mci,
 
 	branch = extract_fbdchan_indx(info->ferr_nf_fbd);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	i5400_mc_printk(mci, KERN_EMERG,
 			"Non-Fatal misc error (Branch=%d Err=%#lx (%s))",
 			branch >> 1, allErrors, error_name[errnum]);
-#else
-	i5400_mc_;
-#endif
 }
 
 /*
@@ -743,7 +735,7 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 
 	/* Attempt to 'get' the MCH register we want */
 	pdev = NULL;
-	while (!pvt->branchmap_werrors || !pvt->fsb_error_regs) {
+	while (1) {
 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
 				      PCI_DEVICE_ID_INTEL_5400_ERR, pdev);
 		if (!pdev) {
@@ -751,23 +743,42 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 			i5400_printk(KERN_ERR,
 				"'system address,Process Bus' "
 				"device not found:"
-				"vendor 0x%x device 0x%x ERR funcs "
+				"vendor 0x%x device 0x%x ERR func 1 "
 				"(broken BIOS?)\n",
 				PCI_VENDOR_ID_INTEL,
 				PCI_DEVICE_ID_INTEL_5400_ERR);
-			goto error;
+			return -ENODEV;
 		}
 
-		/* Store device 16 funcs 1 and 2 */
-		switch (PCI_FUNC(pdev->devfn)) {
-		case 1:
-			pvt->branchmap_werrors = pdev;
+		/* Store device 16 func 1 */
+		if (PCI_FUNC(pdev->devfn) == 1)
 			break;
-		case 2:
-			pvt->fsb_error_regs = pdev;
-			break;
-		}
 	}
+	pvt->branchmap_werrors = pdev;
+
+	pdev = NULL;
+	while (1) {
+		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+				      PCI_DEVICE_ID_INTEL_5400_ERR, pdev);
+		if (!pdev) {
+			/* End of list, leave */
+			i5400_printk(KERN_ERR,
+				"'system address,Process Bus' "
+				"device not found:"
+				"vendor 0x%x device 0x%x ERR func 2 "
+				"(broken BIOS?)\n",
+				PCI_VENDOR_ID_INTEL,
+				PCI_DEVICE_ID_INTEL_5400_ERR);
+
+			pci_dev_put(pvt->branchmap_werrors);
+			return -ENODEV;
+		}
+
+		/* Store device 16 func 2 */
+		if (PCI_FUNC(pdev->devfn) == 2)
+			break;
+	}
+	pvt->fsb_error_regs = pdev;
 
 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
 		pci_name(pvt->system_address),
@@ -786,7 +797,10 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 			"MC: 'BRANCH 0' device not found:"
 			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
 			PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5400_FBD0);
-		goto error;
+
+		pci_dev_put(pvt->fsb_error_regs);
+		pci_dev_put(pvt->branchmap_werrors);
+		return -ENODEV;
 	}
 
 	/* If this device claims to have more than 2 channels then
@@ -804,14 +818,14 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 			"(broken BIOS?)\n",
 			PCI_VENDOR_ID_INTEL,
 			PCI_DEVICE_ID_INTEL_5400_FBD1);
-		goto error;
+
+		pci_dev_put(pvt->branch_0);
+		pci_dev_put(pvt->fsb_error_regs);
+		pci_dev_put(pvt->branchmap_werrors);
+		return -ENODEV;
 	}
 
 	return 0;
-
-error:
-	i5400_put_devices(mci);
-	return -ENODEV;
 }
 
 /*
@@ -1320,20 +1334,12 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i5400_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i5400_pci) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
-#else
-		;
-#endif
 	}
 
 	return 0;
@@ -1399,7 +1405,7 @@ static void __devexit i5400_remove_one(struct pci_dev *pdev)
  *
  *	The "E500P" device is the first device supported.
  */
-static const struct pci_device_id i5400_pci_tbl[] __devinitconst = {
+static DEFINE_PCI_DEVICE_TABLE(i5400_pci_tbl) = {
 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5400_ERR)},
 	{0,}			/* 0 terminated list. */
 };

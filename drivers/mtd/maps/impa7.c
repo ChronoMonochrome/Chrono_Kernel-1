@@ -27,14 +27,10 @@
 /* can be { "cfi_probe", "jedec_probe", "map_rom", NULL } */
 #define PROBETYPES { "jedec_probe", NULL }
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define MSG_PREFIX "impA7:"   /* prefix for our printk()'s */
 #define MTDID      "impa7-%d"  /* for mtdparts= partitioning */
 
 static struct mtd_info *impa7_mtd[NUM_FLASHBANKS];
-#else
-#define MSG_PREFIX "impA7:"   /* prefix for our ;
-#endif
 
 
 static struct map_info impa7_map[NUM_FLASHBANKS] = {
@@ -53,7 +49,7 @@ static struct map_info impa7_map[NUM_FLASHBANKS] = {
 /*
  * MTD partitioning stuff
  */
-static struct mtd_partition static_partitions[] =
+static struct mtd_partition partitions[] =
 {
 	{
 		.name = "FileSystem",
@@ -62,16 +58,10 @@ static struct mtd_partition static_partitions[] =
 	},
 };
 
-static int mtd_parts_nb[NUM_FLASHBANKS];
-static struct mtd_partition *mtd_parts[NUM_FLASHBANKS];
-
-static const char *probes[] = { "cmdlinepart", NULL };
-
 static int __init init_impa7(void)
 {
 	static const char *rom_probe_types[] = PROBETYPES;
 	const char **type;
-	const char *part_type = 0;
 	int i;
 	static struct { u_long addr; u_long size; } pt[NUM_FLASHBANKS] = {
 	  { WINDOW_ADDR0, WINDOW_SIZE0 },
@@ -81,21 +71,13 @@ static int __init init_impa7(void)
 
 	for(i=0; i<NUM_FLASHBANKS; i++)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE MSG_PREFIX "probing 0x%08lx at 0x%08lx\n",
 		       pt[i].size, pt[i].addr);
-#else
-		;
-#endif
 
 		impa7_map[i].phys = pt[i].addr;
 		impa7_map[i].virt = ioremap(pt[i].addr, pt[i].size);
 		if (!impa7_map[i].virt) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(MSG_PREFIX "failed to ioremap\n");
-#else
-			;
-#endif
 			return -EIO;
 		}
 		simple_map_init(&impa7_map[i]);
@@ -109,27 +91,9 @@ static int __init init_impa7(void)
 		if (impa7_mtd[i]) {
 			impa7_mtd[i]->owner = THIS_MODULE;
 			devicesfound++;
-			mtd_parts_nb[i] = parse_mtd_partitions(impa7_mtd[i],
-							       probes,
-							       &mtd_parts[i],
-							       0);
-			if (mtd_parts_nb[i] > 0) {
-				part_type = "command line";
-			} else {
-				mtd_parts[i] = static_partitions;
-				mtd_parts_nb[i] = ARRAY_SIZE(static_partitions);
-				part_type = "static";
-			}
-
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_NOTICE MSG_PREFIX
-			       "using %s partition definition\n",
-			       part_type);
-#else
-			;
-#endif
-			mtd_device_register(impa7_mtd[i],
-					    mtd_parts[i], mtd_parts_nb[i]);
+			mtd_device_parse_register(impa7_mtd[i], NULL, NULL,
+						  partitions,
+						  ARRAY_SIZE(partitions));
 		}
 		else
 			iounmap((void *)impa7_map[i].virt);

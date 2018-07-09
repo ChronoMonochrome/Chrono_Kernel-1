@@ -1,10 +1,10 @@
 /* $Id: kcapi.c,v 1.1.2.8 2004/03/26 19:57:20 armin Exp $
- * 
+ *
  * Kernel CAPI 2.0 Module
- * 
+ *
  * Copyright 1999 by Carsten Paeth <calle@calle.de>
  * Copyright 2002 by Kai Germaschewski <kai@germaschewski.name>
- * 
+ *
  * This software may be used and distributed according to the terms
  * of the GNU General Public License, incorporated herein by reference.
  *
@@ -55,7 +55,7 @@ struct capictr_event {
 
 /* ------------------------------------------------------------- */
 
-static struct capi_version driver_version = {2, 0, 1, 1<<4};
+static struct capi_version driver_version = {2, 0, 1, 1 << 4};
 static char driver_serial[CAPI_SERIAL_LEN] = "0004711";
 static char capi_manufakturer[64] = "AVM Berlin";
 
@@ -164,19 +164,15 @@ register_appl(struct capi_ctr *ctr, u16 applid, capi_register_params *rparam)
 	if (ctr)
 		ctr->register_appl(ctr, applid, rparam);
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: cannot get controller resources\n",
 		       __func__);
-#else
-		;
-#endif
 }
 
 
 static void release_appl(struct capi_ctr *ctr, u16 applid)
 {
 	DBG("applid %#x", applid);
-	
+
 	ctr->release_appl(ctr, applid);
 	capi_ctr_put(ctr);
 }
@@ -190,11 +186,7 @@ static void notify_up(u32 contr)
 	mutex_lock(&capi_controller_lock);
 
 	if (showcapimsgs & 1)
-#ifdef CONFIG_DEBUG_PRINTK
-	        printk(KERN_DEBUG "kcapi: notify up contr %d\n", contr);
-#else
-	        ;
-#endif
+		printk(KERN_DEBUG "kcapi: notify up contr %d\n", contr);
 
 	ctr = get_capi_ctr_by_nr(contr);
 	if (ctr) {
@@ -211,11 +203,7 @@ static void notify_up(u32 contr)
 
 		wake_up_interruptible_all(&ctr->state_wait_queue);
 	} else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: invalid contr %d\n", __func__, contr);
-#else
-		;
-#endif
 
 unlock_out:
 	mutex_unlock(&capi_controller_lock);
@@ -252,21 +240,13 @@ static void notify_down(u32 contr)
 	mutex_lock(&capi_controller_lock);
 
 	if (showcapimsgs & 1)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "kcapi: notify down contr %d\n", contr);
-#else
-		;
-#endif
 
 	ctr = get_capi_ctr_by_nr(contr);
 	if (ctr)
 		ctr_down(ctr, CAPI_CTR_DETECTED);
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: invalid contr %d\n", __func__, contr);
-#else
-		;
-#endif
 
 	mutex_unlock(&capi_controller_lock);
 }
@@ -371,25 +351,17 @@ void capi_ctr_handle_message(struct capi_ctr *ctr, u16 appl,
 	if (ctr->state != CAPI_CTR_RUNNING) {
 		cdb = capi_message2str(skb->data);
 		if (cdb) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "kcapi: controller [%03d] not active, got: %s",
-				ctr->cnr, cdb->buf);
-#else
-			;
-#endif
+			       ctr->cnr, cdb->buf);
 			cdebbuf_free(cdb);
 		} else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "kcapi: controller [%03d] not active, cannot trace\n",
-				ctr->cnr);
-#else
-			;
-#endif
+			       ctr->cnr);
 		goto error;
 	}
 
 	cmd = CAPIMSG_COMMAND(skb->data);
-        subcmd = CAPIMSG_SUBCOMMAND(skb->data);
+	subcmd = CAPIMSG_SUBCOMMAND(skb->data);
 	if (cmd == CAPI_DATA_B3 && subcmd == CAPI_IND) {
 		ctr->nrecvdatapkt++;
 		if (ctr->traceflag > 2)
@@ -402,33 +374,21 @@ void capi_ctr_handle_message(struct capi_ctr *ctr, u16 appl,
 	showctl |= (ctr->traceflag & 1);
 	if (showctl & 2) {
 		if (showctl & 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: got [%03d] id#%d %s len=%u\n",
 			       ctr->cnr, CAPIMSG_APPID(skb->data),
 			       capi_cmd2str(cmd, subcmd),
 			       CAPIMSG_LEN(skb->data));
-#else
-			;
-#endif
 		} else {
 			cdb = capi_message2str(skb->data);
 			if (cdb) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "kcapi: got [%03d] %s\n",
-					ctr->cnr, cdb->buf);
-#else
-				;
-#endif
+				       ctr->cnr, cdb->buf);
 				cdebbuf_free(cdb);
 			} else
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "kcapi: got [%03d] id#%d %s len=%u, cannot trace\n",
-					ctr->cnr, CAPIMSG_APPID(skb->data),
-					capi_cmd2str(cmd, subcmd),
-					CAPIMSG_LEN(skb->data));
-#else
-				;
-#endif
+				       ctr->cnr, CAPIMSG_APPID(skb->data),
+				       capi_cmd2str(cmd, subcmd),
+				       CAPIMSG_LEN(skb->data));
 		}
 
 	}
@@ -440,12 +400,12 @@ void capi_ctr_handle_message(struct capi_ctr *ctr, u16 appl,
 		cdb = capi_message2str(skb->data);
 		if (cdb) {
 			printk(KERN_ERR "kcapi: handle_message: applid %d state released (%s)\n",
-			CAPIMSG_APPID(skb->data), cdb->buf);
+			       CAPIMSG_APPID(skb->data), cdb->buf);
 			cdebbuf_free(cdb);
 		} else
 			printk(KERN_ERR "kcapi: handle_message: applid %d state released (%s) cannot trace\n",
-				CAPIMSG_APPID(skb->data),
-				capi_cmd2str(cmd, subcmd));
+			       CAPIMSG_APPID(skb->data),
+			       capi_cmd2str(cmd, subcmd));
 		goto error;
 	}
 	skb_queue_tail(&ap->recv_queue, skb);
@@ -469,12 +429,8 @@ EXPORT_SYMBOL(capi_ctr_handle_message);
 
 void capi_ctr_ready(struct capi_ctr *ctr)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "kcapi: controller [%03d] \"%s\" ready.\n",
 	       ctr->cnr, ctr->name);
-#else
-	;
-#endif
 
 	notify_push(CAPICTR_UP, ctr->cnr);
 }
@@ -491,11 +447,7 @@ EXPORT_SYMBOL(capi_ctr_ready);
 
 void capi_ctr_down(struct capi_ctr *ctr)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "kcapi: controller [%03d] down.\n", ctr->cnr);
-#else
-	;
-#endif
 
 	notify_push(CAPICTR_DOWN, ctr->cnr);
 }
@@ -515,12 +467,8 @@ EXPORT_SYMBOL(capi_ctr_down);
 void capi_ctr_suspend_output(struct capi_ctr *ctr)
 {
 	if (!ctr->blocked) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "kcapi: controller [%03d] suspend\n",
 		       ctr->cnr);
-#else
-		;
-#endif
 		ctr->blocked = 1;
 	}
 }
@@ -540,12 +488,8 @@ EXPORT_SYMBOL(capi_ctr_suspend_output);
 void capi_ctr_resume_output(struct capi_ctr *ctr)
 {
 	if (ctr->blocked) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "kcapi: controller [%03d] resumed\n",
 		       ctr->cnr);
-#else
-		;
-#endif
 		ctr->blocked = 0;
 	}
 }
@@ -575,7 +519,7 @@ int attach_capi_ctr(struct capi_ctr *ctr)
 	if (i == CAPI_MAXCONTR) {
 		mutex_unlock(&capi_controller_lock);
 		printk(KERN_ERR "kcapi: out of controller slots\n");
-	   	return -EBUSY;
+		return -EBUSY;
 	}
 	capi_controller[i] = ctr;
 
@@ -596,12 +540,8 @@ int attach_capi_ctr(struct capi_ctr *ctr)
 
 	mutex_unlock(&capi_controller_lock);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "kcapi: controller [%03d]: %s attached\n",
-			ctr->cnr, ctr->name);
-#else
-	;
-#endif
+	       ctr->cnr, ctr->name);
 	return 0;
 }
 
@@ -634,12 +574,8 @@ int detach_capi_ctr(struct capi_ctr *ctr)
 	if (ctr->procent)
 		remove_proc_entry(ctr->procfn, NULL);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "kcapi: controller [%03d]: %s unregistered\n",
 	       ctr->cnr, ctr->name);
-#else
-	;
-#endif
 
 unlock_out:
 	mutex_unlock(&capi_controller_lock);
@@ -768,11 +704,7 @@ u16 capi20_register(struct capi20_appl *ap)
 	mutex_unlock(&capi_controller_lock);
 
 	if (showcapimsgs & 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "kcapi: appl %d up\n", applid);
-#else
-		;
-#endif
 	}
 
 	return CAPI_NOERROR;
@@ -816,11 +748,7 @@ u16 capi20_release(struct capi20_appl *ap)
 	skb_queue_purge(&ap->recv_queue);
 
 	if (showcapimsgs & 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "kcapi: appl %d down\n", ap->applid);
-#else
-		;
-#endif
 	}
 
 	return CAPI_NOERROR;
@@ -844,7 +772,7 @@ u16 capi20_put_message(struct capi20_appl *ap, struct sk_buff *skb)
 	u8 cmd, subcmd;
 
 	DBG("applid %#x", ap->applid);
- 
+
 	if (ncontrollers == 0)
 		return CAPI_REGNOTINSTALLED;
 	if ((ap->applid == 0) || ap->release_in_progress)
@@ -866,9 +794,9 @@ u16 capi20_put_message(struct capi20_appl *ap, struct sk_buff *skb)
 		return CAPI_SENDQUEUEFULL;
 
 	cmd = CAPIMSG_COMMAND(skb->data);
-        subcmd = CAPIMSG_SUBCOMMAND(skb->data);
+	subcmd = CAPIMSG_SUBCOMMAND(skb->data);
 
-	if (cmd == CAPI_DATA_B3 && subcmd== CAPI_REQ) {
+	if (cmd == CAPI_DATA_B3 && subcmd == CAPI_REQ) {
 		ctr->nsentdatapkt++;
 		ap->nsentdatapkt++;
 		if (ctr->traceflag > 2)
@@ -882,36 +810,24 @@ u16 capi20_put_message(struct capi20_appl *ap, struct sk_buff *skb)
 	showctl |= (ctr->traceflag & 1);
 	if (showctl & 2) {
 		if (showctl & 1) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: put [%03d] id#%d %s len=%u\n",
 			       CAPIMSG_CONTROLLER(skb->data),
 			       CAPIMSG_APPID(skb->data),
 			       capi_cmd2str(cmd, subcmd),
 			       CAPIMSG_LEN(skb->data));
-#else
-			;
-#endif
 		} else {
 			_cdebbuf *cdb = capi_message2str(skb->data);
 			if (cdb) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "kcapi: put [%03d] %s\n",
-					CAPIMSG_CONTROLLER(skb->data),
-					cdb->buf);
-#else
-				;
-#endif
+				       CAPIMSG_CONTROLLER(skb->data),
+				       cdb->buf);
 				cdebbuf_free(cdb);
 			} else
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "kcapi: put [%03d] id#%d %s len=%u cannot trace\n",
-					CAPIMSG_CONTROLLER(skb->data),
-					CAPIMSG_APPID(skb->data),
-					capi_cmd2str(cmd, subcmd),
-					CAPIMSG_LEN(skb->data));
-#else
-				;
-#endif
+				       CAPIMSG_CONTROLLER(skb->data),
+				       CAPIMSG_APPID(skb->data),
+				       capi_cmd2str(cmd, subcmd),
+				       CAPIMSG_LEN(skb->data));
 		}
 	}
 	return ctr->send_message(ctr, skb);
@@ -1112,14 +1028,14 @@ static int old_capi_manufacturer(unsigned int cmd, void __user *data)
 	case AVMB1_ADDCARD:
 	case AVMB1_ADDCARD_WITH_TYPE:
 		if (cmd == AVMB1_ADDCARD) {
-		   if ((retval = copy_from_user(&cdef, data,
-					    sizeof(avmb1_carddef))))
-			   return -EFAULT;
-		   cdef.cardtype = AVM_CARDTYPE_B1;
+			if ((retval = copy_from_user(&cdef, data,
+						     sizeof(avmb1_carddef))))
+				return -EFAULT;
+			cdef.cardtype = AVM_CARDTYPE_B1;
 		} else {
-		   if ((retval = copy_from_user(&cdef, data,
-					    sizeof(avmb1_extcarddef))))
-			   return -EFAULT;
+			if ((retval = copy_from_user(&cdef, data,
+						     sizeof(avmb1_extcarddef))))
+				return -EFAULT;
 		}
 		cparams.port = cdef.port;
 		cparams.irq = cdef.irq;
@@ -1127,24 +1043,24 @@ static int old_capi_manufacturer(unsigned int cmd, void __user *data)
 
 		mutex_lock(&capi_drivers_lock);
 
-                switch (cdef.cardtype) {
-			case AVM_CARDTYPE_B1:
-				list_for_each(l, &capi_drivers) {
-					driver = list_entry(l, struct capi_driver, list);
-					if (strcmp(driver->name, "b1isa") == 0)
-						break;
-				}
-				break;
-			case AVM_CARDTYPE_T1:
-				list_for_each(l, &capi_drivers) {
-					driver = list_entry(l, struct capi_driver, list);
-					if (strcmp(driver->name, "t1isa") == 0)
-						break;
-				}
-				break;
-			default:
-				driver = NULL;
-				break;
+		switch (cdef.cardtype) {
+		case AVM_CARDTYPE_B1:
+			list_for_each(l, &capi_drivers) {
+				driver = list_entry(l, struct capi_driver, list);
+				if (strcmp(driver->name, "b1isa") == 0)
+					break;
+			}
+			break;
+		case AVM_CARDTYPE_T1:
+			list_for_each(l, &capi_drivers) {
+				driver = list_entry(l, struct capi_driver, list);
+				if (strcmp(driver->name, "t1isa") == 0)
+					break;
+			}
+			break;
+		default:
+			driver = NULL;
+			break;
 		}
 		if (!driver) {
 			printk(KERN_ERR "kcapi: driver not loaded.\n");
@@ -1182,30 +1098,18 @@ static int old_capi_manufacturer(unsigned int cmd, void __user *data)
 		}
 
 		if (ctr->load_firmware == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: load: no load function\n");
-#else
-			;
-#endif
 			retval = -ESRCH;
 			goto load_unlock_out;
 		}
 
 		if (ldef.t4file.len <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: load: invalid parameter: length of t4file is %d ?\n", ldef.t4file.len);
-#else
-			;
-#endif
 			retval = -EINVAL;
 			goto load_unlock_out;
 		}
 		if (ldef.t4file.data == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: load: invalid parameter: dataptr is 0\n");
-#else
-			;
-#endif
 			retval = -EINVAL;
 			goto load_unlock_out;
 		}
@@ -1218,11 +1122,7 @@ static int old_capi_manufacturer(unsigned int cmd, void __user *data)
 		ldata.configuration.len = ldef.t4config.len;
 
 		if (ctr->state != CAPI_CTR_DETECTED) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "kcapi: load: contr=%d not in detect state\n", ldef.contr);
-#else
-			;
-#endif
 			retval = -EBUSY;
 			goto load_unlock_out;
 		}
@@ -1236,7 +1136,7 @@ static int old_capi_manufacturer(unsigned int cmd, void __user *data)
 
 		retval = wait_on_ctr_state(ctr, CAPI_CTR_RUNNING);
 
-load_unlock_out:
+	load_unlock_out:
 		mutex_unlock(&capi_controller_lock);
 		return retval;
 
@@ -1258,11 +1158,7 @@ load_unlock_out:
 			goto reset_unlock_out;
 
 		if (ctr->reset_ctr == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "kcapi: reset: no reset function\n");
-#else
-			;
-#endif
 			retval = -ESRCH;
 			goto reset_unlock_out;
 		}
@@ -1271,7 +1167,7 @@ load_unlock_out:
 
 		retval = wait_on_ctr_state(ctr, CAPI_CTR_DETECTED);
 
-reset_unlock_out:
+	reset_unlock_out:
 		mutex_unlock(&capi_controller_lock);
 		return retval;
 	}
@@ -1314,12 +1210,8 @@ int capi20_manufacturer(unsigned int cmd, void __user *data)
 		ctr = get_capi_ctr_by_nr(fdef.contr);
 		if (ctr) {
 			ctr->traceflag = fdef.flag;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "kcapi: contr [%03d] set trace=%d\n",
 			       ctr->cnr, ctr->traceflag);
-#else
-			;
-#endif
 			retval = 0;
 		} else
 			retval = -ESRCH;
@@ -1343,7 +1235,7 @@ int capi20_manufacturer(unsigned int cmd, void __user *data)
 		cparams.membase = cdef.membase;
 		cparams.cardnr = cdef.cardnr;
 		cparams.cardtype = 0;
-		cdef.driver[sizeof(cdef.driver)-1] = 0;
+		cdef.driver[sizeof(cdef.driver) - 1] = 0;
 
 		mutex_lock(&capi_drivers_lock);
 
@@ -1354,7 +1246,7 @@ int capi20_manufacturer(unsigned int cmd, void __user *data)
 		}
 		if (driver == NULL) {
 			printk(KERN_ERR "kcapi: driver \"%s\" not loaded.\n",
-					cdef.driver);
+			       cdef.driver);
 			retval = -ESRCH;
 		} else if (!driver->add_card) {
 			printk(KERN_ERR "kcapi: driver \"%s\" has no add card function.\n", cdef.driver);
@@ -1368,7 +1260,7 @@ int capi20_manufacturer(unsigned int cmd, void __user *data)
 
 	default:
 		printk(KERN_ERR "kcapi: manufacturer command %d unknown.\n",
-					cmd);
+		       cmd);
 		break;
 
 	}
@@ -1413,7 +1305,7 @@ static int __init kcapi_init(void)
 
 static void __exit kcapi_exit(void)
 {
-        kcapi_proc_exit();
+	kcapi_proc_exit();
 
 	unregister_capictr_notifier(&capictr_nb);
 	cdebug_exit();
