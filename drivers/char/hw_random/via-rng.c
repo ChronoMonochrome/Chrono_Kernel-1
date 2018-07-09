@@ -201,11 +201,7 @@ static int __init mod_init(void)
 
 	if (!cpu_has_xstore)
 		return -ENODEV;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "VIA RNG detected\n");
-#else
-	;
-#endif
 	err = hwrng_register(&via_rng);
 	if (err) {
 		printk(KERN_ERR PFX "RNG registering failed (%d)\n",

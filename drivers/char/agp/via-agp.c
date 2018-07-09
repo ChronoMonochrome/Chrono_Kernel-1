@@ -467,11 +467,7 @@ static int __devinit agp_via_probe(struct pci_dev *pdev,
 	if (pdev->device == PCI_DEVICE_ID_VIA_8367_0) {
 		/* Is there a KT400 subsystem ? */
 		if (pdev->subsystem_device == PCI_DEVICE_ID_VIA_8377_0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "Found KT400 in disguise as a KT266.\n");
-#else
-			;
-#endif
 			check_via_agp3(bridge);
 		}
 	}

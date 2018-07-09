@@ -243,11 +243,7 @@ agp_ioc_init(void __iomem *ioc_regs)
         u64 iova_base, *io_pdir, io_tlb_ps;
         int io_tlb_shift;
 
-#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_INFO DRVPFX "IO PDIR shared with sba_iommu\n");
-#else
-        ;
-#endif
 
         info->ioc_regs = ioc_regs;
 
@@ -399,11 +395,7 @@ parisc_agp_init(void)
 	/* Find our parent Pluto */
 	sba = sba_list->dev;
 	if (!IS_PLUTO(sba)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRVPFX "No Pluto found, so no AGPGART for you.\n");
-#else
-		;
-#endif
 		goto out;
 	}
 
@@ -411,11 +403,7 @@ parisc_agp_init(void)
 	device_for_each_child(&sba->dev, &lba, find_quicksilver);
 
 	if (!lba) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRVPFX "No AGP devices found.\n");
-#else
-		;
-#endif
 		goto out;
 	}
 

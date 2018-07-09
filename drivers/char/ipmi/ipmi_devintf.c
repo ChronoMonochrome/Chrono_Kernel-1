@@ -34,7 +34,6 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/errno.h>
-#include <asm/system.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
@@ -935,11 +934,7 @@ static int __init init_ipmi_devintf(void)
 	if (ipmi_major < 0)
 		return -EINVAL;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ipmi device interface\n");
-#else
-	;
-#endif
 
 	ipmi_class = class_create(THIS_MODULE, "ipmi");
 	if (IS_ERR(ipmi_class)) {
@@ -962,11 +957,7 @@ static int __init init_ipmi_devintf(void)
 	if (rv) {
 		unregister_chrdev(ipmi_major, DEVICE_NAME);
 		class_destroy(ipmi_class);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ipmi: can't register smi watcher\n");
-#else
-		;
-#endif
 		return rv;
 	}
 

@@ -37,7 +37,6 @@
 #include <linux/efi.h>
 #include <linux/uaccess.h>
 
-#include <asm/system.h>
 
 #define EFI_RTC_VERSION		"0.4"
 
@@ -381,11 +380,7 @@ efi_rtc_init(void)
 	int ret;
 	struct proc_dir_entry *dir;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EFI Time Services Driver v%s\n", EFI_RTC_VERSION);
-#else
-	;
-#endif
 
 	ret = misc_register(&efi_rtc_dev);
 	if (ret) {

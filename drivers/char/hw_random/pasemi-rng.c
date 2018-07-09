@@ -112,11 +112,7 @@ static int __devinit rng_probe(struct platform_device *ofdev)
 
 	pasemi_rng.priv = (unsigned long)rng_regs;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Registering PA Semi RNG\n");
-#else
-	;
-#endif
 
 	err = hwrng_register(&pasemi_rng);
 
@@ -152,17 +148,7 @@ static struct platform_driver rng_driver = {
 	.remove		= rng_remove,
 };
 
-static int __init rng_init(void)
-{
-	return platform_driver_register(&rng_driver);
-}
-module_init(rng_init);
-
-static void __exit rng_exit(void)
-{
-	platform_driver_unregister(&rng_driver);
-}
-module_exit(rng_exit);
+module_platform_driver(rng_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Egor Martovetsky <egor@pasemi.com>");

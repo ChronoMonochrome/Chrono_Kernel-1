@@ -402,12 +402,8 @@ static int read_log(struct tpm_bios_log *log)
 	/* malloc EventLog space */
 	log->bios_event_log = kmalloc(len, GFP_KERNEL);
 	if (!log->bios_event_log) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: ERROR - Not enough  Memory for BIOS measurements\n",
 			__func__);
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 

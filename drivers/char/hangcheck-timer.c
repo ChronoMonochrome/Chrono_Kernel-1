@@ -157,40 +157,24 @@ static void hangcheck_fire(unsigned long data)
 
 	if (tsc_diff > hangcheck_tsc_margin) {
 		if (hangcheck_dump_tasks) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "Hangcheck: Task state:\n");
-#else
-			;
-#endif
 #ifdef CONFIG_MAGIC_SYSRQ
 			handle_sysrq('t');
 #endif  /* CONFIG_MAGIC_SYSRQ */
 		}
 		if (hangcheck_reboot) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "Hangcheck: hangcheck is restarting the machine.\n");
-#else
-			;
-#endif
 			emergency_restart();
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "Hangcheck: hangcheck value past margin!\n");
-#else
-			;
-#endif
 		}
 	}
 #if 0
 	/*
 	 * Enable to investigate delays in detail
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hangcheck: called %Ld ns since last time (%Ld ns overshoot)\n",
 			tsc_diff, tsc_diff - hangcheck_tick*TIMER_FREQ);
-#else
-	;
-#endif
 #endif
 	mod_timer(&hangcheck_ticktock, jiffies + (hangcheck_tick*HZ));
 	hangcheck_tsc = monotonic_clock();
@@ -199,24 +183,12 @@ static void hangcheck_fire(unsigned long data)
 
 static int __init hangcheck_init(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hangcheck: starting hangcheck timer %s (tick is %d seconds, margin is %d seconds).\n",
 	       VERSION_STR, hangcheck_tick, hangcheck_margin);
-#else
-	;
-#endif
 #if defined (HAVE_MONOTONIC)
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hangcheck: Using monotonic_clock().\n");
 #else
-	;
-#endif
-#else
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hangcheck: Using getrawmonotonic().\n");
-#else
-	;
-#endif
 #endif  /* HAVE_MONOTONIC */
 	hangcheck_tsc_margin =
 		(unsigned long long)(hangcheck_margin + hangcheck_tick);
@@ -232,11 +204,7 @@ static int __init hangcheck_init(void)
 static void __exit hangcheck_exit(void)
 {
 	del_timer_sync(&hangcheck_ticktock);
-#ifdef CONFIG_DEBUG_PRINTK
         printk("Hangcheck: Stopped hangcheck timer.\n");
-#else
-        ;
-#endif
 }
 
 module_init(hangcheck_init);

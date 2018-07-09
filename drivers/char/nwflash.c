@@ -32,7 +32,6 @@
 #include <asm/io.h>
 #include <asm/leds.h>
 #include <asm/mach-types.h>
-#include <asm/system.h>
 #include <asm/uaccess.h>
 
 /*****************************************************************************/
@@ -127,12 +126,8 @@ static ssize_t flash_read(struct file *file, char __user *buf, size_t size,
 	ssize_t ret;
 
 	if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "flash_read: flash_read: offset=0x%llx, "
 		       "buffer=%p, count=0x%zx.\n", *ppos, buf, size);
-#else
-		;
-#endif
 	/*
 	 * We now lock against reads and writes. --rmk
 	 */
@@ -155,12 +150,8 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 	int i, j;
 
 	if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("flash_write: offset=0x%lX, buffer=0x%p, count=0x%X.\n",
 		       p, buf, count);
-#else
-		;
-#endif
 
 	if (!gbWriteEnable)
 		return -EINVAL;
@@ -205,20 +196,12 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 		temp -= 1;
 
 	if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "flash_write: writing %d block(s) "
 			"starting at %d.\n", temp, nBlock);
-#else
-		;
-#endif
 
 	for (; temp; temp--, nBlock++) {
 		if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "flash_write: erasing block %d.\n", nBlock);
-#else
-			;
-#endif
 
 		/*
 		 * first we have to erase the block(s), where we will write...
@@ -236,13 +219,9 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 			break;
 		}
 		if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "flash_write: writing offset %lX, "
 			       "from buf %p, bytes left %X.\n", p, buf,
 			       count - written);
-#else
-			;
-#endif
 
 		/*
 		 * write_block will limit write to space left in this block
@@ -276,11 +255,7 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 		*ppos += rc;
 
 		if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "flash_write: written 0x%X bytes OK.\n", written);
-#else
-			;
-#endif
 	}
 
 	/*
@@ -308,12 +283,8 @@ static loff_t flash_llseek(struct file *file, loff_t offset, int orig)
 
 	mutex_lock(&flash_mutex);
 	if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "flash_llseek: offset=0x%X, orig=0x%X.\n",
 		       (unsigned int) offset, orig);
-#else
-		;
-#endif
 
 	switch (orig) {
 	case 0:
@@ -420,11 +391,7 @@ static int erase_block(int nBlock)
 		 * read any address
 		 */
 		c1 = *(volatile unsigned char *) (pWritePtr);
-#ifdef CONFIG_DEBUG_PRINTK
 		//              printk("Flash_erase: status=%X.\n",c1);
-#else
-		//              ;
-#endif
 	}
 
 	/*
@@ -587,12 +554,8 @@ static int write_block(unsigned long p, const char __user *buf, int count)
 			 */
 			if (time_before(jiffies, timeout)) {
 				if (flashdebug)
-#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "write_block: Retrying write at 0x%X)n",
 					       pWritePtr - FLASH_BASE);
-#else
-					;
-#endif
 
 				/*
 				 * no LED == waiting
@@ -695,20 +658,12 @@ static int __init nwflash_init(void)
 		if ((id != KFLASH_ID) && (id != KFLASH_ID4)) {
 			ret = -ENXIO;
 			iounmap((void *)FLASH_BASE);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("Flash: incorrect ID 0x%04X.\n", id);
-#else
-			;
-#endif
 			goto out;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Flash ROM driver v.%s, flash device ID 0x%04X, size %d Mb.\n",
 		       NWFLASH_VERSION, id, gbFlashSize / (1024 * 1024));
-#else
-		;
-#endif
 
 		ret = misc_register(&flash_miscdev);
 		if (ret < 0) {
