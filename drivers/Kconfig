@@ -92,7 +92,13 @@ source "drivers/usb/Kconfig"
 
 source "drivers/uwb/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/mmc/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/mmc/Kconfig"
+endif
 
 source "drivers/memstick/Kconfig"
 

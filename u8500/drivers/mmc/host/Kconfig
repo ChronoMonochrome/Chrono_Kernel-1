@@ -1,4 +1,3 @@
-if !MMC
 #
 # MMC/SD host controller drivers
 #
@@ -254,33 +253,6 @@ config MMC_AU1X
 
 	  If unsure, say N.
 
-choice
-	prompt "Atmel SD/MMC Driver"
-	depends on AVR32 || ARCH_AT91
-	default MMC_ATMELMCI if AVR32
-	help
-	  Choose which driver to use for the Atmel MCI Silicon
-
-config MMC_AT91
-	tristate "AT91 SD/MMC Card Interface support"
-	depends on ARCH_AT91
-	help
-	  This selects the AT91 MCI controller.
-
-	  If unsure, say N.
-
-config MMC_ATMELMCI
-	tristate "Atmel Multimedia Card Interface support"
-	depends on AVR32 || ARCH_AT91
-	help
-	  This selects the Atmel Multimedia Card Interface driver. If
-	  you have an AT32 (AVR32) or AT91 platform with a Multimedia
-	  Card slot, say Y or M here.
-
-	  If unsure, say N.
-
-endchoice
-
 config MMC_ATMELMCI_DMA
 	bool "Atmel MCI DMA support (EXPERIMENTAL)"
 	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE && EXPERIMENTAL
@@ -385,40 +357,6 @@ config MMC_S3C_HW_SDIO_IRQ
        help
          Enable the hardware support for SDIO interrupts instead of using
 	 the generic polling code.
-
-choice
-	prompt "Samsung S3C SD/MMC transfer code"
-	depends on MMC_S3C
-
-config MMC_S3C_PIO
-	bool "Use PIO transfers only"
-	help
-	  Use PIO to transfer data between memory and the hardware.
-
-	  PIO is slower than DMA as it requires CPU instructions to
-	  move the data. This has been the traditional default for
-	  the S3C MCI driver.
-
-config MMC_S3C_DMA
-	bool "Use DMA transfers only (EXPERIMENTAL)"
-	depends on EXPERIMENTAL
-	help
-	  Use DMA to transfer data between memory and the hardare.
-
-	  Currently, the DMA support in this driver seems to not be
-	  working properly and needs to be debugged before this
-	  option is useful.
-
-config MMC_S3C_PIODMA
-	bool "Support for both PIO and DMA (EXPERIMENTAL)"
-	help
-	  Compile both the PIO and DMA transfer routines into the
-	  driver and let the platform select at run-time which one
-	  is best.
-
-	  See notes for the DMA option.
-
-endchoice
 
 config MMC_SDRICOH_CS
 	tristate "MMC/SD driver for Ricoh Bay1Controllers (EXPERIMENTAL)"
@@ -570,4 +508,3 @@ config MMC_USHC
 
 	  Note: These controllers only support SDIO cards and do not
 	  support MMC or SD memory cards.
-endif

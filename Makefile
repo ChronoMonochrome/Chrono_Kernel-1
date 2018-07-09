@@ -195,6 +195,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?=arm
+PLATFORM	?=u8500
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 
 
@@ -372,7 +373,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -pipe
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
 LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
-                   -Iarch/$(hdr-arch)/include/generated -Iinclude \
+                   -Iarch/$(hdr-arch)/include/generated -I$(PLATFORM)/include -Iinclude \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
                    -include $(srctree)/include/linux/kconfig.h
 

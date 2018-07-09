@@ -16,7 +16,13 @@ obj-$(CONFIG_SFI)		+= sfi/
 # PnP must come after ACPI since it will eventually need to check if acpi
 # was used and do nothing if so
 obj-$(CONFIG_PNP)		+= pnp/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_ARM_AMBA)		+= ../u8500/drivers/amba/
+else
 obj-$(CONFIG_ARM_AMBA)		+= amba/
+endif
+
 # Many drivers will want to use DMA so this has to be made available
 # really early.
 obj-$(CONFIG_DMA_ENGINE)	+= dma/
@@ -96,7 +102,13 @@ obj-$(CONFIG_EISA)		+= eisa/
 obj-y				+= lguest/
 obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_MMC)		+= ../u8500/drivers/mmc/
+else
 obj-$(CONFIG_MMC)		+= mmc/
+endif
+
 obj-$(CONFIG_MEMSTICK)		+= memstick/
 obj-y				+= leds/
 obj-$(CONFIG_NEW_SENSORS)	+= sensor/
