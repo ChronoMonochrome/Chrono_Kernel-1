@@ -122,7 +122,7 @@ int prism2_change_virtual_intf(struct wiphy *wiphy,
 		data = 1;
 		break;
 	default:
-;
+		printk(KERN_WARNING "Operation mode: %d not support\n", type);
 		return -EOPNOTSUPP;
 	}
 
@@ -346,7 +346,7 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
 		return -EBUSY;
 
 	if (wlandev->macmode == WLAN_MACMODE_ESS_AP) {
-;
+		printk(KERN_ERR "Can't scan in AP mode\n");
 		return -EOPNOTSUPP;
 	}
 
@@ -356,7 +356,7 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
 	msg1.msgcode = DIDmsg_dot11req_scan;
 	msg1.bsstype.data = P80211ENUM_bsstype_any;
 
-	memset(&(msg1.bssid.data), 0xFF, sizeof(p80211item_pstr6_t));
+	memset(&msg1.bssid.data.data, 0xFF, sizeof(msg1.bssid.data.data));
 	msg1.bssid.data.len = 6;
 
 	if (request->n_ssids > 0) {
@@ -496,9 +496,9 @@ int prism2_connect(struct wiphy *wiphy, struct net_device *dev,
 		((sme->auth_type == NL80211_AUTHTYPE_AUTOMATIC) && is_wep))
 			msg_join.authtype.data = P80211ENUM_authalg_sharedkey;
 	else
-//		printk(KERN_WARNING
-//			"Unhandled authorisation type for connect (%d)\n",
-;
+		printk(KERN_WARNING
+			"Unhandled authorisation type for connect (%d)\n",
+			sme->auth_type);
 
 	/* Set the encryption - we only support wep */
 	if (is_wep) {

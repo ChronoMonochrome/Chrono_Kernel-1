@@ -171,13 +171,13 @@ static irqreturn_t intr_handler(int irq, void *d)
 	struct comedi_subdevice *s = dev->subdevices;
 
 	if (!dev->attached || devpriv->das6402_ignoreirq) {
-;
+		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
 		return IRQ_HANDLED;
 	}
 #ifdef DEBUG
-//	printk("das6402: interrupt! das6402_irqcount=%i\n",
-;
-;
+	printk("das6402: interrupt! das6402_irqcount=%i\n",
+	       devpriv->das6402_irqcount);
+	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
 #endif
 
 	das6402_ai_fifo_dregs(dev, s);
@@ -186,8 +186,8 @@ static irqreturn_t intr_handler(int irq, void *d)
 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
 #ifdef DEBUG
-//		printk("das6402: Got %i samples\n\n",
-;
+		printk("das6402: Got %i samples\n\n",
+		       devpriv->das6402_wordsread - diff);
 #endif
 		s->async->events |= COMEDI_CB_EOA;
 		comedi_event(dev, s);
@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
 	 */
 
 	devpriv->das6402_ignoreirq = 1;
-#ifdef DEBUG
-;
-#endif
+	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
 	devpriv->das6402_ignoreirq = 1;
 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
 			    struct comedi_subdevice *s, comedi_trig * it)
 {
 	devpriv->das6402_ignoreirq = 1;
-
-#ifdef DEBUG
-;
-#endif
+	dev_dbg(dev->hw_dev, "Starting acquisition\n");
 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
 	if (iobase == 0)
 		iobase = 0x300;
 
-;
-
 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
-;
+		dev_err(dev->hw_dev, "I/O port conflict\n");
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
 	/* should do a probe here */
 
 	irq = it->options[0];
-;
+	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
-	if (ret < 0) {
-;
+	if (ret < 0)
 		return ret;
-	}
-	dev->irq = irq;
 
+	dev->irq = irq;
 	ret = alloc_private(dev, sizeof(struct das6402_private));
 	if (ret < 0)
 		return ret;

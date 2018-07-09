@@ -44,15 +44,7 @@ Configuration Options:
 #define PCI_DEVICE_ID_PCI7230 0x7230
 
 static DEFINE_PCI_DEVICE_TABLE(adl_pci7230_pci_table) = {
-	{
-		PCI_VENDOR_ID_ADLINK,
-		PCI_DEVICE_ID_PCI7230,
-		PCI_ANY_ID,
-		PCI_ANY_ID,
-		0,
-		0,
-		0
-	},
+	{ PCI_DEVICE(PCI_VENDOR_ID_ADLINK, PCI_DEVICE_ID_PCI7230) },
 	{0}
 };
 
@@ -94,7 +86,7 @@ static int adl_pci7230_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 	int bus, slot;
 
-;
+	printk(KERN_INFO "comedi%d: adl_pci7230\n", dev->minor);
 
 	dev->board_name = "pci7230";
 	bus = it->options[0];
@@ -121,17 +113,17 @@ static int adl_pci7230_attach(struct comedi_device *dev,
 		}
 	}
 	if (pcidev == NULL) {
-//		printk(KERN_ERR "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
-;
+		printk(KERN_ERR "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+			dev->minor, bus, slot);
 		return -EIO;
 	}
 	if (comedi_pci_enable(pcidev, "adl_pci7230") < 0) {
-//		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
-;
+		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
+			dev->minor);
 		return -EIO;
 	}
 	dev->iobase = pci_resource_start(pcidev, 2);
-;
+	printk(KERN_DEBUG "comedi: base addr %4lx\n", dev->iobase);
 
 	s = dev->subdevices + 0;
 	/* Isolated do */
@@ -151,14 +143,14 @@ static int adl_pci7230_attach(struct comedi_device *dev,
 	s->range_table = &range_digital;
 	s->insn_bits = adl_pci7230_di_insn_bits;
 
-;
+	printk(KERN_DEBUG "comedi: attached\n");
 
 	return 1;
 }
 
 static int adl_pci7230_detach(struct comedi_device *dev)
 {
-;
+	printk(KERN_DEBUG "comedi%d: pci7230: remove\n", dev->minor);
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)

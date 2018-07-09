@@ -57,10 +57,9 @@ static const struct contec_board contec_boards[] = {
 
 #define PCI_DEVICE_ID_PIO1616L 0x8172
 static DEFINE_PCI_DEVICE_TABLE(contec_pci_table) = {
-	{
-	PCI_VENDOR_ID_CONTEC, PCI_DEVICE_ID_PIO1616L, PCI_ANY_ID,
-		    PCI_ANY_ID, 0, 0, PIO1616L}, {
-	0}
+	{ PCI_DEVICE(PCI_VENDOR_ID_CONTEC, PCI_DEVICE_ID_PIO1616L),
+		.driver_data = PIO1616L },
+	{0}
 };
 
 MODULE_DEVICE_TABLE(pci, contec_pci_table);
@@ -106,7 +105,7 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct pci_dev *pcidev = NULL;
 	struct comedi_subdevice *s;
 
-;
+	printk("comedi%d: contec: ", dev->minor);
 
 	dev->board_name = thisboard->name;
 
@@ -133,7 +132,7 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				return -EIO;
 			}
 			dev->iobase = pci_resource_start(pcidev, 0);
-;
+			printk(" base addr %lx ", dev->iobase);
 
 			dev->board_ptr = contec_boards + 0;
 
@@ -154,20 +153,20 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			s->range_table = &range_digital;
 			s->insn_bits = contec_do_insn_bits;
 
-;
+			printk("attached\n");
 
 			return 1;
 		}
 	}
 
-;
+	printk("card not present!\n");
 
 	return -EIO;
 }
 
 static int contec_detach(struct comedi_device *dev)
 {
-;
+	printk("comedi%d: contec: remove\n", dev->minor);
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)
@@ -182,7 +181,7 @@ static int contec_detach(struct comedi_device *dev)
 static int contec_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
 			  struct comedi_cmd *cmd)
 {
-;
+	printk("contec_cmdtest called\n");
 	return 0;
 }
 
@@ -197,8 +196,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
 			       struct comedi_insn *insn, unsigned int *data)
 {
 
-;
-;
+	dev_dbg(dev->hw_dev, "contec_do_insn_bits called\n");
+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
 
 	if (insn->n != 2)
 		return -EINVAL;
@@ -206,8 +205,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
 	if (data[0]) {
 		s->state &= ~data[0];
 		s->state |= data[0] & data[1];
-//		printk("  out: %d on %lx\n", s->state,
-;
+		dev_dbg(dev->hw_dev, "out: %d on %lx\n", s->state,
+			dev->iobase + thisboard->out_offs);
 		outw(s->state, dev->iobase + thisboard->out_offs);
 	}
 	return 2;
@@ -218,8 +217,8 @@ static int contec_di_insn_bits(struct comedi_device *dev,
 			       struct comedi_insn *insn, unsigned int *data)
 {
 
-;
-;
+	dev_dbg(dev->hw_dev, "contec_di_insn_bits called\n");
+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
 
 	if (insn->n != 2)
 		return -EINVAL;

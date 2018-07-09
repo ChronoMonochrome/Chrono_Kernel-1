@@ -752,7 +752,7 @@ s_vMgrRxAssocRequest(
         pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate =
                 pMgmt->sNodeDBTable[uNodeIndex].wMaxSuppRate;
 #ifdef	PLICE_DEBUG
-;
+	printk("RxAssocRequest:wTxDataRate is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate);
 #endif
 		// Todo: check sta preamble, if ap can't support, set status code
         pMgmt->sNodeDBTable[uNodeIndex].bShortPreamble =
@@ -911,7 +911,7 @@ s_vMgrRxReAssocRequest(
         pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate =
                 pMgmt->sNodeDBTable[uNodeIndex].wMaxSuppRate;
 #ifdef	PLICE_DEBUG
-;
+	printk("RxReAssocRequest:TxDataRate is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate);
 #endif
 		// Todo: check sta preamble, if ap can't support, set status code
         pMgmt->sNodeDBTable[uNodeIndex].bShortPreamble =
@@ -1715,7 +1715,7 @@ s_vMgrRxDisassociation(
 	union iwreq_data  wrqu;
 	memset(&wrqu, 0, sizeof (wrqu));
         wrqu.ap_addr.sa_family = ARPHRD_ETHER;
-;
+	printk("wireless_send_event--->SIOCGIWAP(disassociated)\n");
 	wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
      }
   #endif
@@ -2103,7 +2103,7 @@ if(ChannelExceedZoneType(pDevice,byCurrChannel)==true)
                                &(pMgmt->sNodeDBTable[0].byTopOFDMBasicRate)
                               );
 #ifdef	PLICE_DEBUG
-;
+		//printk("RxBeacon:MaxSuppRate is %d\n",pMgmt->sNodeDBTable[0].wMaxSuppRate);
 #endif
 			if (bUpdatePhyParameter == true) {
                 CARDbSetPhyParameter( pMgmt->pAdapter,
@@ -2295,7 +2295,7 @@ if(ChannelExceedZoneType(pDevice,byCurrChannel)==true)
 #ifdef	PLICE_DEBUG
 		//if (uNodeIndex == 0)
 		{
-;
+			printk("s_vMgrRxBeacon:TxDataRate is %d,Index is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate,uNodeIndex);
 		}
 #endif
 /*
@@ -2521,14 +2521,8 @@ vMgrCreateOwnIBSS(
     if (pMgmt->eCurrMode == WMAC_MODE_ESS_AP) {
         // AP mode BSSID = MAC addr
         memcpy(pMgmt->abyCurrBSSID, pMgmt->abyMACAddr, WLAN_ADDR_LEN);
-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%02x-%02x-%02x-%02x-%02x-%02x \n",
-                      pMgmt->abyCurrBSSID[0],
-                      pMgmt->abyCurrBSSID[1],
-                      pMgmt->abyCurrBSSID[2],
-                      pMgmt->abyCurrBSSID[3],
-                      pMgmt->abyCurrBSSID[4],
-                      pMgmt->abyCurrBSSID[5]
-                    );
+	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%pM\n",
+		pMgmt->abyCurrBSSID);
     }
 
     if (pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) {
@@ -2550,14 +2544,8 @@ vMgrCreateOwnIBSS(
         pMgmt->abyCurrBSSID[0] |= IEEE_ADDR_UNIVERSAL;
 
 
-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%02x-%02x-%02x-%02x-%02x-%02x \n",
-                      pMgmt->abyCurrBSSID[0],
-                      pMgmt->abyCurrBSSID[1],
-                      pMgmt->abyCurrBSSID[2],
-                      pMgmt->abyCurrBSSID[3],
-                      pMgmt->abyCurrBSSID[4],
-                      pMgmt->abyCurrBSSID[5]
-                    );
+	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%pM\n",
+		pMgmt->abyCurrBSSID);
     }
 
     // Set Capability Info
@@ -2887,14 +2875,8 @@ vMgrJoinBSSBegin(
 //            pDevice->bLinkPass = true;
 //            memcpy(pDevice->abyBSSID, pCurr->abyBSSID, WLAN_BSSID_LEN);
 
-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%02x-%02x-%02x-%02x-%02x-%02x \n",
-                  pMgmt->abyCurrBSSID[0],
-                  pMgmt->abyCurrBSSID[1],
-                  pMgmt->abyCurrBSSID[2],
-                  pMgmt->abyCurrBSSID[3],
-                  pMgmt->abyCurrBSSID[4],
-                  pMgmt->abyCurrBSSID[5]
-                );
+		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%pM\n",
+			pMgmt->abyCurrBSSID);
             // Preamble type auto-switch: if AP can receive short-preamble cap,
             // and if registry setting is short preamble we can turn on too.
 
@@ -2984,13 +2966,8 @@ s_vMgrSynchBSS (
 
     MACvReadBSSIDAddress(pDevice->PortOffset, pMgmt->abyCurrBSSID);
 
-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = %02x-%02x-%02x=%02x-%02x-%02x\n",
-        pMgmt->abyCurrBSSID[0],
-        pMgmt->abyCurrBSSID[1],
-        pMgmt->abyCurrBSSID[2],
-        pMgmt->abyCurrBSSID[3],
-        pMgmt->abyCurrBSSID[4],
-        pMgmt->abyCurrBSSID[5]);
+	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = "
+		"%pM\n", pMgmt->abyCurrBSSID);
 
     if (pCurr->eNetworkTypeInUse == PHY_TYPE_11A) {
         if ((pMgmt->eConfigPHYMode == PHY_TYPE_11A) ||
@@ -3068,12 +3045,12 @@ s_vMgrSynchBSS (
     if (pDevice->byBBVGANew != pDevice->byBBVGACurrent) {
         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"RSSI[%d] NewGain[%d] OldGain[%d] \n",
                         (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
-//        printk("RSSI[%d] NewGain[%d] OldGain[%d] \n",
-;
+        printk("RSSI[%d] NewGain[%d] OldGain[%d] \n",
+                        (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
         BBvSetVGAGainOffset(pDevice, pDevice->byBBVGANew);
     }
-//    printk("ldBmMAX[%d] NewGain[%d] OldGain[%d] \n",
-;
+    printk("ldBmMAX[%d] NewGain[%d] OldGain[%d] \n",
+           (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
 */
     pMgmt->uCurrChannel = pCurr->uChannel;
     pMgmt->eCurrentPHYMode = ePhyType;
@@ -4462,14 +4439,8 @@ s_vMgrRxProbeRequest(
         sFrame.pBuf = (unsigned char *)pRxPacket->p80211Header;
         vMgrDecodeProbeRequest(&sFrame);
 /*
-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                  sFrame.pHdr->sA3.abyAddr2[0],
-                  sFrame.pHdr->sA3.abyAddr2[1],
-                  sFrame.pHdr->sA3.abyAddr2[2],
-                  sFrame.pHdr->sA3.abyAddr2[3],
-                  sFrame.pHdr->sA3.abyAddr2[4],
-                  sFrame.pHdr->sA3.abyAddr2[5]
-                );
+	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%pM\n",
+		sFrame.pHdr->sA3.abyAddr2);
 */
         if (sFrame.pSSID->len != 0) {
             if (sFrame.pSSID->len != ((PWLAN_IE_SSID)pMgmt->abyCurrSSID)->len)

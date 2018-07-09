@@ -69,6 +69,7 @@ TRIG_WAKE_EOS
 #include "../comedidev.h"
 
 #include <linux/ioport.h>
+#include <linux/io.h>
 #include <asm/dma.h>
 
 #include "8253.h"
@@ -214,9 +215,9 @@ module_exit(driver_a2150_cleanup_module);
 
 static void ni_dump_regs(struct comedi_device *dev)
 {
-;
-;
-;
+	printk("config bits 0x%x\n", devpriv->config_bits);
+	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
+	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
 }
 
 #endif
@@ -346,32 +347,32 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	static const int timeout = 2000;
 	int i;
 
-//	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
-;
+	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
+	       iobase);
 	if (irq) {
-;
+		printk(", irq %u", irq);
 	} else {
-;
+		printk(", no irq");
 	}
 	if (dma) {
-;
+		printk(", dma %u", dma);
 	} else {
-;
+		printk(", no dma");
 	}
-;
+	printk("\n");
 
 	/* allocate and initialize dev->private */
 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
 		return -ENOMEM;
 
 	if (iobase == 0) {
-;
+		printk(" io base address required\n");
 		return -EINVAL;
 	}
 
 	/* check if io addresses are available */
 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
-;
+		printk(" I/O port conflict\n");
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -380,12 +381,12 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (irq) {
 		/*  check that irq is supported */
 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
-;
+			printk(" invalid irq line %u\n", irq);
 			return -EINVAL;
 		}
 		if (request_irq(irq, a2150_interrupt, 0,
 				driver_a2150.driver_name, dev)) {
-;
+			printk("unable to allocate irq %u\n", irq);
 			return -EINVAL;
 		}
 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
@@ -394,11 +395,11 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/*  initialize dma */
 	if (dma) {
 		if (dma == 4 || dma > 7) {
-;
+			printk(" invalid dma channel %u\n", dma);
 			return -EINVAL;
 		}
 		if (request_dma(dma, driver_a2150.driver_name)) {
-;
+			printk(" failed to allocate dma channel %u\n", dma);
 			return -EINVAL;
 		}
 		devpriv->dma = dma;
@@ -465,7 +466,7 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int a2150_detach(struct comedi_device *dev)
 {
-;
+	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
 
 	/* only free stuff if it has been allocated by _attach */
 	if (dev->iobase) {
@@ -730,9 +731,8 @@ static int a2150_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	outw(trigger_bits, dev->iobase + TRIGGER_REG);
 
 	/*  start acquisition for soft trigger */
-	if (cmd->start_src == TRIG_NOW) {
+	if (cmd->start_src == TRIG_NOW)
 		outw(0, dev->iobase + FIFO_START_REG);
-	}
 #ifdef A2150_DEBUG
 	ni_dump_regs(dev);
 #endif
@@ -801,7 +801,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 #endif
 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
 #ifdef A2150_DEBUG
-;
+		printk(" data is %i\n", data[n]);
 #endif
 		data[n] ^= 0x8000;
 	}
@@ -859,11 +859,10 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
 	case TRIG_ROUND_NEAREST:
 	default:
 		/*  if least upper bound is better approximation */
-		if (lub - *period < *period - glb) {
+		if (lub - *period < *period - glb)
 			*period = lub;
-		} else {
+		else
 			*period = glb;
-		}
 		break;
 	case TRIG_ROUND_UP:
 		*period = lub;

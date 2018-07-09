@@ -703,10 +703,10 @@ RXbBulkInProcessData (
 		      Descriptor_type = skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2];
 		      Key_info = (skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2+1]<<8) |skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2+2] ;
 		      if(Descriptor_type==2) {    //RSN
-;
+                         //  printk("WPA2_Rx_eapol-key_info<-----:%x\n",Key_info);
 		      }
 		     else  if(Descriptor_type==254) {
-;
+                        //  printk("WPA_Rx_eapol-key_info<-----:%x\n",Key_info);
 		     }
                   }
 	      }
@@ -1109,30 +1109,12 @@ static BOOL s_bAPModeRxCtl (
                                        &Status
                                        );
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: send vMgrDeAuthenBeginSta 3\n");
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr3[0],
-                                p802_11Header->abyAddr3[1],
-                                p802_11Header->abyAddr3[2],
-                                p802_11Header->abyAddr3[3],
-                                p802_11Header->abyAddr3[4],
-                                p802_11Header->abyAddr3[5]
-                               );
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr2[0],
-                                p802_11Header->abyAddr2[1],
-                                p802_11Header->abyAddr2[2],
-                                p802_11Header->abyAddr2[3],
-                                p802_11Header->abyAddr2[4],
-                                p802_11Header->abyAddr2[5]
-                               );
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr1[0],
-                                p802_11Header->abyAddr1[1],
-                                p802_11Header->abyAddr1[2],
-                                p802_11Header->abyAddr1[3],
-                                p802_11Header->abyAddr1[4],
-                                p802_11Header->abyAddr1[5]
-                               );
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%pM\n",
+				p802_11Header->abyAddr3);
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%pM\n",
+				p802_11Header->abyAddr2);
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%pM\n",
+				p802_11Header->abyAddr1);
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: wFrameCtl= %x\n", p802_11Header->wFrameCtl );
                     return TRUE;
             }

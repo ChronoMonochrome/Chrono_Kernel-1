@@ -134,7 +134,7 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	struct comedi_subdevice *s;
 
-;
+	printk(KERN_INFO "comedi%d: dnp: ", dev->minor);
 
 	/* Autoprobing: this should find out which board we have. Currently  */
 	/* only the 1486 board is supported and autoprobing is not           */
@@ -166,7 +166,7 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_bits = dnp_dio_insn_bits;
 	s->insn_config = dnp_dio_insn_config;
 
-;
+	printk("attached\n");
 
 	/* We use the I/O ports 0x22,0x23 and 0xa3-0xa9, which are always
 	 * allocated for the primary 8259, so we don't need to allocate them
@@ -204,7 +204,7 @@ static int dnp_detach(struct comedi_device *dev)
 	outb((inb(CSCDR) & 0xAA), CSCDR);
 
 	/* announce that we are finished                                     */
-;
+	printk(KERN_INFO "comedi%d: dnp: remove\n", dev->minor);
 
 	return 0;
 
@@ -251,11 +251,11 @@ static int dnp_dio_insn_bits(struct comedi_device *dev,
 
 	/* on return, data[1] contains the value of the digital input lines. */
 	outb(PADR, CSCIR);
-	data[1] = inb(CSCDR);
+	data[0] = inb(CSCDR);
 	outb(PBDR, CSCIR);
-	data[1] += inb(CSCDR) << 8;
+	data[0] += inb(CSCDR) << 8;
 	outb(PCDR, CSCIR);
-	data[1] += ((inb(CSCDR) & 0xF0) << 12);
+	data[0] += ((inb(CSCDR) & 0xF0) << 12);
 
 	return 2;
 

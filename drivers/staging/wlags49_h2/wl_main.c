@@ -23,7 +23,7 @@
  * software indicates your acceptance of these terms and conditions.  If you do
  * not agree with these terms and conditions, do not use the software.
  *
- * Copyright © 2003 Agere Systems Inc.
+ * Copyright Â© 2003 Agere Systems Inc.
  * All rights reserved.
  *
  * Redistribution and use in source or binary forms, with or without
@@ -44,7 +44,7 @@
  *
  * Disclaimer
  *
- * THIS SOFTWARE IS PROVIDED “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * THIS SOFTWARE IS PROVIDED Â“AS ISÂ” AND ANY EXPRESS OR IMPLIED WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, INFRINGEMENT AND THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  ANY
  * USE, MODIFICATION OR DISTRIBUTION OF THIS SOFTWARE IS SOLELY AT THE USERS OWN
@@ -86,8 +86,7 @@
 // #include <linux/in.h>
 // #include <linux/delay.h>
 // #include <asm/io.h>
-// #include <asm/system.h>
-// #include <asm/bitops.h>
+// // #include <asm/bitops.h>
 #include <linux/unistd.h>
 #include <asm/uaccess.h>
 
@@ -135,7 +134,7 @@
 	{ \
 		if (!(C)) \
 		{ \
-;
+			printk(KERN_INFO "Wireless, parameter error: \"%s\"\n", #C); \
 			goto failed; \
 		} \
 	}
@@ -905,7 +904,7 @@ int wl_insert( struct net_device *dev )
 			   dev->name, dev->base_addr, dev->irq );
 
 	for( i = 0; i < ETH_ALEN; i++ ) {
-;
+		printk( "%02X%c", dev->dev_addr[i], (( i < ( ETH_ALEN-1 )) ? ':' : '\n' ));
 	}
 
 #if 0 //SCULL_USE_PROC /* don't waste space if unused */
@@ -1993,8 +1992,10 @@ int wl_put_ltv( struct wl_private *lp )
 	lp->ltvRecord.typ       = CFG_SET_WPA_AUTH_KEY_MGMT_SUITE;
 	lp->ltvRecord.u.u16[0]  = CNV_INT_TO_LITTLE( lp->AuthKeyMgmtSuite );
 	hcf_status = hcf_put_info( &lp->hcfCtx, (LTVP)&( lp->ltvRecord ));
-	/* WEP Keys */
-	wl_set_wep_keys( lp );
+
+	/* If WEP (or no) keys are being used, write (or clear) them */
+	if (lp->wext_enc != IW_ENCODE_ALG_TKIP)
+		wl_set_wep_keys(lp);
 
 	/* Country Code */
 	/* countryInfo, ltvCountryInfo, CFG_CNF_COUNTRY_INFO */
@@ -2054,7 +2055,7 @@ static int __init wl_module_init( void )
 #endif /* DBG */
 
 	DBG_ENTER( DbgInfo );
-;
+	printk(KERN_INFO "%s\n", VERSION_INFO);
     	printk(KERN_INFO "*** Modified for kernel 2.6 by Henk de Groot <pe1dnn@amsat.org>\n");
         printk(KERN_INFO "*** Based on 7.18 version by Andrey Borzenkov <arvidjaar@mail.ru> $Revision: 39 $\n");
 
@@ -3821,7 +3822,7 @@ static int write_int(struct file *file, const char *buffer, unsigned long count,
 		lp->timer_oor.data = (unsigned long)lp;
 		lp->timer_oor.expires = RUN_AT( 3 * HZ );
 		add_timer( &lp->timer_oor );
-;
+		printk( "<5>wl_enable: %ld\n", jiffies );		//;?remove me 1 day
 #endif //DN554
 #ifdef DN554
 /*******************************************************************************
@@ -3851,7 +3852,7 @@ void timer_oor( u_long arg )
     DBG_ENTER( DbgInfo );
     DBG_PARAM( DbgInfo, "arg", "0x%08lx", arg );
 
-;
+	printk( "<5>timer_oor: %ld 0x%04X\n", jiffies, lp->timer_oor_cnt );		//;?remove me 1 day
 	lp->timer_oor_cnt += 10;
     if ( (lp->timer_oor_cnt & ~DS_OOR) > 300 ) {
 		lp->timer_oor_cnt = 300;

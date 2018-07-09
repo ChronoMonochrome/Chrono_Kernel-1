@@ -51,7 +51,6 @@
 #include <linux/kernel.h>
 #include <linux/ctype.h>
 #include <linux/parport.h>
-#include <linux/version.h>
 #include <linux/list.h>
 #include <linux/notifier.h>
 #include <linux/reboot.h>
@@ -59,7 +58,6 @@
 
 #include <linux/io.h>
 #include <linux/uaccess.h>
-#include <asm/system.h>
 
 #define LCD_MINOR		156
 #define KEYPAD_MINOR		185
@@ -275,11 +273,11 @@ static unsigned char lcd_bits[LCD_PORTS][LCD_BITS][BIT_STATES];
  * LCD types
  */
 #define LCD_TYPE_NONE		0
-#define LCD_TYPE_CUSTOM		1
-#define LCD_TYPE_OLD		2
-#define LCD_TYPE_KS0074		3
-#define LCD_TYPE_HANTRONIX	4
-#define LCD_TYPE_NEXCOM		5
+#define LCD_TYPE_OLD		1
+#define LCD_TYPE_KS0074		2
+#define LCD_TYPE_HANTRONIX	3
+#define LCD_TYPE_NEXCOM		4
+#define LCD_TYPE_CUSTOM		5
 
 /*
  * keypad types
@@ -457,7 +455,8 @@ MODULE_PARM_DESC(keypad_enabled, "Deprecated option, use keypad_type instead");
 static int lcd_type = -1;
 module_param(lcd_type, int, 0000);
 MODULE_PARM_DESC(lcd_type,
-		 "LCD type: 0=none, 1=compiled-in, 2=old, 3=serial ks0074, 4=hantronix, 5=nexcom");
+		 "LCD type: 0=none, 1=old //, 2=serial ks0074, "
+		 "3=hantronix //, 4=nexcom //, 5=compiled-in");
 
 static int lcd_proto = -1;
 module_param(lcd_proto, int, 0000);
@@ -1179,16 +1178,14 @@ static inline int handle_lcd_special_code(void)
 			break;
 
 		while (*esc) {
-			char *endp;
-
 			if (*esc == 'x') {
 				esc++;
-				lcd_addr_x = simple_strtoul(esc, &endp, 10);
-				esc = endp;
+				if (kstrtoul(esc, 10, &lcd_addr_x) < 0)
+					break;
 			} else if (*esc == 'y') {
 				esc++;
-				lcd_addr_y = simple_strtoul(esc, &endp, 10);
-				esc = endp;
+				if (kstrtoul(esc, 10, &lcd_addr_y) < 0)
+					break;
 			} else
 				break;
 		}
@@ -1841,9 +1838,9 @@ static void panel_process_inputs(void)
 	struct logical_input *input;
 
 #if 0
-//	printk(KERN_DEBUG
-//	       "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
-;
+	printk(KERN_DEBUG
+	       "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
+	       phys_prev, phys_curr);
 #endif
 
 	keypressed = 0;
@@ -1991,7 +1988,7 @@ static struct logical_input *panel_bind_key(char *name, char *press,
 
 	key = kzalloc(sizeof(struct logical_input), GFP_KERNEL);
 	if (!key) {
-;
+		printk(KERN_ERR "panel: not enough memory\n");
 		return NULL;
 	}
 	if (!input_name2mask(name, &key->mask, &key->value, &scan_mask_i,
@@ -2006,8 +2003,8 @@ static struct logical_input *panel_bind_key(char *name, char *press,
 	key->fall_time = 1;
 
 #if 0
-//	printk(KERN_DEBUG "bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
-;
+	printk(KERN_DEBUG "bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
+	       key->value);
 #endif
 	strncpy(key->u.kbd.press_str, press, sizeof(key->u.kbd.press_str));
 	strncpy(key->u.kbd.repeat_str, repeat, sizeof(key->u.kbd.repeat_str));
@@ -2034,7 +2031,7 @@ static struct logical_input *panel_bind_callback(char *name,
 
 	callback = kmalloc(sizeof(struct logical_input), GFP_KERNEL);
 	if (!callback) {
-;
+		printk(KERN_ERR "panel: not enough memory\n");
 		return NULL;
 	}
 	memset(callback, 0, sizeof(struct logical_input));
@@ -2113,10 +2110,10 @@ static void panel_attach(struct parport *port)
 		return;
 
 	if (pprt) {
-//		printk(KERN_ERR
-//		       "panel_attach(): port->number=%d parport=%d, "
-//		       "already registered !\n",
-;
+		printk(KERN_ERR
+		       "panel_attach(): port->number=%d parport=%d, "
+		       "already registered !\n",
+		       port->number, parport);
 		return;
 	}
 
@@ -2132,9 +2129,9 @@ static void panel_attach(struct parport *port)
 	}
 
 	if (parport_claim(pprt)) {
-//		printk(KERN_ERR
-//		       "Panel: could not claim access to parport%d. "
-;
+		printk(KERN_ERR
+		       "Panel: could not claim access to parport%d. "
+		       "Aborting.\n", parport);
 		goto err_unreg_device;
 	}
 
@@ -2168,10 +2165,10 @@ static void panel_detach(struct parport *port)
 		return;
 
 	if (!pprt) {
-//		printk(KERN_ERR
-//		       "panel_detach(): port->number=%d parport=%d, "
-//		       "nothing to unregister.\n",
-;
+		printk(KERN_ERR
+		       "panel_detach(): port->number=%d parport=%d, "
+		       "nothing to unregister.\n",
+		       port->number, parport);
 		return;
 	}
 
@@ -2281,8 +2278,8 @@ int panel_init(void)
 	init_in_progress = 1;
 
 	if (parport_register_driver(&panel_driver)) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "Panel: could not register with parport. Aborting.\n");
 		return -EIO;
 	}
 
@@ -2294,20 +2291,20 @@ int panel_init(void)
 			pprt = NULL;
 		}
 		parport_unregister_driver(&panel_driver);
-//		printk(KERN_ERR "Panel driver version " PANEL_VERSION
-;
+		printk(KERN_ERR "Panel driver version " PANEL_VERSION
+		       " disabled.\n");
 		return -ENODEV;
 	}
 
 	register_reboot_notifier(&panel_notifier);
 
 	if (pprt)
-//		printk(KERN_INFO "Panel driver version " PANEL_VERSION
-//		       " registered on parport%d (io=0x%lx).\n", parport,
-;
+		printk(KERN_INFO "Panel driver version " PANEL_VERSION
+		       " registered on parport%d (io=0x%lx).\n", parport,
+		       pprt->port->base);
 	else
-//		printk(KERN_INFO "Panel driver version " PANEL_VERSION
-;
+		printk(KERN_INFO "Panel driver version " PANEL_VERSION
+		       " not yet registered\n");
 	/* tells various subsystems about the fact that initialization
 	   is finished */
 	init_in_progress = 0;

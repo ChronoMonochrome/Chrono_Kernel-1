@@ -298,7 +298,7 @@ void	MngWorkItem(void *Context)
 {
 	PSRxMgmtPacket			pRxMgmtPacket;
 	PSDevice	pDevice =  (PSDevice) Context;
-;
+	//printk("Enter MngWorkItem,Queue packet num is %d\n",pDevice->rxManeQueue.packet_num);
 	spin_lock_irq(&pDevice->lock);
 	 while(pDevice->rxManeQueue.packet_num != 0)
 	 {
@@ -322,7 +322,7 @@ device_receive_frame (
 
     PDEVICE_RD_INFO  pRDInfo = pCurrRD->pRDInfo;
 #ifdef	PLICE_DEBUG
-;
+	//printk("device_receive_frame:pCurrRD is %x,pRDInfo is %x\n",pCurrRD,pCurrRD->pRDInfo);
 #endif
     struct net_device_stats* pStats=&pDevice->stats;
     struct sk_buff* skb;
@@ -601,7 +601,7 @@ device_receive_frame (
 #ifdef	THREAD
 		EnQueue(pDevice,pRxPacket);
 
-;
+		//printk("enque time is %x\n",jiffies);
 		//up(&pDevice->mlme_semaphore);
 			//Enque (pDevice->FirstRecvMngList,pDevice->LastRecvMngList,pMgmt);
 #else
@@ -610,7 +610,7 @@ device_receive_frame (
 		EnQueue(pDevice,pRxPacket);
 		tasklet_schedule(&pDevice->RxMngWorkItem);
 #else
-;
+//printk("RxMan\n");
 	vMgrRxManagePacket((void *)pDevice, pDevice->pMgmt, pRxPacket);
            //tasklet_schedule(&pDevice->RxMngWorkItem);
 #endif
@@ -972,7 +972,7 @@ device_receive_frame (
 //        if(pDevice->bRxMICFail == false) {
 //           for (ii =0; ii < 100; ii++)
 //                printk(" %02x", *(skb->data + ii));
-;
+//           printk("\n");
 //	    }
 
     }
@@ -1107,30 +1107,12 @@ static bool s_bAPModeRxCtl (
                                        &Status
                                        );
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: send vMgrDeAuthenBeginSta 3\n");
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr3[0],
-                                p802_11Header->abyAddr3[1],
-                                p802_11Header->abyAddr3[2],
-                                p802_11Header->abyAddr3[3],
-                                p802_11Header->abyAddr3[4],
-                                p802_11Header->abyAddr3[5]
-                               );
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr2[0],
-                                p802_11Header->abyAddr2[1],
-                                p802_11Header->abyAddr2[2],
-                                p802_11Header->abyAddr2[3],
-                                p802_11Header->abyAddr2[4],
-                                p802_11Header->abyAddr2[5]
-                               );
-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%02x-%02x-%02x=%02x-%02x-%02x \n",
-                                p802_11Header->abyAddr1[0],
-                                p802_11Header->abyAddr1[1],
-                                p802_11Header->abyAddr1[2],
-                                p802_11Header->abyAddr1[3],
-                                p802_11Header->abyAddr1[4],
-                                p802_11Header->abyAddr1[5]
-                               );
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%pM\n",
+				p802_11Header->abyAddr3);
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%pM\n",
+				p802_11Header->abyAddr2);
+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%pM\n",
+				p802_11Header->abyAddr1);
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: wFrameCtl= %x\n", p802_11Header->wFrameCtl );
                     VNSvInPortB(pDevice->PortOffset + MAC_REG_RCR, &(pDevice->byRxMode));
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc:pDevice->byRxMode = %x\n", pDevice->byRxMode );

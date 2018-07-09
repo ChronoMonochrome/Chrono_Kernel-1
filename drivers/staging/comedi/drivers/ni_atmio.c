@@ -268,8 +268,9 @@ static const struct ni_board_struct ni_boards[] = {
 	 }
 };
 
-static const int ni_irqpin[] =
-    { -1, -1, -1, 0, 1, 2, -1, 3, -1, -1, 4, 5, 6, -1, -1, 7 };
+static const int ni_irqpin[] = {
+	-1, -1, -1, 0, 1, 2, -1, 3, -1, -1, 4, 5, 6, -1, -1, 7
+};
 
 #define interrupt_pin(a)	(ni_irqpin[(a)])
 
@@ -279,7 +280,10 @@ static const int ni_irqpin[] =
 
 struct ni_private {
 	struct pnp_dev *isapnp_dev;
- NI_PRIVATE_COMMON};
+	NI_PRIVATE_COMMON
+
+};
+
 #define devpriv ((struct ni_private *)dev->private)
 
 /* How we access registers */
@@ -409,7 +413,7 @@ static int ni_isapnp_find_board(struct pnp_dev **dev)
 		if (!pnp_port_valid(isapnp_dev, 0)
 		    || !pnp_irq_valid(isapnp_dev, 0)) {
 			pnp_device_detach(isapnp_dev);
-;
+			printk("ni_atmio: pnp invalid port or irq, aborting\n");
 			return -ENOMEM;
 		}
 		break;
@@ -454,9 +458,9 @@ static int ni_atmio_attach(struct comedi_device *dev,
 
 	/* reserve our I/O region */
 
-;
+	printk("comedi%d: ni_atmio: 0x%04lx", dev->minor, iobase);
 	if (!request_region(iobase, NI_SIZE, "ni_atmio")) {
-;
+		printk(" I/O port conflict\n");
 		return -EIO;
 	}
 
@@ -467,10 +471,10 @@ static int ni_atmio_attach(struct comedi_device *dev,
 	{
 		int i;
 
-;
+		printk(" board fingerprint:");
 		for (i = 0; i < 16; i += 2) {
-//			printk(" %04x %02x", inw(dev->iobase + i),
-;
+			printk(" %04x %02x", inw(dev->iobase + i),
+			       inb(dev->iobase + i + 1));
 		}
 	}
 #endif
@@ -483,22 +487,22 @@ static int ni_atmio_attach(struct comedi_device *dev,
 
 	dev->board_ptr = ni_boards + board;
 
-;
+	printk(" %s", boardtype.name);
 	dev->board_name = boardtype.name;
 
 	/* irq stuff */
 
 	if (irq != 0) {
 		if (irq > 15 || ni_irqpin[irq] == -1) {
-;
+			printk(" invalid irq %u\n", irq);
 			return -EINVAL;
 		}
-;
+		printk(" ( irq = %u )", irq);
 		ret = request_irq(irq, ni_E_interrupt, NI_E_IRQ_FLAGS,
 				  "ni_atmio", dev);
 
 		if (ret < 0) {
-;
+			printk(" irq not available\n");
 			return -EINVAL;
 		}
 		dev->irq = irq;
@@ -525,11 +529,11 @@ static int ni_getboardtype(struct comedi_device *dev)
 
 	}
 	if (device_id == 255)
-;
+		printk(" can't find board\n");
 	 else if (device_id == 0)
-;
+		printk(" EEPROM read error (?) or device not found\n");
 	 else
-;
+		printk(" unknown device ID %d -- contact author\n", device_id);
 
 	return -1;
 }

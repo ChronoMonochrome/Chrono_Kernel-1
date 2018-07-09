@@ -70,7 +70,7 @@ static int ft1000_probe(struct usb_interface *interface,
 	ft1000dev = kmalloc(sizeof(struct ft1000_device), GFP_KERNEL);
 
 	if (!ft1000dev) {
-;
+		printk(KERN_ERR "out of memory allocating device structure\n");
 		return 0;
 	}
 
@@ -140,7 +140,7 @@ static int ft1000_probe(struct usb_interface *interface,
 
 	ret = request_firmware(&dsp_fw, "ft3000.img", &dev->dev);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "Error request_firmware().\n");
 		goto err_fw;
 	}
 
@@ -168,7 +168,7 @@ static int ft1000_probe(struct usb_interface *interface,
 	DEBUG("In probe: pft1000info=%p\n", pft1000info);
 	ret = dsp_reload(ft1000dev);
 	if (ret) {
-;
+		printk(KERN_ERR "Problem with DSP image loading\n");
 		goto err_load;
 	}
 
@@ -263,24 +263,4 @@ static struct usb_driver ft1000_usb_driver = {
 	.id_table = id_table,
 };
 
-static int __init usb_ft1000_init(void)
-{
-	int ret = 0;
-
-	DEBUG("Initialize and register the driver\n");
-
-	ret = usb_register(&ft1000_usb_driver);
-	if (ret)
-		err("usb_register failed. Error number %d", ret);
-
-	return ret;
-}
-
-static void __exit usb_ft1000_exit(void)
-{
-	DEBUG("Deregister the driver\n");
-	usb_deregister(&ft1000_usb_driver);
-}
-
-module_init(usb_ft1000_init);
-module_exit(usb_ft1000_exit);
+module_usb_driver(ft1000_usb_driver);

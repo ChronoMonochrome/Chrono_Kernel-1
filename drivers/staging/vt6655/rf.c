@@ -1025,11 +1025,10 @@ unsigned char byPwrdBm = 0;
 	//byPwr+=5;
 //PLICE_DEBUG <-
 
-;
+//printk("Rate <11:byPwr is %d\n",byPwr);
 		break;
     case RATE_6M:
     case RATE_9M:
-    case RATE_12M:
     case RATE_18M:
         byPwr = pDevice->abyOFDMPwrTbl[uCH];
         if (pDevice->byRFType == RF_UW2452) {
@@ -1053,7 +1052,7 @@ unsigned char byPwrdBm = 0;
 	//byPwr+=5;
 //PLICE_DEBUG<-
 
-;
+//printk("Rate <24:byPwr is %d\n",byPwr);
 		break;
     case RATE_24M:
     case RATE_36M:
@@ -1064,7 +1063,7 @@ unsigned char byPwrdBm = 0;
 //PLICE_DEBUG->
 	//byPwr+=5;
 //PLICE_DEBUG<-
-;
+//printk("Rate < 54:byPwr is %d\n",byPwr);
 		break;
     }
 

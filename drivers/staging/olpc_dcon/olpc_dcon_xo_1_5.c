@@ -66,7 +66,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
 			      PCI_DEVICE_ID_VIA_VX855, NULL);
 	if (!pdev) {
-;
+		printk(KERN_ERR "cannot find VX855 PCI ID\n");
 		return 1;
 	}
 
@@ -104,7 +104,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
 	/* we're sharing the IRQ with ACPI */
 	irq = acpi_gbl_FADT.sci_interrupt;
 	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON", dcon)) {
-;
+		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation failed\n", irq);
 		return 1;
 	}
 
@@ -167,20 +167,18 @@ static void dcon_set_dconload_xo_1_5(int val)
 	gpio_set_value(VX855_GPIO(1), val);
 }
 
-static u8 dcon_read_status_xo_1_5(void)
+static int dcon_read_status_xo_1_5(u8 *status)
 {
-	u8 status;
-
 	if (!dcon_was_irq())
 		return -1;
 
 	/* i believe this is the same as "inb(0x44b) & 3" */
-	status = gpio_get_value(VX855_GPI(10));
-	status |= gpio_get_value(VX855_GPI(11)) << 1;
+	*status = gpio_get_value(VX855_GPI(10));
+	*status |= gpio_get_value(VX855_GPI(11)) << 1;
 
 	dcon_clear_irq();
 
-	return status;
+	return 0;
 }
 
 struct dcon_platform_data dcon_pdata_xo_1_5 = {

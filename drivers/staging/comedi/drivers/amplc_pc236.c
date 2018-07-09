@@ -134,10 +134,8 @@ static const struct pc236_board pc236_boards[] = {
 
 #ifdef CONFIG_COMEDI_PCI
 static DEFINE_PCI_DEVICE_TABLE(pc236_pci_table) = {
-	{
-	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI236,
-		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
-	0}
+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI236) },
+	{0}
 };
 
 MODULE_DEVICE_TABLE(pci, pc236_pci_table);
@@ -304,12 +302,12 @@ pc236_find_pci(struct comedi_device *dev, int bus, int slot,
 	}
 	/* No match found. */
 	if (bus || slot) {
-//		printk(KERN_ERR
-//		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
-;
+		printk(KERN_ERR
+		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
+		       dev->minor, thisboard->name, bus, slot);
 	} else {
-//		printk(KERN_ERR "comedi%d: error! no %s found!\n",
-;
+		printk(KERN_ERR "comedi%d: error! no %s found!\n",
+		       dev->minor, thisboard->name);
 	}
 	return -EIO;
 }
@@ -333,16 +331,16 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int share_irq = 0;
 	int ret;
 
-//	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
-;
+	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
+	       PC236_DRIVER_NAME);
 /*
  * Allocate the private structure area.  alloc_private() is a
  * convenient macro defined in comedidev.h.
  */
 	ret = alloc_private(dev, sizeof(struct pc236_private));
 	if (ret < 0) {
-//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-;
+		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+		       dev->minor);
 		return ret;
 	}
 	/* Process options. */
@@ -365,9 +363,9 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		break;
 #endif /* CONFIG_COMEDI_PCI */
 	default:
-//		printk(KERN_ERR
-//		       "comedi%d: %s: BUG! cannot determine board type!\n",
-;
+		printk(KERN_ERR
+		       "comedi%d: %s: BUG! cannot determine board type!\n",
+		       dev->minor, PC236_DRIVER_NAME);
 		return -EINVAL;
 		break;
 	}
@@ -383,9 +381,9 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 		ret = comedi_pci_enable(pci_dev, PC236_DRIVER_NAME);
 		if (ret < 0) {
-//			printk(KERN_ERR
-//			       "comedi%d: error! cannot enable PCI device and request regions!\n",
-;
+			printk(KERN_ERR
+			       "comedi%d: error! cannot enable PCI device and request regions!\n",
+			       dev->minor);
 			return ret;
 		}
 		devpriv->lcr_iobase = pci_resource_start(pci_dev, 1);
@@ -406,8 +404,8 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 	ret = alloc_subdevices(dev, 2);
 	if (ret < 0) {
-//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-;
+		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+		       dev->minor);
 		return ret;
 	}
 
@@ -415,8 +413,8 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/* digital i/o subdevice (8255) */
 	ret = subdev_8255_init(dev, s, NULL, iobase);
 	if (ret < 0) {
-//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-;
+		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+		       dev->minor);
 		return ret;
 	}
 	s = dev->subdevices + 1;
@@ -440,20 +438,20 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			s->cancel = pc236_intr_cancel;
 		}
 	}
-;
+	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
 	if (thisboard->bustype == isa_bustype) {
-;
+		printk("(base %#lx) ", iobase);
 	} else {
 #ifdef CONFIG_COMEDI_PCI
-;
+		printk("(pci %s) ", pci_name(pci_dev));
 #endif
 	}
 	if (irq)
-;
+		printk("(irq %u%s) ", irq, (dev->irq ? "" : " UNAVAILABLE"));
 	else
-;
+		printk("(no irq) ");
 
-;
+	printk("attached\n");
 
 	return 1;
 }
@@ -468,8 +466,8 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pc236_detach(struct comedi_device *dev)
 {
-//	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
-;
+	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+	       PC236_DRIVER_NAME);
 	if (dev->iobase)
 		pc236_intr_disable(dev);
 
@@ -491,8 +489,8 @@ static int pc236_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name) {
-//		printk(KERN_INFO "comedi%d: %s removed\n",
-;
+		printk(KERN_INFO "comedi%d: %s removed\n",
+		       dev->minor, dev->board_name);
 	}
 	return 0;
 }
@@ -505,8 +503,8 @@ static int pc236_request_region(unsigned minor, unsigned long from,
 				unsigned long extent)
 {
 	if (!from || !request_region(from, extent, PC236_DRIVER_NAME)) {
-//		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
-;
+		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
+		       minor, from, extent);
 		return -EIO;
 	}
 	return 0;

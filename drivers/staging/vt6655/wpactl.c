@@ -213,7 +213,9 @@ int wpa_set_wpadev(PSDevice pDevice, int val)
 	int uu, ii;
 
 
-	if (param->u.wpa_key.alg_name > WPA_ALG_CCMP)
+	if (param->u.wpa_key.alg_name > WPA_ALG_CCMP ||
+			param->u.wpa_key.key_len >= MAX_KEY_LEN ||
+			param->u.wpa_key.seq_len >= MAX_KEY_LEN)
 		return -EINVAL;
 
     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "param->u.wpa_key.alg_name = %d \n", param->u.wpa_key.alg_name);
@@ -627,7 +629,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
     if (ptempBSS == NULL) {
 
-;
+       printk("bubble sort kmalloc memory fail@@@\n");
 
         ret = -ENOMEM;
 
@@ -657,13 +659,13 @@ static int wpa_get_scan(PSDevice pDevice,
 
   kfree(ptempBSS);
 
-;
+ // printk("bubble sort result:\n");
 
   //for (ii = 0; ii < MAX_BSS_NUM; ii++)
 
-//  //    printk("%d [%s]:RSSI=%d\n",ii,((PWLAN_IE_SSID)(pMgmt->sBSSList[ii].abySSID))->abySSID,
-//
-;
+  //    printk("%d [%s]:RSSI=%d\n",ii,((PWLAN_IE_SSID)(pMgmt->sBSSList[ii].abySSID))->abySSID,
+
+  //                                                                 pMgmt->sBSSList[ii].uRSSI);
 
  #endif
 
@@ -873,7 +875,7 @@ if (!((pMgmt->eAuthenMode == WMAC_AUTH_SHAREKEY) ||
                               );
 
     if (pCurr == NULL){
-;
+    printk("wpa_set_associate---->hidden mode site survey before associate.......\n");
     bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, pMgmt->abyDesireSSID);
   }
 }

@@ -97,7 +97,7 @@ static void report_char_chartab_status(int reset, int received, int used,
 			snprintf(buf + (len - 1), sizeof(buf) - (len - 1),
 				 " with %d reject%s\n",
 				 rejected, rejected > 1 ? "s" : "");
-;
+		printk(buf);
 	}
 }
 
@@ -265,12 +265,11 @@ static ssize_t keymap_store(struct kobject *kobj, struct kobj_attribute *attr,
 	unsigned long flags;
 
 	spk_lock(flags);
-	in_buff = kmalloc(count + 1, GFP_ATOMIC);
+	in_buff = kmemdup(buf, count + 1, GFP_ATOMIC);
 	if (!in_buff) {
 		spk_unlock(flags);
 		return -ENOMEM;
 	}
-	memcpy(in_buff, buf, count + 1);
 	if (strchr("dDrR", *in_buff)) {
 		set_key_info(key_defaults, key_buf);
 		pr_info("keymap set to default values\n");
@@ -720,7 +719,7 @@ static void report_msg_status(int reset, int received, int used,
 			snprintf(buf + (len - 1), sizeof(buf) - (len - 1),
 				 " with %d reject%s\n",
 				 rejected, rejected > 1 ? "s" : "");
-;
+		printk(buf);
 	}
 }
 

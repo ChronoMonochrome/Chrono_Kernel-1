@@ -52,7 +52,7 @@ the PCMCIA interface.
 #include <pcmcia/cisreg.h>
 #include <pcmcia/ds.h>
 
-static struct pcmcia_device *pcmcia_cur_dev = NULL;
+static struct pcmcia_device *pcmcia_cur_dev;
 
 #define DIO24_SIZE 4		/*  size of io region used by board */
 
@@ -133,22 +133,19 @@ static int dio24_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #endif
 		break;
 	default:
-;
+		pr_err("bug! couldn't determine board type\n");
 		return -EINVAL;
 		break;
 	}
-//	printk("comedi%d: ni_daq_dio24: %s, io 0x%lx", dev->minor,
-;
+	pr_debug("comedi%d: ni_daq_dio24: %s, io 0x%lx", dev->minor,
+		 thisboard->name, iobase);
 #ifdef incomplete
-	if (irq) {
-;
-	}
+	if (irq)
+		pr_debug("irq %u\n", irq);
 #endif
 
-;
-
 	if (iobase == 0) {
-;
+		pr_err("io base address is zero!\n");
 		return -EINVAL;
 	}
 
@@ -173,7 +170,7 @@ static int dio24_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int dio24_detach(struct comedi_device *dev)
 {
-;
+	dev_info(dev->hw_dev, "comedi%d: ni_daq_dio24: remove\n", dev->minor);
 
 	if (dev->subdevices)
 		subdev_8255_cleanup(dev, dev->subdevices + 0);
@@ -204,7 +201,7 @@ static int dio24_cs_attach(struct pcmcia_device *link)
 {
 	struct local_info_t *local;
 
-;
+	printk(KERN_INFO "ni_daq_dio24: HOLA SOY YO - CS-attach!\n");
 
 	dev_dbg(&link->dev, "dio24_cs_attach()\n");
 
@@ -225,7 +222,7 @@ static int dio24_cs_attach(struct pcmcia_device *link)
 static void dio24_cs_detach(struct pcmcia_device *link)
 {
 
-;
+	printk(KERN_INFO "ni_daq_dio24: HOLA SOY YO - cs-detach!\n");
 
 	dev_dbg(&link->dev, "dio24_cs_detach\n");
 
@@ -250,7 +247,7 @@ static void dio24_config(struct pcmcia_device *link)
 {
 	int ret;
 
-;
+	printk(KERN_INFO "ni_daq_dio24: HOLA SOY YO! - config\n");
 
 	dev_dbg(&link->dev, "dio24_config\n");
 
@@ -273,7 +270,7 @@ static void dio24_config(struct pcmcia_device *link)
 	return;
 
 failed:
-;
+	printk(KERN_INFO "Fallo");
 	dio24_release(link);
 
 }				/* dio24_config */
@@ -328,7 +325,7 @@ struct pcmcia_driver dio24_cs_driver = {
 
 static int __init init_dio24_cs(void)
 {
-;
+	printk("ni_daq_dio24: HOLA SOY YO!\n");
 	pcmcia_register_driver(&dio24_cs_driver);
 	return 0;
 }

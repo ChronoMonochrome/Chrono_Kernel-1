@@ -527,7 +527,7 @@ static void dt9812_configure_gain(struct usb_dt9812 *dev,
 		 * 11x -> Gain =  0.5
 		 */
 	case DT9812_GAIN_0PT5:
-		rmw->or_value = F020_MASK_ADC0CF_AMP0GN2 ||
+		rmw->or_value = F020_MASK_ADC0CF_AMP0GN2 |
 		    F020_MASK_ADC0CF_AMP0GN1;
 		break;
 	case DT9812_GAIN_1:
@@ -540,7 +540,7 @@ static void dt9812_configure_gain(struct usb_dt9812 *dev,
 		rmw->or_value = F020_MASK_ADC0CF_AMP0GN1;
 		break;
 	case DT9812_GAIN_8:
-		rmw->or_value = F020_MASK_ADC0CF_AMP0GN1 ||
+		rmw->or_value = F020_MASK_ADC0CF_AMP0GN1 |
 		    F020_MASK_ADC0CF_AMP0GN0;
 		break;
 	case DT9812_GAIN_16:
@@ -1075,8 +1075,8 @@ static int dt9812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_write = &dt9812_ao_winsn;
 	s->insn_read = &dt9812_ao_rinsn;
 
-//	printk(KERN_INFO "comedi%d: successfully attached to dt9812.\n",
-;
+	printk(KERN_INFO "comedi%d: successfully attached to dt9812.\n",
+	       dev->minor);
 
 	down(&dt9812_mutex);
 	/* Find a slot for the comedi device */
@@ -1138,8 +1138,8 @@ static int __init usb_dt9812_init(void)
 	/* register with the USB subsystem */
 	result = usb_register(&dt9812_usb_driver);
 	if (result) {
-//		printk(KERN_ERR KBUILD_MODNAME
-;
+		printk(KERN_ERR KBUILD_MODNAME
+		       ": usb_register failed. Error number %d\n", result);
 		return result;
 	}
 	/* register with comedi */

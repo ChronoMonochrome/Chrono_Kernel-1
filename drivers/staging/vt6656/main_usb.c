@@ -611,16 +611,9 @@ static BOOL device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
 
         // if exist SW network address, use SW network address.
 
-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %02x-%02x-%02x=%02x-%02x-%02x\n",
-            pDevice->abyCurrentNetAddr[0],
-            pDevice->abyCurrentNetAddr[1],
-            pDevice->abyCurrentNetAddr[2],
-            pDevice->abyCurrentNetAddr[3],
-            pDevice->abyCurrentNetAddr[4],
-            pDevice->abyCurrentNetAddr[5]);
+	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %pM\n",
+		pDevice->abyCurrentNetAddr);
     }
-
-
 
     // Set BB and packet type at the same time.
     // Set Short Slot Time, xIFS, and RSPINF.
@@ -749,7 +742,7 @@ static const struct net_device_ops device_netdev_ops = {
     .ndo_do_ioctl           = device_ioctl,
     .ndo_get_stats          = device_get_stats,
     .ndo_start_xmit         = device_xmit,
-    .ndo_set_multicast_list = device_set_multi,
+    .ndo_set_rx_mode	    = device_set_multi,
 };
 
 static int __devinit
@@ -761,13 +754,13 @@ vt6656_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	struct net_device *netdev = NULL;
 	PSDevice pDevice = NULL;
 
-;
-;
+	printk(KERN_NOTICE "%s Ver. %s\n", DEVICE_FULL_DRV_NAM, DEVICE_VERSION);
+	printk(KERN_NOTICE "Copyright (c) 2004 VIA Networking Technologies, Inc.\n");
 
 	udev = usb_get_dev(udev);
 	netdev = alloc_etherdev(sizeof(DEVICE_INFO));
 	if (!netdev) {
-;
+		printk(KERN_ERR DEVICE_NAME ": allocate net device failed\n");
 		rc = -ENOMEM;
 		goto err_nomem;
 	}
@@ -793,7 +786,7 @@ vt6656_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	memcpy(pDevice->dev->dev_addr, fake_mac, ETH_ALEN);
 	rc = register_netdev(netdev);
 	if (rc) {
-;
+		printk(KERN_ERR DEVICE_NAME " Failed to register netdev\n");
 		goto err_netdev;
 	}
 
@@ -866,7 +859,7 @@ static void usb_device_reset(PSDevice pDevice)
  int status;
  status = usb_reset_device(pDevice->usb);
 	if (status)
-;
+            printk("usb_device_reset fail status=%d\n",status);
 	return ;
 }
 
@@ -903,7 +896,7 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
     }
 
     // allocate rcb mem
-    pDevice->pRCBMem = kmalloc((sizeof(RCB) * pDevice->cbRD), GFP_KERNEL);
+	pDevice->pRCBMem = kzalloc((sizeof(RCB) * pDevice->cbRD), GFP_KERNEL);
     if (pDevice->pRCBMem == NULL) {
         DBG_PRT(MSG_LEVEL_ERR,KERN_ERR "%s : alloc rx usb context failed\n", pDevice->dev->name);
         goto free_tx;
@@ -915,7 +908,6 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
     pDevice->FirstRecvMngList = NULL;
     pDevice->LastRecvMngList = NULL;
     pDevice->NumRecvFreeList = 0;
-    memset(pDevice->pRCBMem, 0, (sizeof(RCB) * pDevice->cbRD));
     pRCB = (PRCB) pDevice->pRCBMem;
 
     for (ii = 0; ii < pDevice->cbRD; ii++) {
@@ -1435,32 +1427,32 @@ static unsigned char *Config_FileOperation(PSDevice pDevice)
     //open file
       filp = filp_open(config_path, O_RDWR, 0);
         if (IS_ERR(filp)) {
-;
+	     printk("Config_FileOperation file Not exist\n");
 	     result=-1;
              goto error2;
 	  }
 
      if(!(filp->f_op) || !(filp->f_op->read) ||!(filp->f_op->write)) {
-;
+           printk("file %s cann't readable or writable?\n",config_path);
 	  result = -1;
 	  goto error1;
      	}
 
     buffer = kmalloc(1024, GFP_KERNEL);
     if(buffer==NULL) {
-;
+      printk("allocate mem for file fail?\n");
       result = -1;
       goto error1;
     }
 
     if(filp->f_op->read(filp, buffer, 1024, &filp->f_pos)<0) {
-;
+     printk("read file error?\n");
      result = -1;
     }
 
 error1:
   if(filp_close(filp,NULL))
-;
+       printk("Config_FileOperation:close file fail\n");
 
 error2:
   set_fs (old_fs);
@@ -1508,7 +1500,7 @@ static int Read_config_file(PSDevice pDevice) {
      pDevice->config_file.ZoneType=ZoneType_Europe;
     }
     else {
-;
+      printk("Unknown Zonetype[%s]?\n",tmpbuffer);
    }
  }
 }
@@ -1622,15 +1614,8 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 		break;
 
 	case SIOCSIWNWID:
-        rc = -EOPNOTSUPP;
-		break;
-
 	case SIOCGIWNWID:     //0x8b03  support
-	#ifdef  WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
-          rc = iwctl_giwnwid(dev, NULL, &(wrq->u.nwid), NULL);
-	#else
-        rc = -EOPNOTSUPP;
-	#endif
+		rc = -EOPNOTSUPP;
 		break;
 
 		// Set frequency/channel
@@ -1669,8 +1654,8 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 		{
 			char essid[IW_ESSID_MAX_SIZE+1];
 			if (wrq->u.essid.pointer) {
-				rc = iwctl_giwessid(dev, NULL,
-						    &(wrq->u.essid), essid);
+				iwctl_giwessid(dev, NULL,
+					    &(wrq->u.essid), essid);
 				if (copy_to_user(wrq->u.essid.pointer,
 						         essid,
 						         wrq->u.essid.length) )
@@ -1710,14 +1695,13 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 
 	// Get the current bit-rate
 	case SIOCGIWRATE:
-
-		rc = iwctl_giwrate(dev, NULL, &(wrq->u.bitrate), NULL);
+		iwctl_giwrate(dev, NULL, &(wrq->u.bitrate), NULL);
 		break;
 
 	// Set the desired RTS threshold
 	case SIOCSIWRTS:
 
-		rc = iwctl_siwrts(dev, NULL, &(wrq->u.rts), NULL);
+		rc = iwctl_siwrts(dev, &(wrq->u.rts));
 		break;
 
 	// Get the current RTS threshold
@@ -1745,7 +1729,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 
 		// Get mode of operation
 	case SIOCGIWMODE:
-		rc = iwctl_giwmode(dev, NULL, &(wrq->u.mode), NULL);
+		iwctl_giwmode(dev, NULL, &(wrq->u.mode), NULL);
 		break;
 
 		// Set WEP keys and mode
@@ -1823,7 +1807,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 		{
 			struct iw_range range;
 
-			rc = iwctl_giwrange(dev, NULL, &(wrq->u.data), (char *) &range);
+			iwctl_giwrange(dev, NULL, &(wrq->u.data), (char *) &range);
 			if (copy_to_user(wrq->u.data.pointer, &range, sizeof(struct iw_range)))
 				rc = -EFAULT;
 		}
@@ -2107,16 +2091,4 @@ static struct usb_driver vt6656_driver = {
 #endif /* CONFIG_PM */
 };
 
-static int __init vt6656_init_module(void)
-{
-;
-    return usb_register(&vt6656_driver);
-}
-
-static void __exit vt6656_cleanup_module(void)
-{
-	usb_deregister(&vt6656_driver);
-}
-
-module_init(vt6656_init_module);
-module_exit(vt6656_cleanup_module);
+module_usb_driver(vt6656_driver);
