@@ -68,6 +68,11 @@ if ARCH_U8500
 source "u8500/drivers/input/Kconfig"
 endif
 
+# tty before char
+if ARCH_U8500
+source "u8500/drivers/tty/Kconfig"
+endif
+
 source "drivers/char/Kconfig"
 
 if ARCH_U8500

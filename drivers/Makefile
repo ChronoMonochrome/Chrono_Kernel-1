@@ -55,6 +55,11 @@ endif
 # tty/ comes before char/ so that the VT console is the boot-time
 # default.
 obj-y				+= tty/
+
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/tty/
+endif
+
 obj-y				+= char/
 
 ifdef CONFIG_ARCH_U8500
