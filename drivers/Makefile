@@ -235,7 +235,13 @@ endif
 
 obj-$(CONFIG_MEMSTICK)		+= memstick/
 obj-y				+= leds/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_NEW_SENSORS)	+= ../u8500/drivers/sensor/
+else
 obj-$(CONFIG_NEW_SENSORS)	+= sensor/
+endif
+
 obj-$(CONFIG_SWITCH)		+= switch/
 obj-$(CONFIG_INFINIBAND)	+= infiniband/
 obj-$(CONFIG_SGI_SN)		+= sn/
@@ -274,21 +280,10 @@ obj-y				+= ../u8500/drivers/clk/
 else
 obj-y				+= clk/
 endif
-obj-$(CONFIG_TEE_SUPPORT)	+= tee/
-obj-$(CONFIG_MODEM)		+= modem/
 
-obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
-obj-y				+= samsung/
-obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
-
-obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
-
-ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; fi))
-obj-y   += exfat/
-endif
+obj-$(CONFIG_HWSPINLOCK)       += hwspinlock/
 
 ifdef CONFIG_ARCH_U8500
-obj-$(CONFIG_BCM4330)	+= ../u8500/drivers/bcmdhd/
-obj-$(CONFIG_BCM4334)	+= ../u8500/drivers/bcmdhd/
+obj-y += ../u8500/drivers/
 endif

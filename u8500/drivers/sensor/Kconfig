@@ -1,0 +1,15 @@
+menuconfig NEW_SENSORS
+	bool "Sensors Support"
+	help
+	  Say Y to enable Sensors support.  This allows control of supported
+	  Sensors.
+
+if NEW_SENSORS
+
+source "u8500/drivers/sensor/alps/Kconfig"
+source "u8500/drivers/sensor/proximity/Kconfig"
+source "u8500/drivers/sensor/orientation/Kconfig"
+source "u8500/drivers/sensor/mpu3050/Kconfig"
+source "u8500/drivers/sensor/compass/Kconfig"
+
+endif # NEW_SENSORS

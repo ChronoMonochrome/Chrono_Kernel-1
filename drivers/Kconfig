@@ -6,7 +6,9 @@ if ARCH_U8500
 source "u8500/drivers/base/Kconfig"
 endif
 
-source "drivers/battery/Kconfig"
+if ARCH_U8500
+source "u8500/drivers/battery/Kconfig"
+endif
 
 source "drivers/connector/Kconfig"
 
@@ -179,7 +181,13 @@ if !ARCH_U8500
 source "drivers/video/Kconfig"
 endif
 
+if ARCH_U8500
+source "u8500/sound/Kconfig"
+endif
+
+if !ARCH_U8500
 source "sound/Kconfig"
+endif
 
 source "drivers/hid/Kconfig"
 
@@ -257,7 +265,9 @@ if !ARCH_U8500
 source "drivers/clk/Kconfig"
 endif
 
-source "drivers/tee/Kconfig"
+if ARCH_U8500
+source "u8500/drivers/tee/Kconfig"
+endif
 
 source "drivers/hwspinlock/Kconfig"
 
@@ -269,17 +279,17 @@ if !ARCH_U8500
 source "drivers/clocksource/Kconfig"
 endif
 
-source "drivers/modem/Kconfig"
-
-source "drivers/samsung/Kconfig"
-
-source "drivers/sensor/Kconfig"
-
-source "drivers/phone_svn/Kconfig"
-
 source "drivers/interceptor/Kconfig" 
 
 if ARCH_U8500
+source "u8500/drivers/sensor/Kconfig"
+
+source "u8500/drivers/modem/Kconfig"
+
+source "u8500/drivers/samsung/Kconfig"
+
+source "u8500/drivers/phone_svn/Kconfig"
+
 source "u8500/drivers/bcmdhd/Kconfig"
 endif
 
