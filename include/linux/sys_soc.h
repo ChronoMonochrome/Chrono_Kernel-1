@@ -1,50 +1,37 @@
 /*
  * Copyright (C) ST-Ericsson SA 2011
- * Author: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com> for ST-Ericsson.
+ * Author: Lee Jones <lee.jones@linaro.org> for ST-Ericsson.
  * License terms:  GNU General Public License (GPL), version 2
  */
-#ifndef __SYS_SOC_H
-#define __SYS_SOC_H
+#ifndef __SOC_BUS_H
+#define __SOC_BUS_H
 
-#include <linux/kobject.h>
+#include <linux/device.h>
 
-/**
- * struct sys_soc_info - SoC exports related informations
- * @name: name of the export
- * @info: pointer on the key to export
- * @get_info: callback to retrieve key if info field is NULL
- * @attr: export's sysdev class attribute
- */
-struct sysfs_soc_info {
-	const char *info;
-	ssize_t (*get_info)(char *buf, struct sysfs_soc_info *);
-	struct kobj_attribute attr;
+struct soc_device_attribute {
+	const char *machine;
+	const char *family;
+	const char *revision;
+	const char *soc_id;
 };
 
-ssize_t show_soc_info(struct kobject *, struct kobj_attribute *, char *);
-
-#define SYSFS_SOC_ATTR_VALUE(_name, _value) {		\
-	.attr.attr.name = _name,			\
-	.attr.attr.mode = S_IRUGO,			\
-	.attr.show	= show_soc_info,		\
-	.info           = _value,			\
-}
-
-#define SYSFS_SOC_ATTR_CALLBACK(_name, _callback) {	\
-	.attr.attr.name = _name,			\
-	.attr.attr.mode = S_IRUGO,			\
-	.attr.show	= show_soc_info,		\
-	.get_info       = _callback,			\
-}
+/**
+ * soc_device_register - register SoC as a device
+ * @soc_plat_dev_attr: Attributes passed from platform to be attributed to a SoC
+ */
+struct soc_device *soc_device_register(
+	struct soc_device_attribute *soc_plat_dev_attr);
 
 /**
- * register_sys_soc - register the soc information
- * @name: name of the machine
- * @info: pointer on the info table to export
- * @num: number of info to export
- *
- * NOTE: This function must only be called once
+ * soc_device_unregister - unregister SoC device
+ * @dev: SoC device to be unregistered
  */
-int register_sysfs_soc(struct sysfs_soc_info *info, size_t num);
+void soc_device_unregister(struct soc_device *soc_dev);
 
-#endif /* __SYS_SOC_H */
+/**
+ * soc_device_to_device - helper function to fetch struct device
+ * @soc: Previously registered SoC device container
+ */
+struct device *soc_device_to_device(struct soc_device *soc);
+
+#endif /* __SOC_BUS_H */
