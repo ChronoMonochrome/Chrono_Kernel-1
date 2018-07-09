@@ -113,6 +113,11 @@ obj-y += hsi/
 endif
 
 obj-y				+= net/
+
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/net/
+endif
+
 obj-$(CONFIG_ATM)		+= atm/
 obj-$(CONFIG_FUSION)		+= message/
 obj-y				+= firewire/
