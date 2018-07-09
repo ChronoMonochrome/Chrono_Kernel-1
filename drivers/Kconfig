@@ -56,39 +56,105 @@ source "drivers/input/Kconfig"
 
 source "drivers/char/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/i2c/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/i2c/Kconfig"
+endif
 
+if ARCH_U8500
+source "u8500/drivers/spi/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/spi/Kconfig"
+endif
 
+if ARCH_U8500
+source "u8500/drivers/hsi/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/hsi/Kconfig"
+endif
 
 source "drivers/pps/Kconfig"
 
 source "drivers/ptp/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/gpio/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/gpio/Kconfig"
+endif
 
 source "drivers/w1/Kconfig"
 
-source "drivers/power/Kconfig"
+if ARCH_U8500
+source "u8500/drivers/power/Kconfig"
+endif
 
+if !ARCH_U8500
+source "drivers/power/Kconfig"
+endif
+
+if ARCH_U8500
+source "u8500/drivers/hwmon/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/hwmon/Kconfig"
+endif
 
 source "drivers/thermal/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/watchdog/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/watchdog/Kconfig"
+endif
 
 source "drivers/ssb/Kconfig"
 
 source "drivers/bcma/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/mfd/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/mfd/Kconfig"
+endif
 
+if ARCH_U8500
+source "u8500/drivers/regulator/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/regulator/Kconfig"
+endif
 
+if ARCH_U8500
+source "u8500/drivers/media/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/media/Kconfig"
+endif
 
+if ARCH_U8500
+source "u8500/drivers/video/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/video/Kconfig"
+endif
 
 source "sound/Kconfig"
 
@@ -126,9 +192,21 @@ source "drivers/infiniband/Kconfig"
 
 source "drivers/edac/Kconfig"
 
-source "drivers/rtc/Kconfig"
+if ARCH_U8500
+source "u8500/drivers/rtc/Kconfig"
+endif
 
+if !ARCH_U8500
+source "drivers/rtc/Kconfig"
+endif
+
+if ARCH_U8500
+source "u8500/drivers/dma/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/dma/Kconfig"
+endif
 
 source "drivers/dca/Kconfig"
 
@@ -144,13 +222,25 @@ source "drivers/staging/Kconfig"
 
 source "drivers/platform/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/clk/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/clk/Kconfig"
+endif
 
 source "drivers/tee/Kconfig"
 
 source "drivers/hwspinlock/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/clocksource/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/clocksource/Kconfig"
+endif
 
 source "drivers/modem/Kconfig"
 

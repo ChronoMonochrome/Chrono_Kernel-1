@@ -5,11 +5,22 @@
 # Rewritten to use lists instead of if-statements.
 #
 
-obj-y				+= gpio/
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/gpio/
+else
+obj-y += gpio/
+endif
+
 obj-$(CONFIG_PCI)		+= pci/
 obj-$(CONFIG_PARISC)		+= parisc/
 obj-$(CONFIG_RAPIDIO)		+= rapidio/
-obj-y				+= video/
+
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/video/
+else
+obj-y += video/
+endif
+
 obj-y				+= idle/
 obj-$(CONFIG_ACPI)		+= acpi/
 obj-$(CONFIG_SFI)		+= sfi/
@@ -25,13 +36,21 @@ endif
 
 # Many drivers will want to use DMA so this has to be made available
 # really early.
-obj-$(CONFIG_DMA_ENGINE)	+= dma/
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_DMA_ENGINE) += ../u8500/drivers/dma/
+else
+obj-$(CONFIG_DMA_ENGINE) += dma/
+endif
 
 obj-$(CONFIG_VIRTIO)		+= virtio/
 obj-$(CONFIG_XEN)		+= xen/
 
 # regulators early, since some subsystems rely on them to initialize
-obj-$(CONFIG_REGULATOR)		+= regulator/
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_REGULATOR) += ../u8500/drivers/regulator/
+else
+obj-$(CONFIG_REGULATOR) += regulator/
+endif
 
 # tty/ comes before char/ so that the VT console is the boot-time
 # default.
@@ -39,7 +58,11 @@ obj-y				+= tty/
 obj-y				+= char/
 
 # gpu/ comes after char for AGP vs DRM startup
-obj-y				+= gpu/
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/gpu/
+else
+obj-y += gpu/
+endif
 
 obj-$(CONFIG_CONNECTOR)		+= connector/
 
@@ -48,7 +71,15 @@ obj-$(CONFIG_FB_I810)           += video/i810/
 obj-$(CONFIG_FB_INTEL)          += video/intelfb/
 
 obj-$(CONFIG_PARPORT)		+= parport/
-obj-y				+= base/ block/ misc/ mfd/ nfc/
+obj-y				+= base/ block/ misc/
+
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/mfd/
+else
+obj-y += mfd/
+endif
+
+obj-y				+= nfc/
 obj-$(CONFIG_NUBUS)		+= nubus/
 obj-y				+= macintosh/
 obj-$(CONFIG_IDE)		+= ide/
@@ -62,8 +93,19 @@ endif
 obj-$(CONFIG_ATA)		+= ata/
 obj-$(CONFIG_TARGET_CORE)	+= target/
 obj-$(CONFIG_MTD)		+= mtd/
-obj-$(CONFIG_SPI)		+= spi/
-obj-y				+= hsi/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_SPI) += ../u8500/drivers/spi/
+else
+obj-$(CONFIG_SPI) += spi/
+endif
+
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/hsi/
+else
+obj-y += hsi/
+endif
+
 obj-y				+= net/
 obj-$(CONFIG_ATM)		+= atm/
 obj-$(CONFIG_FUSION)		+= message/
@@ -95,15 +137,43 @@ obj-$(CONFIG_SERIO)		+= input/serio/
 obj-$(CONFIG_GAMEPORT)		+= input/gameport/
 obj-$(CONFIG_INPUT)		+= input/
 obj-$(CONFIG_I2O)		+= message/
-obj-$(CONFIG_RTC_LIB)		+= rtc/
-obj-y				+= i2c/ media/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_RTC_LIB) += ../u8500/drivers/rtc/
+else
+obj-$(CONFIG_RTC_LIB) += rtc/
+endif
+
+ifdef CONFIG_ARCH_U8500
+obj-y += ../u8500/drivers/i2c/ ../u8500/drivers/media/
+else
+obj-y += i2c/ media/
+endif
+
 obj-$(CONFIG_PPS)		+= pps/
 obj-$(CONFIG_PTP_1588_CLOCK)	+= ptp/
 obj-$(CONFIG_W1)		+= w1/
-obj-$(CONFIG_POWER_SUPPLY)	+= power/
-obj-$(CONFIG_HWMON)		+= hwmon/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_POWER_SUPPLY) += ../u8500/drivers/power/
+else
+obj-$(CONFIG_POWER_SUPPLY) += power/
+endif
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_HWMON) += ../u8500/drivers/hwmon/
+else
+obj-$(CONFIG_HWMON) += hwmon/
+endif
+
 obj-$(CONFIG_THERMAL)		+= thermal/
-obj-$(CONFIG_WATCHDOG)		+= watchdog/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_WATCHDOG) += ../u8500/drivers/watchdog/
+else
+obj-$(CONFIG_WATCHDOG) += watchdog/
+endif
+
 obj-$(CONFIG_PHONE)		+= telephony/
 obj-$(CONFIG_MD)		+= md/
 obj-$(CONFIG_BT)		+= bluetooth/
@@ -114,7 +184,12 @@ obj-$(CONFIG_MCA)		+= mca/
 obj-$(CONFIG_EISA)		+= eisa/
 obj-y				+= lguest/
 obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_CPU_IDLE)		+= ../u8500/drivers/cpuidle/
+else
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+endif
 
 ifdef CONFIG_ARCH_U8500
 obj-$(CONFIG_MMC)		+= ../u8500/drivers/mmc/
@@ -133,7 +208,13 @@ obj-$(CONFIG_CRYPTO)		+= crypto/
 obj-$(CONFIG_SUPERH)		+= sh/
 obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
 ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/clocksource/
+else
 obj-y				+= clocksource/
+endif
+
 endif
 obj-$(CONFIG_DCA)		+= dca/
 obj-$(CONFIG_HID)		+= hid/
@@ -147,7 +228,11 @@ obj-$(CONFIG_STAGING)		+= staging/
 obj-y				+= platform/
 obj-y				+= ieee802154/
 #common clk code
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/clk/
+else
 obj-y				+= clk/
+endif
 obj-$(CONFIG_TEE_SUPPORT)	+= tee/
 obj-$(CONFIG_MODEM)		+= modem/
 

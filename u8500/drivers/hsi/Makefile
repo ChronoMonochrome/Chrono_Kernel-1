@@ -1,0 +1,8 @@
+#
+# Makefile for HSI
+#
+obj-$(CONFIG_HSI_BOARDINFO)	+= hsi_boardinfo.o
+obj-$(CONFIG_HSI)		+= hsi.o
+obj-y				+= controllers/ clients/
+
+include $(srctree)/scripts/Makefile_build.thumb2

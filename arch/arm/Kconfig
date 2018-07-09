@@ -1519,7 +1519,13 @@ config CPU_FREQ_S3C24XX_DEBUGFS
 
 endif
 
+if ARCH_U8500
+source "u8500/drivers/cpuidle/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/cpuidle/Kconfig"
+endif
 
 endmenu
 
