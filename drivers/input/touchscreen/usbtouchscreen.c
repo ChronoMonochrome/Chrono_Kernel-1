@@ -16,6 +16,8 @@
  *  - JASTEC USB touch controller/DigiTech DTR-02U
  *  - Zytronic capacitive touchscreen
  *  - NEXIO/iNexio
+ *  - Elo TouchSystems 2700 IntelliTouch
+ *  - EasyTouch USB Dual/Multi touch controller from Data Modul
  *
  * Copyright (C) 2004-2007 by Daniel Ritz <daniel.ritz@gmx.ch>
  * Copyright (C) by Todd E. Johnson (mtouchusb.c)
@@ -104,7 +106,6 @@ struct usbtouch_device_info {
 struct usbtouch_usb {
 	unsigned char *data;
 	dma_addr_t data_dma;
-	int data_size;
 	unsigned char *buffer;
 	int buf_len;
 	struct urb *irq;
@@ -139,6 +140,8 @@ enum {
 	DEVTYPE_ZYTRONIC,
 	DEVTYPE_TC45USB,
 	DEVTYPE_NEXIO,
+	DEVTYPE_ELO,
+	DEVTYPE_ETOUCH,
 };
 
 #define USB_DEVICE_HID_CLASS(vend, prod) \
@@ -240,6 +243,14 @@ static const struct usb_device_id usbtouch_devices[] = {
 		.driver_info = DEVTYPE_NEXIO},
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_USB_ELO
+	{USB_DEVICE(0x04e7, 0x0020), .driver_info = DEVTYPE_ELO},
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+	{USB_DEVICE(0x7374, 0x0001), .driver_info = DEVTYPE_ETOUCH},
+#endif
+
 	{}
 };
 
@@ -321,6 +332,51 @@ static int egalax_get_pkt_len(unsigned char *buf, int len)
 }
 #endif
 
+/*****************************************************************************
+ * EasyTouch part
+ */
+
+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+
+#ifndef MULTI_PACKET
+#define MULTI_PACKET
+#endif
+
+#define ETOUCH_PKT_TYPE_MASK		0xFE
+#define ETOUCH_PKT_TYPE_REPT		0x80
+#define ETOUCH_PKT_TYPE_REPT2		0xB0
+#define ETOUCH_PKT_TYPE_DIAG		0x0A
+
+static int etouch_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
+{
+	if ((pkt[0] & ETOUCH_PKT_TYPE_MASK) != ETOUCH_PKT_TYPE_REPT &&
+		(pkt[0] & ETOUCH_PKT_TYPE_MASK) != ETOUCH_PKT_TYPE_REPT2)
+		return 0;
+
+	dev->x = ((pkt[1] & 0x1F) << 7) | (pkt[2] & 0x7F);
+	dev->y = ((pkt[3] & 0x1F) << 7) | (pkt[4] & 0x7F);
+	dev->touch = pkt[0] & 0x01;
+
+	return 1;
+}
+
+static int etouch_get_pkt_len(unsigned char *buf, int len)
+{
+	switch (buf[0] & ETOUCH_PKT_TYPE_MASK) {
+	case ETOUCH_PKT_TYPE_REPT:
+	case ETOUCH_PKT_TYPE_REPT2:
+		return 5;
+
+	case ETOUCH_PKT_TYPE_DIAG:
+		if (len < 2)
+			return -1;
+
+		return buf[1] + 2;
+	}
+
+	return 0;
+}
+#endif
 
 /*****************************************************************************
  * PanJit Part
@@ -528,9 +584,6 @@ static int dmc_tsc10_init(struct usbtouch_usb *usbtouch)
 		ret = -ENODEV;
 		goto err_out;
 	}
-
-	/* TSC-25 data sheet specifies a delay after the RESET command */
-	msleep(150);
 
 	/* set coordinate output rate */
 	buf[0] = buf[1] = 0xFF;
@@ -949,6 +1002,24 @@ static int nexio_read_data(struct usbtouch_usb *usbtouch, unsigned char *pkt)
 
 
 /*****************************************************************************
+ * ELO part
+ */
+
+#ifdef CONFIG_TOUCHSCREEN_USB_ELO
+
+static int elo_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
+{
+	dev->x = (pkt[3] << 8) | pkt[2];
+	dev->y = (pkt[5] << 8) | pkt[4];
+	dev->touch = pkt[6] > 0;
+	dev->press = pkt[6];
+
+	return 1;
+}
+#endif
+
+
+/*****************************************************************************
  * the different device descriptors
  */
 #ifdef MULTI_PACKET
@@ -957,6 +1028,18 @@ static void usbtouch_process_multi(struct usbtouch_usb *usbtouch,
 #endif
 
 static struct usbtouch_device_info usbtouch_dev_info[] = {
+#ifdef CONFIG_TOUCHSCREEN_USB_ELO
+	[DEVTYPE_ELO] = {
+		.min_xc		= 0x0,
+		.max_xc		= 0x0fff,
+		.min_yc		= 0x0,
+		.max_yc		= 0x0fff,
+		.max_press	= 0xff,
+		.rept_size	= 8,
+		.read_data	= elo_read_data,
+	},
+#endif
+
 #ifdef CONFIG_TOUCHSCREEN_USB_EGALAX
 	[DEVTYPE_EGALAX] = {
 		.min_xc		= 0x0,
@@ -1141,6 +1224,18 @@ static struct usbtouch_device_info usbtouch_dev_info[] = {
 		.alloc		= nexio_alloc,
 		.init		= nexio_init,
 		.exit		= nexio_exit,
+	},
+#endif
+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+	[DEVTYPE_ETOUCH] = {
+		.min_xc		= 0x0,
+		.max_xc		= 0x07ff,
+		.min_yc		= 0x0,
+		.max_yc		= 0x07ff,
+		.rept_size	= 16,
+		.process_pkt	= usbtouch_process_multi,
+		.get_pkt_len	= etouch_get_pkt_len,
+		.read_data	= etouch_read_data,
 	},
 #endif
 };
@@ -1379,7 +1474,7 @@ static int usbtouch_reset_resume(struct usb_interface *intf)
 static void usbtouch_free_buffers(struct usb_device *udev,
 				  struct usbtouch_usb *usbtouch)
 {
-	usb_free_coherent(udev, usbtouch->data_size,
+	usb_free_coherent(udev, usbtouch->type->rept_size,
 			  usbtouch->data, usbtouch->data_dma);
 	kfree(usbtouch->buffer);
 }
@@ -1424,20 +1519,7 @@ static int usbtouch_probe(struct usb_interface *intf,
 	if (!type->process_pkt)
 		type->process_pkt = usbtouch_process_pkt;
 
-	usbtouch->data_size = type->rept_size;
-	if (type->get_pkt_len) {
-		/*
-		 * When dealing with variable-length packets we should
-		 * not request more than wMaxPacketSize bytes at once
-		 * as we do not know if there is more data coming or
-		 * we filled exactly wMaxPacketSize bytes and there is
-		 * nothing else.
-		 */
-		usbtouch->data_size = min(usbtouch->data_size,
-					  usb_endpoint_maxp(endpoint));
-	}
-
-	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
+	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
 					    GFP_KERNEL, &usbtouch->data_dma);
 	if (!usbtouch->data)
 		goto out_free;
@@ -1496,12 +1578,12 @@ static int usbtouch_probe(struct usb_interface *intf,
 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
 		usb_fill_int_urb(usbtouch->irq, udev,
 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
-			 usbtouch->data, usbtouch->data_size,
+			 usbtouch->data, type->rept_size,
 			 usbtouch_irq, usbtouch, endpoint->bInterval);
 	else
 		usb_fill_bulk_urb(usbtouch->irq, udev,
 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
-			 usbtouch->data, usbtouch->data_size,
+			 usbtouch->data, type->rept_size,
 			 usbtouch_irq, usbtouch);
 
 	usbtouch->irq->dev = udev;
@@ -1597,18 +1679,7 @@ static struct usb_driver usbtouch_driver = {
 	.supports_autosuspend = 1,
 };
 
-static int __init usbtouch_init(void)
-{
-	return usb_register(&usbtouch_driver);
-}
-
-static void __exit usbtouch_cleanup(void)
-{
-	usb_deregister(&usbtouch_driver);
-}
-
-module_init(usbtouch_init);
-module_exit(usbtouch_cleanup);
+module_usb_driver(usbtouch_driver);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);

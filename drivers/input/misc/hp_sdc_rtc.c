@@ -704,21 +704,13 @@ static int __init hp_sdc_rtc_init(void)
 	if ((ret = hp_sdc_request_timer_irq(&hp_sdc_rtc_isr)))
 		return ret;
 	if (misc_register(&hp_sdc_rtc_dev) != 0)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Could not register misc. dev for i8042 rtc\n");
-#else
-		;
-#endif
 
         create_proc_read_entry ("driver/rtc", 0, NULL,
 				hp_sdc_rtc_read_proc, NULL);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HP i8042 SDC + MSM-58321 RTC support loaded "
 			 "(RTC v " RTC_VERSION ")\n");
-#else
-	;
-#endif
 
 	return 0;
 }
@@ -728,11 +720,7 @@ static void __exit hp_sdc_rtc_exit(void)
 	remove_proc_entry ("driver/rtc", NULL);
         misc_deregister(&hp_sdc_rtc_dev);
 	hp_sdc_release_timer_irq(hp_sdc_rtc_isr);
-#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_INFO "HP i8042 SDC + MSM-58321 RTC support unloaded\n");
-#else
-        ;
-#endif
 }
 
 module_init(hp_sdc_rtc_init);

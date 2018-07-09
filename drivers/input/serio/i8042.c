@@ -67,10 +67,6 @@ static bool i8042_notimeout;
 module_param_named(notimeout, i8042_notimeout, bool, 0);
 MODULE_PARM_DESC(notimeout, "Ignore timeouts signalled by i8042");
 
-static bool i8042_kbdreset;
-module_param_named(kbdreset, i8042_kbdreset, bool, 0);
-MODULE_PARM_DESC(kbdreset, "Reset device connected to KBD port");
-
 #ifdef CONFIG_X86
 static bool i8042_dritek;
 module_param_named(dritek, i8042_dritek, bool, 0);
@@ -787,16 +783,6 @@ static int __init i8042_check_aux(void)
 		return -1;
 
 /*
- * Reset keyboard (needed on some laptops to successfully detect
- * touchpad, e.g., some Gigabyte laptop models with Elantech
- * touchpads).
- */
-	if (i8042_kbdreset) {
-		pr_warn("Attempting to reset device connected to KBD port\n");
-		i8042_kbd_write(NULL, (unsigned char) 0xff);
-	}
-
-/*
  * Test AUX IRQ delivery to make sure BIOS did not grab the IRQ and
  * used it for a PCI card or somethig else.
  */
@@ -1005,7 +991,7 @@ static int i8042_controller_init(void)
  * Reset the controller and reset CRT to the original value set by BIOS.
  */
 
-static void i8042_controller_reset(void)
+static void i8042_controller_reset(bool force_reset)
 {
 	i8042_flush();
 
@@ -1030,7 +1016,7 @@ static void i8042_controller_reset(void)
  * Reset the controller if requested.
  */
 
-	if (i8042_reset)
+	if (i8042_reset || force_reset)
 		i8042_controller_selftest();
 
 /*
@@ -1153,9 +1139,9 @@ static int i8042_controller_resume(bool force_reset)
  * upsetting it.
  */
 
-static int i8042_pm_reset(struct device *dev)
+static int i8042_pm_suspend(struct device *dev)
 {
-	i8042_controller_reset();
+	i8042_controller_reset(true);
 
 	return 0;
 }
@@ -1177,13 +1163,20 @@ static int i8042_pm_thaw(struct device *dev)
 	return 0;
 }
 
+static int i8042_pm_reset(struct device *dev)
+{
+	i8042_controller_reset(false);
+
+	return 0;
+}
+
 static int i8042_pm_restore(struct device *dev)
 {
 	return i8042_controller_resume(false);
 }
 
 static const struct dev_pm_ops i8042_pm_ops = {
-	.suspend	= i8042_pm_reset,
+	.suspend	= i8042_pm_suspend,
 	.resume		= i8042_pm_resume,
 	.thaw		= i8042_pm_thaw,
 	.poweroff	= i8042_pm_reset,
@@ -1199,7 +1192,7 @@ static const struct dev_pm_ops i8042_pm_ops = {
 
 static void i8042_shutdown(struct platform_device *dev)
 {
-	i8042_controller_reset();
+	i8042_controller_reset(false);
 }
 
 static int __init i8042_create_kbd_port(void)
@@ -1281,15 +1274,11 @@ static void __init i8042_register_ports(void)
 
 	for (i = 0; i < I8042_NUM_PORTS; i++) {
 		if (i8042_ports[i].serio) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "serio: %s at %#lx,%#lx irq %d\n",
 				i8042_ports[i].serio->name,
 				(unsigned long) I8042_DATA_REG,
 				(unsigned long) I8042_COMMAND_REG,
 				i8042_ports[i].irq);
-#else
-			;
-#endif
 			serio_register_port(i8042_ports[i].serio);
 		}
 	}
@@ -1442,7 +1431,7 @@ static int __init i8042_probe(struct platform_device *dev)
  out_fail:
 	i8042_free_aux_ports();	/* in case KBD failed but AUX not */
 	i8042_free_irqs();
-	i8042_controller_reset();
+	i8042_controller_reset(false);
 	i8042_platform_device = NULL;
 
 	return error;
@@ -1452,7 +1441,7 @@ static int __devexit i8042_remove(struct platform_device *dev)
 {
 	i8042_unregister_ports();
 	i8042_free_irqs();
-	i8042_controller_reset();
+	i8042_controller_reset(false);
 	i8042_platform_device = NULL;
 
 	return 0;

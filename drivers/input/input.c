@@ -180,7 +180,7 @@ static int input_handle_abs_event(struct input_dev *dev,
 		return INPUT_IGNORE_EVENT;
 	}
 
-	is_mt_event = code >= ABS_MT_FIRST && code <= ABS_MT_LAST;
+	is_mt_event = input_is_mt_value(code);
 
 	if (!is_mt_event) {
 		pold = &dev->absinfo[code].value;
@@ -223,6 +223,8 @@ static void input_handle_event(struct input_dev *dev,
 	case EV_SYN:
 		switch (code) {
 		case SYN_CONFIG:
+		case SYN_TIME_SEC:
+		case SYN_TIME_NSEC:
 			disposition = INPUT_PASS_TO_ALL;
 			break;
 
@@ -1575,9 +1577,7 @@ void input_reset_device(struct input_dev *dev)
 		 * to be still pressed when we resume.
 		 */
 		spin_lock_irq(&dev->event_lock);
-#if !defined(CONFIG_TORCH_FLASH)    
 		input_dev_release_keys(dev);
-#endif                            
 		spin_unlock_irq(&dev->event_lock);
 	}
 
@@ -1709,10 +1709,6 @@ void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int
 		break;
 
 	case EV_ABS:
-		input_alloc_absinfo(dev);
-		if (!dev->absinfo)
-			return;
-
 		__set_bit(code, dev->absbit);
 		break;
 

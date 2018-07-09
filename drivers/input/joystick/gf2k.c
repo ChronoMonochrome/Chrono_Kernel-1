@@ -287,12 +287,8 @@ static int gf2k_connect(struct gameport *gameport, struct gameport_driver *drv)
 #endif
 
 	if (gf2k->id > GF2K_ID_MAX || !gf2k_axes[gf2k->id]) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "gf2k.c: Not yet supported joystick on %s. [id: %d type:%s]\n",
 			gameport->phys, gf2k->id, gf2k->id > GF2K_ID_MAX ? "Unknown" : gf2k_names[gf2k->id]);
-#else
-		;
-#endif
 		err = -ENODEV;
 		goto fail2;
 	}

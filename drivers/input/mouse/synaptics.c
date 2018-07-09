@@ -24,6 +24,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/delay.h>
 #include <linux/dmi.h>
 #include <linux/input/mt.h>
 #include <linux/serio.h>
@@ -39,32 +40,10 @@
  * Note that newer firmware allows querying device for maximum useable
  * coordinates.
  */
-#define XMIN 0
-#define XMAX 6143
-#define YMIN 0
-#define YMAX 6143
 #define XMIN_NOMINAL 1472
 #define XMAX_NOMINAL 5472
 #define YMIN_NOMINAL 1408
 #define YMAX_NOMINAL 4448
-
-/* Size in bits of absolute position values reported by the hardware */
-#define ABS_POS_BITS 13
-
-/*
- * These values should represent the absolute maximum value that will
- * be reported for a positive position value. Some Synaptics firmware
- * uses this value to indicate a finger near the edge of the touchpad
- * whose precise position cannot be determined.
- *
- * At least one touchpad is known to report positions in excess of this
- * value which are actually negative values truncated to the 13-bit
- * reporting range. These values have never been observed to be lower
- * than 8184 (i.e. -8), so we treat all values greater than 8176 as
- * negative and any other value as positive.
- */
-#define X_MAX_POSITIVE 8176
-#define Y_MAX_POSITIVE 8176
 
 /*
  * Synaptics touchpads report the y coordinate from bottom to top, which is
@@ -236,21 +215,10 @@ static int synaptics_identify(struct psmouse *psmouse)
  * Read touchpad resolution and maximum reported coordinates
  * Resolution is left zero if touchpad does not support the query
  */
-
-static const int *quirk_min_max;
-
 static int synaptics_resolution(struct psmouse *psmouse)
 {
 	struct synaptics_data *priv = psmouse->private;
 	unsigned char resp[3];
-
-	if (quirk_min_max) {
-		priv->x_min = quirk_min_max[0];
-		priv->x_max = quirk_min_max[1];
-		priv->y_min = quirk_min_max[2];
-		priv->y_max = quirk_min_max[3];
-		return 0;
-	}
 
 	if (SYN_ID_MAJOR(priv->identity) < 4)
 		return 0;
@@ -273,14 +241,8 @@ static int synaptics_resolution(struct psmouse *psmouse)
 		}
 	}
 
-	if (SYN_CAP_MIN_DIMENSIONS(priv->ext_cap_0c) &&
-	    (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 7 ||
-	     /*
-	      * Firmware v8.1 does not report proper number of extended
-	      * capabilities, but has been proven to report correct min
-	      * coordinates.
-	      */
-	     SYN_ID_FULL(priv->identity) == 0x801)) {
+	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 7 &&
+	    SYN_CAP_MIN_DIMENSIONS(priv->ext_cap_0c)) {
 		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_MIN_COORDS, resp)) {
 			psmouse_warn(psmouse,
 				     "device claims to have min coordinates query, but I'm not able to read it.\n");
@@ -307,18 +269,49 @@ static int synaptics_query_hardware(struct psmouse *psmouse)
 	return 0;
 }
 
-static int synaptics_set_absolute_mode(struct psmouse *psmouse)
+static int synaptics_set_advanced_gesture_mode(struct psmouse *psmouse)
+{
+	static unsigned char param = 0xc8;
+	struct synaptics_data *priv = psmouse->private;
+
+	if (!(SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+	      SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)))
+		return 0;
+
+	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
+		return -1;
+
+	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
+		return -1;
+
+	/* Advanced gesture mode also sends multi finger data */
+	priv->capabilities |= BIT(1);
+
+	return 0;
+}
+
+static int synaptics_set_mode(struct psmouse *psmouse)
 {
 	struct synaptics_data *priv = psmouse->private;
 
-	priv->mode = SYN_BIT_ABSOLUTE_MODE;
-	if (SYN_ID_MAJOR(priv->identity) >= 4)
+	priv->mode = 0;
+	if (priv->absolute_mode)
+		priv->mode |= SYN_BIT_ABSOLUTE_MODE;
+	if (priv->disable_gesture)
 		priv->mode |= SYN_BIT_DISABLE_GESTURE;
+	if (psmouse->rate >= 80)
+		priv->mode |= SYN_BIT_HIGH_RATE;
 	if (SYN_CAP_EXTENDED(priv->capabilities))
 		priv->mode |= SYN_BIT_W_MODE;
 
 	if (synaptics_mode_cmd(psmouse, priv->mode))
 		return -1;
+
+	if (priv->absolute_mode &&
+	    synaptics_set_advanced_gesture_mode(psmouse)) {
+		psmouse_err(psmouse, "Advanced gesture mode init failed.\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -336,26 +329,6 @@ static void synaptics_set_rate(struct psmouse *psmouse, unsigned int rate)
 	}
 
 	synaptics_mode_cmd(psmouse, priv->mode);
-}
-
-static int synaptics_set_advanced_gesture_mode(struct psmouse *psmouse)
-{
-	static unsigned char param = 0xc8;
-	struct synaptics_data *priv = psmouse->private;
-
-	if (!(SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)))
-		return 0;
-
-	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
-		return -1;
-	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
-		return -1;
-
-	/* Advanced gesture mode also sends multi finger data */
-	priv->capabilities |= BIT(1);
-
-	return 0;
 }
 
 /*****************************************************************************
@@ -500,20 +473,6 @@ static void synaptics_parse_agm(const unsigned char buf[],
 	priv->agm_pending = true;
 }
 
-static void synaptics_parse_ext_buttons(const unsigned char buf[],
-					struct synaptics_data *priv,
-					struct synaptics_hw_state *hw)
-{
-	unsigned int ext_bits =
-		(SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) + 1) >> 1;
-	unsigned int ext_mask = (1U << ext_bits) - 1;
-
-	hw->ext_buttons = buf[4] & ext_mask;
-	hw->ext_buttons |= (buf[5] & ext_mask) << ext_bits;
-}
-
-static bool is_forcepad;
-
 static int synaptics_parse_hw_state(const unsigned char buf[],
 				    struct synaptics_data *priv,
 				    struct synaptics_hw_state *hw)
@@ -525,61 +484,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
 			 ((buf[0] & 0x04) >> 1) |
 			 ((buf[3] & 0x04) >> 2));
 
-		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-		    hw->w == 2) {
-			synaptics_parse_agm(buf, priv, hw);
-			return 1;
-		}
-
-		hw->x = (((buf[3] & 0x10) << 8) |
-			 ((buf[1] & 0x0f) << 8) |
-			 buf[4]);
-		hw->y = (((buf[3] & 0x20) << 7) |
-			 ((buf[1] & 0xf0) << 4) |
-			 buf[5]);
-		hw->z = buf[2];
-
 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
 		hw->right = (buf[0] & 0x02) ? 1 : 0;
 
-		if (is_forcepad) {
-			/*
-			 * ForcePads, like Clickpads, use middle button
-			 * bits to report primary button clicks.
-			 * Unfortunately they report primary button not
-			 * only when user presses on the pad above certain
-			 * threshold, but also when there are more than one
-			 * finger on the touchpad, which interferes with
-			 * out multi-finger gestures.
-			 */
-			if (hw->z == 0) {
-				/* No contacts */
-				priv->press = priv->report_press = false;
-			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-				/*
-				 * Single-finger touch with pressure above
-				 * the threshold. If pressure stays long
-				 * enough, we'll start reporting primary
-				 * button. We rely on the device continuing
-				 * sending data even if finger does not
-				 * move.
-				 */
-				if  (!priv->press) {
-					priv->press_start = jiffies;
-					priv->press = true;
-				} else if (time_after(jiffies,
-						priv->press_start +
-							msecs_to_jiffies(50))) {
-					priv->report_press = true;
-				}
-			} else {
-				priv->press = false;
-			}
-
-			hw->left = priv->report_press;
-
-		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
 			/*
 			 * Clickpad's button is transmitted as middle button,
 			 * however, since it is primary button, we will report
@@ -598,9 +506,43 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
 		}
 
-		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) > 0 &&
+		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+		    hw->w == 2) {
+			synaptics_parse_agm(buf, priv, hw);
+			return 1;
+		}
+
+		hw->x = (((buf[3] & 0x10) << 8) |
+			 ((buf[1] & 0x0f) << 8) |
+			 buf[4]);
+		hw->y = (((buf[3] & 0x20) << 7) |
+			 ((buf[1] & 0xf0) << 4) |
+			 buf[5]);
+		hw->z = buf[2];
+
+		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
 		    ((buf[0] ^ buf[3]) & 0x02)) {
-			synaptics_parse_ext_buttons(buf, priv, hw);
+			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+			default:
+				/*
+				 * if nExtBtn is greater than 8 it should be
+				 * considered invalid and treated as 0
+				 */
+				break;
+			case 8:
+				hw->ext_buttons |= ((buf[5] & 0x08)) ? 0x80 : 0;
+				hw->ext_buttons |= ((buf[4] & 0x08)) ? 0x40 : 0;
+			case 6:
+				hw->ext_buttons |= ((buf[5] & 0x04)) ? 0x20 : 0;
+				hw->ext_buttons |= ((buf[4] & 0x04)) ? 0x10 : 0;
+			case 4:
+				hw->ext_buttons |= ((buf[5] & 0x02)) ? 0x08 : 0;
+				hw->ext_buttons |= ((buf[4] & 0x02)) ? 0x04 : 0;
+			case 2:
+				hw->ext_buttons |= ((buf[5] & 0x01)) ? 0x02 : 0;
+				hw->ext_buttons |= ((buf[4] & 0x01)) ? 0x01 : 0;
+			}
 		}
 	} else {
 		hw->x = (((buf[1] & 0x1f) << 8) | buf[2]);
@@ -612,22 +554,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
 		hw->right = (buf[0] & 0x02) ? 1 : 0;
 	}
-
-	/*
-	 * Convert wrap-around values to negative. (X|Y)_MAX_POSITIVE
-	 * is used by some firmware to indicate a finger at the edge of
-	 * the touchpad whose precise position cannot be determined, so
-	 * convert these values to the maximum axis value.
-	 */
-	if (hw->x > X_MAX_POSITIVE)
-		hw->x -= 1 << ABS_POS_BITS;
-	else if (hw->x == X_MAX_POSITIVE)
-		hw->x = XMAX;
-
-	if (hw->y > Y_MAX_POSITIVE)
-		hw->y -= 1 << ABS_POS_BITS;
-	else if (hw->y == Y_MAX_POSITIVE)
-		hw->y = YMAX;
 
 	return 0;
 }
@@ -662,35 +588,12 @@ static void synaptics_report_semi_mt_data(struct input_dev *dev,
 	}
 }
 
-static void synaptics_report_ext_buttons(struct psmouse *psmouse,
-					 const struct synaptics_hw_state *hw)
-{
-	struct input_dev *dev = psmouse->dev;
-	struct synaptics_data *priv = psmouse->private;
-	int ext_bits = (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) + 1) >> 1;
-	int i;
-
-	if (!SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap))
-		return;
-
-	/* Bug in FW 8.1, buttons are reported only when ExtBit is 1 */
-	if (SYN_ID_FULL(priv->identity) == 0x801 &&
-	    !((psmouse->packet[0] ^ psmouse->packet[3]) & 0x02))
-		return;
-
-	for (i = 0; i < ext_bits; i++) {
-		input_report_key(dev, BTN_0 + 2 * i,
-			hw->ext_buttons & (1 << i));
-		input_report_key(dev, BTN_1 + 2 * i,
-			hw->ext_buttons & (1 << (i + ext_bits)));
-	}
-}
-
 static void synaptics_report_buttons(struct psmouse *psmouse,
 				     const struct synaptics_hw_state *hw)
 {
 	struct input_dev *dev = psmouse->dev;
 	struct synaptics_data *priv = psmouse->private;
+	int i;
 
 	input_report_key(dev, BTN_LEFT, hw->left);
 	input_report_key(dev, BTN_RIGHT, hw->right);
@@ -703,7 +606,8 @@ static void synaptics_report_buttons(struct psmouse *psmouse,
 		input_report_key(dev, BTN_BACK, hw->down);
 	}
 
-	synaptics_report_ext_buttons(psmouse, hw);
+	for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
+		input_report_key(dev, BTN_0 + i, hw->ext_buttons & (1 << i));
 }
 
 static void synaptics_report_slot(struct input_dev *dev, int slot,
@@ -1250,8 +1154,24 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
 {
 	int i;
 
+	/* Things that apply to both modes */
 	__set_bit(INPUT_PROP_POINTER, dev->propbit);
+	__set_bit(EV_KEY, dev->evbit);
+	__set_bit(BTN_LEFT, dev->keybit);
+	__set_bit(BTN_RIGHT, dev->keybit);
 
+	if (SYN_CAP_MIDDLE_BUTTON(priv->capabilities))
+		__set_bit(BTN_MIDDLE, dev->keybit);
+
+	if (!priv->absolute_mode) {
+		/* Relative mode */
+		__set_bit(EV_REL, dev->evbit);
+		__set_bit(REL_X, dev->relbit);
+		__set_bit(REL_Y, dev->relbit);
+		return;
+	}
+
+	/* Absolute mode */
 	__set_bit(EV_ABS, dev->evbit);
 	set_abs_position_params(dev, priv, ABS_X, ABS_Y);
 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
@@ -1277,19 +1197,13 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
 	if (SYN_CAP_PALMDETECT(priv->capabilities))
 		input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
 
-	__set_bit(EV_KEY, dev->evbit);
 	__set_bit(BTN_TOUCH, dev->keybit);
 	__set_bit(BTN_TOOL_FINGER, dev->keybit);
-	__set_bit(BTN_LEFT, dev->keybit);
-	__set_bit(BTN_RIGHT, dev->keybit);
 
 	if (SYN_CAP_MULTIFINGER(priv->capabilities)) {
 		__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
 		__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
 	}
-
-	if (SYN_CAP_MIDDLE_BUTTON(priv->capabilities))
-		__set_bit(BTN_MIDDLE, dev->keybit);
 
 	if (SYN_CAP_FOUR_BUTTON(priv->capabilities) ||
 	    SYN_CAP_MIDDLE_BUTTON(priv->capabilities)) {
@@ -1312,10 +1226,58 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
 	}
 }
 
+static ssize_t synaptics_show_disable_gesture(struct psmouse *psmouse,
+					      void *data, char *buf)
+{
+	struct synaptics_data *priv = psmouse->private;
+
+	return sprintf(buf, "%c\n", priv->disable_gesture ? '1' : '0');
+}
+
+static ssize_t synaptics_set_disable_gesture(struct psmouse *psmouse,
+					     void *data, const char *buf,
+					     size_t len)
+{
+	struct synaptics_data *priv = psmouse->private;
+	unsigned int value;
+	int err;
+
+	err = kstrtouint(buf, 10, &value);
+	if (err)
+		return err;
+
+	if (value > 1)
+		return -EINVAL;
+
+	if (value == priv->disable_gesture)
+		return len;
+
+	priv->disable_gesture = value;
+	if (value)
+		priv->mode |= SYN_BIT_DISABLE_GESTURE;
+	else
+		priv->mode &= ~SYN_BIT_DISABLE_GESTURE;
+
+	if (synaptics_mode_cmd(psmouse, priv->mode))
+		return -EIO;
+
+	return len;
+}
+
+PSMOUSE_DEFINE_ATTR(disable_gesture, S_IWUSR | S_IRUGO, NULL,
+		    synaptics_show_disable_gesture,
+		    synaptics_set_disable_gesture);
+
 static void synaptics_disconnect(struct psmouse *psmouse)
 {
+	struct synaptics_data *priv = psmouse->private;
+
+	if (!priv->absolute_mode && SYN_ID_DISGEST_SUPPORTED(priv->identity))
+		device_remove_file(&psmouse->ps2dev.serio->dev,
+				   &psmouse_attr_disable_gesture.dattr);
+
 	synaptics_reset(psmouse);
-	kfree(psmouse->private);
+	kfree(priv);
 	psmouse->private = NULL;
 }
 
@@ -1328,6 +1290,16 @@ static int synaptics_reconnect(struct psmouse *psmouse)
 
 	do {
 		psmouse_reset(psmouse);
+		if (retry) {
+			/*
+			 * On some boxes, right after resuming, the touchpad
+			 * needs some time to finish initializing (I assume
+			 * it needs time to calibrate) and start responding
+			 * to Synaptics-specific queries, so let's wait a
+			 * bit.
+			 */
+			ssleep(1);
+		}
 		error = synaptics_detect(psmouse, 0);
 	} while (error && ++retry < 3);
 
@@ -1342,14 +1314,8 @@ static int synaptics_reconnect(struct psmouse *psmouse)
 		return -1;
 	}
 
-	if (synaptics_set_absolute_mode(psmouse)) {
+	if (synaptics_set_mode(psmouse)) {
 		psmouse_err(psmouse, "Unable to initialize device.\n");
-		return -1;
-	}
-
-	if (synaptics_set_advanced_gesture_mode(psmouse)) {
-		psmouse_err(psmouse,
-			    "Advanced gesture mode reconnect failed.\n");
 		return -1;
 	}
 
@@ -1423,88 +1389,24 @@ static const struct dmi_system_id __initconst olpc_dmi_table[] = {
 	{ }
 };
 
-static const struct dmi_system_id min_max_dmi_table[] __initconst = {
-#if defined(CONFIG_DMI)
-	{
-		/* Lenovo ThinkPad Helix */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-		},
-		.driver_data = (int []){1024, 5052, 2258, 4832},
-	},
-	{
-		/* Lenovo ThinkPad X240 */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
-		},
-		.driver_data = (int []){1232, 5710, 1156, 4696},
-	},
-	{
-		/* Lenovo ThinkPad T440s */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
-		},
-		.driver_data = (int []){1024, 5112, 2024, 4832},
-	},
-	{
-		/* Lenovo ThinkPad T540p */
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
-		},
-		.driver_data = (int []){1024, 5056, 2058, 4832},
-	},
-#endif
-	{ }
-};
-
-static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
-#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-	{
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
-		},
-	},
-#endif
-	{ }
-};
-
 void __init synaptics_module_init(void)
 {
-	const struct dmi_system_id *min_max_dmi;
-
 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
-
-	min_max_dmi = dmi_first_match(min_max_dmi_table);
-	if (min_max_dmi)
-		quirk_min_max = min_max_dmi->driver_data;
-
-	/*
-	 * Unfortunately ForcePad capability is not exported over PS/2,
-	 * so we have to resort to checking DMI.
-	 */
-	is_forcepad = dmi_check_system(forcepad_dmi_table);
 }
 
-int synaptics_init(struct psmouse *psmouse)
+static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
 {
 	struct synaptics_data *priv;
+	int err = -1;
 
 	/*
-	 * The OLPC XO has issues with Synaptics' absolute mode; similarly to
-	 * the HGPK, it quickly degrades and the hardware becomes jumpy and
-	 * overly sensitive.  Not only that, but the constant packet spew
-	 * (even at a lowered 40pps rate) overloads the EC such that key
-	 * presses on the keyboard are missed.  Given all of that, don't
-	 * even attempt to use Synaptics mode.  Relative mode seems to work
-	 * just fine.
+	 * The OLPC XO has issues with Synaptics' absolute mode; the constant
+	 * packet spew overloads the EC such that key presses on the keyboard
+	 * are missed.  Given that, don't even attempt to use Absolute mode.
+	 * Relative mode seems to work just fine.
 	 */
-	if (broken_olpc_ec) {
+	if (absolute_mode && broken_olpc_ec) {
 		psmouse_info(psmouse,
 			     "OLPC XO detected, not enabling Synaptics protocol.\n");
 		return -ENODEV;
@@ -1521,13 +1423,12 @@ int synaptics_init(struct psmouse *psmouse)
 		goto init_fail;
 	}
 
-	if (synaptics_set_absolute_mode(psmouse)) {
-		psmouse_err(psmouse, "Unable to initialize device.\n");
-		goto init_fail;
-	}
+	priv->absolute_mode = absolute_mode;
+	if (SYN_ID_DISGEST_SUPPORTED(priv->identity))
+		priv->disable_gesture = true;
 
-	if (synaptics_set_advanced_gesture_mode(psmouse)) {
-		psmouse_err(psmouse, "Advanced gesture mode init failed.\n");
+	if (synaptics_set_mode(psmouse)) {
+		psmouse_err(psmouse, "Unable to initialize device.\n");
 		goto init_fail;
 	}
 
@@ -1552,12 +1453,19 @@ int synaptics_init(struct psmouse *psmouse)
 	psmouse->model = ((priv->model_id & 0x00ff0000) >> 8) |
 			  (priv->model_id & 0x000000ff);
 
-	psmouse->protocol_handler = synaptics_process_byte;
+	if (absolute_mode) {
+		psmouse->protocol_handler = synaptics_process_byte;
+		psmouse->pktsize = 6;
+	} else {
+		/* Relative mode follows standard PS/2 mouse protocol */
+		psmouse->protocol_handler = psmouse_process_byte;
+		psmouse->pktsize = 3;
+	}
+
 	psmouse->set_rate = synaptics_set_rate;
 	psmouse->disconnect = synaptics_disconnect;
 	psmouse->reconnect = synaptics_reconnect;
 	psmouse->cleanup = synaptics_reset;
-	psmouse->pktsize = 6;
 	/* Synaptics can usually stay in sync without extra help */
 	psmouse->resync_time = 0;
 
@@ -1576,11 +1484,32 @@ int synaptics_init(struct psmouse *psmouse)
 		psmouse->rate = 40;
 	}
 
+	if (!priv->absolute_mode && SYN_ID_DISGEST_SUPPORTED(priv->identity)) {
+		err = device_create_file(&psmouse->ps2dev.serio->dev,
+					 &psmouse_attr_disable_gesture.dattr);
+		if (err) {
+			psmouse_err(psmouse,
+				    "Failed to create disable_gesture attribute (%d)",
+				    err);
+			goto init_fail;
+		}
+	}
+
 	return 0;
 
  init_fail:
 	kfree(priv);
-	return -1;
+	return err;
+}
+
+int synaptics_init(struct psmouse *psmouse)
+{
+	return __synaptics_init(psmouse, true);
+}
+
+int synaptics_init_relative(struct psmouse *psmouse)
+{
+	return __synaptics_init(psmouse, false);
 }
 
 bool synaptics_supported(void)

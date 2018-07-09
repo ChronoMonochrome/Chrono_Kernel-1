@@ -287,12 +287,8 @@ static int __init l4_add_card(int card_no)
 	if (result)
 		return result;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "gameport: PDPI Lightning 4 %s card v%d.%d at %#x\n",
 		card_no ? "secondary" : "primary", rev >> 4, rev, L4_PORT);
-#else
-	;
-#endif
 
 	for (i = 0; i < 4; i++) {
 		l4 = &l4_ports[card_no * 4 + i];

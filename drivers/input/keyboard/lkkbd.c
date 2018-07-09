@@ -105,7 +105,6 @@ MODULE_PARM_DESC(lk201_compose_is_alt,
 
 #undef LKKBD_DEBUG
 #ifdef LKKBD_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(x...) printk(x)
 #else
 #define DBG(x...) do {} while (0)
@@ -264,9 +263,6 @@ static unsigned short lkkbd_keycode[LK_NUM_KEYCODES] = {
 	[0xfa] = KEY_LEFTBRACE,
 	[0xfb] = KEY_APOSTROPHE,
 };
-#else
-#define DBG(x...) ;
-#endif
 
 #define CHECK_LED(LK, VAR_ON, VAR_OFF, LED, BITS) do {		\
 	if (test_bit(LED, (LK)->dev->led))			\
@@ -393,25 +389,13 @@ static void lkkbd_detection_done(struct lkkbd *lk)
 			"Jan-Benedict Glaw <jbglaw@lug-owl.de>\n", lk->phys);
 		printk(KERN_ERR "lkkbd: keyboard ID'ed as:");
 		for (i = 0; i < LK_NUM_IGNORE_BYTES; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" 0x%02x", lk->id[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 		break;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lkkbd: keyboard on %s identified as: %s\n",
 		lk->phys, lk->name);
-#else
-	;
-#endif
 
 	/*
 	 * Report errors during keyboard boot-up.
@@ -505,13 +489,9 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
 					 !test_bit(keycode, input_dev->key));
 			input_sync(input_dev);
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"%s: Unknown key with scancode 0x%02x on %s.\n",
 				__FILE__, data, lk->name);
-#else
-			;
-#endif
 		}
 	}
 

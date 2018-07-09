@@ -113,8 +113,7 @@ static struct accessory_detect_task detect_ops[] = {
 		.minvol = ACCESSORY_U_HEADSET_DET_VOL_MIN,
 		.maxvol = ACCESSORY_U_HEADSET_DET_VOL_MAX,
 		.alt_minvol = ACCESSORY_U_HEADSET_ALT_DET_VOL_MIN,
-		.alt_maxvol = ACCESSORY_U_HEADSET_ALT_DET_VOL_MAX,
-		.nahj_headset = true,
+		.alt_maxvol = ACCESSORY_U_HEADSET_ALT_DET_VOL_MAX
 	},
 	{
 		.type = JACK_TYPE_OPENCABLE,
@@ -318,11 +317,6 @@ void report_jack_status(struct abx500_ad *dd)
 		value |= SND_JACK_MICROPHONE;
 	if (jack_supports_spkr(dd->jack_type))
 		value |= (SND_JACK_HEADPHONE | SND_JACK_LINEOUT);
-	if (dd->jack_type == JACK_TYPE_DISCONNECTED)
-		set_android_switch_state(0);
-	else
-		set_android_switch_state(1);
-
 	ux500_ab8500_jack_report(value);
 
 out: return;
@@ -401,7 +395,7 @@ static void detect_work(struct work_struct *work)
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
 
 	if (dd->set_av_switch)
-		dd->set_av_switch(dd, AUDIO_IN, false);
+		dd->set_av_switch(dd, AUDIO_IN);
 
 	new_type = detect(dd, &req_det_count);
 
@@ -697,12 +691,12 @@ static void config_accdetect(struct abx500_ad *dd)
 		release_irq(dd, BUTTON_PRESS_IRQ);
 		release_irq(dd, BUTTON_RELEASE_IRQ);
 		if (dd->set_av_switch)
-			dd->set_av_switch(dd, NOT_SET, false);
+			dd->set_av_switch(dd, NOT_SET);
 		break;
 
 	case JACK_TYPE_DISCONNECTED:
 	if (dd->set_av_switch)
-		dd->set_av_switch(dd, NOT_SET, false);
+		dd->set_av_switch(dd, NOT_SET);
 	case JACK_TYPE_HEADPHONE:
 		dd->config_accdetect1_hw(dd, 1);
 		dd->config_accdetect2_hw(dd, 0);
@@ -722,7 +716,7 @@ static void config_accdetect(struct abx500_ad *dd)
 		release_irq(dd, BUTTON_PRESS_IRQ);
 		release_irq(dd, BUTTON_RELEASE_IRQ);
 		if (dd->set_av_switch)
-			dd->set_av_switch(dd, AUDIO_IN, true);
+			dd->set_av_switch(dd, NOT_SET);
 		break;
 
 	case JACK_TYPE_CONNECTED:
@@ -812,24 +806,6 @@ static int abx500_accessory_init(struct platform_device *pdev)
 		}
 	}
 
-	if (dd->pdata->nahj_ctrl) {
-		ret = gpio_is_valid(dd->pdata->nahj_ctrl);
-		if (!ret) {
-			dev_err(&pdev->dev,
-				"%s: nahj ctrl GPIO invalid (%d).\n", __func__,
-						dd->pdata->nahj_ctrl);
-
-			goto nahj_fail;
-		}
-		ret = gpio_request(dd->pdata->nahj_ctrl,
-				"nahj Control");
-	       if (ret)	{
-			dev_err(&pdev->dev, "%s: Get nahj GPIO"
-					"failed.\n", __func__);
-			goto nahj_fail;
-		}
-	}
-
 	ret = create_btn_input_dev(dd);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "%s: create_button_input_dev failed.\n",
@@ -865,17 +841,12 @@ static int abx500_accessory_init(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, dd);
 
-
 	return 0;
-
 fail_no_mem_for_wq:
 	free_regulators(dd);
 fail_no_regulators:
 	input_unregister_device(dd->btn_input_dev);
 fail_no_btn_input_dev:
-	if (dd->pdata->nahj_ctrl)
-		gpio_free(dd->pdata->nahj_ctrl);
-nahj_fail:
 	if (dd->pdata->mic_ctrl)
 		gpio_free(dd->pdata->mic_ctrl);
 mic_ctrl_fail:
@@ -893,9 +864,6 @@ static void abx500_accessory_cleanup(struct abx500_ad *dd)
 
 	dd->jack_type = JACK_TYPE_UNSPECIFIED;
 	config_accdetect(dd);
-
-	if (dd->pdata->nahj_ctrl)
-		gpio_free(dd->pdata->nahj_ctrl);
 
 	if (dd->pdata->mic_ctrl)
 		gpio_free(dd->pdata->mic_ctrl);
@@ -996,7 +964,7 @@ static int abx500_acc_detect_resume(struct device *dev)
 	}
 
 	/* After resume, reinitialize */
-	dd->accdet1_th_set = dd->accdet2_th_set = 0;
+	dd->gpio35_dir_set = dd->accdet1_th_set = dd->accdet2_th_set = 0;
 	queue_delayed_work(dd->irq_work_queue, &dd->init_work, 0);
 
 	return 0;

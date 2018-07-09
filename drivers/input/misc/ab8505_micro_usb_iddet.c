@@ -292,11 +292,7 @@ static void switch_dock_init(void)
 
 	ret = switch_dev_register(&switch_dock);
 	if (ret < 0)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Failed to register dock switch\n");
-#else
-		;
-#endif
 }
 
 /* End of Samsung Specific */
@@ -636,11 +632,7 @@ static int uart_boot_off(struct usb_accessory_state *accessory, bool connected)
 	/* When JIG-UART unplugged */
 	if (!connected)
 		deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s : deepest_allowed_state = %d\n", __func__, deepest_allowed_state);
-#else
-	;
-#endif
 #endif
 	return 0;
 }
@@ -656,11 +648,7 @@ static int uart_boot_on(struct usb_accessory_state *accessory, bool connected)
 	/* When JIG-UART unplugged */
 	if (!connected)
 		deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s : deepest_allowed_state = %d\n", __func__, deepest_allowed_state);
-#else
-	;
-#endif
 #endif	
 	return 0;
 }
@@ -1627,11 +1615,7 @@ detected:
 		dev_err(dev, "%s write failed %d\n", __func__, __LINE__);
 
 	if (accessory->cable_detected == USBSWITCH_CARKIT_TYPE1) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" in %s link_status = %d\n", __func__, accessory->lsts);
-#else
-		;
-#endif
 		accessory->cable_detected = USBSWITCH_UNKNOWN;
 		if(accessory->lsts == LSTS_CARKIT_TYPE1)
 			accessory->cable_detected = USBSWITCH_CARKIT_TYPE1;
@@ -1791,11 +1775,7 @@ start:
 				goto start;
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("lsts = %d, cable_detected = %d\n", lsts, accessory->cable_detected);
-#else
-	;
-#endif
 
 
 	ret = abx500_mask_and_set(dev, AB8505_USB,
@@ -2871,11 +2851,7 @@ int set_uartgpio(struct usb_accessory_state *accessory)
 	ret = abx500_mask_and_set(dev, AB8505_GPIO,
 				ALTERNATFUNCTION, SETALTERUSBVDATULPIUARTTX,
 				0x0);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("!!DeSelect UARTTX ret = %d\n",ret);
-#else
-	;
-#endif
 	if (ret < 0) {
 			dev_err(dev, "%s write failed %d\n", __func__, __LINE__);
 			return ret;
@@ -2885,11 +2861,7 @@ int set_uartgpio(struct usb_accessory_state *accessory)
 	ret = abx500_mask_and_set(dev, AB8505_GPIO,
 				ALTERNATFUNCTION, SETALTERULPIUARTRX,
 				0x0);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("!!DeSelect UARTRxData ret = %d\n",ret);
-#else
-	;
-#endif
 	if (ret < 0) {
 			dev_err(dev, "%s write failed %d\n", __func__, __LINE__);
 			return ret;
@@ -2898,11 +2870,7 @@ int set_uartgpio(struct usb_accessory_state *accessory)
 	/* DeSelect alternate function Gpio13Sel */
 	ret = abx500_mask_and_set(dev, AB8505_GPIO, GPIOSEL2,
 					GPIO13SEL_ALT, GPIO13SEL_ALT);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("!!DeSelect alternate Gpio13Sel ret = %d\n",ret);
-#else
-	;
-#endif
 	if (ret < 0) {
 			dev_err(dev, "%s write failed %d\n", __func__, __LINE__);
 			return ret;
@@ -2911,11 +2879,7 @@ int set_uartgpio(struct usb_accessory_state *accessory)
 	/* Deselect alternate function on Gpio50Sel */
 	ret = abx500_mask_and_set(dev, AB8505_GPIO, GPIOSEL7,
 					GPIO50SEL_ALT, GPIO50SEL_ALT);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Deselect alternate Gpio50Sel ret = %d\n",ret);
-#else
-	;
-#endif
 	if (ret < 0) {
 			dev_err(dev, "%s write failed %d\n", __func__, __LINE__);
 			return ret;
@@ -3098,11 +3062,7 @@ static ssize_t store_jig_smd(struct device *dev, struct device_attribute *attr, 
 
 	sscanf(buf, "%d\n", &data);
 	jig_smd = data;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "jig_smd value : %d.\n", jig_smd);
-#else
-	;
-#endif
 
 #if defined(CONFIG_MACH_SEC_KYLE)
 	/* When jig_smd value 1 is written, AP doesn't go to deepsleep state for FactoryTest */
@@ -3110,11 +3070,7 @@ static ssize_t store_jig_smd(struct device *dev, struct device_attribute *attr, 
 		deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE - 1;
 	else
 		deepest_allowed_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s : deepest_allowed_state = %d\n", __func__, deepest_allowed_state);
-#else
-	;
-#endif
 #endif
 	return size;
 }

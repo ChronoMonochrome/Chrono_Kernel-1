@@ -76,8 +76,6 @@
  *					for noise.
  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
  *					reports 2.
- * 2	0x01	uniform clickpad	whole clickpad moves instead of being
- *					hinged at the top.
  * 2	0x20	report min		query 0x0f gives min coord reported
  */
 #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
@@ -102,6 +100,7 @@
 #define SYN_ID_MINOR(i)			(((i) >> 16) & 0xff)
 #define SYN_ID_FULL(i)			((SYN_ID_MAJOR(i) << 8) | SYN_ID_MINOR(i))
 #define SYN_ID_IS_SYNAPTICS(i)		((((i) >> 8) & 0xff) == 0x47)
+#define SYN_ID_DISGEST_SUPPORTED(i)	(SYN_ID_MAJOR(i) >= 4)
 
 /* synaptics special commands */
 #define SYN_PS_SET_MODE2		0x14
@@ -161,6 +160,9 @@ struct synaptics_data {
 	unsigned char mode;			/* current mode byte */
 	int scroll;
 
+	bool absolute_mode;			/* run in Absolute mode */
+	bool disable_gesture;			/* disable gestures */
+
 	struct serio *pt_port;			/* Pass-through serio port */
 
 	struct synaptics_mt_state mt_state;	/* Current mt finger state */
@@ -172,16 +174,12 @@ struct synaptics_data {
 	 */
 	struct synaptics_hw_state agm;
 	bool agm_pending;			/* new AGM packet received */
-
-	/* ForcePad handling */
-	unsigned long				press_start;
-	bool					press;
-	bool					report_press;
 };
 
 void synaptics_module_init(void);
 int synaptics_detect(struct psmouse *psmouse, bool set_properties);
 int synaptics_init(struct psmouse *psmouse);
+int synaptics_init_relative(struct psmouse *psmouse);
 void synaptics_reset(struct psmouse *psmouse);
 bool synaptics_supported(void);
 

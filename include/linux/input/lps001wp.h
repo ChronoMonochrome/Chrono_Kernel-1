@@ -79,8 +79,6 @@ struct lps001wp_prs_platform_data {
 
 	int (*init)(void);
 	void (*exit)(void);
-	int (*power_on)(void);
-	int (*power_off)(void);
 
 };
 
