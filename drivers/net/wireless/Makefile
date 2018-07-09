@@ -60,3 +60,7 @@ obj-$(CONFIG_IWM)	+= iwmc3200wifi/
 obj-$(CONFIG_MWIFIEX)	+= mwifiex/
 
 obj-$(CONFIG_BCM4329)	+= bcm4329/
+ifndef CONFIG_ARCH_U8500
+obj-$(CONFIG_BCM4330)	+= bcmdhd/
+obj-$(CONFIG_BCM4334)	+= bcmdhd/
+endif

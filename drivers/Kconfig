@@ -262,7 +262,9 @@ source "drivers/phone_svn/Kconfig"
 
 source "drivers/interceptor/Kconfig" 
 
-source "drivers/bcmdhd/Kconfig"
+if ARCH_U8500
+source "u8500/drivers/bcmdhd/Kconfig"
+endif
 
 endmenu
 

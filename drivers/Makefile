@@ -264,5 +264,7 @@ ifeq (1, $(shell if [ -d ../../../../../../kernel/drivers/exfat ]; then echo 1; 
 obj-y   += exfat/
 endif
 
-obj-$(CONFIG_BCM4330)	+= bcmdhd/
-obj-$(CONFIG_BCM4334)	+= bcmdhd/
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_BCM4330)	+= ../u8500/drivers/bcmdhd/
+obj-$(CONFIG_BCM4334)	+= ../u8500/drivers/bcmdhd/
+endif
