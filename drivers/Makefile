@@ -52,7 +52,13 @@ obj-y				+= base/ block/ misc/ mfd/ nfc/
 obj-$(CONFIG_NUBUS)		+= nubus/
 obj-y				+= macintosh/
 obj-$(CONFIG_IDE)		+= ide/
-obj-$(CONFIG_SCSI)		+= scsi/
+
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_SCSI)		+= ../u8500/drivers/scsi/
+else
+obj-$(CONFIG_SCSI)		+= drivers/scsi/
+endif
+
 obj-$(CONFIG_ATA)		+= ata/
 obj-$(CONFIG_TARGET_CORE)	+= target/
 obj-$(CONFIG_MTD)		+= mtd/
@@ -74,10 +80,17 @@ obj-$(CONFIG_ATA_OVER_ETH)	+= block/aoe/
 obj-$(CONFIG_PARIDE) 		+= block/paride/
 obj-$(CONFIG_TC)		+= tc/
 obj-$(CONFIG_UWB)		+= uwb/
+ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_USB_OTG_UTILS)	+= ../u8500/drivers/usb/
+obj-$(CONFIG_USB)		+= ../u8500/drivers/usb/
+obj-$(CONFIG_PCI)		+= ../u8500/drivers/usb/
+obj-$(CONFIG_USB_GADGET)	+= ../u8500/drivers/usb/
+else
 obj-$(CONFIG_USB_OTG_UTILS)	+= usb/
 obj-$(CONFIG_USB)		+= usb/
 obj-$(CONFIG_PCI)		+= usb/
 obj-$(CONFIG_USB_GADGET)	+= usb/
+endif
 obj-$(CONFIG_SERIO)		+= input/serio/
 obj-$(CONFIG_GAMEPORT)		+= input/gameport/
 obj-$(CONFIG_INPUT)		+= input/

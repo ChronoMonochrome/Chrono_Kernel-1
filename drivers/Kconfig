@@ -22,7 +22,13 @@ source "drivers/misc/Kconfig"
 
 source "drivers/ide/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/scsi/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/scsi/Kconfig"
+endif
 
 source "drivers/ata/Kconfig"
 
@@ -88,7 +94,13 @@ source "sound/Kconfig"
 
 source "drivers/hid/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/usb/Kconfig"
+endif
+
+if !ARCH_U8500
 source "drivers/usb/Kconfig"
+endif
 
 source "drivers/uwb/Kconfig"
 
