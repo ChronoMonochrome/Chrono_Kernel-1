@@ -1,0 +1,7 @@
+#
+# Character device configuration
+#
+
+source "drivers/char/hw_random/Kconfig"
+source "drivers/char/hwreg/Kconfig"
+

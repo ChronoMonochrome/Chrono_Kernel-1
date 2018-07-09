@@ -57,6 +57,10 @@ endif
 obj-y				+= tty/
 obj-y				+= char/
 
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/char/
+endif
+
 # gpu/ comes after char for AGP vs DRM startup
 ifdef CONFIG_ARCH_U8500
 obj-y += ../u8500/drivers/gpu/
