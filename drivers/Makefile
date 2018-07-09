@@ -218,6 +218,10 @@ obj-y				+= lguest/
 obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
 
 ifdef CONFIG_ARCH_U8500
+obj-$(CONFIG_CPU_FREQ)		+= ../u8500/drivers/cpufreq/
+endif
+
+ifdef CONFIG_ARCH_U8500
 obj-$(CONFIG_CPU_IDLE)		+= ../u8500/drivers/cpuidle/
 else
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
