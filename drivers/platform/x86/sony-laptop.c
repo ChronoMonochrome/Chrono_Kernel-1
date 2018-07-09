@@ -72,14 +72,10 @@
 #include <linux/miscdevice.h>
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(fmt, ...)			\
 do {						\
 	if (debug)				\
 		pr_warn(fmt, ##__VA_ARGS__);	\
-#else
-#define d;
-#endif
 } while (0)
 
 #define SONY_LAPTOP_DRIVER_VERSION	"0.6"
@@ -131,7 +127,7 @@ MODULE_PARM_DESC(minor,
 		 "default is -1 (automatic)");
 #endif
 
-static int kbd_backlight;	/* = 1 */
+static int kbd_backlight = 1;
 module_param(kbd_backlight, int, 0444);
 MODULE_PARM_DESC(kbd_backlight,
 		 "set this to 0 to disable keyboard backlight, "
@@ -351,6 +347,7 @@ static void sony_laptop_report_input_event(u8 event)
 	struct input_dev *jog_dev = sony_laptop_input.jog_dev;
 	struct input_dev *key_dev = sony_laptop_input.key_dev;
 	struct sony_laptop_keypress kp = { NULL };
+	int scancode = -1;
 
 	if (event == SONYPI_EVENT_FNKEY_RELEASED ||
 			event == SONYPI_EVENT_ANYBUTTON_RELEASED) {
@@ -381,15 +378,11 @@ static void sony_laptop_report_input_event(u8 event)
 
 	default:
 		if (event >= ARRAY_SIZE(sony_laptop_input_index)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("sony_laptop_report_input_event, event not known: %d\n", event);
-#else
-			d;
-#endif
 			break;
 		}
-		if (sony_laptop_input_index[event] != -1) {
-			kp.key = sony_laptop_input_keycode_map[sony_laptop_input_index[event]];
+		if ((scancode = sony_laptop_input_index[event]) != -1) {
+			kp.key = sony_laptop_input_keycode_map[scancode];
 			if (kp.key != KEY_UNKNOWN)
 				kp.dev = key_dev;
 		}
@@ -397,9 +390,11 @@ static void sony_laptop_report_input_event(u8 event)
 	}
 
 	if (kp.dev) {
+		/* if we have a scancode we emit it so we can always
+		    remap the key */
+		if (scancode != -1)
+			input_event(kp.dev, EV_MSC, MSC_SCAN, scancode);
 		input_report_key(kp.dev, kp.key, 1);
-		/* we emit the scancode so we can always remap the key */
-		input_event(kp.dev, EV_MSC, MSC_SCAN, event);
 		input_sync(kp.dev);
 
 		/* schedule key release */
@@ -409,11 +404,7 @@ static void sony_laptop_report_input_event(u8 event)
 		mod_timer(&sony_laptop_input.release_key_timer,
 			  jiffies + msecs_to_jiffies(10));
 	} else
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("unknown input event %.2x\n", event);
-#else
-		d;
-#endif
 }
 
 static int sony_laptop_setup_input(struct acpi_device *acpi_device)
@@ -478,7 +469,7 @@ static int sony_laptop_setup_input(struct acpi_device *acpi_device)
 	jog_dev->name = "Sony Vaio Jogdial";
 	jog_dev->id.bustype = BUS_ISA;
 	jog_dev->id.vendor = PCI_VENDOR_ID_SONY;
-	key_dev->dev.parent = &acpi_device->dev;
+	jog_dev->dev.parent = &acpi_device->dev;
 
 	input_set_capability(jog_dev, EV_KEY, BTN_MIDDLE);
 	input_set_capability(jog_dev, EV_REL, REL_WHEEL);
@@ -789,12 +780,8 @@ static int sony_nc_handles_setup(struct platform_device *pd)
 	for (i = 0; i < ARRAY_SIZE(handles->cap); i++) {
 		if (!acpi_callsetfunc(sony_nc_acpi_handle,
 					"SN00", i + 0x20, &result)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("caching handle 0x%.4x (offset: 0x%.2x)\n",
 					result, i);
-#else
-			d;
-#endif
 			handles->cap[i] = result;
 		}
 	}
@@ -837,20 +824,12 @@ static int sony_find_snc_handle(int handle)
 
 	for (i = 0; i < 0x10; i++) {
 		if (handles->cap[i] == handle) {
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("found handle 0x%.4x (offset: 0x%.2x)\n",
 					handle, i);
-#else
-			d;
-#endif
 			return i;
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("handle 0x%.4x not found\n", handle);
-#else
-	d;
-#endif
 	return -1;
 }
 
@@ -864,12 +843,8 @@ static int sony_call_snc_handle(int handle, int argument, int *result)
 
 	ret = acpi_callsetfunc(sony_nc_acpi_handle, "SN07", offset | argument,
 			result);
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("called SN07 with 0x%.4x (result: 0x%.4x)\n", offset | argument,
 			*result);
-#else
-	d;
-#endif
 	return ret;
 }
 
@@ -1110,13 +1085,9 @@ static void sony_nc_notify(struct acpi_device *device, u32 event)
 			struct sony_nc_event *key_event;
 
 			if (sony_call_snc_handle(key_handle, 0x200, &result)) {
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("sony_nc_notify, unable to decode"
 					" event 0x%.2x 0x%.2x\n", key_handle,
 					ev);
-#else
-				d;
-#endif
 				/* restore the original event */
 				ev = event;
 			} else {
@@ -1147,11 +1118,7 @@ static void sony_nc_notify(struct acpi_device *device, u32 event)
 	} else
 		sony_laptop_report_input_event(ev);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("sony_nc_notify, event: 0x%.2x\n", ev);
-#else
-	d;
-#endif
 	acpi_bus_generate_proc_event(sony_nc_acpi_device, 1, ev);
 }
 
@@ -1210,20 +1177,12 @@ static int sony_nc_resume(struct acpi_device *device)
 	if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle, "ECON",
 					 &handle))) {
 		if (acpi_callsetfunc(sony_nc_acpi_handle, "ECON", 1, NULL))
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("ECON Method failed\n");
-#else
-			d;
-#endif
 	}
 
 	if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle, "SN00",
 					 &handle))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Doing SNC setup\n");
-#else
-		d;
-#endif
 		sony_nc_function_setup(device);
 	}
 
@@ -1359,11 +1318,7 @@ static void sony_nc_rfkill_setup(struct acpi_device *device)
 			sony_rfkill_handle = 0x135;
 	} else
 		sony_rfkill_handle = 0x124;
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Found rkfill handle: 0x%.4x\n", sony_rfkill_handle);
-#else
-	d;
-#endif
 
 	/* need to read the whole buffer returned by the acpi call to SN06
 	 * here otherwise we may miss some features
@@ -1375,11 +1330,7 @@ static void sony_nc_rfkill_setup(struct acpi_device *device)
 	status = acpi_evaluate_object(sony_nc_acpi_handle, "SN06", &params,
 			&buffer);
 	if (ACPI_FAILURE(status)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Radio device enumeration failed\n");
-#else
-		d;
-#endif
 		return;
 	}
 
@@ -1403,11 +1354,7 @@ static void sony_nc_rfkill_setup(struct acpi_device *device)
 		if (dev_code == 0xff)
 			break;
 
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Radio devices, looking at 0x%.2x\n", dev_code);
-#else
-		d;
-#endif
 
 		if (dev_code == 0 && !sony_rfkill_devices[SONY_WIFI])
 			sony_nc_setup_rfkill(device, SONY_WIFI);
@@ -1662,11 +1609,7 @@ static void sony_nc_backlight_ng_read_limits(int handle,
 	for (i = 0; i < 9 && i < lvl_enum->buffer.length; i++) {
 
 		brlvl = *(lvl_enum->buffer.pointer + i);
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Brightness level: %d\n", brlvl);
-#else
-		d;
-#endif
 
 		if (!brlvl)
 			break;
@@ -1678,12 +1621,8 @@ static void sony_nc_backlight_ng_read_limits(int handle,
 	}
 	props->offset = min;
 	props->maxlvl = max;
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Brightness levels: min=%d max=%d\n", props->offset,
 			props->maxlvl);
-#else
-	d;
-#endif
 
 out_invalid:
 	kfree(buffer.pointer);
@@ -1754,11 +1693,7 @@ static int sony_nc_add(struct acpi_device *device)
 	result = acpi_bus_get_status(device);
 	/* bail IFF the above call was successful and the device is not present */
 	if (!result && !device->status.present) {
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Device not present\n");
-#else
-		d;
-#endif
 		result = -ENODEV;
 		goto outwalk;
 	}
@@ -1781,20 +1716,12 @@ static int sony_nc_add(struct acpi_device *device)
 	if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle, "ECON",
 					 &handle))) {
 		if (acpi_callsetfunc(sony_nc_acpi_handle, "ECON", 1, NULL))
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("ECON Method failed\n");
-#else
-			d;
-#endif
 	}
 
 	if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle, "SN00",
 					 &handle))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Doing SNC setup\n");
-#else
-		d;
-#endif
 		result = sony_nc_handles_setup(sony_pf_device);
 		if (result)
 			goto outpresent;
@@ -1829,12 +1756,8 @@ static int sony_nc_add(struct acpi_device *device)
 			if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle,
 							 *item->acpiget,
 							 &handle))) {
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Found %s getter: %s\n",
 						item->name, *item->acpiget);
-#else
-				d;
-#endif
 				item->devattr.attr.mode |= S_IRUGO;
 				break;
 			}
@@ -1845,12 +1768,8 @@ static int sony_nc_add(struct acpi_device *device)
 			if (ACPI_SUCCESS(acpi_get_handle(sony_nc_acpi_handle,
 							 *item->acpiset,
 							 &handle))) {
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Found %s setter: %s\n",
 						item->name, *item->acpiset);
-#else
-				d;
-#endif
 				item->devattr.attr.mode |= S_IWUSR;
 				break;
 			}
@@ -1906,11 +1825,7 @@ static int sony_nc_remove(struct acpi_device *device, int type)
 	sony_pf_remove();
 	sony_laptop_remove_input();
 	sony_nc_rfkill_cleanup();
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(SONY_NC_DRIVER_NAME " removed.\n");
-#else
-	d;
-#endif
 
 	return 0;
 }
@@ -2217,12 +2132,8 @@ static struct sonypi_eventtypes type3_events[] = {
 	while (--n && (command))					\
 		udelay(1);						\
 	if (!n)								\
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("command failed at %s : %s (line %d)\n",	\
 				__FILE__, __func__, __LINE__);	\
-#else
-		d;
-#endif
 }
 
 static u8 sony_pic_call1(u8 dev)
@@ -2234,11 +2145,7 @@ static u8 sony_pic_call1(u8 dev)
 	outb(dev, spic_dev.cur_ioport->io1.minimum + 4);
 	v1 = inb_p(spic_dev.cur_ioport->io1.minimum + 4);
 	v2 = inb_p(spic_dev.cur_ioport->io1.minimum);
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("sony_pic_call1(0x%.2x): 0x%.4x\n", dev, (v2 << 8) | v1);
-#else
-	d;
-#endif
 	return v2;
 }
 
@@ -2253,11 +2160,7 @@ static u8 sony_pic_call2(u8 dev, u8 fn)
 			ITERATIONS_LONG);
 	outb(fn, spic_dev.cur_ioport->io1.minimum);
 	v1 = inb_p(spic_dev.cur_ioport->io1.minimum);
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("sony_pic_call2(0x%.2x - 0x%.2x): 0x%.4x\n", dev, fn, v1);
-#else
-	d;
-#endif
 	return v1;
 }
 
@@ -2272,12 +2175,8 @@ static u8 sony_pic_call3(u8 dev, u8 fn, u8 v)
 	wait_on_command(inb_p(spic_dev.cur_ioport->io1.minimum + 4) & 2, ITERATIONS_LONG);
 	outb(v, spic_dev.cur_ioport->io1.minimum);
 	v1 = inb_p(spic_dev.cur_ioport->io1.minimum);
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("sony_pic_call3(0x%.2x - 0x%.2x - 0x%.2x): 0x%.4x\n",
 			dev, fn, v, v1);
-#else
-	d;
-#endif
 	return v1;
 }
 
@@ -2986,11 +2885,7 @@ sony_pic_read_possible_resource(struct acpi_resource *resource, void *context)
 				 * IRQ descriptors may have no IRQ# bits set,
 				 * particularly those those w/ _STA disabled
 				 */
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Blank IRQ resource\n");
-#else
-				d;
-#endif
 				return AE_OK;
 			}
 			for (i = 0; i < p->interrupt_count; i++) {
@@ -3019,31 +2914,19 @@ sony_pic_read_possible_resource(struct acpi_resource *resource, void *context)
 			struct sony_pic_ioport *ioport =
 				list_first_entry(&dev->ioports, struct sony_pic_ioport, list);
 			if (!io) {
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Blank IO resource\n");
-#else
-				d;
-#endif
 				return AE_OK;
 			}
 
 			if (!ioport->io1.minimum) {
 				memcpy(&ioport->io1, io, sizeof(*io));
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("IO1 at 0x%.4x (0x%.2x)\n", ioport->io1.minimum,
 						ioport->io1.address_length);
-#else
-				d;
-#endif
 			}
 			else if (!ioport->io2.minimum) {
 				memcpy(&ioport->io2, io, sizeof(*io));
-#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("IO2 at 0x%.4x (0x%.2x)\n", ioport->io2.minimum,
 						ioport->io2.address_length);
-#else
-				d;
-#endif
 			}
 			else {
 				pr_err("Unknown SPIC Type, more than 2 IO Ports\n");
@@ -3052,12 +2935,8 @@ sony_pic_read_possible_resource(struct acpi_resource *resource, void *context)
 			return AE_OK;
 		}
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Resource %d isn't an IRQ nor an IO port\n",
 			resource->type);
-#else
-		d;
-#endif
 
 	case ACPI_RESOURCE_TYPE_END_TAG:
 		return AE_OK;
@@ -3075,11 +2954,7 @@ static int sony_pic_possible_resources(struct acpi_device *device)
 
 	/* get device status */
 	/* see acpi_pci_link_get_current acpi_pci_link_get_possible */
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Evaluating _STA\n");
-#else
-	d;
-#endif
 	result = acpi_bus_get_status(device);
 	if (result) {
 		pr_warn("Unable to read status\n");
@@ -3087,26 +2962,14 @@ static int sony_pic_possible_resources(struct acpi_device *device)
 	}
 
 	if (!device->status.enabled)
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Device disabled\n");
-#else
-		d;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Device enabled\n");
-#else
-		d;
-#endif
 
 	/*
 	 * Query and parse 'method'
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Evaluating %s\n", METHOD_NAME__PRS);
-#else
-	d;
-#endif
 	status = acpi_walk_resources(device->handle, METHOD_NAME__PRS,
 			sony_pic_read_possible_resource, &spic_dev);
 	if (ACPI_FAILURE(status)) {
@@ -3128,11 +2991,7 @@ static int sony_pic_disable(struct acpi_device *device)
 	if (ACPI_FAILURE(ret) && ret != AE_NOT_FOUND)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Device disabled\n");
-#else
-	d;
-#endif
 	return 0;
 }
 
@@ -3222,11 +3081,7 @@ static int sony_pic_enable(struct acpi_device *device,
 	}
 
 	/* Attempt to set the resource */
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Evaluating _SRS\n");
-#else
-	d;
-#endif
 	status = acpi_set_current_resources(device->handle, &buffer);
 
 	/* check for total failure */
@@ -3267,13 +3122,9 @@ static irqreturn_t sony_pic_irq(int irq, void *dev_id)
 		data_mask = inb_p(dev->cur_ioport->io1.minimum +
 				dev->evport_offset);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("event ([%.2x] [%.2x]) at port 0x%.4x(+0x%.2x)\n",
 			ev, data_mask, dev->cur_ioport->io1.minimum,
 			dev->evport_offset);
-#else
-	d;
-#endif
 
 	if (ev == 0x00 || ev == 0xff)
 		return IRQ_HANDLED;
@@ -3304,13 +3155,9 @@ static irqreturn_t sony_pic_irq(int irq, void *dev_id)
 	if (dev->handle_irq && dev->handle_irq(data_mask, ev) == 0)
 		return IRQ_HANDLED;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("unknown event ([%.2x] [%.2x]) at port 0x%.4x(+0x%.2x)\n",
 			ev, data_mask, dev->cur_ioport->io1.minimum,
 			dev->evport_offset);
-#else
-	d;
-#endif
 	return IRQ_HANDLED;
 
 found:
@@ -3361,11 +3208,7 @@ static int sony_pic_remove(struct acpi_device *device, int type)
 	spic_dev.cur_ioport = NULL;
 	spic_dev.cur_irq = NULL;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(SONY_PIC_DRIVER_NAME " removed.\n");
-#else
-	d;
-#endif
 	return 0;
 }
 
@@ -3403,37 +3246,25 @@ static int sony_pic_add(struct acpi_device *device)
 	list_for_each_entry_reverse(io, &spic_dev.ioports, list) {
 		if (request_region(io->io1.minimum, io->io1.address_length,
 					"Sony Programmable I/O Device")) {
-#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("I/O port1: 0x%.4x (0x%.4x) + 0x%.2x\n",
 					io->io1.minimum, io->io1.maximum,
 					io->io1.address_length);
-#else
-			d;
-#endif
 			/* Type 1 have 2 ioports */
 			if (io->io2.minimum) {
 				if (request_region(io->io2.minimum,
 						io->io2.address_length,
 						"Sony Programmable I/O Device")) {
-#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("I/O port2: 0x%.4x (0x%.4x) + 0x%.2x\n",
 							io->io2.minimum, io->io2.maximum,
 							io->io2.address_length);
-#else
-					d;
-#endif
 					spic_dev.cur_ioport = io;
 					break;
 				}
 				else {
-#ifdef CONFIG_DEBUG_PRINTK
 					dprintk("Unable to get I/O port2: "
 							"0x%.4x (0x%.4x) + 0x%.2x\n",
 							io->io2.minimum, io->io2.maximum,
 							io->io2.address_length);
-#else
-					d;
-#endif
 					release_region(io->io1.minimum,
 							io->io1.address_length);
 				}
@@ -3453,17 +3284,13 @@ static int sony_pic_add(struct acpi_device *device)
 	/* request IRQ */
 	list_for_each_entry_reverse(irq, &spic_dev.interrupts, list) {
 		if (!request_irq(irq->irq.interrupts[0], sony_pic_irq,
-					IRQF_DISABLED, "sony-laptop", &spic_dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
+					0, "sony-laptop", &spic_dev)) {
 			dprintk("IRQ: %d - triggering: %d - "
 					"polarity: %d - shr: %d\n",
 					irq->irq.interrupts[0],
 					irq->irq.triggering,
 					irq->irq.polarity,
 					irq->irq.sharable);
-#else
-			d;
-#endif
 			spic_dev.cur_irq = irq;
 			break;
 		}
