@@ -1,0 +1,2 @@
+config SYS_SOC_U8500
+	bool
