@@ -8,7 +8,7 @@ config UX500_SOC_COMMON
 	select ARM_ERRATA_753970
 	select ARM_ERRATA_754322
 	select ARM_ERRATA_764369
-	select SYS_SOC
+	select SYS_SOC_U8500
 	select HAS_MTU
 	select MULTI_IRQ_HANDLER
 	select ARM_CPU_SUSPEND if PM

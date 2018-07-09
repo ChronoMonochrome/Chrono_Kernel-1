@@ -2,6 +2,10 @@ menu "Device Drivers"
 
 source "drivers/base/Kconfig"
 
+if ARCH_U8500
+source "u8500/drivers/base/Kconfig"
+endif
+
 source "drivers/battery/Kconfig"
 
 source "drivers/connector/Kconfig"

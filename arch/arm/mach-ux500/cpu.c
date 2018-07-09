@@ -216,7 +216,7 @@ static int __init ux500_l2x0_init(void)
 early_initcall(ux500_l2x0_init);
 #endif
 
-#ifdef CONFIG_SYS_SOC
+#ifdef CONFIG_SYS_SOC_U8500
 #define U8500_BB_UID_BASE (U8500_BACKUPRAM1_BASE + 0xFC0)
 #define U8500_BB_UID_LENGTH 5
 

@@ -75,7 +75,13 @@ obj-$(CONFIG_FB_I810)           += video/i810/
 obj-$(CONFIG_FB_INTEL)          += video/intelfb/
 
 obj-$(CONFIG_PARPORT)		+= parport/
-obj-y				+= base/ block/
+obj-y				+= base/
+
+ifdef CONFIG_ARCH_U8500
+obj-y				+= ../u8500/drivers/base/
+endif
+
+obj-y				+= block/
 
 ifdef CONFIG_ARCH_U8500
 obj-y += ../u8500/drivers/misc/
