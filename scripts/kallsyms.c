@@ -23,13 +23,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/*
- * The ratio to increase the padding, by how much the final kallsyms
- * can be larger. This is for symbols that are not visible before
- * final linking.
- */
-#define PAD_RATIO 20 /* 1/x = ~5% */
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
@@ -46,14 +39,6 @@ struct sym_entry {
 struct text_range {
 	const char *stext, *etext;
 	unsigned long long start, end;
-};
-
-enum pads {
-	PAD_OFF,
-	PAD_NAMES,
-	PAD_MARKERS,
-	PAD_TOKTAB,
-	NUM_PAD
 };
 
 static unsigned long long _text;
@@ -80,11 +65,7 @@ unsigned char best_table_len[256];
 
 static void usage(void)
 {
-	fprintf(stderr, "Usage: kallsyms"
-			"[--all-symbols]"
-			"[--symbol-prefix=<prefix char>]"
-			"[--pad=A,B,C] [--pad-file=name] "
-			"< in.map > out.S\n");
+	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
 	exit(1);
 }
 
@@ -121,7 +102,7 @@ static int read_symbol_tr(const char *sym, unsigned long long addr)
 static int read_symbol(FILE *in, struct sym_entry *s)
 {
 	char str[500];
-	char *sym, stype, *dot;
+	char *sym, stype;
 	int rc;
 
 	rc = fscanf(in, "%llx %c %499s\n", &s->addr, &stype, str);
@@ -130,17 +111,6 @@ static int read_symbol(FILE *in, struct sym_entry *s)
 			fprintf(stderr, "Read error or end of file.\n");
 		return -1;
 	}
-	if (strlen(str) > KSYM_NAME_LEN) {
-		fprintf(stderr, "Symbol %s too long for kallsyms (%zu vs %d).\n"
-                                "Please increase KSYM_NAME_LEN both in kernel and kallsyms.c\n",
-			str, strlen(str), KSYM_NAME_LEN);
-		return -1;
-	}
-
-	/* Drop static .XXXX postfixes */
-	dot = strchr(str, '.');
-	if (dot)
-		*dot = 0;
 
 	sym = str;
 	/* skip prefix char */
@@ -171,11 +141,6 @@ static int read_symbol(FILE *in, struct sym_entry *s)
 	/* exclude debugging symbols */
 	else if (stype == 'N')
 		return -1;
-	/* Don't include const symbols in the text section
-	 * unless --all-symbols is specified.
-	 */
-	else if (toupper(stype) != 'T' && !all_symbols)
-		return -1;
 
 	/* include the type field in the symbol name, so that it gets
 	 * compressed together */
@@ -196,19 +161,15 @@ static int symbol_valid_tr(struct sym_entry *s)
 {
 	size_t i;
 	struct text_range *tr;
-	int valid = 0;
 
 	for (i = 0; i < ARRAY_SIZE(text_ranges); ++i) {
 		tr = &text_ranges[i];
-
-		if (tr->start && tr->end)
-			valid++;
 
 		if (s->addr >= tr->start && s->addr <= tr->end)
 			return 1;
 	}
 
-	return valid ? 0 : 1;
+	return 0;
 }
 
 static int symbol_valid(struct sym_entry *s)
@@ -219,7 +180,7 @@ static int symbol_valid(struct sym_entry *s)
 	 * specified so exclude them to get a stable symbol list.
 	 */
 	static char *special_symbols[] = {
-		"kallsyms_offsets",
+		"kallsyms_addresses",
 		"kallsyms_num_syms",
 		"kallsyms_names",
 		"kallsyms_markers",
@@ -247,13 +208,11 @@ static int symbol_valid(struct sym_entry *s)
 		 * the kallsyms data are added.  If these symbols move then
 		 * they may get dropped in pass 2, which breaks the kallsyms
 		 * rules.
-		 * But don't do this for predicted fake symbols with 0 value.
 		 */
-		if (((s->addr == text_range_text->end &&
+		if ((s->addr == text_range_text->end &&
 				strcmp((char *)s->sym + offset, text_range_text->etext)) ||
 		    (s->addr == text_range_inittext->end &&
 				strcmp((char *)s->sym + offset, text_range_inittext->etext)))
-			&& text_range_text->end != 0)
 			return 0;
 	}
 
@@ -326,14 +285,7 @@ static int expand_symbol(unsigned char *data, int len, char *result)
 	return total;
 }
 
-static void bad_padding(char *msg, int diff)
-{
-	fprintf(stderr, "kallsyms: %s padding too short: %d missing\n",
-			msg, diff);
-	exit(EXIT_FAILURE);
-}
-
-static void write_src(int *pad, int *opad)
+static void write_src(void)
 {
 	unsigned int i, k, off;
 	unsigned int best_idx[256];
@@ -349,7 +301,7 @@ static void write_src(int *pad, int *opad)
 	printf("#define ALGN .align 4\n");
 	printf("#endif\n");
 
-	printf("\t.section .kallsyms, \"a\"\n");
+	printf("\t.section .rodata, \"a\"\n");
 
 	/* Provide proper symbols relocatability by their '_text'
 	 * relativeness.  The symbol names cannot be used to construct
@@ -357,23 +309,19 @@ static void write_src(int *pad, int *opad)
 	 * symbols that are declared static and are private to their
 	 * .o files.  This prevents .tmp_kallsyms.o or any other
 	 * object from referencing them.
-	 *
-	 * We do the offsets to _text now in kallsyms.c at runtime,
-	 * to get a relocationless symbol table.
 	 */
-	output_label("kallsyms_offsets");
+	output_label("kallsyms_addresses");
 	for (i = 0; i < table_cnt; i++) {
-		printf("\tPTR\t%#llx\n", table[i].addr - _text);
-	}
-	if (pad) {
-		if (i > pad[PAD_OFF])
-			bad_padding("address pointers", i - pad[PAD_OFF]);
-		for (; i < pad[PAD_OFF]; i++)
-			printf("\tPTR\t0\n");
-	} else {
-		for (i = 0; i < table_cnt / PAD_RATIO; i++)
-			printf("\tPTR\t0\n");
-		opad[PAD_OFF] = table_cnt + table_cnt/PAD_RATIO;
+		if (toupper(table[i].sym[0]) != 'A') {
+			if (_text <= table[i].addr)
+				printf("\tPTR\t_text + %#llx\n",
+					table[i].addr - _text);
+			else
+				printf("\tPTR\t_text - %#llx\n",
+					_text - table[i].addr);
+		} else {
+			printf("\tPTR\t%#llx\n", table[i].addr);
+		}
 	}
 	printf("\n");
 
@@ -403,31 +351,11 @@ static void write_src(int *pad, int *opad)
 
 		off += table[i].len + 1;
 	}
-	if (pad) {
-		if (off > pad[PAD_NAMES])
-			bad_padding("name table", off - pad[PAD_NAMES]);
-		if (off < pad[PAD_NAMES])
-			printf("\t.fill %d,1,0\n", pad[PAD_NAMES] - off);
-	} else {
-		printf("\t.fill %d,1,0\n", off/PAD_RATIO);
-		off += off/PAD_RATIO;
-		opad[PAD_NAMES] = off;
-	}
 	printf("\n");
 
 	output_label("kallsyms_markers");
 	for (i = 0; i < ((table_cnt + 255) >> 8); i++)
 		printf("\tPTR\t%d\n", markers[i]);
-	if (pad) {
-		if (i > pad[PAD_MARKERS])
-			bad_padding("markers", i - pad[PAD_MARKERS]);
-		for (; i < pad[PAD_MARKERS]; i++)
-			printf("\tPTR\t0\n");
-	} else {
-		for (k = 0; k < i/PAD_RATIO; k++)
-			printf("\tPTR\t0\n");
-		opad[PAD_MARKERS] = i + i/PAD_RATIO;
-	}
 	printf("\n");
 
 	free(markers);
@@ -439,16 +367,6 @@ static void write_src(int *pad, int *opad)
 		expand_symbol(best_table[i], best_table_len[i], buf);
 		printf("\t.asciz\t\"%s\"\n", buf);
 		off += strlen(buf) + 1;
-	}
-	if (pad) {
-		if (off > pad[PAD_TOKTAB])
-			bad_padding("token table", off - pad[PAD_TOKTAB]);
-		if (off < pad[PAD_TOKTAB])
-			printf("\t.fill %d,1,0\n", pad[PAD_TOKTAB] - off);
-	} else {
-		printf("\t.fill %d,1,0\n", off/PAD_RATIO);
-		off += off/PAD_RATIO;
-		opad[PAD_TOKTAB] = off;
 	}
 	printf("\n");
 
@@ -717,10 +635,6 @@ static void sort_symbols(void)
 
 int main(int argc, char **argv)
 {
-	int inpad[NUM_PAD], opad[NUM_PAD];
-	int *inpadp = NULL;
-	FILE *opadf = NULL;
-
 	if (argc >= 2) {
 		int i;
 		for (i = 1; i < argc; i++) {
@@ -732,23 +646,6 @@ int main(int argc, char **argv)
 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
 					p++;
 				symbol_prefix_char = *p;
-                        } else if (strncmp(argv[i], "--pad=", 6) == 0) {
-                               inpadp = inpad;
-                               if (sscanf(argv[i] + 6, "%d,%d,%d,%d",
-                                          inpad + 0,
-                                          inpad + 1,
-                                          inpad + 2,
-                                          inpad + 3) != NUM_PAD) {
-                                       fprintf(stderr, "Bad pad list\n");
-                                       exit(EXIT_FAILURE);
-                               }
-                       } else if (strncmp(argv[i], "--pad-file=", 11) == 0) {
-                               opadf = fopen(argv[i] + 11, "w");
-                               if (!opadf) {
-                                       fprintf(stderr, "Cannot open %s", argv[i] + 11);
-                                       exit(EXIT_FAILURE);
-                               }
-
 			} else
 				usage();
 		}
@@ -758,11 +655,7 @@ int main(int argc, char **argv)
 	read_map(stdin);
 	sort_symbols();
 	optimize_token_table();
-	write_src(inpadp, opad);
-	if (opadf) {
-		fprintf(opadf, "--pad=%d,%d,%d,%d\n",
-			opad[0], opad[1], opad[2], opad[3]);
-		fclose(opadf);
-	}
+	write_src();
+
 	return 0;
 }

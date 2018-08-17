@@ -3484,7 +3484,7 @@ out:
 }
 
 
-static struct genl_ops ip_vs_genl_ops[] = {
+static struct genl_ops ip_vs_genl_ops[] __read_mostly = {
 	{
 		.cmd	= IPVS_CMD_NEW_SERVICE,
 		.flags	= GENL_ADMIN_PERM,
