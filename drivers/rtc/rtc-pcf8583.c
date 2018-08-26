@@ -185,8 +185,12 @@ static int pcf8583_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	if (ctrl & (CTRL_STOP | CTRL_HOLD)) {
 		unsigned char new_ctrl = ctrl & ~(CTRL_STOP | CTRL_HOLD);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "RTC: resetting control %02x -> %02x\n",
 		       ctrl, new_ctrl);
+#else
+		;
+#endif
 
 		if ((err = pcf8583_set_ctrl(client, &new_ctrl)) < 0)
 			return err;
@@ -320,7 +324,18 @@ static struct i2c_driver pcf8583_driver = {
 	.id_table	= pcf8583_id,
 };
 
-module_i2c_driver(pcf8583_driver);
+static __init int pcf8583_init(void)
+{
+	return i2c_add_driver(&pcf8583_driver);
+}
+
+static __exit void pcf8583_exit(void)
+{
+	i2c_del_driver(&pcf8583_driver);
+}
+
+module_init(pcf8583_init);
+module_exit(pcf8583_exit);
 
 MODULE_AUTHOR("Russell King");
 MODULE_DESCRIPTION("PCF8583 I2C RTC driver");

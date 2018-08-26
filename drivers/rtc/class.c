@@ -21,13 +21,19 @@
 #include "rtc-core.h"
 
 
-static DEFINE_IDA(rtc_ida);
+static DEFINE_IDR(rtc_idr);
+static DEFINE_MUTEX(idr_lock);
 struct class *rtc_class;
+
+int rtc_delta = 1;
+EXPORT_SYMBOL(rtc_delta);
 
 static void rtc_device_release(struct device *dev)
 {
 	struct rtc_device *rtc = to_rtc_device(dev);
-	ida_simple_remove(&rtc_ida, rtc->id);
+	mutex_lock(&idr_lock);
+	idr_remove(&rtc_idr, rtc->id);
+	mutex_unlock(&idr_lock);
 	kfree(rtc);
 }
 
@@ -38,42 +44,56 @@ static void rtc_device_release(struct device *dev)
  * system's wall clock; restore it on resume().
  */
 
-static struct timespec old_rtc, old_system, old_delta;
-
+static struct timespec	delta;
+static struct timespec	delta_delta;
+static time_t		oldtime;
 
 static int rtc_suspend(struct device *dev, pm_message_t mesg)
 {
 	struct rtc_device	*rtc = to_rtc_device(dev);
 	struct rtc_time		tm;
-	struct timespec		delta, delta_delta;
+	struct timespec		ts;
+	struct timespec		new_delta;
+
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	struct rtc_time         sys_tm;
+	struct rtc_time         aprtc_tm;
+	struct timespec         aprtc_ts;
+#endif /* CONFIG_MACH_SAMSUNG_U8500 */
 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
 		return 0;
 
-	/* snapshot the current RTC and system time at suspend*/
+	getnstimeofday(&ts);
 	rtc_read_time(rtc, &tm);
-	getnstimeofday(&old_system);
-	rtc_tm_to_time(&tm, &old_rtc.tv_sec);
+	rtc_tm_to_time(&tm, &oldtime);
 
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	read_persistent_clock(&aprtc_ts);
+	rtc_time_to_tm(aprtc_ts.tv_sec, &aprtc_tm);
+	rtc_time_to_tm(ts.tv_sec, &sys_tm);
 
-	/*
-	 * To avoid drift caused by repeated suspend/resumes,
-	 * which each can add ~1 second drift error,
-	 * try to compensate so the difference in system time
-	 * and rtc time stays close to constant.
-	 */
-	delta = timespec_sub(old_system, old_rtc);
-	delta_delta = timespec_sub(delta, old_delta);
-	if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2) {
-		/*
-		 * if delta_delta is too large, assume time correction
-		 * has occured and set old_delta to the current delta.
-		 */
-		old_delta = delta;
-	} else {
-		/* Otherwise try to adjust old_system to compensate */
-		old_system = timespec_sub(old_system, delta_delta);
-	}
+	pr_info("[%s] AP RTC TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__, aprtc_tm.tm_year+1900, aprtc_tm.tm_mon+1, aprtc_tm.tm_mday,
+		aprtc_tm.tm_hour, aprtc_tm.tm_min, aprtc_tm.tm_sec);
 
+	pr_info("[%s] PMIC RTC TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__, tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	pr_info("[%s] SYSTEM TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__, sys_tm.tm_year+1900, sys_tm.tm_mon+1, sys_tm.tm_mday,
+		sys_tm.tm_hour, sys_tm.tm_min, sys_tm.tm_sec);
+#endif /* CONFIG_MACH_SAMSUNG_U8500 */
+
+	/* RTC precision is 1 second; adjust delta for avg 1/2 sec err */
+	set_normalized_timespec(&new_delta,
+				ts.tv_sec - oldtime,
+				ts.tv_nsec - (NSEC_PER_SEC >> 1));
+
+	/* prevent 1/2 sec errors from accumulating */
+	delta_delta = timespec_sub(new_delta, delta);
+	if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2)
+		delta = new_delta;
 	return 0;
 }
 
@@ -81,42 +101,66 @@ static int rtc_resume(struct device *dev)
 {
 	struct rtc_device	*rtc = to_rtc_device(dev);
 	struct rtc_time		tm;
-	struct timespec		new_system, new_rtc;
-	struct timespec		sleep_time;
+	time_t			newtime;
+	struct timespec		time;
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	struct rtc_time		sys_tm;
+	struct rtc_time		aprtc_tm;
+	struct timespec		aprtc_ts;
+#endif /* CONFIG_MACH_SAMSUNG_U8500 */
 
 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
 		return 0;
 
-	/* snapshot the current rtc and system time at resume */
-	getnstimeofday(&new_system);
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	read_persistent_clock(&aprtc_ts);
+#endif /* CONFIG_MACH_SAMSUNG_U8500 */
 	rtc_read_time(rtc, &tm);
 	if (rtc_valid_tm(&tm) != 0) {
 		pr_debug("%s:  bogus resume time\n", dev_name(&rtc->dev));
 		return 0;
 	}
-	rtc_tm_to_time(&tm, &new_rtc.tv_sec);
-	new_rtc.tv_nsec = 0;
-
-	if (new_rtc.tv_sec < old_rtc.tv_sec) {
+	rtc_tm_to_time(&tm, &newtime);
+	if (delta_delta.tv_sec < -1)
+		newtime++;
+	if (newtime <= oldtime) {
+		if (newtime < oldtime)
 		pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
 		return 0;
 	}
 
-	/* calculate the RTC time delta (sleep time)*/
-	sleep_time = timespec_sub(new_rtc, old_rtc);
-
-	/*
-	 * Since these RTC suspend/resume handlers are not called
-	 * at the very end of suspend or the start of resume,
-	 * some run-time may pass on either sides of the sleep time
-	 * so subtract kernel run-time between rtc_suspend to rtc_resume
-	 * to keep things accurate.
+	/* restore wall clock using delta against this RTC;
+	 * adjust again for avg 1/2 second RTC sampling error
 	 */
-	sleep_time = timespec_sub(sleep_time,
-			timespec_sub(new_system, old_system));
+	set_normalized_timespec(&time,
+				newtime + delta.tv_sec,
+				(NSEC_PER_SEC >> 1) + delta.tv_nsec);
+	do_settimeofday(&time);
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	rtc_time_to_tm(time.tv_sec, &sys_tm);
+	rtc_time_to_tm(aprtc_ts.tv_sec, &aprtc_tm);
+	pr_info("[%s] AP RTC TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__,
+		aprtc_tm.tm_year+1900, aprtc_tm.tm_mon+1, aprtc_tm.tm_mday,
+		aprtc_tm.tm_hour, aprtc_tm.tm_min, aprtc_tm.tm_sec);
 
-	if (sleep_time.tv_sec >= 0)
-		timekeeping_inject_sleeptime(&sleep_time);
+	pr_info("[%s] PMIC RTC TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__, tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	pr_info("[%s] SYSTEM TIME: %04d.%02d.%02d - %02d:%02d:%02d called\n",
+		__func__, sys_tm.tm_year+1900, sys_tm.tm_mon+1, sys_tm.tm_mday,
+		sys_tm.tm_hour, sys_tm.tm_min, sys_tm.tm_sec);
+
+	pr_info("[%s] delta.tv_sec: %d delta.tv_nsec: %d\n", __func__,
+		delta.tv_sec, delta.tv_nsec);
+	pr_info("[%s] delta_delta.tv_sec: %d delta_delta.tv_nsec: %d\n",
+		__func__, delta_delta.tv_sec, delta_delta.tv_nsec);
+
+	rtc_delta = delta.tv_sec;
+
+#endif /* CONFIG_MACH_SAMSUNG_U8500 */
+
 	return 0;
 }
 
@@ -143,16 +187,25 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
 	struct rtc_wkalrm alrm;
 	int id, err;
 
-	id = ida_simple_get(&rtc_ida, 0, 0, GFP_KERNEL);
-	if (id < 0) {
-		err = id;
+	if (idr_pre_get(&rtc_idr, GFP_KERNEL) == 0) {
+		err = -ENOMEM;
 		goto exit;
 	}
+
+
+	mutex_lock(&idr_lock);
+	err = idr_get_new(&rtc_idr, NULL, &id);
+	mutex_unlock(&idr_lock);
+
+	if (err < 0)
+		goto exit;
+
+	id = id & MAX_ID_MASK;
 
 	rtc = kzalloc(sizeof(struct rtc_device), GFP_KERNEL);
 	if (rtc == NULL) {
 		err = -ENOMEM;
-		goto exit_ida;
+		goto exit_idr;
 	}
 
 	rtc->id = id;
@@ -210,8 +263,10 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
 exit_kfree:
 	kfree(rtc);
 
-exit_ida:
-	ida_simple_remove(&rtc_ida, id);
+exit_idr:
+	mutex_lock(&idr_lock);
+	idr_remove(&rtc_idr, id);
+	mutex_unlock(&idr_lock);
 
 exit:
 	dev_err(dev, "rtc core: unable to register %s, err = %d\n",
@@ -262,7 +317,7 @@ static void __exit rtc_exit(void)
 {
 	rtc_dev_exit();
 	class_destroy(rtc_class);
-	ida_destroy(&rtc_ida);
+	idr_destroy(&rtc_idr);
 }
 
 subsys_initcall(rtc_init);
