@@ -99,6 +99,8 @@ void machine_crash_shutdown(struct pt_regs *regs)
  */
 void (*kexec_reinit)(void);
 
+extern void cpu_v7_reset(unsigned long reboot_code_buffer_phys);
+
 void machine_kexec(struct kimage *image)
 {
 	unsigned long page_list;
@@ -161,7 +163,7 @@ void machine_kexec(struct kimage *image)
 	/* Must call cpu_reset via physical address since ARMv7 (& v6) stalls the
 	 * pipeline after disabling the MMU.
 	 */
-	((typeof(cpu_reset) *)virt_to_phys(cpu_reset))(reboot_code_buffer_phys);
+	((typeof(cpu_v7_reset) *)virt_to_phys(cpu_v7_reset))(reboot_code_buffer_phys);
 }
 
 void machine_crash_swreset(void)
