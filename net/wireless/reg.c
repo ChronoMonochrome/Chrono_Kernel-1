@@ -301,6 +301,11 @@ static bool is_user_regdom_saved(void)
 	return true;
 }
 
+static bool is_cfg80211_regdom_intersected(void)
+{
+	return is_intersected_alpha2(cfg80211_regdomain->alpha2);
+}
+
 static int reg_copy_regd(const struct ieee80211_regdomain **dst_regd,
 			 const struct ieee80211_regdomain *src_regd)
 {
@@ -861,8 +866,18 @@ static void handle_channel(struct wiphy *wiphy,
 		    r == -ERANGE)
 			return;
 
-		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
-		chan->flags |= IEEE80211_CHAN_DISABLED;
+		if (last_request->initiator == NL80211_REGDOM_SET_BY_DRIVER &&
+		    request_wiphy && request_wiphy == wiphy &&
+		    request_wiphy->flags & WIPHY_FLAG_STRICT_REGULATORY) {
+			REG_DBG_PRINT("Disabling freq %d MHz for good\n",
+			chan->center_freq);
+			chan->orig_flags |= IEEE80211_CHAN_DISABLED;
+			chan->flags = chan->orig_flags;
+		} else {
+			REG_DBG_PRINT("Disabling freq %d MHz\n",
+			chan->center_freq);
+			chan->flags |= IEEE80211_CHAN_DISABLED;
+		}
 		return;
 	}
 
@@ -1245,7 +1260,8 @@ static void handle_channel_custom(struct wiphy *wiphy,
 			      "wide channel\n",
 			      chan->center_freq,
 			      KHZ_TO_MHZ(desired_bw_khz));
-		chan->flags = IEEE80211_CHAN_DISABLED;
+		chan->orig_flags |= IEEE80211_CHAN_DISABLED;
+		chan->flags = chan->orig_flags;
 		return;
 	}
 
@@ -1322,6 +1338,8 @@ static int ignore_request(struct wiphy *wiphy,
 	case NL80211_REGDOM_SET_BY_CORE:
 		return 0;
 	case NL80211_REGDOM_SET_BY_COUNTRY_IE:
+		if (wiphy->country_ie_pref & NL80211_COUNTRY_IE_IGNORE_CORE)
+			return -EALREADY;
 
 		last_wiphy = wiphy_idx_to_wiphy(last_request->wiphy_idx);
 
@@ -1380,11 +1398,15 @@ static int ignore_request(struct wiphy *wiphy,
 		 * Process user requests only after previous user/driver/core
 		 * requests have been processed
 		 */
-		if (last_request->initiator == NL80211_REGDOM_SET_BY_CORE ||
-		    last_request->initiator == NL80211_REGDOM_SET_BY_DRIVER ||
-		    last_request->initiator == NL80211_REGDOM_SET_BY_USER) {
-			if (regdom_changes(last_request->alpha2))
+		if ((last_request->initiator == NL80211_REGDOM_SET_BY_CORE ||
+		     last_request->initiator == NL80211_REGDOM_SET_BY_DRIVER ||
+		     last_request->initiator == NL80211_REGDOM_SET_BY_USER)) {
+			if (last_request->intersect) {
+				if (!is_cfg80211_regdom_intersected())
+					return -EAGAIN;
+			} else if (regdom_changes(last_request->alpha2)) {
 				return -EAGAIN;
+			}
 		}
 
 		if (!regdom_changes(pending_request->alpha2))
@@ -1512,8 +1534,8 @@ static void reg_process_hint(struct regulatory_request *reg_request,
 	if (wiphy_idx_valid(reg_request->wiphy_idx))
 		wiphy = wiphy_idx_to_wiphy(reg_request->wiphy_idx);
 
-	if (reg_initiator == NL80211_REGDOM_SET_BY_DRIVER &&
-	    !wiphy) {
+	if ((reg_initiator == NL80211_REGDOM_SET_BY_DRIVER ||
+	     reg_initiator == NL80211_REGDOM_SET_BY_COUNTRY_IE) && !wiphy) {
 		kfree(reg_request);
 		return;
 	}
@@ -1675,6 +1697,7 @@ int regulatory_hint_user(const char *alpha2)
 
 	return 0;
 }
+EXPORT_SYMBOL(regulatory_hint_user);
 
 /* Driver hints */
 int regulatory_hint(struct wiphy *wiphy, const char *alpha2)
@@ -1715,19 +1738,6 @@ void regulatory_hint_11d(struct wiphy *wiphy,
 	char alpha2[2];
 	enum environment_cap env = ENVIRON_ANY;
 	struct regulatory_request *request;
-
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-	printk("regulatory is not upadted via %s.\n", __func__);
-	return;
-#endif
 
 	mutex_lock(&reg_mutex);
 
@@ -1964,19 +1974,6 @@ static void restore_regulatory_settings(bool reset_user)
 
 void regulatory_hint_disconnect(void)
 {
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-	printk("regulatory is not upadted via %s.\n",__func__);
-	return;
-#endif
-
 	REG_DBG_PRINT("All devices are disconnected, going to "
 		      "restore regulatory settings\n");
 	restore_regulatory_settings(false);
@@ -1996,19 +1993,6 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 				 gfp_t gfp)
 {
 	struct reg_beacon *reg_beacon;
-
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-	REG_DBG_PRINT("regulatory is not upadted via %s.\n",__func__);
-	return 0;
-#endif
 
 	if (likely((beacon_chan->beacon_found ||
 	    (beacon_chan->flags & IEEE80211_CHAN_RADAR) ||
@@ -2183,7 +2167,7 @@ static int __set_regdom(const struct ieee80211_regdomain *rd)
 		 * checking if the alpha2 changes if CRDA was already called
 		 */
 		if (!regdom_changes(rd->alpha2))
-			return -EINVAL;
+			return -EALREADY;
 	}
 
 	/*
@@ -2303,6 +2287,9 @@ int set_regdom(const struct ieee80211_regdomain *rd)
 	/* Note that this doesn't update the wiphys, this is done below */
 	r = __set_regdom(rd);
 	if (r) {
+		if (r == -EALREADY)
+			reg_set_request_processed();
+
 		kfree(rd);
 		mutex_unlock(&reg_mutex);
 		return r;
