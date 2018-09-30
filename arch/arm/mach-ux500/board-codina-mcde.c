@@ -315,7 +315,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		return 0;
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
-	virtual_height = height * 6;
+	virtual_height = height * 3;
 
 
 	/* Create frame buffer */
