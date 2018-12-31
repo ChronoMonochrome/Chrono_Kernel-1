@@ -390,7 +390,7 @@ module_param(dhd_msg_level, int, 0);
 /* Disable Prop tx */
 module_param(disable_proptx, int, 0644);
 /* load firmware and/or nvram values from the filesystem */
-module_param_string(firmware_path, firmware_path, MOD_PARAM_PATHLEN, 0660);
+module_param_string(firmware_path, firmware_path, MOD_PARAM_PATHLEN, 0666);
 #ifdef CUSTOMER_HW4
 module_param_string(nvram_path, nvram_path, MOD_PARAM_PATHLEN, 0660);
 #else
