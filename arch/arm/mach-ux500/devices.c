@@ -15,6 +15,10 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 
+#include <linux/dma-mapping.h>
+
+static u64 hwmem_dmamask = DMA_BIT_MASK(32);
+
 #ifdef CONFIG_STE_TRACE_MODEM
 #include <linux/db8500-modem-trace.h>
 #endif
@@ -59,6 +63,10 @@ early_param("mem_mtrace", early_trace_modem);
 #ifdef CONFIG_HWMEM
 struct platform_device ux500_hwmem_device = {
 	.name = "hwmem",
+	.dev = {
+		.dma_mask		= &hwmem_dmamask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
 };
 #endif
 

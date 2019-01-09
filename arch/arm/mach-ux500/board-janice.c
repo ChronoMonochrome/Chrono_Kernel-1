@@ -96,6 +96,7 @@
 #include <mach/board-sec-ux500.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/mfd/abx500/ux500_sysctrl.h>
+#include <linux/dma-contiguous.h>
 #include <linux/usb_switcher.h>
 
 #include <mach/sec_param.h>
@@ -119,6 +120,8 @@ EXPORT_SYMBOL(is_cable_attached);
 
 struct device *gps_dev = NULL;
 EXPORT_SYMBOL(gps_dev);
+
+extern struct platform_device ux500_hwmem_device;
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 static struct resource ram_console_resource = {
@@ -1888,6 +1891,17 @@ static struct platform_device bcm4330_bluetooth_platform_driver = {
 };
 #endif
 
+static void __init ux500_reserve(void) {
+	int ret;
+
+	pr_err("%s: init\n", __func__);
+	ret = dma_declare_contiguous(&ux500_hwmem_device.dev,
+		84 * 1024 * SZ_1K, 0x5F200000 /*0x5ea00000*/, 0);
+
+        if (ret != 0)
+                pr_err("%s: alloc failed for hwmem\n", __func__);
+}
+
 static struct platform_device *platform_devs[] __initdata = {
 	&u8500_shrm_device,
 #ifdef SSG_CAMERA_ENABLE
@@ -2221,6 +2235,7 @@ MACHINE_START(JANICE, "SAMSUNG JANICE")
 	.timer		= &ux500_timer,
 	.handle_irq     = gic_handle_irq,
 	.init_machine	= janice_init_machine,
+	.reserve	= ux500_reserve,
 	.restart	= ux500_restart,
 MACHINE_END
 
