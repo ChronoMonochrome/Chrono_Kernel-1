@@ -139,6 +139,19 @@ static void ssb_device_put(struct ssb_device *dev)
 		put_device(dev->dev);
 }
 
+static inline struct ssb_driver *ssb_driver_get(struct ssb_driver *drv)
+{
+	if (drv)
+		get_driver(&drv->drv);
+	return drv;
+}
+
+static inline void ssb_driver_put(struct ssb_driver *drv)
+{
+	if (drv)
+		put_driver(&drv->drv);
+}
+
 static int ssb_device_resume(struct device *dev)
 {
 	struct ssb_device *ssb_dev = dev_to_ssb_dev(dev);
@@ -236,9 +249,11 @@ int ssb_devices_freeze(struct ssb_bus *bus, struct ssb_freeze_context *ctx)
 			ssb_device_put(sdev);
 			continue;
 		}
-		sdrv = drv_to_ssb_drv(sdev->dev->driver);
-		if (SSB_WARN_ON(!sdrv->remove))
+		sdrv = ssb_driver_get(drv_to_ssb_drv(sdev->dev->driver));
+		if (!sdrv || SSB_WARN_ON(!sdrv->remove)) {
+			ssb_device_put(sdev);
 			continue;
+		}
 		sdrv->remove(sdev);
 		ctx->device_frozen[i] = 1;
 	}
@@ -277,6 +292,7 @@ int ssb_devices_thaw(struct ssb_freeze_context *ctx)
 				   dev_name(sdev->dev));
 			result = err;
 		}
+		ssb_driver_put(sdrv);
 		ssb_device_put(sdev);
 	}
 
