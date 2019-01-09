@@ -231,6 +231,10 @@ config CMA
 	  For more information see <include/linux/dma-contiguous.h>.
 	  If unsure, say "n".
 
+config DMA_CMA
+	bool
+	default y if CMA
+
 if CMA
 
 config CMA_DEBUG
