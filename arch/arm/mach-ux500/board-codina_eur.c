@@ -12,7 +12,6 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
-#include <linux/dma-contiguous.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
 #include <linux/amba/bus.h>
