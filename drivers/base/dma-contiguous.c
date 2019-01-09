@@ -589,7 +589,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
 		}
 		clear_cma_bitmap(cma, pfn, count);
 		tries++;
-		trace_dma_alloc_contiguous_retry(tries);
+		//trace_dma_alloc_contiguous_retry(tries);
 
 		pr_debug("%s(): memory range at %p is busy, retrying\n",
 			 __func__, pfn_to_page(pfn));
