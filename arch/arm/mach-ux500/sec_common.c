@@ -310,7 +310,7 @@ struct sec_reboot_code {
 	int mode;
 };
 
-extern int skip_readonly_param_remount;
+extern void remount_param(void);
 
 static int __sec_common_reboot_call(struct notifier_block *this,
 				    unsigned long code, void *cmd)
@@ -398,8 +398,7 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 			__func__, temp_mode);
 	}
 
-	skip_readonly_param_remount = 0;
-	emergency_remount();
+	remount_param();
 
 	return NOTIFY_DONE;
 }				/* end fn __sec_common_reboot_call */

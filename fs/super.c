@@ -784,7 +784,15 @@ cancel_readonly:
 	return retval;
 }
 
-int skip_readonly_param_remount = 1;
+static struct super_block *sb_param = NULL;
+
+void remount_param(void)
+{
+	if (sb_param) {
+		do_remount_sb(sb_param, MS_RDONLY, NULL, 1);
+		printk("Remount mmcblk0p1\n");
+	}
+}
 
 static void do_emergency_remount(struct work_struct *work)
 {
@@ -805,12 +813,8 @@ static void do_emergency_remount(struct work_struct *work)
 			if (strcmp(sb->s_id, "mmcblk0p1") != 0)
 				do_remount_sb(sb, MS_RDONLY, NULL, 1);
 			else {
-				if (skip_readonly_param_remount)
-					printk("Skipping read-only remount of mmcblk0p1\n");
-				else {
-					printk("Remount mmcblk0p1\n");
-					do_remount_sb(sb, MS_RDONLY, NULL, 1);
-				}
+				sb_param = sb;
+				printk("Skipping read-only remount of mmcblk0p1\n");
 			}
 		}
 		up_write(&sb->s_umount);
