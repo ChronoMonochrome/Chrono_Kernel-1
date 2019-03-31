@@ -115,10 +115,17 @@ struct xshutdown_info_t {
 };
 
 struct xp70_fw_t {
+#ifdef __cplusplus
+	void *addr_sdram_ext;
+	void *addr_esram_ext;
+	void *addr_split;
+	void *addr_data;
+#else
 	void __iomem *addr_sdram_ext;
 	void __iomem *addr_esram_ext;
 	void __iomem *addr_split;
 	void __iomem *addr_data;
+#endif
 	unsigned int size_sdram_ext;
 	unsigned int size_esram_ext;
 	unsigned int size_split;
