@@ -4,8 +4,6 @@ SUBLEVEL = 113
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE ?= ../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
-
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
