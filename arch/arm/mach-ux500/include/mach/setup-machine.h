@@ -38,7 +38,7 @@ extern int charger_mode;
 										\
 		is_lpm = 1;							\
 		strlcat(default_command_line,                                   \
-                     "lpm_boot=1 ", COMMAND_LINE_SIZE);                         \
+                     "lpm_boot=1 androidboot.mode=charger ", COMMAND_LINE_SIZE);                         \
 	} else {								\
 		strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);\
 	}									\
