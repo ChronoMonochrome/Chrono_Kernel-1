@@ -5244,11 +5244,11 @@ static ssize_t store_inputboost_typingbooster_up_threshold(struct kobject *a, st
 	return count;
 }
 
-#ifdef ENABLE_HOTPLUGGING
 // ff: added tuneable inputboost_typingbooster_cores -> possible values: range from 0 disabled to 4, if not set default is 0
 static ssize_t store_inputboost_typingbooster_cores(struct kobject *a, struct attribute *b,
 														   const char *buf, size_t count)
 {
+#ifdef ENABLE_HOTPLUGGING
 	unsigned int input;
 	int ret;
 	ret = sscanf(buf, "%u", &input);
@@ -5270,8 +5270,10 @@ static ssize_t store_inputboost_typingbooster_cores(struct kobject *a, struct at
 #endif /* ENABLE_PROFILES_SUPPORT */
 	dbs_tuners_ins.inputboost_typingbooster_cores = input;
 	return count;
-}
+#else
+	return 0;
 #endif /* ENABLE_HOTPLUGGING */
+}
 #endif /* ENABLE_INPUTBOOSTER */
 
 #ifdef ENABLE_MUSIC_LIMITS
