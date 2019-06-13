@@ -70,6 +70,7 @@
 #include <mach/crypto-ux500.h>
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
+#include <mach/exynos-ion.h>
 
 #if defined(CONFIG_NFC_PN544)
 #include <linux/pn544.h>
@@ -1908,6 +1909,9 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_MODEM_U8500
 	&u8500_modem_dev,
 #endif
+#ifdef CONFIG_ION_EXYNOS
+        &exynos_device_ion,
+#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2142,6 +2146,10 @@ static void __init janice_init_machine(void)
 	regulator_has_full_constraints();
 
 	sec_common_init_post() ;
+
+#ifdef CONFIG_ION_EXYNOS
+	exynos_ion_set_platdata();
+#endif
 
 	nmk_gpio_clocks_disable();
 }

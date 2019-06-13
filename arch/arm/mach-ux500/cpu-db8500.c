@@ -90,6 +90,7 @@ static struct map_desc u9540_io_desc[] __initdata = {
 	#endif
 };
 
+extern void __init exynos4_reserve_mem(void);
 
 void __init u8500_map_io(void)
 {
@@ -108,14 +109,14 @@ void __init u8500_map_io(void)
 		iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
 
 	_PRCMU_BASE = __io_address(U8500_PRCMU_BASE);
-	
+
 #if defined (CONFIG_SAMSUNG_USE_GETLOG)
 	sec_getlog_supply_meminfo(KYLE_MEM_BANK_0_SIZE,
 				  KYLE_MEM_BANK_0_ADDR,
 				  KYLE_MEM_BANK_1_SIZE,
 				  KYLE_MEM_BANK_1_ADDR);
 #endif
-	
+	exynos4_reserve_mem();
 }
 
 /*

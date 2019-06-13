@@ -74,6 +74,7 @@
 #include <mach/crypto-ux500.h>
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
+#include <mach/exynos-ion.h>
 #include <linux/yas.h>
 
 
@@ -2276,6 +2277,9 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_KEXEC_HARDBOOT
 	&kexec_hardboot_device,
 #endif
+#ifdef CONFIG_ION_EXYNOS
+	&exynos_device_ion,
+#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2509,6 +2513,10 @@ static void __init codina_init_machine(void)
 	sec_cam_init();
 
 	sec_common_init_post() ;
+
+#ifdef CONFIG_ION_EXYNOS
+	exynos_ion_set_platdata();
+#endif
 
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();

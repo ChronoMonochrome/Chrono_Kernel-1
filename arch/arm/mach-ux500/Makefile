@@ -30,7 +30,7 @@ obj-$(CONFIG_MACH_U8500)	+= board-mop500.o board-mop500-sdi.o \
 				board-pins-sleep-force.o \
 				board-mop500-wlan.o \
 				board-mop500-cyttsp.o \
-				board-mop500-u9540uib.o 
+				board-mop500-u9540uib.o
 
 obj-$(CONFIG_MACH_CCU9540)      +=  board-ccu9540.o \
 				board-ccu9540-ver.o \
@@ -139,4 +139,4 @@ endif
 endif
 obj-$(CONFIG_MACH_SAMSUNG_UX500)	+= sec_common.o
 obj-$(CONFIG_ARCH_RANDOM) += early_random.o
-
+obj-$(CONFIG_ION_EXYNOS)		+= dev-ion.o reserve_mem.o

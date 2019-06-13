@@ -12,6 +12,8 @@ config UX500_SOC_COMMON
 	select HAS_MTU
 	select MULTI_IRQ_HANDLER
 	select ARM_CPU_SUSPEND if PM
+	select ION
+	select ION_EXYNOS
 
 config UX500_SOC_DBX500
 	depends on UX500_SOC_DB5500 || UX500_SOC_DB8500

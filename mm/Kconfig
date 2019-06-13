@@ -516,3 +516,12 @@ config PROCESS_RECLAIM
 
 	 Any other vaule is ignored.
 
+config CMA_BEST_FIT
+	bool "CMA best-fit allocator"
+	depends on CMA
+	help
+	  This is a best-fit algorithm running in O(n log n) time where
+	  n is the number of existing holes (which is never greater then
+	  the number of allocated regions and usually much smaller).  It
+	  allocates area from the smallest hole that is big enough for
+	  allocation in question.
