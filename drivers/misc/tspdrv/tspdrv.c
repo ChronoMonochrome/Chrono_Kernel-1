@@ -75,7 +75,7 @@ static struct vibrator {
 	bool running;
 } vibdata;
 
-unsigned long pwm_val = 10;
+unsigned long pwm_val = 40;
 
 /* Uncomment the next line to enable debug prints */
 /* #define	IMMVIBE_DEBUG */
